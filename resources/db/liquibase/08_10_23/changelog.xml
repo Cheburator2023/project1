@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.1.xsd">
+ 
+    <include file="08_10_23_01_create_table_artefact_realizations.sql" relativeToChangelogFile="true"/>
+    <include file="08_10_23_02_create_table_artefact_values.sql" relativeToChangelogFile="true"/>
+    <include file="08_10_23_03_create_table_artefacts.sql" relativeToChangelogFile="true"/>
+    <include file="08_10_23_04_create_table_models.sql" relativeToChangelogFile="true"/>
+    <include file="08_10_23_05_add_pk_table_artefact_values.sql" relativeToChangelogFile="true"/>
+    <include file="08_10_23_06_add_pk_table_artefacts.sql" relativeToChangelogFile="true"/>
+    <include file="08_10_23_07_add_pk_table_models.sql" relativeToChangelogFile="true"/>
+    <include file="08_10_23_08_add_fk_table_artefact_realizations_fk0.sql" relativeToChangelogFile="true"/>
+    <include file="08_10_23_09_add_fk_table_artefact_realizations_fk1.sql" relativeToChangelogFile="true"/>
+
+</databaseChangeLog>

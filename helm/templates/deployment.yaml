@@ -1,0 +1,58 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "mrms-backend.fullname" . }}
+  labels: {{- include "mrms-backend.labels" . | nindent 4 }}
+spec:
+  selector:
+    matchLabels:
+      app: {{ include "mrms-backend.fullname" . }}
+  replicas: {{ .Values.replicaCount }}
+  template:
+    metadata:
+      labels:
+        app: {{ include "mrms-backend.fullname" . }}
+    spec:
+      imagePullSecrets:
+        - name: {{ .Values.pullSecret }}
+      {{- if .Values.affinity.enabled }}
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: nvidia.com/gpu.product
+                    operator: DoesNotExist
+      {{- end }}
+      containers:
+        - name: {{ .Chart.Name }}
+          {{- if .Values.image.digest }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}@{{ .Values.image.digest }}"
+          {{- else }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          {{- end }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          env:          
+          {{- range $key, $val := .Values.env }}
+            - name: {{ $key }}
+              value: {{ $val | quote }}
+          {{- end }}
+          envFrom:
+            - secretRef:
+                name: {{ template "mrms-backend.fullname" . }}-secret
+          ports:
+            - containerPort: 3000
+              protocol: TCP
+          # TODO: add healthchecks to the service if need.
+          # livenessProbe:
+          #   httpGet:
+          #     path: /
+          #     port: http
+          readinessProbe:
+            tcpSocket:
+              port: 3000
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}

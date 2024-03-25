@@ -1,0 +1,4148 @@
+{
+    "models":[
+
+    {
+
+        "system_model_id": "fce5122c-1d76-11ec-b149-0242ac11000d",
+        "group_company": "Банк ВТБ(ПАО)",
+        "model_id": "model2081-v1",
+        "model_version": 1,
+
+
+        "business_customer": "Пучкова Елена Васильевна",
+        "business_customer_departament": "Департамент розничных кредитных рисков",
+        "significance_validity": "Высокая",
+
+
+        "ds_department": "ДАДМ",
+        "developing_end_date": "06.05.2021",
+
+
+
+
+
+
+
+        "active_model": 1,
+
+
+
+
+
+
+
+
+
+
+
+
+
+        "segment_name": "Ипотека",
+
+
+
+
+
+
+
+
+
+        "assignment_contractor": "Гребенюк Алексей Владимирович",
+
+
+
+
+
+
+
+
+        "date_of_it_introduction_into_operation": "24.09.2021",
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        "rfd": "RFD-2021",
+        "model_name_dadm": "Модель ПВР Аппликативные PD ",
+        "ds_stream": "Моделирование РБ",
+
+
+        "model_epic_05": "MODRB-63",
+
+
+        "solution_to_implement_model": "Внедряется",
+
+
+        "custom_model_id": 10511013,
+
+        "release": "RM-5074",
+        "model_epic_09": "MODELAPP-207",
+
+
+        "model_epic_12": "DE-2065",
+        "model_epic_12_date": "19.01.2023"
+    },
+    {
+
+        "system_model_id": "fcd0233c-fe80-11eb-b149-0242ac11000d",
+        "group_company": "Банк ВТБ(ПАО)",
+        "model_id": "model2962-v1",
+        "model_version": 1,
+
+
+        "business_customer": "Пучкова Елена Васильевна",
+        "business_customer_departament": "Департамент розничных кредитных рисков",
+        "significance_validity": "Высокая",
+
+
+        "ds_department": "ДАДМ",
+        "developing_end_date": "10.02.2021",
+
+
+
+
+
+
+
+        "active_model": 1,
+
+
+
+
+
+
+
+
+
+
+
+
+
+        "segment_name": "Ипотека",
+
+
+
+
+
+
+
+
+
+        "assignment_contractor": "Гребенюк Алексей Владимирович",
+
+
+
+
+
+
+
+
+        "date_of_it_introduction_into_operation": "24.09.2021",
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        "rfd": "RFD-2019",
+        "model_name_dadm": "Модель ПВР Аппликативные LGD",
+        "ds_stream": "Моделирование РБ",
+
+
+        "model_epic_05": "MODRB-65",
+        "model_epic_05a": " ",
+
+        "solution_to_implement_model": "Внедряется",
+
+
+        "custom_model_id": 10511014,
+
+        "release": "RM-5074",
+        "model_epic_09": "MODELAPP-207",
+
+
+        "model_epic_12": "DE-2066",
+        "model_epic_12_date": "19.01.2023"
+    },
+    {
+
+        "system_model_id": "fcd0233c-fe80-11eb-b149-0242ac11000d",
+        "group_company": "Банк ВТБ(ПАО)",
+        "model_id": "model1642-v1",
+        "model_version": 1,
+
+
+        "business_customer": "Кадырова Екатерина Радиевна",
+        "business_customer_departament": "Департамент розничных кредитных рисков",
+        "significance_validity": "Низкая",
+
+
+        "ds_department": "ДАДМ",
+        "developing_end_date": "06.07.2021",
+
+
+
+
+
+
+
+        "active_model": 1,
+
+
+
+
+
+
+
+
+
+
+
+
+
+        "segment_name": "Клиентская просрочка 61-90 дней",
+
+
+
+
+
+
+
+
+
+        "assignment_contractor": "Шпак Мария Владимировна ",
+
+
+
+
+
+
+
+
+        "date_of_it_introduction_into_operation": "03.08.2021",
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        "rfd": "RFD-233",
+        "model_name_dadm": "Модель оценки вероятности переката в просрочку 61-90 в разрезе инструментов (Soft)",
+        "ds_stream": "Моделирование РБ",
+
+
+        "model_epic_05": "MODRB-84",
+        "model_epic_05a": " ",
+
+        "solution_to_implement_model": "Внедряется",
+
+
+        "custom_model_id": "model1642",
+        "custom_model_type": "Градиентный бустинг (Gradient Boosting)",
+        "release": "RM-4796",
+        "model_epic_09": "MODELAPP-163"
+
+
+
+
+    },
+    {
+
+        "system_model_id": "fa442720-fe93-11eb-b149-0242ac11000d",
+        "group_company": "Банк ВТБ(ПАО)",
+        "model_id": "model1643-v1",
+        "model_version": 1,
+
+
+        "business_customer": "Кадырова Екатерина Радиевна",
+        "business_customer_departament": "Департамент розничных кредитных рисков",
+        "significance_validity": "Низкая",
+
+
+        "ds_department": "ДАДМ",
+        "developing_end_date": "06.07.2021",
+
+
+
+
+
+
+
+        "active_model": 1,
+
+
+
+
+
+
+
+
+
+
+
+
+
+        "segment_name": "Клиентская просрочка 61-90 дней",
+
+
+
+
+
+
+
+
+
+        "assignment_contractor": "Шпак Мария Владимировна ",
+
+
+
+
+
+
+
+
+        "date_of_it_introduction_into_operation": "03.08.2021",
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        "rfd": "RFD-233",
+        "model_name_dadm": "Модель оценки вероятности переката в просрочку 61-90 в разрезе инструментов (Hard)",
+        "ds_stream": "Моделирование РБ",
+
+
+        "model_epic_05": "MODRB-84",
+        "model_epic_05a": " ",
+
+        "solution_to_implement_model": "Внедряется",
+
+
+        "custom_model_id": "model1643-v1",
+        "custom_model_type": "Градиентный бустинг (Gradient Boosting)",
+        "release": "RM-4796",
+        "model_epic_09": "MODELAPP-163"
+
+
+
+
+    },
+    {
+
+        "system_model_id": "fa442720-fe93-11eb-b149-0242ac11000d",
+        "group_company": "Банк ВТБ(ПАО)",
+        "model_id": "model1802-v1",
+        "model_version": 1,
+
+
+        "business_customer": "Кадырова Екатерина Радиевна",
+        "business_customer_departament": "Департамент розничных кредитных рисков",
+        "significance_validity": "Низкая",
+
+
+        "ds_department": "ДАДМ",
+        "developing_end_date": "05.10.2021",
+
+
+
+
+
+
+
+        "active_model": 1,
+
+
+
+
+
+
+
+
+
+
+
+
+
+        "segment_name": "Клиентская просрочка 91-120 дней",
+
+
+
+
+
+
+
+
+
+        "assignment_contractor": " Шпак Мария Владимировна ",
+
+
+
+
+
+
+
+
+        "date_of_it_introduction_into_operation": "24.08.2021",
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        "rfd": "RFD-216",
+        "model_name_dadm": "Модель оценки вероятности переката в просрочку 91-120 в разрезе инструментов (Hard)",
+        "ds_stream": "Моделирование РБ",
+
+
+        "model_epic_05": "MODRB-85",
+        "model_epic_05a": " ",
+
+        "solution_to_implement_model": "Внедряется",
+
+
+        "custom_model_id": "model1802-v1",
+        "custom_model_type": "Градиентный бустинг (Gradient Boosting)",
+        "release": "RM-11405",
+        "model_epic_09": "MODELAPP-163"
+
+
+
+
+    },
+    {
+
+        "system_model_id": "f3bfc786-8d98-11ec-bac6-0242ac11000d",
+        "group_company": "Банк ВТБ(ПАО)",
+        "model_id": "model1803-v1",
+        "model_version": 1,
+
+
+        "business_customer": "Кадырова Екатерина Радиевна",
+        "business_customer_departament": "Департамент розничных кредитных рисков",
+        "significance_validity": "Низкая",
+
+
+        "ds_department": "ДАДМ",
+        "developing_end_date": "05.10.2021",
+
+
+
+
+
+
+
+        "active_model": 1,
+
+
+
+
+
+
+
+
+
+
+
+
+
+        "segment_name": "Клиентская просрочка 91-120 дней",
+
+
+
+
+
+
+
+
+
+        "assignment_contractor": " Шпак Мария Владимировна ",
+
+
+
+
+
+
+
+
+        "date_of_it_introduction_into_operation": "24.08.2021",
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        "rfd": "RFD-216",
+        "model_name_dadm": "Модель оценки вероятности переката в просрочку 91-120 в разрезе инструментов Soft (300-)",
+        "ds_stream": "Моделирование РБ",
+
+
+        "model_epic_05": "MODRB-85",
+        "model_epic_05a": " ",
+
+        "solution_to_implement_model": "Внедряется",
+
+
+        "custom_model_id": "model1803",
+        "custom_model_type": "Градиентный бустинг (Gradient Boosting)",
+        "release": "RM-11405",
+        "model_epic_09": "MODELAPP-163"
+
+
+
+
+    },
+    {
+
+        "system_model_id": "e8778f1d-4709-11ec-80d2-0242ac11000d",
+        "group_company": "Банк ВТБ(ПАО)",
+        "model_id": "model1804-v1",
+        "model_version": 1,
+
+
+        "business_customer": "Кадырова Екатерина Радиевна",
+        "business_customer_departament": "Департамент розничных кредитных рисков",
+        "significance_validity": "Низкая",
+
+
+        "ds_department": "ДАДМ",
+        "developing_end_date": "05.10.2021",
+
+
+
+
+
+
+
+        "active_model": 0,
+
+
+
+
+
+
+
+
+
+
+
+
+
+        "segment_name": "Клиентская просрочка 90-120 дней",
+
+
+
+
+
+
+
+
+
+        "assignment_contractor": " Шпак Мария Владимировна ",
+
+
+
+
+
+
+
+
+        "date_of_it_introduction_into_operation": "24.08.2021",
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        "rfd": "RFD-216",
+        "model_name_dadm": "Модель оценки вероятности переката в просрочку 91-120 в разрезе инструментов Soft (300+)",
+        "ds_stream": "Моделирование РБ",
+
+
+        "model_epic_05": "MODRB-85",
+        "model_epic_05a": " ",
+
+        "solution_to_implement_model": "Внедряется",
+
+
+        "custom_model_id": "model1804",
+        "custom_model_type": "Логистическая регрессия (Logit Model)",
+        "release": "RM-11405",
+        "model_epic_09": "MODELAPP-163"
+
+
+
+
+    },
+    {
+
+        "system_model_id": "e8778f1d-4709-11ec-80d2-0242ac11000d",
+        "group_company": "Банк ВТБ(ПАО)",
+        "model_id": "model1806-v1",
+        "model_version": 1,
+
+
+        "business_customer": "Кадырова Екатерина Радиевна",
+        "business_customer_departament": "Департамент розничных кредитных рисков",
+        "significance_validity": "Низкая",
+
+
+        "ds_department": "ДАДМ",
+        "developing_end_date": "28.09.2021",
+
+
+
+
+
+
+
+        "active_model": 1,
+
+
+
+
+
+
+
+
+
+
+
+
+
+        "segment_name": "Клиентская просрочка 121-150 дней",
+
+
+
+
+
+
+
+
+
+        "assignment_contractor": " Шпак Мария Владимировна ",
+
+
+
+
+
+
+
+
+        "date_of_it_introduction_into_operation": "12.10.2021",
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        "rfd": "RFD-217",
+        "model_name_dadm": "Модель оценки вероятности переката в просрочку 121-150 в разрезе инструментов Hard",
+        "ds_stream": "Моделирование РБ",
+
+
+        "model_epic_05": "MODRB-86",
+        "model_epic_05a": " ",
+
+        "solution_to_implement_model": "Внедряется",
+
+
+        "custom_model_id": "model1806-v1",
+        "custom_model_type": "Градиентный бустинг (Gradient Boosting)",
+        "release": "RM-11792",
+        "model_epic_09": "MODELAPP-163"
+
+
+
+
+    },
+    {
+
+        "system_model_id": "df669a7d-d1f8-11eb-8c85-0242ac11000d",
+        "group_company": "Банк ВТБ(ПАО)",
+        "model_id": "model2063-v1",
+        "model_version": 1,
+
+
+        "business_customer": "Кадырова Екатерина Радиевна",
+        "business_customer_departament": "Департамент розничных кредитных рисков",
+        "significance_validity": "Низкая",
+
+
+        "ds_department": "ДАДМ",
+        "developing_end_date": "28.09.2021",
+
+
+
+
+
+
+
+        "active_model": 1,
+
+
+
+
+
+
+
+
+
+
+
+
+
+        "segment_name": "Клиентская просрочка 31-60 дней",
+
+
+
+
+
+
+
+
+
+        "assignment_contractor": "Шпак Мария Владимировна ",
+
+
+
+
+
+
+
+
+        "date_of_it_introduction_into_operation": "23.11.2021",
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        "rfd": "RFD-139",
+        "model_name_dadm": "Модель оценки вероятности переката в просрочку 31-60 (из просрочки 30+ в течение 30 дней) в разрезе инструментов (Hard)",
+        "ds_stream": "Моделирование РБ",
+
+
+        "model_epic_05": "MODRB-318",
+        "model_epic_05a": " ",
+
+        "solution_to_implement_model": "Внедряется",
+
+
+        "custom_model_id": "model2063",
+        "custom_model_type": "Градиентный бустинг (Gradient Boosting)",
+        "release": "RM-11796",
+        "model_epic_09": "MODELAPP-421"
+
+
+
+
+    },
+    {
+
+        "system_model_id": "df669a7d-d1f8-11eb-8c85-0242ac11000d",
+        "group_company": "Банк ВТБ(ПАО)",
+        "model_id": "model2062-v1",
+        "model_version": 1,
+
+
+        "business_customer": "Кадырова Екатерина Радиевна",
+        "business_customer_departament": "Департамент розничных кредитных рисков",
+        "significance_validity": "Средняя",
+
+
+        "ds_department": "ДАДМ",
+        "developing_end_date": "28.09.2021",
+
+
+
+
+
+
+
+        "active_model": 1,
+
+
+
+
+
+
+
+
+
+
+
+
+
+        "segment_name": "Клиентская просрочка 31-60 дней",
+
+
+
+
+
+
+
+
+
+        "assignment_contractor": "Шпак Мария Владимировна ",
+
+
+
+
+
+
+
+
+        "date_of_it_introduction_into_operation": "23.11.2021",
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        "rfd": "RFD-139",
+        "model_name_dadm": "Модель оценки вероятности переката в просрочку 31-60 (из просрочки 30+ в течение 30 дней) в разрезе инструментов (Soft)",
+        "ds_stream": "Моделирование РБ",
+
+
+        "model_epic_05": "MODRB-318",
+        "model_epic_05a": " ",
+
+        "solution_to_implement_model": "Внедряется",
+
+
+        "custom_model_id": "model2062",
+        "custom_model_type": "Градиентный бустинг (Gradient Boosting)",
+        "release": "RM-11796",
+        "model_epic_09": "MODELAPP-421"
+
+
+
+
+    },
+    {
+
+        "system_model_id": "df669a7d-d1f8-11eb-8c85-0242ac11000d",
+        "group_company": "Банк ВТБ(ПАО)",
+        "model_id": "model1641-v1",
+        "model_version": 1,
+
+
+        "business_customer": "Кадырова Екатерина Радиевна",
+        "business_customer_departament": "Департамент розничных кредитных рисков",
+        "significance_validity": "Низкая",
+
+
+        "ds_department": "ДАДМ",
+        "developing_end_date": " 13.04.2021",
+
+
+
+
+
+
+
+        "active_model": 1,
+
+
+
+
+
+
+
+
+
+
+
+
+
+        "segment_name": "Клиентская просрочка 30-60 дней",
+
+
+
+
+
+
+
+
+
+        "assignment_contractor": "Шпак Мария Владимировна ",
+
+
+
+
+
+
+
+
+        "date_of_it_introduction_into_operation": "22.06.2021",
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        "rfd": "RFD-232",
+        "model_name_dadm": "Модель оценки вероятности переката в просрочку 31-60",
+        "ds_stream": "Моделирование РБ",
+
+
+        "model_epic_05": "MODRB-83",
+        "model_epic_05a": " ",
+
+        "solution_to_implement_model": "Внедряется",
+
+
+        "custom_model_id": "model2061-v1",
+        "custom_model_type": "Градиентный бустинг (Gradient Boosting)",
+        "release": "RM-11796"
+
+
+
+
+
+    },
+    {
+
+        "system_model_id": "df2cd6bf-1b1a-11ec-b149-0242ac11000d",
+        "group_company": "Банк ВТБ(ПАО)",
+        "model_id": "model3342-v1",
+        "model_version": 1,
+
+
+
+        "business_customer_departament": "Департамент розничных кредитных рисков",
+        "significance_validity": "Низкая",
+
+
+        "ds_department": "ДАДМ",
+        "developing_end_date": "27.11.2021",
+
+
+
+
+
+
+
+        "active_model": 1,
+
+
+
+
+
+
+
+
+
+
+
+
+
+        "segment_name": "не указан",
+
+
+
+
+
+
+
+
+
+        "assignment_contractor": "Громов Александр Дмитриевич",
+
+
+
+
+
+
+
+
+        "date_of_it_introduction_into_operation": "31.12.2020",
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        "rfd": "нет",
+        "model_name_dadm": "Модель дохода Комплексная v1",
+        "ds_stream": "Моделирование РБ",
+
+
+        "model_epic_05": "MODRB-34",
+        "model_epic_05a": " ",
+
+        "solution_to_implement_model": "Внедряется",
+
+
+        "custom_model_id": 10510003
+
+
+
+
+
+
+
+    },
+    {
+
+        "system_model_id": "deeba9b0-6b08-11ed-a9f8-0a5801050287",
+        "group_company": "Банк ВТБ(ПАО)",
+        "model_id": "model3342-v2",
+        "model_version": 2,
+
+
+
+        "business_customer_departament": "Департамент розничных кредитных рисков",
+        "significance_validity": "Низкая",
+
+
+        "ds_department": "ДАДМ",
+        "developing_end_date": "16.03.2021",
+
+
+
+
+
+
+
+        "active_model": 0,
+
+
+
+
+
+
+
+
+
+
+
+
+
+        "segment_name": "нет",
+
+
+
+
+
+
+
+
+
+        "assignment_contractor": "Громов Александр Дмитриевич",
+
+
+
+
+
+
+
+
+        "date_of_it_introduction_into_operation": "31.12.2021",
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        "rfd": "нет",
+        "model_name_dadm": "Модель дохода Комплексная v2 ",
+        "ds_stream": "Моделирование РБ",
+
+
+        "model_epic_05": "MODRB-140",
+        "model_epic_05a": " ",
+
+        "solution_to_implement_model": "Внедряется",
+
+
+        "custom_model_id": 10510003
+
+
+
+
+
+
+
+    },
+    {
+
+        "system_model_id": "deeba9b0-6b08-11ed-a9f8-0a5801050287",
+        "group_company": "Банк ВТБ(ПАО)",
+        "model_id": "model1701-v1",
+        "model_version": 1,
+        "model_type": "Бизнес-модели",
+
+        "business_customer": " Мельников Никита Анатольевич",
+        "business_customer_departament": "Департамент розничного CRM",
+        "significance_validity": "Не оценивалась",
+
+
+        "ds_department": "ДАДМ",
+        "developing_end_date": "08.09.2021",
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        "segment_name": "Вся база клиентов",
+
+
+
+
+
+
+
+
+
+        "assignment_contractor": "Жуковская Екатерина Сергеевна",
+
+
+
+
+
+
+
+
+        "date_of_it_introduction_into_operation": "22.06.2021",
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        "rfd": "нет",
+        "model_name_dadm": "CRM. Модель склонности клиентов к CPACC по каналу sms",
+        "ds_stream": "Моделирование РБ",
+
+
+        "model_epic_05": "нет",
+        "model_epic_05a": " ",
+
+        "solution_to_implement_model": "Внедряется",
+
+
+        "custom_model_id": "model1934-v1",
+
+        "release": "RM-42774"
+
+
+
+
+
+    },
+    {
+
+        "system_model_id": "d99a3646-6598-11ed-a9f8-0a5801050287",
+        "group_company": "Банк ВТБ(ПАО)",
+        "model_id": "model1861-v1",
+        "model_version": 1,
+        "model_type": "Бизнес-модели",
+
+        "business_customer": " Мельников Никита Анатольевич",
+        "business_customer_departament": "Департамент розничного CRM",
+        "significance_validity": "Не оценивалась",
+
+
+        "ds_department": "ДАДМ",
+        "developing_end_date": "08.09.2021",
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        "segment_name": "Клиенты с предодобренными предложениями PACC и коммуникациями через SMS",
+
+
+
+
+
+
+
+
+
+        "assignment_contractor": "Жуковская Екатерина Сергеевна",
+
+
+
+
+
+
+
+
+        "date_of_it_introduction_into_operation": "22.06.2021",
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        "rfd": "нет",
+        "model_name_dadm": "CRM. Модель склонности к PACC + sms",
+        "ds_stream": "Моделирование РБ",
+
+
+        "model_epic_05": "нет",
+        "model_epic_05a": " ",
+
+        "solution_to_implement_model": "Внедряется",
+
+
+        "custom_model_id": "model1934-v1",
+
+        "release": "RM-42774"
+
+
+
+
+
+    },
+    {
+
+        "system_model_id": "c878c885-6519-11ed-a9f8-0a5801050287",
+        "group_company": "Банк ВТБ(ПАО)",
+        "model_id": "model1930-v1",
+        "model_version": 1,
+        "model_type": "Бизнес-модели",
+
+        "business_customer": " Мельников Никита Анатольевич",
+        "business_customer_departament": "Департамент розничного CRM",
+        "significance_validity": "Не оценивалась",
+
+
+        "ds_department": "ДАДМ",
+        "developing_end_date": "08.09.2021",
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        "segment_name": "Клиенты с предодобренными предложениями CPACL и коммуникациями через SMS",
+
+
+
+
+
+
+
+
+
+        "assignment_contractor": "Жуковская Екатерина Сергеевна",
+
+
+
+
+
+
+
+
+        "date_of_it_introduction_into_operation": "22.06.2021",
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        "rfd": "нет",
+        "model_name_dadm": "CRM. Модель склонности к CPACL + sms",
+        "ds_stream": "Моделирование РБ",
+
+
+        "model_epic_05": "нет",
+        "model_epic_05a": " ",
+
+        "solution_to_implement_model": "Внедряется",
+
+
+        "custom_model_id": "model1934-v1",
+
+        "release": "RM-42774"
+
+
+
+
+
+    },
+    {
+
+        "system_model_id": "c40dbbdc-c7f6-11ed-a97c-0a5801020269",
+        "group_company": "Банк ВТБ(ПАО)",
+        "model_id": "model1931-v1",
+        "model_version": 1,
+        "model_type": "Бизнес-модели",
+
+        "business_customer": " Мельников Никита Анатольевич",
+        "business_customer_departament": "Департамент розничного CRM",
+        "significance_validity": "Не оценивалась",
+
+
+        "ds_department": "ДАДМ",
+        "developing_end_date": "08.09.2021",
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        "segment_name": "Клиенты с предодобренными предложениями PACL ref и коммуникациями через SMS",
+
+
+
+
+
+
+
+
+
+        "assignment_contractor": "Жуковская Екатерина Сергеевна",
+
+
+
+
+
+
+
+
+        "date_of_it_introduction_into_operation": "22.06.2021",
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        "rfd": "нет",
+        "model_name_dadm": "CRM. Модель склонности к PACL ref + sms",
+        "ds_stream": "Моделирование РБ",
+
+
+        "model_epic_05": "нет",
+        "model_epic_05a": " ",
+
+        "solution_to_implement_model": "Внедряется",
+
+
+        "custom_model_id": "model1934-v1",
+
+        "release": "RM-42774"
+
+
+
+
+
+    },
+    {
+
+        "system_model_id": "c0bcf484-1fd4-11ed-bcf6-0a58010403c1",
+        "group_company": "Банк ВТБ(ПАО)",
+        "model_id": "model1932-v1",
+        "model_version": 1,
+        "model_type": "Бизнес-модели",
+
+        "business_customer": " Мельников Никита Анатольевич",
+        "business_customer_departament": "Департамент розничного CRM",
+        "significance_validity": "Не оценивалась",
+
+
+        "ds_department": "ДАДМ",
+        "developing_end_date": "08.09.2021",
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        "segment_name": "Клиенты с предодобренными предложениями PACL и коммуникациями через SMS",
+
+
+
+
+
+
+
+
+
+        "assignment_contractor": "Жуковская Екатерина Сергеевна",
+
+
+
+
+
+
+
+
+        "date_of_it_introduction_into_operation": "22.06.2021",
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        "rfd": "нет",
+        "model_name_dadm": "CRM. Модель склонности к PACL + sms",
+        "ds_stream": "Моделирование РБ",
+
+
+        "model_epic_05": "нет",
+        "model_epic_05a": " ",
+
+        "solution_to_implement_model": "Внедряется",
+
+
+        "custom_model_id": "model1934-v1",
+
+        "release": "RM-42774"
+
+
+
+
+
+    },
+    {
+
+        "system_model_id": "c023279b-8b70-11ec-bac6-0242ac11000d",
+        "group_company": "Банк ВТБ(ПАО)",
+        "model_id": "model1933-v1",
+        "model_version": 1,
+        "model_type": "Бизнес-модели",
+
+        "business_customer": " Мельников Никита Анатольевич",
+        "business_customer_departament": "Департамент розничного CRM",
+        "significance_validity": "Не оценивалась",
+
+
+        "ds_department": "ДАДМ",
+        "developing_end_date": "08.09.2021",
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        "segment_name": "Клиенты с предодобренными предложениями PACL topup и коммуникациями через SMS",
+
+
+
+
+
+
+
+
+
+        "assignment_contractor": "Жуковская Екатерина Сергеевна",
+
+
+
+
+
+
+
+
+        "date_of_it_introduction_into_operation": "22.06.2021",
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        "rfd": "нет",
+        "model_name_dadm": "CRM. Модель склонности к PACL topup + sms",
+        "ds_stream": "Моделирование РБ",
+
+
+        "model_epic_05": "нет",
+        "model_epic_05a": " ",
+
+        "solution_to_implement_model": "Внедряется",
+
+
+        "custom_model_id": "model1934-v1",
+
+        "release": "RM-42774"
+
+
+
+
+
+    },
+    {
+
+        "system_model_id": "a28707d2-1d75-11ec-b149-0242ac11000d",
+        "group_company": "Банк ВТБ(ПАО)",
+        "model_id": "model1934-v1",
+        "model_version": 1,
+        "model_type": "Бизнес-модели",
+
+        "business_customer": " Мельников Никита Анатольевич",
+        "business_customer_departament": "Департамент розничного CRM",
+        "significance_validity": "Не оценивалась",
+
+
+        "ds_department": "ДАДМ",
+        "developing_end_date": "08.09.2021",
+
+
+
+
+
+
+
+        "active_model": 0,
+
+
+
+
+
+
+
+
+
+
+
+
+
+        "segment_name": "Клиенты с предодобренным предложением",
+
+
+
+
+
+
+
+
+
+        "assignment_contractor": "Жуковская Екатерина Сергеевна",
+
+
+
+
+
+
+
+
+        "date_of_it_introduction_into_operation": "22.06.2021",
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        "rfd": "нет",
+        "model_name_dadm": "CRM. Канал коммуникации (SMS)",
+        "ds_stream": "Моделирование РБ",
+
+
+        "model_epic_05": "нет",
+        "model_epic_05a": " ",
+
+        "solution_to_implement_model": "Внедряется",
+
+
+        "custom_model_id": "model1934-v1",
+
+        "release": "RM-42774"
+
+
+
+
+
+    },
+    {
+
+        "system_model_id": "9cb8c7f3-1d74-11ec-b149-0242ac11000d",
+        "group_company": "Банк ВТБ(ПАО)",
+        "model_id": "model1641-v1",
+        "model_version": 1,
+
+
+        "business_customer": "Кадырова Екатерина Радиевна",
+        "business_customer_departament": "Департамент розничных кредитных рисков",
+        "significance_validity": "Низкая",
+
+
+        "ds_department": "ДАДМ",
+        "developing_end_date": "01.02.2022",
+
+
+
+
+
+
+
+        "active_model": 1,
+
+
+
+
+
+
+
+
+
+
+
+
+
+        "segment_name": "Клиентская просрочка 30-60 дней",
+
+
+
+
+
+
+
+
+
+        "assignment_contractor": "Шпак Мария Владимировна",
+
+
+
+
+
+
+
+
+        "date_of_it_introduction_into_operation": "24.06.2022",
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        "rfd": "RFD-818",
+        "model_name_dadm": "Модель оценки риска углубления просрочки для РКК (31-60)",
+        "ds_stream": "Моделирование РБ",
+        "model_epic_04": "DE-854",
+        "model_epic_04_date": "31.01.2022",
+        "model_epic_05": "MODRB-609",
+
+
+        "solution_to_implement_model": "Внедряется",
+        "model_epic_07": "DE-855",
+        "model_epic_07_date": "31.01.2022",
+        "custom_model_id": 10510034,
+        "custom_model_type": "Градиентный бустинг (Gradient Boosting)",
+        "release": "RM-26100",
+        "model_epic_09": "MODELAPP-699",
+        "model_epic_11": "MODELSOL-1618",
+        "model_epic_11_date": "########"
+
+
+    },
+    {
+
+        "system_model_id": "893a001d-e7d2-11eb-8c85-0242ac11000d",
+        "group_company": "Банк ВТБ(ПАО)",
+        "model_id": "model2241-v1",
+        "model_version": 1,
+
+
+        "business_customer": "Пучкова Елена Васильевна",
+        "business_customer_departament": "Департамент розничных кредитных рисков",
+        "significance_validity": "Высокая",
+
+
+        "ds_department": "ДАДМ",
+        "developing_end_date": "13.05.2022",
+
+
+
+
+
+
+
+        "active_model": 0,
+
+
+
+
+
+
+
+
+
+
+
+
+
+        "segment_name": "Кредитные карты и Овердрафты",
+
+
+
+
+
+
+
+
+
+        "assignment_contractor": "Гребенюк Алексей Владимирович",
+
+
+
+
+
+
+
+
+        "date_of_it_introduction_into_operation": "08.12.2022",
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        "rfd": "RFD-275",
+        "model_name_dadm": "Модель оценки поведенческого PD для кредитных карт и овердрафтов в ПАО ВТБ ",
+        "ds_stream": "Моделирование РБ",
+        "model_epic_04": "DE-573",
+        "model_epic_04_date": "21.12.2021",
+        "model_epic_05": "MODRB-365",
+
+
+        "solution_to_implement_model": "Внедряется",
+
+
+        "custom_model_id": "model2241-v1",
+        "custom_model_type": "Логистическая регрессия (Logit Model)",
+        "release": "RM-42805",
+        "model_epic_09": "MODELAPP-247",
+        "model_epic_11": "MODELSOL-1460",
+        "model_epic_11_date": "########",
+        "model_epic_12": "DE-2119",
+        "model_epic_12_date": "03.07.2023"
+    },
+    {
+
+        "system_model_id": "831c5059-1d76-11ec-b149-0242ac11000d",
+        "group_company": "Банк ВТБ(ПАО)",
+        "model_id": "model3038-v1",
+        "model_version": 1,
+        "model_type": "Бизнес-модели",
+
+        "business_customer": " Мельников Никита Анатольевич",
+        "business_customer_departament": "Департамент розничного CRM",
+        "significance_validity": "Не оценивалась",
+
+
+        "ds_department": "ДАДМ",
+        "developing_end_date": "16.08.2022",
+
+
+
+
+
+
+
+        "active_model": 0,
+
+
+
+
+
+
+
+
+
+
+
+
+
+        "segment_name": "Клиенты с предодобренным предложением PACL TOPUP",
+
+
+
+
+
+
+
+
+
+        "assignment_contractor": "Пашин Александр Евгеньевич (4055381)",
+
+
+
+
+
+
+
+
+        "date_of_it_introduction_into_operation": " 08.11.2022",
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        "rfd": "RFD-800",
+        "model_name_dadm": "Модель отклика+одобрения по продукту PACL topup",
+        "ds_stream": "Моделирование РБ",
+
+
+        "model_epic_05": "MODRB-732",
+
+
+        "solution_to_implement_model": "Внедряется",
+
+
+        "custom_model_id": "model3038-v1",
+        "custom_model_type": "Градиентный бустинг (Gradient Boosting)",
+        "release": "RM-71996",
+        "model_epic_09": "MODELAPP-1078"
+
+
+
+
+    },
+    {
+
+        "system_model_id": "82dfbc5d-2a04-11ed-b6c0-0a58010205b6",
+        "group_company": "Банк ВТБ(ПАО)",
+        "model_id": "model1643-v1",
+        "model_version": 1,
+
+
+        "business_customer": "Кадырова Екатерина Радиевна",
+        "business_customer_departament": "Департамент розничных кредитных рисков",
+        "significance_validity": "Низкая",
+
+
+        "ds_department": "ДАДМ",
+        "developing_end_date": "01.02.2022",
+
+
+
+
+
+
+
+        "active_model": 1,
+
+
+
+
+
+
+
+
+
+
+
+
+
+        "segment_name": "Клиентская просрочка 61-90 дней",
+
+
+
+
+
+
+
+
+
+        "assignment_contractor": "Шпак Мария Владимировна",
+
+
+
+
+
+
+
+
+        "date_of_it_introduction_into_operation": "24.06.2022",
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        "rfd": "RFD-818",
+        "model_name_dadm": "Модель оценки риска углубления просрочки для РКК (61-90)",
+        "ds_stream": "Моделирование РБ",
+        "model_epic_04": "DE-854",
+        "model_epic_04_date": "31.01.2022",
+        "model_epic_05": "MODRB-609",
+
+
+        "solution_to_implement_model": "Внедряется",
+        "model_epic_07": "DE-855",
+        "model_epic_07_date": "31.01.2022",
+        "custom_model_id": 10510034,
+        "custom_model_type": "Градиентный бустинг (Gradient Boosting)",
+        "release": "RM-26100",
+        "model_epic_09": "MODELAPP-699",
+        "model_epic_11": "MODELSOL-1618",
+        "model_epic_11_date": "########"
+
+
+    },
+    {
+
+        "system_model_id": "7ad4aff4-1fa0-11ec-b149-0242ac11000d",
+        "group_company": "Банк ВТБ(ПАО)",
+        "model_id": "model1802-v1",
+        "model_version": 1,
+
+
+        "business_customer": "Кадырова Екатерина Радиевна",
+        "business_customer_departament": "Департамент розничных кредитных рисков",
+        "significance_validity": "Низкая",
+
+
+        "ds_department": "ДАДМ",
+        "developing_end_date": "01.02.2022",
+
+
+
+
+
+
+
+        "active_model": 1,
+
+
+
+
+
+
+
+
+
+
+
+
+
+        "segment_name": "Клиентская просрочка 91-120 дней",
+
+
+
+
+
+
+
+
+
+        "assignment_contractor": "Шпак Мария Владимировна",
+
+
+
+
+
+
+
+
+        "date_of_it_introduction_into_operation": "24.06.2022",
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        "rfd": "RFD-818",
+        "model_name_dadm": "Модель оценки риска углубления просрочки для РКК (91-120)",
+        "ds_stream": "Моделирование РБ",
+        "model_epic_04": "DE-854",
+        "model_epic_04_date": "31.01.2022",
+        "model_epic_05": "MODRB-609",
+
+
+        "solution_to_implement_model": "Внедряется",
+        "model_epic_07": "DE-855",
+        "model_epic_07_date": "31.01.2022",
+        "custom_model_id": 10510034,
+        "custom_model_type": "Градиентный бустинг (Gradient Boosting)",
+        "release": "RM-26100",
+        "model_epic_09": "MODELAPP-699",
+        "model_epic_11": "MODELSOL-1618",
+        "model_epic_11_date": "########"
+
+
+    },
+    {
+
+        "system_model_id": "7844dfbf-8ffd-11ec-bac6-0242ac11000d",
+        "group_company": "Банк ВТБ(ПАО)",
+        "model_id": "model1806-v1",
+        "model_version": 1,
+
+
+        "business_customer": "Кадырова Екатерина Радиевна",
+        "business_customer_departament": "Департамент розничных кредитных рисков",
+        "significance_validity": "Низкая",
+
+
+        "ds_department": "ДАДМ",
+        "developing_end_date": "01.02.2022",
+
+
+
+
+
+
+
+        "active_model": 1,
+
+
+
+
+
+
+
+
+
+
+
+
+
+        "segment_name": "Клиентская просрочка 121-150 дней",
+
+
+
+
+
+
+
+
+
+        "assignment_contractor": "Шпак Мария Владимировна",
+
+
+
+
+
+
+
+
+        "date_of_it_introduction_into_operation": "24.06.2022",
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        "rfd": "RFD-818",
+        "model_name_dadm": "Модель оценки риска углубления просрочки для РКК (121-150)",
+        "ds_stream": "Моделирование РБ",
+        "model_epic_04": "DE-854",
+        "model_epic_04_date": "31.01.2022",
+        "model_epic_05": "MODRB-609",
+
+
+        "solution_to_implement_model": "Внедряется",
+        "model_epic_07": "DE-855",
+        "model_epic_07_date": "31.01.2022",
+        "custom_model_id": 10510034,
+        "custom_model_type": "Градиентный бустинг (Gradient Boosting)",
+        "release": "RM-26100",
+        "model_epic_09": "MODELAPP-699",
+        "model_epic_11": "MODELSOL-1618",
+        "model_epic_11_date": "########"
+
+
+    },
+    {
+
+        "system_model_id": "704b5b24-8b6f-11ec-bac6-0242ac11000d",
+        "group_company": "Банк ВТБ(ПАО)",
+        "model_id": "model3342-v3",
+        "model_version": 3,
+
+
+        "business_customer": " Разин Алексей Николаевич",
+        "business_customer_departament": "Департамент розничных кредитных рисков",
+        "significance_validity": "Низкая",
+
+
+        "ds_department": "ДАДМ",
+        "developing_end_date": "05.07.2022",
+
+
+
+
+
+
+
+        "active_model": 1,
+
+
+
+
+
+
+
+
+
+
+
+
+
+        "segment_name": "Продукт: КН, КК; Зарплатность: неЗП; Каналы: реактив",
+
+
+
+
+
+
+
+
+
+        "assignment_contractor": "Громов Александр Дмитриевич",
+
+
+
+
+
+
+
+
+        "date_of_it_introduction_into_operation": "26.11.2022",
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        "rfd": "RFD-944",
+        "model_name_dadm": "Модель дохода ВТБ v2 + Модель дохода Эквифакс, реактив (УЗ) и проактив",
+        "ds_stream": "Моделирование РБ",
+
+
+        "model_epic_05": "MODRB-665",
+
+
+        "solution_to_implement_model": "Внедряется",
+        "model_epic_07": "DE-962",
+        "model_epic_07_date": "19.07.2022",
+        "custom_model_id": "10511043",
+        "custom_model_type": "Градиентный бустинг (Gradient Boosting)",
+        "release": "RM-42881",
+        "model_epic_09": "MODELAPP-802"
+
+
+
+
+    },
+    {
+
+        "system_model_id": "6a68c629-e5a1-11ed-870d-0a5801030275",
+        "group_company": "Банк ВТБ(ПАО)",
+        "model_id": "model3547-v1",
+        "model_version": 1,
+        "model_type": "Бизнес-модели",
+
+        "business_customer": "Мельников Никита Анатольевич",
+        "business_customer_departament": "Департамент розничного CRM",
+        "significance_validity": "Низкая",
+
+
+        "ds_department": "ДАДМ",
+        "developing_end_date": "21.09.2022",
+
+
+
+
+
+
+
+        "active_model": 0,
+
+
+
+
+
+
+
+
+
+
+
+
+
+        "segment_name": "Активная клиентская база",
+
+
+
+
+
+
+
+
+
+        "assignment_contractor": "Юдочев Дмитрий Владимирович",
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        "rfd": "RFD-1738",
+        "model_name_dadm": "CRM. Модель утилизации предложения КН",
+        "ds_stream": "Моделирование РБ",
+
+
+        "model_epic_05": "MODRB-953",
+
+
+        "solution_to_implement_model": "Внедряется",
+
+
+
+
+
+        "model_epic_09": "MODELAPP-1224"
+
+
+
+
+    },
+    {
+
+        "system_model_id": "6a4c3450-6519-11ed-a9f8-0a5801050287",
+        "group_company": "Банк ВТБ(ПАО)",
+        "model_id": "model4289-v1",
+        "model_version": 1,
+        "model_type": "Бизнес-модели",
+
+        "business_customer": " Разин Алексей Николаевич",
+        "business_customer_departament": "Департамент розничных кредитных рисков",
+        "significance_validity": "Нет данных",
+
+
+        "ds_department": "ДАДМ",
+        "developing_end_date": "11.04.2023",
+
+
+
+
+
+
+
+        "active_model": 0,
+
+
+
+
+
+
+
+
+
+
+
+
+
+        "segment_name": "Нет данных",
+
+
+
+
+
+
+
+
+
+        "assignment_contractor": "Громов Александр Дмитриевич",
+
+
+
+
+
+
+
+
+        "date_of_it_introduction_into_operation": "31.12.2022",
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        "rfd": "RFD-3004",
+        "model_name_dadm": "Модель дохода. ПДН. Клиенты неЗП, с согласием на запрос в БКИ, реактив",
+        "ds_stream": "Моделирование РБ",
+
+
+        "model_epic_05": "MODRB-1258",
+
+
+        "solution_to_implement_model": "Внедряется",
+
+
+        "custom_model_id": 10511047,
+        "custom_model_type": "Градиентный бустинг (Gradient Boosting)",
+
+
+
+
+        "model_epic_12": "DE-3606, DE-4140",
+        "model_epic_12_date": "03.07.2023"
+    },
+    {
+
+        "system_model_id": "59632863-d1f7-11eb-8c85-0242ac11000d",
+        "group_company": "Банк ВТБ(ПАО)",
+        "model_id": "model3344-v1",
+        "model_version": 1,
+        "model_type": "Бизнес-модели",
+
+        "business_customer": " Соловьёв Дмитрий Александрович (4049732)",
+        "business_customer_departament": "Департамент анализа данных и моделирования",
+        "significance_validity": "Низкая",
+
+
+        "ds_department": "ДАДМ",
+        "developing_end_date": "05.07.2022",
+
+
+
+
+
+
+
+        "active_model": 1,
+
+
+
+
+
+
+
+
+
+
+
+
+
+        "segment_name": "Нет",
+
+
+
+
+
+
+
+
+
+        "assignment_contractor": " Берестнев Дмитрий Алексеевич",
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        "rfd": "RFD-1336",
+        "model_name_dadm": "IT4IT. Определение наиболее подходящей рабочей группы для Инцидента на основании Краткого и Полного описаний (IM. Подбор РГ)",
+        "ds_stream": "Модели партнерств и платформы больших данных",
+
+
+        "model_epic_05": "MODELPPBD-168",
+
+
+        "solution_to_implement_model": "Не внедряется",
+
+
+
+        "custom_model_type": "Бустинг",
+
+        "model_epic_09": "MODELAPP-1091"
+
+
+
+
+    },
+    {
+
+        "system_model_id": "59632863-d1f7-11eb-8c85-0242ac11000d",
+        "group_company": "Банк ВТБ(ПАО)",
+        "model_id": "model2226-v1",
+        "model_version": 1,
+        "model_type": "Бизнес-модели",
+
+        "business_customer": " Клочкова Ирина Сергеевна",
+        "business_customer_departament": "Департамент операционной поддержки бизнеса",
+        "significance_validity": "Низкая",
+
+
+        "ds_department": "ДАДМ",
+        "developing_end_date": "27.09.2022",
+
+
+
+
+
+
+
+        "active_model": 0,
+
+
+
+
+
+
+
+
+
+
+
+
+
+        "segment_name": "нет",
+
+
+
+
+
+
+
+
+
+        "assignment_contractor": " Суржко Денис Андреевич",
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        "rfd": "RFD-844",
+        "model_name_dadm": "ДОПБ. Проект. Модель ВСП - оптимизация налично-денежного обращения в рамках замены системы ИАС Наличность ",
+        "ds_stream": "Моделирование RnD",
+        "model_epic_04": "DE-1239",
+        "model_epic_04_date": "14.06.2022",
+        "model_epic_05": "MODELRND-817",
+        "model_epic_05a": "MODELRND-650",
+        "data_completion_of_stage_05a": "05.07.2022",
+        "solution_to_implement_model": "Не внедряется",
+        "model_epic_07": "DE-1243",
+
+
+        "custom_model_type": "Ансамбль  моделей",
+
+        "model_epic_09": "MODELAPP-1768"
+
+
+
+
+    },
+    {
+
+        "system_model_id": "591396a6-4d24-11ec-80d2-0242ac11000d",
+        "group_company": "Банк ВТБ(ПАО)",
+        "model_id": "model1944-v1",
+        "model_version": 1,
+        "model_type": "Бизнес-модели",
+
+        "business_customer": " Устюгов Андрей Анатольевич",
+        "business_customer_departament": "Департамент клиентского обслуживания",
+        "significance_validity": "Низкая",
+
+
+        "ds_department": "ДАДМ",
+        "developing_end_date": "21.10.2022",
+
+
+
+
+
+
+
+        "active_model": 0,
+
+
+
+
+
+
+
+
+
+
+
+
+
+        "segment_name": "Розница",
+
+
+
+
+
+
+
+
+
+        "assignment_contractor": " Суржко Денис Андреевич",
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        "rfd": "RFD-36",
+        "model_name_dadm": "Проект 891 Потоковая аналитика: ДКО. Разработка моделей (причины звонка)",
+        "ds_stream": "Моделирование RnD",
+
+
+        "model_epic_05": "MODELRND-656",
+
+
+        "solution_to_implement_model": "Внедряется",
+
+
+
+        "custom_model_type": "Линейная (Линейная/Логистическая регрессия)",
+        "release": "Вне ПИМ"
+
+
+
+
+
+    },
+    {
+
+        "system_model_id": "5386e345-fe80-11eb-b149-0242ac11000d",
+        "group_company": "Банк ВТБ(ПАО)",
+        "model_id": "model3401-v1",
+        "model_version": 1,
+
+
+        "business_customer": "Кадырова Екатерина Радиевна",
+        "business_customer_departament": "Департамент розничных кредитных рисков",
+        "significance_validity": "Низкая",
+
+
+        "ds_department": "ДАДМ",
+        "developing_end_date": "17.12.2022",
+
+
+
+
+
+
+
+        "active_model": 1,
+
+
+
+
+
+
+
+
+
+
+
+
+
+        "segment_name": "Клиенты с просроченной задолженностью 30-60 дней ",
+
+
+
+
+
+
+
+
+
+        "assignment_contractor": "Кадырова Екатерина Радиевна",
+
+
+
+
+
+
+
+
+        "date_of_it_introduction_into_operation": "31.01.2023",
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        "rfd": "RFD-1906",
+        "model_name_dadm": "Модель оценки риска углубления просрочки 31-60 (лог.рег.)",
+        "ds_stream": "Моделирование РБ",
+        "model_epic_04": "DE-1976",
+        "model_epic_04_date": "18.11.2022",
+        "model_epic_05": "MODRB-1057",
+
+
+        "solution_to_implement_model": "Внедряется",
+        "model_epic_07": "DE-2004",
+        "model_epic_07_date": "20.12.2022",
+        "custom_model_id": "model3401-v1",
+        "custom_model_type": "Линейная (Линейная/Логистическая регрессия) + NLP",
+        "release": "RM-75167",
+        "model_epic_09": "MODELAPP-1333",
+
+
+        "model_epic_12": "DE-1979",
+        "model_epic_12_date": "22.09.2022"
+    },
+    {
+
+        "system_model_id": "5386e345-fe80-11eb-b149-0242ac11000d",
+        "group_company": "Банк ВТБ(ПАО)",
+        "model_id": "model3384-v1",
+        "model_version": 1,
+
+
+        "business_customer": "Кадырова Екатерина Радиевна",
+        "business_customer_departament": "Департамент розничных кредитных рисков",
+        "significance_validity": "Низкая",
+
+
+        "ds_department": "ДАДМ",
+        "developing_end_date": "17.12.2022",
+
+
+
+
+
+
+
+        "active_model": 1,
+
+
+
+
+
+
+
+
+
+
+
+
+
+        "segment_name": "Клиенты с просроченной задолженностью 61-90 дней",
+
+
+
+
+
+
+
+
+
+        "assignment_contractor": " Кадырова Екатерина Радиевна",
+
+
+
+
+
+
+
+
+        "date_of_it_introduction_into_operation": "31.01.2023",
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        "rfd": "RFD-1906",
+        "model_name_dadm": "Модель оценки риска углубления просрочки 61-90 (лог.рег.)",
+        "ds_stream": "Моделирование РБ",
+        "model_epic_04": "DE-1976",
+        "model_epic_04_date": "18.11.2022",
+        "model_epic_05": "MODRB-1057",
+
+
+        "solution_to_implement_model": "Внедряется",
+        "model_epic_07": "DE-2004",
+        "model_epic_07_date": "20.12.2022",
+        "custom_model_id": "model3384-v1",
+        "custom_model_type": "Линейная (Линейная/Логистическая регрессия) + NLP",
+        "release": "RM-75167",
+        "model_epic_09": "MODELAPP-1333",
+
+
+        "model_epic_12": "DE-1979",
+        "model_epic_12_date": "22.09.2022"
+    },
+    {
+
+        "system_model_id": "5386e345-fe80-11eb-b149-0242ac11000d",
+        "group_company": "Банк ВТБ(ПАО)",
+        "model_id": "model2224-v1",
+        "model_version": 1,
+        "model_type": "Бизнес-модели > Прочие модели",
+
+        "business_customer": " Зирнык Евгений Викторович",
+        "business_customer_departament": "Департамент администрирования региональной сети",
+        "significance_validity": "-",
+
+
+        "ds_department": "ДАДМ",
+        "developing_end_date": "27.09.2022",
+
+
+
+
+
+
+
+        "active_model": 0,
+
+
+
+
+
+
+
+
+
+
+
+
+
+        "segment_name": "нет",
+
+
+
+
+
+
+
+
+
+        "assignment_contractor": " Суржко Денис Андреевич",
+
+
+
+
+
+
+
+
+        "date_of_it_introduction_into_operation": "28.01.2023",
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        "rfd": "RFD-2012",
+        "model_name_dadm": "ДАРС. Модельный анализ показателя CIR' на полных промышленных данных",
+        "ds_stream": "Моделирование RnD",
+        "model_epic_04": "DE-1985",
+        "model_epic_04_date": "27.09.2022",
+        "model_epic_05": "MODELRND-808",
+
+
+        "solution_to_implement_model": "Внедряется",
+        "model_epic_07": "DE-2086",
+        "model_epic_07_date": "20.12.2022",
+        "custom_model_id": "model2224-v1",
+        "custom_model_type": "Ансамбль моделей + Линейная (Линейная/Логистическая регрессия) + Расчетный фактор",
+
+        "model_epic_09": "MODELAPP-940"
+
+
+
+
+    },
+    {
+
+        "system_model_id": "534e644e-6b08-11ed-a9f8-0a5801050287",
+        "group_company": "Банк ВТБ(ПАО)",
+        "model_id": "model2223-v1",
+        "model_version": 1,
+        "model_type": "Бизнес-модели > Прочие модели",
+
+        "business_customer": " Зирнык Евгений Викторович",
+        "business_customer_departament": "Департамент администрирования региональной сети",
+        "significance_validity": "-",
+
+
+        "ds_department": "ДАДМ",
+        "developing_end_date": "27.09.2022",
+
+
+
+
+
+
+
+        "active_model": 0,
+
+
+
+
+
+
+
+
+
+
+
+
+
+        "segment_name": "нет",
+
+
+
+
+
+
+
+
+
+        "assignment_contractor": " Суржко Денис Андреевич",
+
+
+
+
+
+
+
+
+        "date_of_it_introduction_into_operation": "28.01.2023",
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        "rfd": "RFD-2011",
+        "model_name_dadm": "ДАРС. Модельный анализ показателя PL' на полных промышленных данных",
+        "ds_stream": "Моделирование RnD",
+        "model_epic_04": "DE-1985",
+        "model_epic_04_date": "27.09.2022",
+        "model_epic_05": "MODELRND-807",
+
+
+        "solution_to_implement_model": "Внедряется",
+        "model_epic_07": "DE-2086",
+        "model_epic_07_date": "20.12.2022",
+        "custom_model_id": "model2223-v1",
+        "custom_model_type": "Ансамбль моделей + Линейная (Линейная/Логистическая регрессия) + Расчетный фактор",
+
+        "model_epic_09": "MODELAPP-940"
+
+
+
+
+    },
+    {
+
+        "system_model_id": "534e644e-6b08-11ed-a9f8-0a5801050287",
+        "group_company": "Банк ВТБ(ПАО)",
+        "model_id": "model4047-v1",
+        "model_version": 1,
+        "model_type": "Бизнес-модели",
+
+        "business_customer": "Доронина Мария Сергеевна",
+        "business_customer_departament": "Департамент анализа данных и моделирования",
+        "significance_validity": "Низкая",
+
+
+        "ds_department": "ДАДМ",
+        "developing_end_date": "01.01.2023",
+
+
+
+
+
+
+
+        "active_model": 0,
+
+
+
+
+
+
+
+
+
+
+
+
+
+        "segment_name": "Иное",
+
+
+
+
+
+
+
+
+
+        "assignment_contractor": " Пудовкина Анна Юрьевна",
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        "rfd": "RFD-1333",
+        "model_name_dadm": "IT4IT. Динамическое определение порогов функционирования ИС, автоматическое выявление коллективных аномалий",
+        "ds_stream": "Модели партнерств и платформы больших данных",
+
+
+        "model_epic_05": "MODELPPBD-165, MODELPPBD-275",
+        "model_epic_05a": "MODELPPBD-451",
+        "data_completion_of_stage_05a": "14.06.2023",
+        "solution_to_implement_model": "Не внедряется",
+
+
+
+        "custom_model_type": "Линейная (Линейная/Логистическая регрессия)",
+
+        "model_epic_09": "MODELAPP-1088"
+
+
+
+
+    },
+    {
+
+        "system_model_id": "4d66aec1-c805-11ed-a97c-0a5801020269",
+        "group_company": "Дочерние компании в России",
+        "model_id": "model4063-v1",
+        "model_version": 1,
+        "model_type": "Бизнес-модели",
+
+        "business_customer": "Берестнев Дмитрий Алексеевич (4055168)",
+        "business_customer_departament": "Департамент анализа данных и моделирования",
+        "significance_validity": "Низкая",
+
+
+        "ds_department": "ДАДМ",
+        "developing_end_date": "20.12.2022",
+
+
+
+
+
+
+
+        "active_model": 0,
+
+
+
+
+
+
+
+
+
+
+
+
+
+        "segment_name": "нет",
+
+
+
+
+
+
+
+
+
+        "assignment_contractor": " Глушенко Анатолий Андреевич",
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        "rfd": "RFD-2299",
+        "model_name_dadm": "АБД. Генерация синтетических данных",
+        "ds_stream": "Модели партнерств и платформы больших данных",
+
+
+        "model_epic_05": "MODELPPBD-260",
+
+
+        "solution_to_implement_model": "Не внедряется",
+
+
+
+        "custom_model_type": "Бустинг"
+
+
+
+
+
+
+    },
+    {
+
+        "system_model_id": "4cbdb9e4-470a-11ec-80d2-0242ac11000d",
+        "group_company": "Банк ВТБ(ПАО)",
+        "model_id": "model3401-v1",
+        "model_version": 1,
+
+
+        "business_customer": "Кадырова Екатерина Радиевна",
+        "business_customer_departament": "Департамент розничных кредитных рисков",
+        "significance_validity": "Низкая",
+
+
+        "ds_department": "ДАДМ",
+        "developing_end_date": "09.04.2023",
+
+
+
+
+
+
+
+        "active_model": 0,
+
+
+
+
+
+
+
+
+
+
+
+
+
+        "segment_name": "Клиенты с просроченной задолженностью 30-60 дней ",
+
+
+
+
+
+
+
+
+
+        "assignment_contractor": " Шпак Мария Владимировна",
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        "rfd": "RFD-2895",
+        "model_name_dadm": "Анализ бустингов 31-150 (калибровка vs. разработка моделей)",
+        "ds_stream": "Моделирование РБ",
+        "model_epic_04": "DE-3209",
+        "model_epic_04_date": "03.07.2023",
+        "model_epic_05": "MODRB-1274",
+        "model_epic_05a": "MODRB-1275",
+        "data_completion_of_stage_05a": "02.07.2023",
+        "solution_to_implement_model": "Не внедряется",
+        "model_epic_07": "DE-3210",
+        "model_epic_07_date": "########",
+
+        "custom_model_type": "Линейная (Линейная/Логистическая регрессия)",
+
+        "model_epic_09": "MODELAPP-1579"
+
+
+
+
+    },
+    {
+
+        "system_model_id": "4cbdb9e4-470a-11ec-80d2-0242ac11000d",
+        "group_company": "Банк ВТБ(ПАО)",
+        "model_id": "model3384-v1",
+        "model_version": 1,
+
+
+        "business_customer": "Кадырова Екатерина Радиевна",
+        "business_customer_departament": "Департамент розничных кредитных рисков",
+        "significance_validity": "Низкая",
+
+
+        "ds_department": "ДАДМ",
+        "developing_end_date": "09.04.2023",
+
+
+
+
+
+
+
+        "active_model": 0,
+
+
+
+
+
+
+
+
+
+
+
+
+
+        "segment_name": "Клиенты с просроченной задолженностью 61-90 дней",
+
+
+
+
+
+
+
+
+
+        "assignment_contractor": " Шпак Мария Владимировна",
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        "rfd": "RFD-2895",
+        "model_name_dadm": "Анализ бустингов 31-150 (калибровка vs. разработка моделей)",
+        "ds_stream": "Моделирование РБ",
+        "model_epic_04": "DE-3209",
+        "model_epic_04_date": "03.07.2023",
+        "model_epic_05": "MODRB-1274",
+        "model_epic_05a": "MODRB-1275",
+        "data_completion_of_stage_05a": "02.07.2023",
+        "solution_to_implement_model": "Не внедряется",
+        "model_epic_07": "DE-3210",
+        "model_epic_07_date": "########",
+
+        "custom_model_type": "Линейная (Линейная/Логистическая регрессия)",
+        "model_epic_09": "MODELAPP-1579"
+    },
+    {
+        "system_model_id": "455cb484-8155-11ed-a9f8-0a5801050287",
+        "group_company": "Банк ВТБ(ПАО)",
+        "model_id": "model2063-v1",
+        "model_version": 1,
+        "business_customer": "Кадырова Екатерина Радиевна",
+        "business_customer_departament": "Департамент розничных кредитных рисков",
+        "significance_validity": "Низкая",
+        "ds_department": "ДАДМ",
+        "developing_end_date": "09.04.2023",
+        "active_model": 0,
+        "segment_name": "Клиентская просрочка 31-60 дней",
+        "assignment_contractor": " Шпак Мария Владимировна",
+        "rfd": "RFD-2895",
+        "model_name_dadm": "Анализ бустингов 31-150 (калибровка vs. разработка моделей)",
+        "ds_stream": "Моделирование РБ",
+        "model_epic_04": "DE-3209",
+        "model_epic_04_date": "03.07.2023",
+        "model_epic_05": "MODRB-1274",
+        "model_epic_05a": "MODRB-1275",
+        "data_completion_of_stage_05a": "02.07.2023",
+        "solution_to_implement_model": "Не внедряется",
+        "model_epic_07": "DE-3210",
+        "model_epic_07_date": "########",
+        "custom_model_type": "Бустинг",
+        "model_epic_09": "MODELAPP-1579"
+    },
+    {
+        "system_model_id": "445ec613-fe81-11eb-b149-0242ac11000d",
+        "group_company": "Банк ВТБ(ПАО)",
+        "model_id": "model2062-v1",
+        "model_version": 1,
+        "business_customer": "Кадырова Екатерина Радиевна",
+        "business_customer_departament": "Департамент розничных кредитных рисков",
+        "significance_validity": "Средняя",
+        "ds_department": "ДАДМ",
+        "developing_end_date": "09.04.2023",
+        "active_model": 0,
+        "segment_name": "Клиентская просрочка 31-60 дней",
+        "assignment_contractor": " Шпак Мария Владимировна",
+        "rfd": "RFD-2895",
+        "model_name_dadm": "Анализ бустингов 31-150 (калибровка vs. разработка моделей)",
+        "ds_stream": "Моделирование РБ",
+        "model_epic_04": "DE-3209",
+        "model_epic_04_date": "03.07.2023",
+        "model_epic_05": "MODRB-1274",
+        "model_epic_05a": "MODRB-1275",
+        "data_completion_of_stage_05a": "02.07.2023",
+        "solution_to_implement_model": "Не внедряется",
+        "model_epic_07": "DE-3210",
+        "model_epic_07_date": "########",
+        "custom_model_type": "Бустинг",
+        "model_epic_09": "MODELAPP-1579"
+    },
+    {
+        "system_model_id": "445ec613-fe81-11eb-b149-0242ac11000d",
+        "group_company": "Банк ВТБ(ПАО)",
+        "model_id": "model1643-v1",
+        "model_version": 1,
+        "business_customer": "Кадырова Екатерина Радиевна",
+        "business_customer_departament": "Департамент розничных кредитных рисков",
+        "significance_validity": "Низкая",
+        "ds_department": "ДАДМ",
+        "developing_end_date": "09.04.2023",
+        "active_model": 0,
+        "segment_name": "Клиентская просрочка 61-90 дней",
+        "assignment_contractor": " Шпак Мария Владимировна",
+        "rfd": "RFD-2895",
+        "model_name_dadm": "Анализ бустингов 31-150 (калибровка vs. разработка моделей)",
+        "ds_stream": "Моделирование РБ",
+        "model_epic_04": "DE-3209",
+        "model_epic_04_date": "03.07.2023",
+        "model_epic_05": "MODRB-1274",
+        "model_epic_05a": "MODRB-1275",
+        "data_completion_of_stage_05a": "02.07.2023",
+        "solution_to_implement_model": "Не внедряется",
+        "model_epic_07": "DE-3210",
+        "model_epic_07_date": "########",
+        "custom_model_type": "Бустинг",
+        "model_epic_09": "MODELAPP-1579"
+    },
+    {
+        "system_model_id": "4027846e-651a-11ed-a9f8-0a5801050287",
+        "group_company": "Банк ВТБ(ПАО)",
+        "model_id": "model1642-v1",
+        "model_version": 1,
+        "business_customer": "Кадырова Екатерина Радиевна",
+        "business_customer_departament": "Департамент розничных кредитных рисков",
+        "significance_validity": "Низкая",
+        "ds_department": "ДАДМ",
+        "developing_end_date": "09.04.2023",
+        "active_model": 0,
+        "segment_name": "Клиентская просрочка 61-90 дней",
+        "assignment_contractor": " Шпак Мария Владимировна",
+        "rfd": "RFD-2895",
+        "model_name_dadm": "Анализ бустингов 31-150 (калибровка vs. разработка моделей)",
+        "ds_stream": "Моделирование РБ",
+        "model_epic_04": "DE-3209",
+        "model_epic_04_date": "03.07.2023",
+        "model_epic_05": "MODRB-1274",
+        "model_epic_05a": "MODRB-1275",
+        "data_completion_of_stage_05a": "02.07.2023",
+        "solution_to_implement_model": "Не внедряется",
+        "model_epic_07": "DE-3210",
+        "model_epic_07_date": "########",
+        "custom_model_type": "Бустинг",
+        "model_epic_09": "MODELAPP-1579"
+    },
+    {
+        "system_model_id": "3f80515e-101e-11ec-b149-0242ac11000d",
+        "group_company": "Банк ВТБ(ПАО)",
+        "model_id": "model1802-v1",
+        "model_version": 1,
+        "business_customer": "Кадырова Екатерина Радиевна",
+        "business_customer_departament": "Департамент розничных кредитных рисков",
+        "significance_validity": "Низкая",
+        "ds_department": "ДАДМ",
+        "developing_end_date": "09.04.2023",
+        "active_model": 0,
+        "segment_name": "Клиентская просрочка 91-120 дней",
+        "assignment_contractor": " Шпак Мария Владимировна",
+        "rfd": "RFD-2895",
+        "model_name_dadm": "Анализ бустингов 31-150 (калибровка vs. разработка моделей)",
+        "ds_stream": "Моделирование РБ",
+        "model_epic_04": "DE-3209",
+        "model_epic_04_date": "03.07.2023",
+        "model_epic_05": "MODRB-1274",
+        "model_epic_05a": "MODRB-1275",
+        "data_completion_of_stage_05a": "02.07.2023",
+        "solution_to_implement_model": "Не внедряется",
+        "model_epic_07": "DE-3210",
+        "model_epic_07_date": "########",
+        "custom_model_type": "Бустинг",
+        "model_epic_09": "MODELAPP-1579"
+    },
+    {
+        "system_model_id": "2913cc6a-d1f8-11eb-8c85-0242ac11000d",
+        "group_company": "Банк ВТБ(ПАО)",
+        "model_id": "model1803-v1",
+        "model_version": 1,
+        "business_customer": "Кадырова Екатерина Радиевна",
+        "business_customer_departament": "Департамент розничных кредитных рисков",
+        "significance_validity": "Низкая",
+        "ds_department": "ДАДМ",
+        "developing_end_date": "09.04.2023",
+        "active_model": 0,
+        "segment_name": "Клиентская просрочка 91-120 дней",
+        "assignment_contractor": " Шпак Мария Владимировна",
+        "rfd": "RFD-2895",
+        "model_name_dadm": "Анализ бустингов 31-150 (калибровка vs. разработка моделей)",
+        "ds_stream": "Моделирование РБ",
+        "model_epic_04": "DE-3209",
+        "model_epic_04_date": "03.07.2023",
+        "model_epic_05": "MODRB-1274",
+        "model_epic_05a": "MODRB-1275",
+        "data_completion_of_stage_05a": "02.07.2023",
+        "solution_to_implement_model": "Не внедряется",
+        "model_epic_07": "DE-3210",
+        "model_epic_07_date": "########",
+        "custom_model_type": "Бустинг",
+        "model_epic_09": "MODELAPP-1579"
+    },
+    {
+        "system_model_id": "2913cc6a-d1f8-11eb-8c85-0242ac11000d",
+        "group_company": "Банк ВТБ(ПАО)",
+        "model_id": "model1804-v1",
+        "model_version": 1,
+        "business_customer": "Кадырова Екатерина Радиевна",
+        "business_customer_departament": "Департамент розничных кредитных рисков",
+        "significance_validity": "Низкая",
+        "ds_department": "ДАДМ",
+        "developing_end_date": "09.04.2023",
+        "segment_name": "Клиентская просрочка 90-120 дней",
+        "assignment_contractor": " Шпак Мария Владимировна",
+        "rfd": "RFD-2895",
+        "model_name_dadm": "Анализ бустингов 31-150 (калибровка vs. разработка моделей)",
+        "ds_stream": "Моделирование РБ",
+        "model_epic_04": "DE-3209",
+        "model_epic_04_date": "03.07.2023",
+        "model_epic_05": "MODRB-1274",
+        "model_epic_05a": "MODRB-1275",
+        "data_completion_of_stage_05a": "02.07.2023",
+        "solution_to_implement_model": "Не внедряется",
+        "model_epic_07": "DE-3210",
+        "model_epic_07_date": "########",
+        "custom_model_type": "Линейная (Линейная/Логистическая регрессия)",
+        "model_epic_09": "MODELAPP-1579"
+    }
+]
+    }

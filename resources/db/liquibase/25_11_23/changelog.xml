@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.1.xsd">
+ 
+    <include file="25_11_23_01_create_table_template_groups.sql" relativeToChangelogFile="true"/>
+    <include file="25_11_23_02_create_table_templates.sql" relativeToChangelogFile="true"/>
+    <include file="25_11_23_03_create_table_tags.sql" relativeToChangelogFile="true"/>
+    <include file="25_11_23_04_add_pk_table_template_groups.sql" relativeToChangelogFile="true"/>
+    <include file="25_11_23_05_add_pk_table_templates.sql" relativeToChangelogFile="true"/>
+    <include file="25_11_23_06_add_fk_table_templates_fk0.sql" relativeToChangelogFile="true"/>
+    <include file="25_11_23_07_add_pk_table_tags.sql" relativeToChangelogFile="true"/>
+
+</databaseChangeLog>

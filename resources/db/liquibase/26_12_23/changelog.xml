@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.1.xsd">
+ 
+    <include file="26_12_23_01_add_default_template_group.sql" relativeToChangelogFile="true"/>
+    <include file="26_12_23_02_add_pumr_default_template.sql" relativeToChangelogFile="true"/>
+    <include file="26_12_23_03_add_purs_default_template.sql" relativeToChangelogFile="true"/>
+    <include file="26_12_23_04_add_rwa_default_template.sql" relativeToChangelogFile="true"/>
+
+</databaseChangeLog>

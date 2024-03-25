@@ -1,0 +1,80 @@
+# Default values for mrms-backend.
+
+pullSecret: ci-dos
+
+replicaCount: 1
+
+image:
+  repository: nexus-ci.corp.dev.vtb/sumd-docker-lib/mrms-backend
+  tag: v1.0.0
+  pullPolicy: Always
+
+resources:
+  requests:
+    cpu: "300m"
+    memory: "1000Mi"
+  limits:
+    cpu: "600m"
+    memory: "2000Mi"
+
+secretName: ingress-tls
+
+ingress:
+  enabled: true
+  annotations: {}
+    # kubernetes.io/ingress.class: nginx
+    # kubernetes.io/tls-acme: "true"
+  hosts:
+    - host: mrms-backend-ds1-lpad01-sumd-team-sumcore-system.apps.ds1-lpad01.corp.dev.vtb
+      paths:
+        - pathType: ImplementationSpecific
+          backend:
+            service:
+              name: mrms-backend
+              port:
+                number: 3000
+  tls:
+    - secretName: ingress-tls
+      hosts:
+        - mrms-backend-ds1-lpad01-sumd-team-sumcore-system.apps.ds1-lpad01.corp.dev.vtb
+
+
+###Выбор worker ноды без GPU
+affinity:
+  enabled: false
+#  nodeAffinity:
+#    requiredDuringSchedulingIgnoredDuringExecution:
+#      nodeSelectorTerms:
+#        - matchExpressions:
+#            - key: nvidia.com/gpu.product
+#              operator: DoesNotExist
+
+### Выбор политики для автоскалирования количества подов - разкомментить требуемое
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 5
+  # targetCPUUtilizationPercentage: 80
+  # targetCPUAverageValue: 100m
+  # targetMemoryUtilizationPercentage: 80
+  # targetMemoryAverageValue: 200Mi
+
+secrets:
+  immutable:
+    enabled: true
+
+env:
+ SUM_PG_CONNECTION_NAME: sum
+ SUM_PG_HOST: d5sumd-pgc001lk.corp.dev.vtb
+ SUM_PG_PORT: 5432
+ SUM_PG_SCHEMA: postgres
+ RM_PG_CONNECTION_NAME: rm
+ RM_PG_HOST: d5sumd-pgc001lk.corp.dev.vtb
+ RM_PG_PORT: 5432
+ RM_PG_SCHEMA: mrms_db
+
+secret:
+ SUM_PG_USER: "sum_user"
+ SUM_PG_PASSWORD: "sum_user_pass"
+ RM_PG_USER: "rm_user"
+ RM_PG_PASSWORD: "rm_user_pass"
