@@ -1,7 +1,7 @@
 const sql = `
-  DELETE
-    FROM templates
-        WHERE template_id = $1
+DELETE
+FROM templates_new
+WHERE template_id = :template_id
 `
 
 export { sql };

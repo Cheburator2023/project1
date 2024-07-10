@@ -1,5 +1,26 @@
 # Semantic Versioning Changelog
 
+## [1.3.19](https://bitbucket.region.vtb.ru/scm/sumd/mrms-backend/compare/v1.3.18...v1.3.19) (2024-06-07)
+
+## [1.3.18](https://bitbucket.region.vtb.ru/scm/sumd/mrms-backend/compare/v1.3.17...v1.3.18) (2024-06-07)
+
+## [1.3.17](https://bitbucket.region.vtb.ru/scm/sumd/mrms-backend/compare/v1.3.16...v1.3.17) (2024-05-31)
+
+## [1.3.16](https://bitbucket.region.vtb.ru/scm/sumd/mrms-backend/compare/v1.3.15...v1.3.16) (2024-05-15)
+
+## [1.3.15](https://bitbucket.region.vtb.ru/scm/sumd/mrms-backend/compare/v1.3.14...v1.3.15) (2024-04-26)
+
+## [1.3.14](https://bitbucket.region.vtb.ru/scm/sumd/mrms-backend/compare/v1.3.13...v1.3.14) (2024-04-24)
+
+## [1.3.13](https://bitbucket.region.vtb.ru/scm/sumd/mrms-backend/compare/v1.3.12...v1.3.13) (2024-04-16)
+
+## [1.3.12](https://bitbucket.region.vtb.ru/scm/sumd/mrms-backend/compare/v1.3.11...v1.3.12) (2024-04-01)
+
+
+### Bug Fixes
+
+* third wave dadm ([3f3cc94](https://bitbucket.region.vtb.ru/scm/sumd/mrms-backend/commit/3f3cc9435dd99f5fb695dee03c540536dcd3fcc0))
+
 ## [1.3.11](https://bitbucket.region.vtb.ru/scm/sumd/mrms-backend/compare/v1.3.10...v1.3.11) (2024-03-21)
 
 ## [1.3.10](https://bitbucket.region.vtb.ru/scm/sumd/mrms-backend/compare/v1.3.9...v1.3.10) (2024-03-18)

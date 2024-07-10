@@ -1,6 +1,10 @@
 const sql = `
-  INSERT INTO templates (user_id, group_id, template_label, template_value)
-  VALUES ($1, $2, $3, $4);
+WITH template_rows AS (
+    INSERT INTO templates_new (user_id, template_name, public, template_value)
+    VALUES (:user_id, :template_name, :public, :template_value)
+    RETURNING *
+)
+SELECT * FROM template_rows
 `;
 
 export { sql };

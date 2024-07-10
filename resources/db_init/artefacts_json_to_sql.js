@@ -1,5 +1,5 @@
 let fs = require('fs');
-let file = fs.readFileSync('/Users/avechtomov/SUM/mrms-backend/resources/db_init/artefact_realizations_dadm.json', 'utf8');
+let file = fs.readFileSync('/Users/avechtomov_1/SUM/mrms-backend/resources/db_init/artefact_realization_dadm_2.json', 'utf8');
 let data = JSON.parse(file);
 console.log(data.models.length)
 
@@ -12,7 +12,7 @@ data.models.forEach(m => {
         }}
 });
 
-fs.writeFileSync('artefact_realization_result_data_dadm.sql', result.join('\n'))
+fs.writeFileSync('artefact_realization_result_data_dadm_2.sql', result.join('\n'))
 
 
 

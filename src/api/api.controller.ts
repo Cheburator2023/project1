@@ -1,11 +1,38 @@
-import { Controller, Post, Get, Put, Delete, Param, ValidationPipe, UsePipes, Body, ParseArrayPipe, Res, HttpStatus, Query, Req } from "@nestjs/common";
+import {
+  Controller,
+  Query,
+  Body,
+  Param,
+  Get,
+  Post,
+  Put,
+  Delete,
+  Req,
+  Res,
+  ParseArrayPipe,
+  HttpStatus,
+  HttpException
+} from "@nestjs/common";
+import { Response } from "express";
 import { ApiBody } from "@nestjs/swagger";
 import { ApiService } from "./api.service";
-import { ModelCreateDto, ModelsUpdateDto, ModelArtefactHistoryDto, ArtefactsUpdateDto } from "./dto/index.dto";
+import { ReportService } from "src/report/report.service";
+import {
+  ModelCreateDto,
+  ModelsUpdateDto,
+  ModelArtefactHistoryDto,
+  ArtefactsUpdateDto,
+  TemplateCreateDto,
+  TemplateUpdateDto,
+  FilterDto
+} from "./dto/index.dto";
 
 @Controller()
 export class ApiController {
-  constructor(private readonly apiService: ApiService) {
+  constructor(
+    private readonly apiService: ApiService,
+    private readonly reportService: ReportService
+  ) {
   }
 
   @Get("/models/")
@@ -13,7 +40,6 @@ export class ApiController {
     return this.apiService.getModels();
   }
 
-  @UsePipes(new ValidationPipe({ transform: true }))
   @Post("/model/create/")
   @ApiBody({ type: [ModelCreateDto] })
   async modelCreate(@Body(new ParseArrayPipe({ items: ModelCreateDto, whitelist: true })) artefacts: ModelCreateDto[], @Res() response) {
@@ -22,7 +48,6 @@ export class ApiController {
     return response.status(HttpStatus.CREATED).json(result[0]);
   }
 
-  @UsePipes(new ValidationPipe({ transform: true }))
   @Put("/models/update/")
   @ApiBody({ type: [ModelsUpdateDto] })
   async modelsUpdate(@Body(new ParseArrayPipe({ items: ModelsUpdateDto, whitelist: true })) modelsArtefacts: ModelsUpdateDto[], @Res() response) {
@@ -31,7 +56,6 @@ export class ApiController {
     return response.status(HttpStatus.ACCEPTED).json(result);
   }
 
-  @UsePipes(new ValidationPipe({ transform: true }))
   @Get("/model/artefact/history/")
   async getModelHistory(@Query() query: ModelArtefactHistoryDto, @Res() response) {
     const result = await this.apiService.getModelHistory(query);
@@ -39,48 +63,81 @@ export class ApiController {
     return response.status(HttpStatus.ACCEPTED).json(result);
   }
 
+  @Post("/template/create/")
+  async createTemplate(@Body() templateCreateDto: TemplateCreateDto, @Res() response, @Req() req) {
+    try {
+      const createdTemplate = await this.apiService.createTemplate(templateCreateDto, req.user);
+      return response.status(HttpStatus.OK).json(createdTemplate[0]);
+    } catch (error) {
+      if (error.message === "Template name already exists!") {
+        throw new HttpException({
+          statusCode: HttpStatus.CONFLICT,
+          message: "Такое название шаблона уже существует!"
+        }, HttpStatus.CONFLICT);
+      }
+
+      throw error;
+    }
+  }
+
+  @Put("/template/update/")
+  async updateTemplate(@Body() templateUpdateDto: TemplateUpdateDto, @Res() response, @Req() req) {
+    try {
+      const updatedTemplate = await this.apiService.updateTemplate(templateUpdateDto, req.user);
+      return response.status(HttpStatus.OK).json(updatedTemplate);
+    } catch (error) {
+      throw new HttpException({
+        statusCode: HttpStatus.CONFLICT,
+        message: error.message
+      }, HttpStatus.CONFLICT);
+    }
+  }
+
   @Get("/templates/")
-  getTemplates() {
-    return this.apiService.getTemplates();
+  async getTemplates(@Res() response, @Req() req) {
+    const result = await this.apiService.getTemplates(req.user);
+
+    return response.status(HttpStatus.ACCEPTED).json(result);
   }
 
-  @Get("/templates/:id/")
-  getTemplate(@Param("id") id) {
-    return this.apiService.getTemplate(id);
+  @Get("/template/:id/")
+  async getTemplate(@Param("id") id: number, @Res() response, @Req() req) {
+    const result = await this.apiService.getTemplate(id, req.user);
+
+    if (result.length) {
+      return response.status(HttpStatus.OK).json(result[0]);
+    } else {
+      response.status(HttpStatus.NOT_FOUND).json([]);
+    }
   }
 
-  // @Put("/templates/:id")
-  // updateTemplate(@Param("id") id) {
-  //   return this.apiService.updateTemplate(id);
-  // }
-  //
-  // @Post("/templates/")
-  // createTemplate() {
-  //   return this.apiService.createTemplate();
-  // }
-  //
-  @Delete("/templates/:id/")
-  deleteTemplate(@Param("id") id) {
-    return this.apiService.deleteTemplate(id);
-  }
+  @Delete("/template/delete/:id/")
+  async deleteTemplate(@Param("id") id: number, @Res() response) {
+    await this.apiService.deleteTemplate(id);
 
-  //
-  // @Get("/templates/group/")
-  // getTemplatesGroup() {
-  //   return this.apiService.getTemplatesGroup();
-  // }
+    return response.status(HttpStatus.ACCEPTED).json({ result: true });
+  }
 
   @Get("/artefacts/")
   async getClasses() {
     return this.apiService.getClasses();
   }
 
-  @UsePipes(new ValidationPipe({ transform: true }))
   @Put("/artefacts/update/")
   @ApiBody({ type: [ArtefactsUpdateDto] })
   async artefactsUpdate(@Body(new ParseArrayPipe({ items: ArtefactsUpdateDto, whitelist: true })) artefacts: ArtefactsUpdateDto[], @Res() response) {
     await this.apiService.artefactsUpdate(artefacts);
 
     return response.status(HttpStatus.OK).json({ result: true });
+  }
+
+  @Post("report")
+  async getReport(@Body() { filters }: FilterDto, @Res() res: Response) {
+    const data = await this.reportService.generateReportData(filters);
+    const xlsxBuffer = await this.reportService.generateExcel(data);
+
+    res.setHeader("Content-Disposition", "attachment; filename=report.xlsx");
+    res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+    res.send(xlsxBuffer);
   }
 }

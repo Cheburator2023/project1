@@ -327,7 +327,7 @@ INSERT INTO public.artefacts (artefact_id, artefact_tech_label, artefact_label, 
                               is_main_info_flg, is_class_flg, is_edit_flg, artefact_type_id, artefact_business_group_id,
                               is_multi_fill_flg, artefact_parent_id, artefact_parent_value, artefact_default_value,
                               is_default_value_flg, artefact_hint, artefact_regular_expression)
-VALUES (2036, 'bank_document', 'Банковский документ', 'Укажите банковский документ', null, '0', '0', '1', 4, 1, '0',
+VALUES (2036, 'bank_document', 'Банковский документ', 'Укажите банковский документ', null, '0', '0', '1', 1, 1, '0',
         null,
         null, null, null, 'Укажите банковский документ', null);
 
@@ -364,7 +364,7 @@ INSERT INTO public.artefacts (artefact_id, artefact_tech_label, artefact_label, 
                               is_multi_fill_flg, artefact_parent_id, artefact_parent_value, artefact_default_value,
                               is_default_value_flg, artefact_hint, artefact_regular_expression)
 VALUES (2040, 'developing_start_date', 'Дата начала разработки Модели', 'Укажите дату начала разработки Модели', null,
-        '0', '0', '1', 11, 1, '0', null,
+        '0', '0', '1', 4, 1, '0', null,
         null, null, null, 'Укажите дату начала разработки Модели', null);
 
 
@@ -373,7 +373,7 @@ INSERT INTO public.artefacts (artefact_id, artefact_tech_label, artefact_label, 
                               is_multi_fill_flg, artefact_parent_id, artefact_parent_value, artefact_default_value,
                               is_default_value_flg, artefact_hint, artefact_regular_expression)
 VALUES (2041, 'developing_end_date', 'Дата окончания разработки Модели', 'Укажите дату окончания разработки Модели',
-        null, '0', '0', '1', 11, 1, '0', null,
+        null, '0', '0', '1', 4, 1, '0', null,
         null, null, null, 'Укажите дату окончания разработки Модели', null);
 
 
@@ -490,7 +490,7 @@ INSERT INTO public.artefacts (artefact_id, artefact_tech_label, artefact_label, 
                               is_multi_fill_flg, artefact_parent_id, artefact_parent_value, artefact_default_value,
                               is_default_value_flg, artefact_hint, artefact_regular_expression)
 VALUES (2054, 'validation_report_approve_date', 'Дата утверждения отчета валидации',
-        'Укажите дату утверждения отчета валидации', null, '0', '0', '1', 3, 1, '0', null,
+        'Укажите дату утверждения отчета валидации', null, '0', '0', '1', 4, 1, '0', null,
         null, null, null, 'Укажите дату утверждения отчета валидации', null);
 
 
@@ -501,7 +501,7 @@ INSERT INTO public.artefacts (artefact_id, artefact_tech_label, artefact_label, 
 VALUES (2055, 'validation_result_approve_date',
         'Информация о дате утверждения на УО МР текущих (действующих) агрегированных результатов валидации',
         'Укажите информацию о дате утверждения на УО МР текущих (действующих) агрегированных результатов валидации',
-        null, '0', '0', '1', 1, 1, '0', null,
+        null, '0', '0', '1', 4, 1, '0', null,
         null, null, null,
         'Укажите информацию о дате утверждения на УО МР текущих (действующих) агрегированных результатов валидации',
         null);
@@ -843,7 +843,7 @@ INSERT INTO public.artefacts (artefact_id, artefact_tech_label, artefact_label, 
                               is_multi_fill_flg, artefact_parent_id, artefact_parent_value, artefact_default_value,
                               is_default_value_flg, artefact_hint, artefact_regular_expression)
 VALUES (2094, 'validity_approve_date', 'Дата утверждения РС / Модели / Алгоритма', 'Дата утверждения РС / Модели / Алгоритма', null, '0',
-        '0', '1', 1, 1, '0', null,
+        '0', '1', 4, 1, '0', null,
         null, null, null, 'Дата утверждения РС / Модели / Алгоритма', null);
 
 INSERT INTO public.artefacts (artefact_id, artefact_tech_label, artefact_label, artefact_desc, artefact_context,

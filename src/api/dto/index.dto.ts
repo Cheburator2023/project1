@@ -1,6 +1,21 @@
-import { ArrayNotEmpty, IsArray, IsEnum, IsNotEmpty, IsNumber, IsPositive, IsString, IsUUID, ValidateIf, ValidateNested } from "class-validator";
+import {
+  ArrayNotEmpty,
+  IsArray,
+  IsBoolean,
+  IsEnum,
+  IsNotEmpty,
+  IsNumber,
+  IsObject,
+  IsOptional,
+  IsPositive,
+  IsString,
+  IsUUID,
+  ValidateIf,
+  ValidateNested
+} from "class-validator";
 import { ApiProperty } from "@nestjs/swagger";
 import { Type } from "class-transformer";
+import { ApiModelPropertyOptional } from "@nestjs/swagger/dist/decorators/api-model-property.decorator";
 
 export class ModelCreateDto {
   @ApiProperty({
@@ -103,8 +118,8 @@ export class ArtefactsUpdateDto {
 }
 
 export enum ModelSource {
-  SUM = 'sum',
-  SUM_RM = 'sum-rm'
+  SUM = "sum",
+  SUM_RM = "sum-rm"
 }
 
 export class ModelArtefactHistoryDto {
@@ -124,4 +139,83 @@ export class ModelArtefactHistoryDto {
 
   @IsEnum(ModelSource)
   model_source: string;
+}
+
+type TemplateValueType = {
+  [key: string]: string[]
+}
+
+export class TemplateCreateDto {
+  @ApiProperty({
+    example: "Template Name"
+  })
+  @IsNotEmpty()
+  @IsString()
+  template_name: string;
+
+  @ApiProperty({
+    example: true
+  })
+  @IsBoolean()
+  public: boolean;
+
+  @ApiProperty({
+    example: { "target": [], "record_id": ["not-null"], "model_desc": [] }
+  })
+  @IsObject()
+  template_value: TemplateValueType;
+}
+
+export class TemplateUpdateDto {
+  @ApiProperty({
+    example: 1
+  })
+  @IsNumber()
+  @IsPositive()
+  template_id: number;
+
+  @ApiModelPropertyOptional({
+    example: "Template Name"
+  })
+  @IsNotEmpty()
+  @IsString()
+  @IsOptional()
+  template_name: string;
+
+  @ApiModelPropertyOptional({
+    example: true
+  })
+  @IsBoolean()
+  @IsOptional()
+  @IsOptional()
+  public?: boolean;
+
+  @ApiModelPropertyOptional({
+    example: { "target": [], "record_id": ["not-null"], "model_desc": [] }
+  })
+  @IsObject()
+  @IsOptional()
+  template_value: TemplateValueType;
+}
+
+type FilterValueType = {
+  [key: string]: string[]
+}
+
+export class FilterDto {
+  @ApiProperty({
+    type: "object",
+    additionalProperties: {
+      type: "array",
+      items: { type: "string" }
+    },
+    example: {
+      "target": [],
+      "record_id": ["not-null"],
+      "model_desc": []
+    }
+  })
+
+  @IsObject()
+  filters: FilterValueType;
 }
