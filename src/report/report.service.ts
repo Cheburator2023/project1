@@ -201,7 +201,6 @@ FROM models_new m
           if (filter.includes("not-null")) {
             conditions.push("arr.artefact_string_value IS NOT NULL");
           }
-
           conditions.push(`arr.artefact_string_value = ANY (ARRAY [${ formattedFilter }])`);
       }
 
@@ -215,7 +214,7 @@ FROM models_new m
           filters[artefact.artefact_tech_label] || []
         );
         return filterCondition
-          ? `arr.artefact_id = ${ artefact.artefact_id }${ filterCondition }`
+          ? `(arr.artefact_id = ${ artefact.artefact_id }${ filterCondition })`
           : "";
       })
       .filter(Boolean)
@@ -225,7 +224,9 @@ FROM models_new m
       return `SELECT system_model_id FROM sorted_artefacts AS arr GROUP BY system_model_id`;
     }
 
-    return `SELECT system_model_id FROM sorted_artefacts AS arr WHERE ${mappedArtefacts} GROUP BY system_model_id HAVING COUNT(DISTINCT artefact_id) = ${mappedArtefacts.split(" OR ").length}`;
+    const artefactCount = artefacts.filter(artefact => filters[artefact.artefact_tech_label]?.length).length;
+
+    return `SELECT system_model_id FROM sorted_artefacts AS arr WHERE ${mappedArtefacts} GROUP BY system_model_id HAVING COUNT(DISTINCT artefact_id) = ${artefactCount}`;
   }
 
   generateFilterModelSqlRequest = ({

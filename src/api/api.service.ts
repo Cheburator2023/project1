@@ -10,6 +10,7 @@ import { sql as parentSumRmModel } from "./sql/models/sum-rm/parent";
 import { sql as createModel } from "./sql/models/sum-rm/create";
 import { sql as updateModelName } from "./sql/models/sum-rm/update_model_name";
 import { sql as updateModelDesc } from "./sql/models/sum-rm/update_model_desc";
+import { sql as updateUsageConfirm } from "./sql/models/sum-rm/update_usage_confirm";
 import { sql as getSumRmModelHistory } from "./sql/models/sum-rm/history";
 import { sql as getSumModelHistory } from "./sql/models/sum/history";
 import { sql as allSumModels } from "./sql/models/sum/all";
@@ -31,7 +32,7 @@ import {
   TemplateUpdateDto
 } from "./dto/index.dto";
 
-import { isValidDate, formatDateTime } from "src/system/common/utils";
+import { isValidDate, parseDate, formatDateTime } from "src/system/common/utils";
 
 @Injectable({ scope: Scope.REQUEST })
 export class ApiService {
@@ -71,7 +72,7 @@ export class ApiService {
 
     const artefacts_from_mrm = await this.getClasses();
     const artefacts_type_date = artefacts_from_mrm.data
-      .filter(item => item.artefact_type_id === "4")
+      .filter(item => item.artefact_type_id === "4" || item.artefact_type_id === "11")
       .map(artefact => artefact.artefact_tech_label);
     artefacts_type_date.push("update_date");
 
@@ -79,7 +80,7 @@ export class ApiService {
       for (let key in item) {
         if (artefacts_type_date.indexOf(key) > -1 && item[key] !== null) {
           if (isValidDate(item[key])) {
-            item[key] = formatDateTime(new Date(item[key]));
+            item[key] = formatDateTime(parseDate(item[key]));
           } else {
             item[key] = "invalid date";
           }
@@ -168,6 +169,7 @@ export class ApiService {
     const namesForUpdate = [];
     const descriptionsForUpdate = [];
     const artefactsForUpdate = [];
+    const usageConfirmForUpdate = [];
 
     modelsArtefacts.map(modelItem => {
       const model_id = modelItem.model_id;
@@ -183,6 +185,12 @@ export class ApiService {
           case ("model_desc"):
             descriptionsForUpdate.push({ model_id, model_desc: artefactItem.artefact_string_value });
             break;
+          case ("usage_confirm_date_q1"):
+          case ("usage_confirm_date_q2"):
+          case ("usage_confirm_date_q3"):
+          case ("usage_confirm_date_q4"):
+            usageConfirmForUpdate.push({ model_id, confirmation_date: artefactItem.artefact_string_value });
+            break;
           default:
             artefactsForUpdate.push({ model_id, ...artefactItem });
         }
@@ -197,6 +205,10 @@ export class ApiService {
       await this.mrmDatabaseService.queryAll(updateModelDesc, descriptionsForUpdate);
     }
 
+    if (usageConfirmForUpdate.length) {
+      await this.mrmDatabaseService.queryAll(updateUsageConfirm, usageConfirmForUpdate);
+    }
+
     if (artefactsForUpdate.length) {
       await this.mrmDatabaseService.queryAll(updateArtefacts, artefactsForUpdate);
     }
@@ -204,7 +216,27 @@ export class ApiService {
     if (modelIds.length) {
       const result = await this.mrmDatabaseService.queryAll(oneSumRmModels, modelIds.map(model_id => ({ model_id })));
 
-      return result.flat();
+      const artefacts_from_mrm = await this.getClasses();
+      const artefacts_type_date = artefacts_from_mrm.data
+        .filter(item => item.artefact_type_id === "4" || item.artefact_type_id === "11")
+        .map(artefact => artefact.artefact_tech_label);
+      artefacts_type_date.push("update_date");
+
+      const formatted_result = result.flat().map((item: Record<string, any>): Record<string, any> => {
+        for (let key in item) {
+          if (artefacts_type_date.indexOf(key) > -1 && item[key] !== null) {
+            if (isValidDate(item[key])) {
+              item[key] = formatDateTime(parseDate(item[key]));
+            } else {
+              item[key] = "invalid date";
+            }
+          }
+        }
+
+        return item;
+      });
+
+      return formatted_result;
     }
   }
 
@@ -366,7 +398,61 @@ export class ApiService {
         artefact_type_id: "1",
         artefact_type_desc: "text",
         values: []
-      }
+      },
+      {
+        artefact_id: 2119,
+        artefact_tech_label: "create_date",
+        artefact_label: "Дата создания модели",
+        is_edit_flg: "0",
+        artefact_desc: "",
+        artefact_type_id: "4",
+        artefact_type_desc: "date",
+        values: []
+      },
+      {
+        artefact_id: 2201,
+        artefact_tech_label: "usage_confirm_date_q1",
+        artefact_label: "1Q",
+        is_edit_flg: "1",
+        artefact_desc: "",
+        artefact_type_id: "11",
+        artefact_type_desc: "quarterly_date",
+        values: [],
+        start_date_depend_artefact: 'create_date'
+      },
+      {
+        artefact_id: 2202,
+        artefact_tech_label: "usage_confirm_date_q2",
+        artefact_label: "2Q",
+        is_edit_flg: "1",
+        artefact_desc: "",
+        artefact_type_id: "11",
+        artefact_type_desc: "quarterly_date",
+        values: [],
+        start_date_depend_artefact: 'create_date'
+      },
+      {
+        artefact_id: 2203,
+        artefact_tech_label: "usage_confirm_date_q3",
+        artefact_label: "3Q",
+        is_edit_flg: "1",
+        artefact_desc: "",
+        artefact_type_id: "11",
+        artefact_type_desc: "quarterly_date",
+        values: [],
+        start_date_depend_artefact: 'create_date'
+      },
+      {
+        artefact_id: 2204,
+        artefact_tech_label: "usage_confirm_date_q4",
+        artefact_label: "4Q",
+        is_edit_flg: "1",
+        artefact_desc: "",
+        artefact_type_id: "11",
+        artefact_type_desc: "quarterly_date",
+        values: [],
+        start_date_depend_artefact: 'create_date'
+      },
     ];
     const cl = data => data.reduce(
       (prev, curr) => {
@@ -420,3 +506,4 @@ export class ApiService {
     return;
   }
 }
+

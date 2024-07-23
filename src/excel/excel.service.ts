@@ -1,7 +1,7 @@
 import { Injectable } from "@nestjs/common";
 import * as excel from "excel4node";
 
-import { isValidDate, formatDateTime } from "src/system/common/utils";
+import { isValidDate, parseDate, formatDateTime } from "src/system/common/utils";
 
 interface Header {
   key: string;
@@ -21,22 +21,29 @@ interface Data {
 @Injectable()
 export class ExcelService {
   setCellValue(cell: excel.Cell, header: Header, item: Item): void {
-    if (header?.type === "link") {
-      cell.link(item[header.key as keyof Item]);
-    } else if (header?.type === "number") {
-      cell.number(item[header.key as keyof Item]);
-    } else if (header?.type === "date") {
-      if (isValidDate(item[header.key as keyof Item])) {
-        cell.string(formatDateTime(new Date(item[header.key as keyof Item])));
-      } else {
-        cell.string("invalid date");
-      }
-    } else {
-      cell.string(
-        item[header.key as keyof Item]
-          ? item[header.key as keyof Item].toString()
-          : "Нет данных"
-      );
+    const value = item[header.key as keyof Item];
+    if (!header?.type) {
+      cell.string(value ? value.toString() : "Нет данных");
+      return;
+    }
+
+    switch (header.type) {
+      case "link":
+        cell.link(value);
+        break;
+      case "number":
+        cell.number(value);
+        break;
+      case "date":
+        if (value) {
+          cell.string(isValidDate(value) ? formatDateTime(parseDate(value)) : "invalid date");
+        } else {
+          cell.string("Нет данных");
+        }
+        break;
+      default:
+        cell.string(value ? value.toString() : "Нет данных");
+        break;
     }
   }
 

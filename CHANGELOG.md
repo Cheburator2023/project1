@@ -1,11 +1,10 @@
 # Semantic Versioning Changelog
 
-## [1.3.20](https://git.sfera.inno.local/SUMD/mrms-backend/compare/v1.3.19...v1.3.20) (2024-07-16)
+## [1.3.22](https://bitbucket.region.vtb.ru/scm/sumd/mrms-backend/compare/v1.3.21...v1.3.22) (2024-07-16)
 
+## [1.3.21](https://bitbucket.region.vtb.ru/scm/sumd/mrms-backend/compare/v1.3.20...v1.3.21) (2024-07-15)
 
-### Bug Fixes
-
-* **pg:** fix postgre port usage ([98d19c4](https://git.sfera.inno.local/SUMD/mrms-backend/commit/98d19c4ebdeef0c6c9572f88ca2b441e00d577c3))
+## [1.3.20](https://bitbucket.region.vtb.ru/scm/sumd/mrms-backend/compare/v1.3.19...v1.3.20) (2024-07-15)
 
 ## [1.3.19](https://bitbucket.region.vtb.ru/scm/sumd/mrms-backend/compare/v1.3.18...v1.3.19) (2024-06-07)
 

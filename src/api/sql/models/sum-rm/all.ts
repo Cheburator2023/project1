@@ -8,9 +8,30 @@ SELECT m_.model_name,
                 (CAST('model' || m_.root_model_id AS Varchar(4000)) || '-v' ||
                  CAST(m_.model_version AS Varchar(4000)))
             ELSE NULL END) AS model_alias,
+       m_.create_date,
        m_.update_date,
-       a.*
+       a.*,
+       mupq.usage_confirm_date_q1,
+       mupq.usage_confirm_date_q2,
+       mupq.usage_confirm_date_q3,
+       mupq.usage_confirm_date_q4
 FROM models_new m_
+    LEFT JOIN (SELECT model_id               AS system_model_id,
+                           MAX(CASE
+                                   WHEN EXTRACT(QUARTER FROM muc.confirmation_date) = 1 THEN muc.confirmation_date
+                                   ELSE NULL END) AS usage_confirm_date_q1,
+                           MAX(CASE
+                                   WHEN EXTRACT(QUARTER FROM muc.confirmation_date) = 2 THEN muc.confirmation_date
+                                   ELSE NULL END) AS usage_confirm_date_q2,
+                           MAX(CASE
+                                   WHEN EXTRACT(QUARTER FROM muc.confirmation_date) = 3 THEN muc.confirmation_date
+                                   ELSE NULL END) AS usage_confirm_date_q3,
+                           MAX(CASE
+                                   WHEN EXTRACT(QUARTER FROM muc.confirmation_date) = 4 THEN muc.confirmation_date
+                                   ELSE NULL END) AS usage_confirm_date_q4
+                    FROM model_usage_confirm muc
+                    WHERE EXTRACT(YEAR FROM muc.confirmation_date) = EXTRACT(YEAR FROM CURRENT_DATE)
+                    GROUP BY model_id) AS mupq ON m_.model_id = mupq.system_model_id
          INNER JOIN (
     SELECT model_id                                                                   AS system_model_id,
            MAX(CASE WHEN artefact_id = 2000 THEN artefact_string_value ELSE NULL END) AS record_id,

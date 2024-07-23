@@ -13,7 +13,7 @@ export class SumDatabaseService {
       host: process.env.SUM_PG_HOST,
       database: process.env.SUM_PG_SCHEMA,
       password: process.env.SUM_PG_PASSWORD,
-      port: process.env.RM_PG_PORT
+      port: 5432
     })
   }
 
