@@ -13,7 +13,7 @@ export class MrmDatabaseService {
       host: process.env.RM_PG_HOST,
       database: process.env.RM_PG_SCHEMA,
       password: process.env.RM_PG_PASSWORD,
-      port: 5432
+      port: process.env.RM_PG_PORT
     })
   }
 

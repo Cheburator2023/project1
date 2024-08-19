@@ -45,13 +45,25 @@ SELECT m_.model_id                                                              
        dm_.DS_DEPARTMENT                                                                                     AS ds_stream,
        'Нет данных'                                                                                          AS assignment_contractor,
        dm_.solution_to_implement_model,
-       'Нет данных'                                                                                          AS model_status,
+       COALESCE(NULLIF(m_.models_is_active_flg, ''), '1')                                                    AS active_model,
+       bpmn.bpmn_key_desc                                                                                    AS model_status,
        'Нет данных'                                                                                          AS model_status_assignee,
        mupq.usage_confirm_date_q1,
        mupq.usage_confirm_date_q2,
        mupq.usage_confirm_date_q3,
        mupq.usage_confirm_date_q4
 FROM models m_
+         LEFT JOIN (
+    SELECT bp.bpmn_key_desc, model_id
+    FROM bpmn_processes AS bp
+             LEFT JOIN (
+        SELECT model_id,
+               bpmn_key_id,
+               ROW_NUMBER() OVER (PARTITION BY model_id ORDER BY create_dttm DESC) AS row_num
+        FROM bpmn_instances
+    ) bi ON bp.bpmn_key_id = bi.bpmn_key_id
+    WHERE bi.row_num = 1
+) AS bpmn ON m_.model_id = bpmn.model_id
          LEFT JOIN (SELECT model_id               AS system_model_id,
                            MAX(CASE
                                    WHEN EXTRACT(QUARTER FROM muc.confirmation_date) = 1 THEN muc.confirmation_date
@@ -116,8 +128,7 @@ FROM models m_
                       AND artefact_id IN (7, 58, 67, 782, 783, 785, 309, 786, 787, 788, 789, 33, 34, 103, 277, 249,
                                           346, 790, 791, 788, 507, 792, 793, 256, 794, 795, 796, 797, 798, 123)
                     GROUP BY model_id) dm_ ON m_.model_id = dm_.model_id
-WHERE m_.MODELS_IS_ACTIVE_FLG = '1'
-  AND m_.MODEL_DESC != 'AutoML'
+WHERE m_.MODEL_DESC != 'AutoML'
 `;
 
 export { sql };
