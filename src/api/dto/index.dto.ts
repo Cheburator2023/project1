@@ -18,6 +18,15 @@ import { ApiProperty } from "@nestjs/swagger";
 import { Type } from "class-transformer";
 import { ApiModelPropertyOptional } from "@nestjs/swagger/dist/decorators/api-model-property.decorator";
 
+export class ModelsDto {
+  @ApiModelPropertyOptional({
+    example: 'YYYY-MM-DD'
+  })
+  @IsOptional()
+  @IsDateString()
+  date: string
+}
+
 export class ModelCreateDto {
   @ApiProperty({
     example: "record_id"

@@ -19,6 +19,7 @@ import { ApiService } from "./api.service";
 import { MetricsService } from "src/metrics/metrics.service";
 import { ReportService } from "src/report/report.service";
 import {
+  ModelsDto,
   ModelCreateDto,
   ModelsUpdateDto,
   ModelArtefactHistoryDto,
@@ -39,8 +40,8 @@ export class ApiController {
   }
 
   @Get("/models/")
-  models() {
-    return this.apiService.getModels();
+  models(@Query() query: ModelsDto) {
+    return this.apiService.getModels(query);
   }
 
   @Post("/model/create/")

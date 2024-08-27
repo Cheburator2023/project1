@@ -152,10 +152,24 @@ FROM models_new m_
                         ORDER BY artefact_realizations_new.effective_from DESC
                         ) AS rn
              FROM artefact_realizations_new
+             WHERE (
+                           :filter_date::Date IS NULL
+                           OR TO_DATE(CAST(:filter_date AS Varchar(4000))
+                               , 'YYYY-MM-DD')
+                               BETWEEN DATE_TRUNC('day'
+                               , effective_from)::Date
+                               AND DATE_TRUNC('day'
+                               , effective_to)::Date
+                       )
          ) ar
     WHERE ar.rn = 1
     GROUP BY model_id
-) a ON m_.model_id = a.system_model_id;
+) a ON m_.model_id = a.system_model_id
+WHERE (
+              :filter_date::Date IS NULL
+              OR TO_DATE(CAST(:filter_date AS Varchar(4000)), 'YYYY-MM-DD')
+                  BETWEEN DATE_TRUNC('day', m_.create_date)::Date AND DATE_TRUNC('day', NOW())::Date
+          )
 `;
 
 export { sql };

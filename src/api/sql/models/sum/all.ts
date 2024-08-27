@@ -116,8 +116,18 @@ LEFT JOIN (SELECT model_id               AS system_model_id,
                     WHERE effective_to = TO_TIMESTAMP('9999-12-3123:59:59', 'YYYY-MM-DDHH24:MI:SS')
                       AND artefact_id IN (7, 58, 67, 782, 783, 785, 309, 786, 787, 788, 789, 33, 34, 103, 277, 249,
                                           346, 790, 791, 788, 507, 792, 793, 256, 794, 795, 796, 797, 798, 123)
+                      AND (
+                            :filter_date::Date IS NULL
+                            OR TO_DATE(CAST(:filter_date AS Varchar(4000)), 'YYYY-MM-DD')
+                                BETWEEN DATE_TRUNC('day', effective_from)::Date AND DATE_TRUNC('day', effective_to)::Date
+                        )
                     GROUP BY model_id) dm_ ON m_.model_id = dm_.model_id
 WHERE m_.MODEL_DESC != 'AutoML'
+  AND (
+        :filter_date::Date IS NULL
+        OR TO_DATE(CAST(:filter_date AS Varchar(4000)), 'YYYY-MM-DD')
+            BETWEEN DATE_TRUNC('day', m_.create_date)::Date AND DATE_TRUNC('day', NOW())::Date
+    )
 `;
 
 export { sql };
