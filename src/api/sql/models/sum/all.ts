@@ -46,25 +46,14 @@ SELECT m_.model_id                                                              
        'Нет данных'                                                                                          AS assignment_contractor,
        dm_.solution_to_implement_model,
        COALESCE(NULLIF(m_.models_is_active_flg, ''), '1')                                                    AS active_model,
-       bpmn.bpmn_key_desc                                                                                    AS model_status,
+       'Нет данных'                                                                                          AS model_status,
        'Нет данных'                                                                                          AS model_status_assignee,
        mupq.usage_confirm_date_q1,
        mupq.usage_confirm_date_q2,
        mupq.usage_confirm_date_q3,
        mupq.usage_confirm_date_q4
 FROM models m_
-         LEFT JOIN (
-    SELECT bp.bpmn_key_desc, model_id
-    FROM bpmn_processes AS bp
-             LEFT JOIN (
-        SELECT model_id,
-               bpmn_key_id,
-               ROW_NUMBER() OVER (PARTITION BY model_id ORDER BY create_dttm DESC) AS row_num
-        FROM bpmn_instances
-    ) bi ON bp.bpmn_key_id = bi.bpmn_key_id
-    WHERE bi.row_num = 1
-) AS bpmn ON m_.model_id = bpmn.model_id
-         LEFT JOIN (SELECT model_id               AS system_model_id,
+LEFT JOIN (SELECT model_id               AS system_model_id,
                            MAX(CASE
                                    WHEN EXTRACT(QUARTER FROM muc.confirmation_date) = 1 THEN muc.confirmation_date
                                    ELSE NULL END) AS usage_confirm_date_q1,

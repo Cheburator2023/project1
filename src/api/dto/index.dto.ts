@@ -10,6 +10,7 @@ import {
   IsPositive,
   IsString,
   IsUUID,
+  IsDateString,
   ValidateIf,
   ValidateNested
 } from "class-validator";
@@ -218,4 +219,27 @@ export class FilterDto {
 
   @IsObject()
   filters: FilterValueType;
+}
+
+export class MetricsDto {
+  @ApiModelPropertyOptional({
+    example: 'YYYY-MM-DD'
+  })
+  @IsOptional()
+  @IsDateString()
+  startDate: string
+
+  @ApiModelPropertyOptional({
+    example: 'YYYY-MM-DD'
+  })
+  @IsOptional()
+  @IsDateString()
+  endDate: string
+
+  @ApiModelPropertyOptional({
+    example: 'stream_mame'
+  })
+  @IsOptional()
+  @IsString()
+  stream: string
 }

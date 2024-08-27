@@ -16,6 +16,7 @@ import {
 import { Response } from "express";
 import { ApiBody } from "@nestjs/swagger";
 import { ApiService } from "./api.service";
+import { MetricsService } from "src/metrics/metrics.service";
 import { ReportService } from "src/report/report.service";
 import {
   ModelCreateDto,
@@ -24,13 +25,15 @@ import {
   ArtefactsUpdateDto,
   TemplateCreateDto,
   TemplateUpdateDto,
-  FilterDto
+  FilterDto,
+  MetricsDto
 } from "./dto/index.dto";
 
 @Controller()
 export class ApiController {
   constructor(
     private readonly apiService: ApiService,
+    private readonly metricsService: MetricsService,
     private readonly reportService: ReportService
   ) {
   }
@@ -129,6 +132,13 @@ export class ApiController {
     await this.apiService.artefactsUpdate(artefacts);
 
     return response.status(HttpStatus.OK).json({ result: true });
+  }
+
+  @Get("/metrics/")
+  async getMetrics(@Query() query: MetricsDto, @Res() response) {
+    const data = await this.metricsService.getMetrics()
+
+    return response.status(HttpStatus.OK).json(data);
   }
 
   @Post("report")
