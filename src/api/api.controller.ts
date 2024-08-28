@@ -16,10 +16,12 @@ import {
 import { Response } from "express";
 import { ApiBody } from "@nestjs/swagger";
 import { ApiService } from "./api.service";
+import { ModelsService } from "src/modules/models/models.service";
 import { MetricsService } from "src/metrics/metrics.service";
 import { ReportService } from "src/report/report.service";
 import {
   ModelsDto,
+  CompareModelsDto,
   ModelCreateDto,
   ModelsUpdateDto,
   ModelArtefactHistoryDto,
@@ -34,14 +36,24 @@ import {
 export class ApiController {
   constructor(
     private readonly apiService: ApiService,
+    private readonly modelsService: ModelsService,
     private readonly metricsService: MetricsService,
     private readonly reportService: ReportService
   ) {
   }
 
+  @Get("/models/compare/")
+  async compareModels(@Query() query: CompareModelsDto, @Res() response) {
+    const data = await this.modelsService.getModelsByDates(query)
+
+    return response.status(HttpStatus.OK).json(data);
+  }
+
   @Get("/models/")
-  models(@Query() query: ModelsDto) {
-    return this.apiService.getModels(query);
+  async models(@Query() query: ModelsDto, @Res() response) {
+    const data = await this.modelsService.getModels(query)
+
+    return response.status(HttpStatus.OK).json(data);
   }
 
   @Post("/model/create/")

@@ -27,6 +27,20 @@ export class ModelsDto {
   date: string
 }
 
+export class CompareModelsDto {
+  @ApiModelPropertyOptional({
+    example: 'YYYY-MM-DD'
+  })
+  @IsDateString()
+  firstDate: string
+
+  @ApiModelPropertyOptional({
+    example: 'YYYY-MM-DD'
+  })
+  @IsDateString()
+  secondDate: string
+}
+
 export class ModelCreateDto {
   @ApiProperty({
     example: "record_id"
