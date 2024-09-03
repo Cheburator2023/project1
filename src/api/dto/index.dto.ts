@@ -10,12 +10,36 @@ import {
   IsPositive,
   IsString,
   IsUUID,
+  IsDateString,
   ValidateIf,
   ValidateNested
 } from "class-validator";
 import { ApiProperty } from "@nestjs/swagger";
 import { Type } from "class-transformer";
 import { ApiModelPropertyOptional } from "@nestjs/swagger/dist/decorators/api-model-property.decorator";
+
+export class ModelsDto {
+  @ApiModelPropertyOptional({
+    example: 'YYYY-MM-DD'
+  })
+  @IsOptional()
+  @IsDateString()
+  date: string
+}
+
+export class CompareModelsDto {
+  @ApiModelPropertyOptional({
+    example: 'YYYY-MM-DD'
+  })
+  @IsDateString()
+  firstDate: string
+
+  @ApiModelPropertyOptional({
+    example: 'YYYY-MM-DD'
+  })
+  @IsDateString()
+  secondDate: string
+}
 
 export class ModelCreateDto {
   @ApiProperty({
@@ -218,4 +242,27 @@ export class FilterDto {
 
   @IsObject()
   filters: FilterValueType;
+}
+
+export class MetricsDto {
+  @ApiModelPropertyOptional({
+    example: 'YYYY-MM-DD'
+  })
+  @IsOptional()
+  @IsDateString()
+  startDate: string
+
+  @ApiModelPropertyOptional({
+    example: 'YYYY-MM-DD'
+  })
+  @IsOptional()
+  @IsDateString()
+  endDate: string
+
+  @ApiModelPropertyOptional({
+    example: 'stream_mame'
+  })
+  @IsOptional()
+  @IsString()
+  stream: string
 }

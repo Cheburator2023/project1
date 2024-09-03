@@ -24,6 +24,7 @@ import { sql as getClasses } from "./sql/artefacts/classes";
 import { sql as updateArtefacts } from "./sql/artefacts/update";
 import { sql as newArtefacts } from "./sql/artefacts/new";
 import {
+  ModelsDto,
   ArtefactsUpdateDto,
   ModelArtefactHistoryDto,
   ModelCreateDto,
@@ -43,9 +44,15 @@ export class ApiService {
   ) {
   }
 
-  async getModels() {
-    const result_from_sum = await this.sumDatabaseService.query(allSumModels, {});
-    const result_from_mrm = await this.mrmDatabaseService.query(allSumRmModels, {});
+  async getModels({ date }: ModelsDto) {
+    const filter_date = date || null;
+
+    const result_from_sum = await this.sumDatabaseService.query(allSumModels, {
+      filter_date
+    });
+    const result_from_mrm = await this.mrmDatabaseService.query(allSumRmModels, {
+      filter_date
+    });
 
     mergeAttr(result_from_sum, result_from_mrm, "system_model_id");
 

@@ -53,7 +53,7 @@ SELECT m_.model_id                                                              
        mupq.usage_confirm_date_q3,
        mupq.usage_confirm_date_q4
 FROM models m_
-LEFT JOIN (SELECT model_id               AS system_model_id,
+         LEFT JOIN (SELECT model_id               AS system_model_id,
                            MAX(CASE
                                    WHEN EXTRACT(QUARTER FROM muc.confirmation_date) = 1 THEN muc.confirmation_date
                                    ELSE NULL END) AS usage_confirm_date_q1,

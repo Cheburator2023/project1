@@ -16,28 +16,44 @@ import {
 import { Response } from "express";
 import { ApiBody } from "@nestjs/swagger";
 import { ApiService } from "./api.service";
+import { ModelsService } from "src/modules/models/models.service";
+import { MetricsService } from "src/metrics/metrics.service";
 import { ReportService } from "src/report/report.service";
 import {
+  ModelsDto,
+  CompareModelsDto,
   ModelCreateDto,
   ModelsUpdateDto,
   ModelArtefactHistoryDto,
   ArtefactsUpdateDto,
   TemplateCreateDto,
   TemplateUpdateDto,
-  FilterDto
+  FilterDto,
+  MetricsDto
 } from "./dto/index.dto";
 
 @Controller()
 export class ApiController {
   constructor(
     private readonly apiService: ApiService,
+    private readonly modelsService: ModelsService,
+    private readonly metricsService: MetricsService,
     private readonly reportService: ReportService
   ) {
   }
 
+  @Get("/models/compare/")
+  async compareModels(@Query() query: CompareModelsDto, @Res() response) {
+    const data = await this.modelsService.getModelsByDates(query)
+
+    return response.status(HttpStatus.OK).json(data);
+  }
+
   @Get("/models/")
-  models() {
-    return this.apiService.getModels();
+  async models(@Query() query: ModelsDto, @Res() response) {
+    const data = await this.modelsService.getModels(query)
+
+    return response.status(HttpStatus.OK).json(data);
   }
 
   @Post("/model/create/")
@@ -129,6 +145,13 @@ export class ApiController {
     await this.apiService.artefactsUpdate(artefacts);
 
     return response.status(HttpStatus.OK).json({ result: true });
+  }
+
+  @Get("/metrics/")
+  async getMetrics(@Query() query: MetricsDto, @Res() response) {
+    const data = await this.metricsService.getMetrics()
+
+    return response.status(HttpStatus.OK).json(data);
   }
 
   @Post("report")
