@@ -21,6 +21,7 @@ import { MetricsService } from "src/metrics/metrics.service";
 import { ReportService } from "src/report/report.service";
 import {
   ModelsDto,
+  ModelWithRelationsDto,
   CompareModelsDto,
   ModelCreateDto,
   ModelsUpdateDto,
@@ -40,6 +41,13 @@ export class ApiController {
     private readonly metricsService: MetricsService,
     private readonly reportService: ReportService
   ) {
+  }
+
+  @Get("/model/relations/")
+  async getModelWithRelations(@Query() query: ModelWithRelationsDto, @Res() response) {
+    const data = await this.modelsService.getModelWithRelations(query)
+
+    return response.status(HttpStatus.OK).json(data);
   }
 
   @Get("/models/compare/")

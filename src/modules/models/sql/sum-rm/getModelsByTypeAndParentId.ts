@@ -2,12 +2,12 @@ const sql = `
 SELECT m_.model_name,
        m_.model_desc,
        m_.model_version,
-       'sum-rm'            AS model_source,
+       'sum-rm'                                           AS model_source,
        (CASE
             WHEN m_.root_model_id != '' THEN
                 (CAST('model' || m_.root_model_id AS Varchar(4000)) || '-v' ||
                  CAST(m_.model_version AS Varchar(4000)))
-            ELSE NULL END) AS model_alias,
+            ELSE NULL END)                                AS model_alias,
        m_.create_date,
        m_.update_date,
        a.*,
@@ -15,18 +15,9 @@ SELECT m_.model_name,
        mupq.usage_confirm_date_q2,
        mupq.usage_confirm_date_q3,
        mupq.usage_confirm_date_q4,
-       COALESCE(nullif(m_.models_is_active_flg, ''), '1') AS active_model,
-       CASE
-           WHEN EXISTS(
-                   SELECT 1
-                   FROM models_new mn
-                   WHERE mn.parent_model_id = m_.model_id
-                     AND mn.type_id IS NOT NULL
-               ) THEN '1'
-           ELSE '0'
-           END AS relations
+       COALESCE(NULLIF(m_.models_is_active_flg, ''), '1') AS active_model
 FROM models_new m_
-    LEFT JOIN (SELECT model_id               AS system_model_id,
+         LEFT JOIN (SELECT model_id               AS system_model_id,
                            MAX(CASE
                                    WHEN EXTRACT(QUARTER FROM muc.confirmation_date) = 1 THEN muc.confirmation_date
                                    ELSE NULL END) AS usage_confirm_date_q1,
@@ -130,7 +121,7 @@ FROM models_new m_
            MAX(CASE WHEN artefact_id = 2083 THEN artefact_string_value ELSE NULL END) AS model_epic_07_date,
            MAX(CASE WHEN artefact_id = 2084 THEN artefact_string_value ELSE NULL END) AS custom_model_id,
            MAX(CASE WHEN artefact_id = 2085 THEN artefact_string_value ELSE NULL END) AS custom_model_type,
-           MAX(CASE WHEN artefact_id = 2086 THEN artefact_string_value ELSE NULL END) AS release,
+           MAX(CASE WHEN artefact_id = 2086 THEN artefact_string_value ELSE NULL END) AS RELEASE,
            MAX(CASE WHEN artefact_id = 2087 THEN artefact_string_value ELSE NULL END) AS model_epic_09,
            MAX(CASE WHEN artefact_id = 2088 THEN artefact_string_value ELSE NULL END) AS model_epic_11,
            MAX(CASE WHEN artefact_id = 2089 THEN artefact_string_value ELSE NULL END) AS model_epic_11_date,
@@ -161,24 +152,12 @@ FROM models_new m_
                         ORDER BY artefact_realizations_new.effective_from DESC
                         ) AS rn
              FROM artefact_realizations_new
-             WHERE (
-                           :filter_date::Date IS NULL
-                           OR TO_DATE(CAST(:filter_date AS Varchar(4000))
-                               , 'YYYY-MM-DD')
-                               BETWEEN DATE_TRUNC('day'
-                               , effective_from)::Date
-                               AND DATE_TRUNC('day'
-                               , effective_to)::Date
-                       )
          ) ar
     WHERE ar.rn = 1
     GROUP BY model_id
 ) a ON m_.model_id = a.system_model_id
-WHERE (
-              :filter_date::Date IS NULL
-              OR TO_DATE(CAST(:filter_date AS Varchar(4000)), 'YYYY-MM-DD')
-                  BETWEEN DATE_TRUNC('day', m_.create_date)::Date AND DATE_TRUNC('day', NOW())::Date
-          )
+WHERE type_id = :type_id
+  AND parent_model_id = :parent_model_id
 `
 
 export { sql }

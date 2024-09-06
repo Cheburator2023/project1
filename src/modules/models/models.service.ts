@@ -5,6 +5,8 @@ import { MrmDatabaseService } from 'src/system/mrm-database/database.service'
 import { sql as getSumModels } from './sql/sum/getModels'
 import { sql as getArtefacts } from './sql/sum/getArtefacts'
 import { sql as getSumRmModels } from './sql/sum-rm/getModels'
+import { sql as getSumRmModel } from './sql/sum-rm/getModel'
+import { sql as getModelsByTypeAndParentId } from './sql/sum-rm/getModelsByTypeAndParentId'
 
 import { isValidDate, parseDate, formatDateTime } from 'src/system/common/utils'
 
@@ -23,6 +25,25 @@ interface ModelsDto {
 interface CompareModelsDto {
     firstDate: string;
     secondDate: string;
+}
+
+interface ModelWithRelationsDto {
+    model_id: string;
+}
+
+interface ModelType {
+    id: number;
+    name: string;
+}
+
+interface ModelRelationsResponse {
+    data: {
+        card: Model & {
+            modules: Model[];
+            calibrations: Model[];
+            [key: string]: Model[];
+        };
+    }
 }
 
 interface Artefact {
@@ -86,6 +107,44 @@ export class ModelsService {
                 cards: groupedResults
             }
         }
+    }
+
+    async getModelWithRelations({ model_id }: ModelWithRelationsDto): Promise<ModelRelationsResponse> {
+        const mrmModel = await this.mrmDatabaseService.query(getSumRmModel, { model_id })
+
+        const modelTypes: ModelType[] = await this.mrmDatabaseService.query('SELECT * FROM model_types', {})
+
+        const modelTypeDict = this.createModelTypeDictionary(modelTypes)
+
+        const modules = await this.mrmDatabaseService.query(getModelsByTypeAndParentId, {
+            type_id: modelTypeDict.module,
+            parent_model_id: model_id
+        })
+
+        const calibrations = await this.mrmDatabaseService.query(getModelsByTypeAndParentId, {
+            type_id: modelTypeDict.calibration,
+            parent_model_id: model_id
+        })
+
+        return {
+            data: {
+                card: {
+                    ...mrmModel.pop(),
+                    modules: [...modules],
+                    calibrations: [...calibrations]
+                }
+            }
+        }
+    }
+
+    private createModelTypeDictionary(modelTypes: ModelType[]): Record<string, number> {
+        const dictionary: Record<string, number> = {}
+
+        modelTypes.forEach(type => {
+            dictionary[type.name] = type.id
+        })
+
+        return dictionary
     }
 
     private async fetchAndMergeModels(date: string | null): Promise<Model[]> {
@@ -210,6 +269,51 @@ export class ModelsService {
                 artefact_type_desc: 'date',
                 values: []
             },
+            {
+                artefact_id: 2201,
+                artefact_tech_label: 'usage_confirm_date_q1',
+                artefact_label: '1Q',
+                is_edit_flg: '1',
+                artefact_desc: '',
+                artefact_type_id: '11',
+                artefact_type_desc: 'quarterly_date',
+                values: [],
+                start_date_depend_artefact: 'create_date'
+            },
+            {
+                artefact_id: 2202,
+                artefact_tech_label: 'usage_confirm_date_q2',
+                artefact_label: '2Q',
+                is_edit_flg: '1',
+                artefact_desc: '',
+                artefact_type_id: '11',
+                artefact_type_desc: 'quarterly_date',
+                values: [],
+                start_date_depend_artefact: 'create_date'
+            },
+            {
+                artefact_id: 2203,
+                artefact_tech_label: 'usage_confirm_date_q3',
+                artefact_label: '3Q',
+                is_edit_flg: '1',
+                artefact_desc: '',
+                artefact_type_id: '11',
+                artefact_type_desc: 'quarterly_date',
+                values: [],
+                start_date_depend_artefact: 'create_date'
+            },
+            {
+                artefact_id: 2204,
+                artefact_tech_label: 'usage_confirm_date_q4',
+                artefact_label: '4Q',
+                is_edit_flg: '1',
+                artefact_desc: '',
+                artefact_type_id: '11',
+                artefact_type_desc: 'quarterly_date',
+                values: [],
+                start_date_depend_artefact: 'create_date'
+            },
+
             {
                 artefact_id: 2201,
                 artefact_tech_label: 'usage_confirm_date_q1',

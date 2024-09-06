@@ -4,6 +4,9 @@
 /.npmrc
 /certs
 
+# Env
+*.env.*
+
 # Logs
 logs
 *.log

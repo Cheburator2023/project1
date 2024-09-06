@@ -27,6 +27,15 @@ export class ModelsDto {
   date: string
 }
 
+export class ModelWithRelationsDto {
+  @ApiProperty({
+    example: '3009b53c-507d-11ed-9b68-0a5801020704',
+    format: 'uuid'
+  })
+  @IsUUID()
+  model_id: string
+}
+
 export class CompareModelsDto {
   @ApiModelPropertyOptional({
     example: 'YYYY-MM-DD'

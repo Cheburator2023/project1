@@ -14,17 +14,7 @@ SELECT m_.model_name,
        mupq.usage_confirm_date_q1,
        mupq.usage_confirm_date_q2,
        mupq.usage_confirm_date_q3,
-       mupq.usage_confirm_date_q4,
-       COALESCE(nullif(m_.models_is_active_flg, ''), '1') AS active_model,
-       CASE
-           WHEN EXISTS(
-                   SELECT 1
-                   FROM models_new mn
-                   WHERE mn.parent_model_id = m_.model_id
-                     AND mn.type_id IS NOT NULL
-               ) THEN '1'
-           ELSE '0'
-           END AS relations
+       mupq.usage_confirm_date_q4
 FROM models_new m_
     LEFT JOIN (SELECT model_id               AS system_model_id,
                            MAX(CASE
@@ -150,8 +140,7 @@ FROM models_new m_
            MAX(CASE WHEN artefact_id = 2105 THEN artefact_string_value ELSE NULL END) AS product_name,
            MAX(CASE WHEN artefact_id = 2106 THEN artefact_string_value ELSE NULL END) AS provides_piloting,
            MAX(CASE WHEN artefact_id = 2107 THEN artefact_string_value ELSE NULL END) AS operational_monitoring,
-           MAX(CASE WHEN artefact_id = 2108 THEN artefact_string_value ELSE NULL END) AS analytical_monitoring,
-           MAX(CASE WHEN artefact_id = 2109 THEN artefact_string_value ELSE NULL END) AS business_model_risk_subtype
+           MAX(CASE WHEN artefact_id = 2108 THEN artefact_string_value ELSE NULL END) AS analytical_monitoring
     FROM (
              SELECT artefact_realizations_new.model_id,
                     artefact_realizations_new.artefact_id,
@@ -161,24 +150,11 @@ FROM models_new m_
                         ORDER BY artefact_realizations_new.effective_from DESC
                         ) AS rn
              FROM artefact_realizations_new
-             WHERE (
-                           :filter_date::Date IS NULL
-                           OR TO_DATE(CAST(:filter_date AS Varchar(4000))
-                               , 'YYYY-MM-DD')
-                               BETWEEN DATE_TRUNC('day'
-                               , effective_from)::Date
-                               AND DATE_TRUNC('day'
-                               , effective_to)::Date
-                       )
          ) ar
     WHERE ar.rn = 1
+      AND model_id = :model_id
     GROUP BY model_id
-) a ON m_.model_id = a.system_model_id
-WHERE (
-              :filter_date::Date IS NULL
-              OR TO_DATE(CAST(:filter_date AS Varchar(4000)), 'YYYY-MM-DD')
-                  BETWEEN DATE_TRUNC('day', m_.create_date)::Date AND DATE_TRUNC('day', NOW())::Date
-          )
-`
+) a ON m_.model_id = a.system_model_id;
+`;
 
-export { sql }
+export { sql };
