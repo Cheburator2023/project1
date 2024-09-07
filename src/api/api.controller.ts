@@ -17,7 +17,7 @@ import { Response } from "express";
 import { ApiBody } from "@nestjs/swagger";
 import { ApiService } from "./api.service";
 import { ModelsService } from "src/modules/models/models.service";
-import { MetricsService } from "src/metrics/metrics.service";
+import { MetricsService } from "src/modules/metrics/metrics.service";
 import { ReportService } from "src/report/report.service";
 import {
   ModelsDto,
@@ -155,10 +155,10 @@ export class ApiController {
     return response.status(HttpStatus.OK).json({ result: true });
   }
 
-  @Get("/metrics/")
+  @Get('/metrics/')
   async getMetrics(@Query() query: MetricsDto, @Res() response) {
-    const data = await this.metricsService.getMetrics()
-
+    const { date, stream } = query;
+    const data = await this.metricsService.getMetrics(date, stream);
     return response.status(HttpStatus.OK).json(data);
   }
 

@@ -255,23 +255,16 @@ export class FilterDto {
 
 export class MetricsDto {
   @ApiModelPropertyOptional({
-    example: 'YYYY-MM-DD'
+    example: 'YYYY-MM-DD',
   })
   @IsOptional()
   @IsDateString()
-  startDate: string
+  date: string;
 
   @ApiModelPropertyOptional({
-    example: 'YYYY-MM-DD'
-  })
-  @IsOptional()
-  @IsDateString()
-  endDate: string
-
-  @ApiModelPropertyOptional({
-    example: 'stream_mame'
+    example: 'stream_mame',
   })
   @IsOptional()
   @IsString()
-  stream: string
+  stream: string;
 }
