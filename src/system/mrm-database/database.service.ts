@@ -1,5 +1,5 @@
 import { Injectable, Logger } from "@nestjs/common";
-import { Pool, types } from "pg";
+import { Pool } from "pg";
 import { queryConvert } from "src/system/common/utils";
 
 @Injectable()
@@ -8,12 +8,6 @@ export class MrmDatabaseService {
   private pool: Pool;
 
   constructor() {
-    // Описание типа данных numeric в PostgreSQL
-    const NUMERIC_OID = 1700;
-
-    // Устанавливаем кастомный парсер для типа numeric
-    types.setTypeParser(NUMERIC_OID, (val) => parseFloat(val));
-
     this.pool = new Pool({
       user: process.env.RM_PG_USER,
       host: process.env.RM_PG_HOST,
