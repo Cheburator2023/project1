@@ -6,7 +6,6 @@ SELECT m_.model_id                                                              
        clsf_.group_company,
        m_.model_name,
        m_.model_desc,
-       m_.update_date,
        m_.create_date,
        clsf_.model_type,
        m_.model_version,

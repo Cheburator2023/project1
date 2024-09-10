@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.1.xsd">
+ 
+    <include file="09_09_24_01_add_rating_model_artefact.sql" relativeToChangelogFile="true"/>
+    <include file="09_09_24_02_add_update_date_artefact.sql" relativeToChangelogFile="true"/>
+
+</databaseChangeLog>

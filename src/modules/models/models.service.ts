@@ -198,7 +198,6 @@ export class ModelsService {
         return artefacts.data
             .filter(item => ['4', '11'].includes(item.artefact_type_id))
             .map(artefact => artefact.artefact_tech_label)
-            .concat('update_date')
     }
 
     private formatDateField(dateString: string): string {

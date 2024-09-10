@@ -81,7 +81,6 @@ export class ApiService {
     const artefacts_type_date = artefacts_from_mrm.data
       .filter(item => item.artefact_type_id === "4" || item.artefact_type_id === "11")
       .map(artefact => artefact.artefact_tech_label);
-    artefacts_type_date.push("update_date");
 
     const formatted_result = result.map((item: Record<string, any>): Record<string, any> => {
       for (let key in item) {
@@ -171,79 +170,107 @@ export class ApiService {
     return await this.mrmDatabaseService.query(oneSumRmModels, { model_id });
   }
 
+  // @TODO: декомпозиция, перенос в модуль models
   async modelsUpdate(modelsArtefacts) {
-    const modelIds = [];
-    const namesForUpdate = [];
-    const descriptionsForUpdate = [];
-    const artefactsForUpdate = [];
-    const usageConfirmForUpdate = [];
+    const modelIds = []
+    const namesForUpdate = []
+    const descriptionsForUpdate = []
+    const artefactsForUpdate = []
+    const usageConfirmForUpdate = []
 
-    modelsArtefacts.map(modelItem => {
-      const model_id = modelItem.model_id;
+    for (const modelItem of modelsArtefacts) {
+      const model_id = modelItem.model_id
       if (!modelIds.includes(model_id)) {
-        modelIds.push(model_id);
+        modelIds.push(model_id)
       }
 
-      modelItem.artefacts.map(artefactItem => {
+      for (const artefactItem of modelItem.artefacts) {
         switch (artefactItem.artefact_tech_label) {
-          case ("model_name"):
-            namesForUpdate.push({ model_id, model_name: artefactItem.artefact_string_value });
-            break;
-          case ("model_desc"):
-            descriptionsForUpdate.push({ model_id, model_desc: artefactItem.artefact_string_value });
-            break;
-          case ("usage_confirm_date_q1"):
-          case ("usage_confirm_date_q2"):
-          case ("usage_confirm_date_q3"):
-          case ("usage_confirm_date_q4"):
-            usageConfirmForUpdate.push({ model_id, confirmation_date: artefactItem.artefact_string_value });
-            break;
+          case 'model_name':
+            namesForUpdate.push({ model_id, model_name: artefactItem.artefact_string_value })
+            break
+          case 'model_desc':
+            descriptionsForUpdate.push({ model_id, model_desc: artefactItem.artefact_string_value })
+            break
+          case 'usage_confirm_date_q1':
+          case 'usage_confirm_date_q2':
+          case 'usage_confirm_date_q3':
+          case 'usage_confirm_date_q4':
+            usageConfirmForUpdate.push({ model_id, confirmation_date: artefactItem.artefact_string_value })
+            break
+          case 'active_model':
+            const [model] = await this.mrmDatabaseService.query(oneSumRmModels, { model_id })
+
+            artefactsForUpdate.push({ model_id, ...artefactItem })
+            artefactsForUpdate.push({
+              model_id,
+              artefact_tech_label: 'update_date',
+              artefact_string_value: new Date().toISOString(),
+              artefact_value_id: null
+            })
+
+            if (artefactItem.artefact_string_value !== model.active_model) {
+              let model_identifier
+
+              if (artefactItem.artefact_string_value === '1') {
+                model_identifier = model.regulatory_code_model_pvr ||
+                  model.model_id_from_model_owner ||
+                  model.identifier_model_algorithm_for_rwa ||
+                  model.model_alias
+
+                artefactsForUpdate.push({
+                  model_id,
+                  artefact_tech_label: 'model_id',
+                  artefact_string_value: model_identifier,
+                  artefact_value_id: null
+                })
+              }
+            }
+            break
           default:
-            artefactsForUpdate.push({ model_id, ...artefactItem });
+            artefactsForUpdate.push({ model_id, ...artefactItem })
         }
-      });
-    });
+      }
+    }
 
     if (namesForUpdate.length) {
-      await this.mrmDatabaseService.queryAll(updateModelName, namesForUpdate);
+      await this.mrmDatabaseService.queryAll(updateModelName, namesForUpdate)
     }
 
     if (descriptionsForUpdate.length) {
-      await this.mrmDatabaseService.queryAll(updateModelDesc, descriptionsForUpdate);
+      await this.mrmDatabaseService.queryAll(updateModelDesc, descriptionsForUpdate)
     }
 
     if (usageConfirmForUpdate.length) {
-      await this.mrmDatabaseService.queryAll(updateUsageConfirm, usageConfirmForUpdate);
+      await this.mrmDatabaseService.queryAll(updateUsageConfirm, usageConfirmForUpdate)
     }
 
     if (artefactsForUpdate.length) {
-      await this.mrmDatabaseService.queryAll(updateArtefacts, artefactsForUpdate);
+      await this.mrmDatabaseService.queryAll(updateArtefacts, artefactsForUpdate)
     }
 
     if (modelIds.length) {
-      const result = await this.mrmDatabaseService.queryAll(oneSumRmModels, modelIds.map(model_id => ({ model_id })));
+      const result = await this.mrmDatabaseService.queryAll(oneSumRmModels, modelIds.map(model_id => ({ model_id })))
 
-      const artefacts_from_mrm = await this.getClasses();
+      const artefacts_from_mrm = await this.getClasses()
       const artefacts_type_date = artefacts_from_mrm.data
-        .filter(item => item.artefact_type_id === "4" || item.artefact_type_id === "11")
-        .map(artefact => artefact.artefact_tech_label);
-      artefacts_type_date.push("update_date");
+        .filter(item => item.artefact_type_id === '4' || item.artefact_type_id === '11')
+        .map(artefact => artefact.artefact_tech_label)
 
       const formatted_result = result.flat().map((item: Record<string, any>): Record<string, any> => {
         for (let key in item) {
-          if (artefacts_type_date.indexOf(key) > -1 && item[key] !== null) {
+          if (artefacts_type_date.includes(key) && item[key] !== null) {
             if (isValidDate(item[key])) {
-              item[key] = formatDateTime(parseDate(item[key]));
+              item[key] = formatDateTime(parseDate(item[key]))
             } else {
-              item[key] = "invalid date";
+              item[key] = 'invalid date'
             }
           }
         }
+        return item
+      })
 
-        return item;
-      });
-
-      return formatted_result;
+      return formatted_result
     }
   }
 

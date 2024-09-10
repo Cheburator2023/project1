@@ -9,7 +9,6 @@ SELECT m_.model_name,
                  CAST(m_.model_version AS Varchar(4000)))
             ELSE NULL END) AS model_alias,
        m_.create_date,
-       m_.update_date,
        a.*,
        mupq.usage_confirm_date_q1,
        mupq.usage_confirm_date_q2,
@@ -140,7 +139,10 @@ FROM models_new m_
            MAX(CASE WHEN artefact_id = 2105 THEN artefact_string_value ELSE NULL END) AS product_name,
            MAX(CASE WHEN artefact_id = 2106 THEN artefact_string_value ELSE NULL END) AS provides_piloting,
            MAX(CASE WHEN artefact_id = 2107 THEN artefact_string_value ELSE NULL END) AS operational_monitoring,
-           MAX(CASE WHEN artefact_id = 2108 THEN artefact_string_value ELSE NULL END) AS analytical_monitoring
+           MAX(CASE WHEN artefact_id = 2108 THEN artefact_string_value ELSE NULL END) AS analytical_monitoring,
+           MAX(CASE WHEN artefact_id = 2109 THEN artefact_string_value ELSE NULL END) AS business_model_risk_subtype,
+           MAX(CASE WHEN artefact_id = 2110 THEN artefact_string_value ELSE NULL END) AS rating_model,
+           MAX(CASE WHEN artefact_id = 2111 THEN artefact_string_value ELSE NULL END) AS update_date
     FROM (
              SELECT artefact_realizations_new.model_id,
                     artefact_realizations_new.artefact_id,
