@@ -6,5 +6,6 @@
  
     <include file="09_09_24_01_add_rating_model_artefact.sql" relativeToChangelogFile="true"/>
     <include file="09_09_24_02_add_update_date_artefact.sql" relativeToChangelogFile="true"/>
+    <include file="09_09_24_03_add_artefact_values.sql" relativeToChangelogFile="true"/>
 
 </databaseChangeLog>
