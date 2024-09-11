@@ -1,4 +1,4 @@
-const sql = `
+const getModels = `
 SELECT m_.model_id                                                                                           AS system_model_id,
        'sum'                                                                                                 AS model_source,
        m_.model_id                                                                                           AS model_version_id,
@@ -129,4 +129,4 @@ WHERE m_.MODEL_DESC != 'AutoML'
     )
 `;
 
-export { sql };
+export { getModels };

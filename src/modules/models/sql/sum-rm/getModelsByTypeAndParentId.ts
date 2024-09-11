@@ -1,4 +1,4 @@
-const sql = `
+const getModelsByTypeAndParentId = `
 SELECT m_.model_name,
        m_.model_desc,
        m_.model_version,
@@ -160,4 +160,4 @@ WHERE type_id = :type_id
   AND parent_model_id = :parent_model_id
 `
 
-export { sql }
+export { getModelsByTypeAndParentId }

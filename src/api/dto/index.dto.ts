@@ -18,6 +18,11 @@ import { ApiProperty } from "@nestjs/swagger";
 import { Type } from "class-transformer";
 import { ApiModelPropertyOptional } from "@nestjs/swagger/dist/decorators/api-model-property.decorator";
 
+export enum ModelSource {
+  SUM = "sum",
+  SUM_RM = "sum-rm"
+}
+
 export class ModelsDto {
   @ApiModelPropertyOptional({
     example: 'YYYY-MM-DD'
@@ -148,11 +153,6 @@ export class ArtefactsUpdateDto {
   })
   @IsString()
   artefact_string_value: string;
-}
-
-export enum ModelSource {
-  SUM = "sum",
-  SUM_RM = "sum-rm"
 }
 
 export class ModelArtefactHistoryDto {

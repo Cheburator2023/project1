@@ -1,4 +1,4 @@
-const sql = `
+const getModel = `
 SELECT
     m.model_name,
     m.model_version,
@@ -267,4 +267,4 @@ WHERE
     );
 `;
 
-export { sql };
+export { getModel };

@@ -75,7 +75,7 @@ export class ApiController {
   @Put("/models/update/")
   @ApiBody({ type: [ModelsUpdateDto] })
   async modelsUpdate(@Body(new ParseArrayPipe({ items: ModelsUpdateDto, whitelist: true })) modelsArtefacts: ModelsUpdateDto[], @Res() response) {
-    const result = await this.apiService.modelsUpdate(modelsArtefacts);
+    const result = await this.modelsService.modelsUpdate(modelsArtefacts);
 
     return response.status(HttpStatus.ACCEPTED).json(result);
   }
