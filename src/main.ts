@@ -27,19 +27,19 @@ async function bootstrap() {
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup("swagger", app, document);
 
-  // const kcConfig = {
-  //   "confidential-port": 0,
-  //   realm: process.env.KEYCLOAK_REALMS,
-  //   "auth-server-url": `${ process.env.KEYCLOAK_URL }`,
-  //   "ssl-required": "none",
-  //   resource: process.env.KEYCLOAK_CLIENT,
-  //   "bearer-only": true
-  // };
-  //
-  // const memoryStore = new session.MemoryStore();
-  // const keycloak = new KeycloakConnect({ store: memoryStore }, kcConfig);
-  //
-  // app.use(keycloak.middleware());
+  const kcConfig = {
+    "confidential-port": 0,
+    realm: process.env.KEYCLOAK_REALMS,
+    "auth-server-url": `${ process.env.KEYCLOAK_URL }`,
+    "ssl-required": "none",
+    resource: process.env.KEYCLOAK_CLIENT,
+    "bearer-only": true
+  };
+
+  const memoryStore = new session.MemoryStore();
+  const keycloak = new KeycloakConnect({ store: memoryStore }, kcConfig);
+
+  app.use(keycloak.middleware());
   await app.listen(3000);
 }
 
