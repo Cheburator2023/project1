@@ -125,7 +125,7 @@ ON m.model_id = allocation_data.allocation_model_id
 
 LEFT JOIN (
     SELECT
-        ar.model_id AS root_model_id,
+        ar.model_id AS system_model_id,
         MAX(CASE WHEN artefact_id = 2000 THEN artefact_string_value ELSE NULL END) AS record_id,
         MAX(CASE WHEN artefact_id = 2001 THEN artefact_string_value ELSE NULL END) AS model_id,
         MAX(CASE WHEN artefact_id = 2002 THEN artefact_string_value ELSE NULL END) AS group_company,
@@ -256,7 +256,7 @@ LEFT JOIN (
     WHERE ar.rn = 1
     GROUP BY ar.model_id
 ) AS artefact_data
-ON m.model_id = artefact_data.root_model_id
+ON m.model_id = artefact_data.system_model_id
 WHERE
     m.model_id = :model_id AND
     (

@@ -24,6 +24,12 @@ import { ArtefactFormattingType, ArtefactFormatting } from './rules'
 
 import { isValidDate, parseDate, formatDateTime } from 'src/system/common/utils'
 
+interface UsageEntry {
+  confirmation_date: string | null;
+  is_used: string | null;
+}
+
+const usageMap: Record<string, UsageEntry> = {};
 
 enum ModelSource {
   SUM = 'sum',
@@ -110,150 +116,179 @@ export class ModelsService {
     }
   }
 
-  async modelsUpdate(modelsArtefacts) {
-    const modelIds = []
-    const namesForUpdate = []
-    const descriptionsForUpdate = []
-    const artefactsForUpdate = []
+  async modelsUpdate(modelsArtefacts: Array<{
+    model_id: string;
+    artefacts: Array<{
+      artefact_tech_label: string;
+      artefact_string_value: string | null;
+      artefact_value_id?: number | null;
+    }>
+  }>) {
+    const modelIds: Set<string> = new Set();
+    const namesForUpdate: Array<{ model_id: string; model_name: string }> = [];
+    const descriptionsForUpdate: Array<{ model_id: string; model_desc: string }> = [];
+    const artefactsForUpdate: Array<{
+      model_id: string;
+      artefact_tech_label: string;
+      artefact_string_value: string | null;
+      artefact_value_id?: number | null;
+    }> = [];
+    const allocationMap: Record<string, Record<string, { model_id: string; gbl_id: string; percent: string | null; comment: string | null }>> = {};
+    const usageMap: Record<string, { confirmation_date: string | null; is_used: string | null }> = {};
 
-    const modelsAllocationForUpdate = []
-    const modelsUsageForUpdate = []
-
-    for (const modelItem of modelsArtefacts) {
-      const model_id = modelItem.model_id
-      if (!modelIds.includes(model_id)) {
-        modelIds.push(model_id)
+    // Helper functions
+    const updateAllocation = (model_id: string, gbl_id: string, percent: string | null, comment: string | null): void => {
+      if (!allocationMap[model_id]) {
+        allocationMap[model_id] = {};
       }
 
-      for (const artefactItem of modelItem.artefacts) {
-        switch (artefactItem.artefact_tech_label) {
+      if (!allocationMap[model_id][gbl_id]) {
+        allocationMap[model_id][gbl_id] = { model_id, gbl_id, percent: null, comment: null };
+      }
+
+      const allocation = allocationMap[model_id][gbl_id];
+      allocation.percent = percent !== null ? percent : allocation.percent;
+      allocation.comment = comment !== null ? comment : allocation.comment;
+    };
+
+    const updateUsage = (model_id: string, confirmation_date: string | null, is_used: string | null): void => {
+      if (!usageMap[model_id]) {
+        usageMap[model_id] = { confirmation_date: null, is_used: null };
+      }
+
+      const usage = usageMap[model_id];
+      if (confirmation_date !== null) {
+        usage.confirmation_date = confirmation_date;
+      }
+      if (is_used !== null) {
+        usage.is_used = is_used;
+      }
+    };
+
+    // Process artefacts
+    for (const modelItem of modelsArtefacts) {
+      const { model_id, artefacts } = modelItem;
+      modelIds.add(model_id);
+
+      for (const artefactItem of artefacts) {
+        const { artefact_tech_label, artefact_string_value } = artefactItem;
+
+        switch (artefact_tech_label) {
           case 'model_name':
-            namesForUpdate.push({ model_id, model_name: artefactItem.artefact_string_value })
-            break
+            namesForUpdate.push({ model_id, model_name: artefact_string_value! });
+            break;
           case 'model_desc':
-            descriptionsForUpdate.push({ model_id, model_desc: artefactItem.artefact_string_value })
-            break
+            descriptionsForUpdate.push({ model_id, model_desc: artefact_string_value! });
+            break;
           case 'allocation_kib_usage':
-            modelsAllocationForUpdate.push({ model_id, gbl_id: 1, percent: artefactItem.artefact_string_value, comment: null })
-            break
           case 'allocation_smb_usage':
-            modelsAllocationForUpdate.push({ model_id, gbl_id: 2, percent: artefactItem.artefact_string_value, comment: null })
-            break
           case 'allocation_rb_usage':
-            modelsAllocationForUpdate.push({ model_id, gbl_id: 3, percent: artefactItem.artefact_string_value, comment: null })
-            break
           case 'allocation_kc_usage':
-            modelsAllocationForUpdate.push({ model_id, gbl_id: 4, percent: artefactItem.artefact_string_value, comment: null })
-            break
           case 'allocation_other_usage':
-            modelsAllocationForUpdate.push({ model_id, gbl_id: 5, percent: artefactItem.artefact_string_value, comment: null })
-            break
+            updateAllocation(model_id, ModelsService.getGblId(artefact_tech_label), artefact_string_value, null);
+            break;
           case 'allocation_kib_comment':
-            modelsAllocationForUpdate.push({ model_id, gbl_id: 1, percent: null, comment: artefactItem.artefact_string_value })
-            break
           case 'allocation_smb_comment':
-            modelsAllocationForUpdate.push({ model_id, gbl_id: 2, percent: null, comment: artefactItem.artefact_string_value })
-            break
           case 'allocation_rb_comment':
-            modelsAllocationForUpdate.push({ model_id, gbl_id: 3, percent: null, comment: artefactItem.artefact_string_value })
-            break
           case 'allocation_kc_comment':
-            modelsAllocationForUpdate.push({ model_id, gbl_id: 4, percent: null, comment: artefactItem.artefact_string_value })
-            break
           case 'allocation_other_comment':
-            modelsAllocationForUpdate.push({ model_id, gbl_id: 5, percent: null, comment: artefactItem.artefact_string_value })
-            break
+            updateAllocation(model_id, ModelsService.getGblId(artefact_tech_label), null, artefact_string_value);
+            break;
           case 'usage_confirm_flag_q1':
           case 'usage_confirm_flag_q2':
           case 'usage_confirm_flag_q3':
           case 'usage_confirm_flag_q4':
-            modelsUsageForUpdate.push({ model_id, confirmation_date: null, is_used: artefactItem.artefact_string_value })
-            break
+            updateUsage(model_id, null, artefact_string_value);
+            break;
           case 'usage_confirm_date_q1':
           case 'usage_confirm_date_q2':
           case 'usage_confirm_date_q3':
           case 'usage_confirm_date_q4':
-            modelsUsageForUpdate.push({ model_id, confirmation_date: artefactItem.artefact_string_value, is_used: null })
-            break
-          case 'active_model':
-            const [model] = await this.mrmDatabaseService.query(getSumRmModel, { model_id })
-
-            artefactsForUpdate.push({ model_id, ...artefactItem })
+            updateUsage(model_id, artefact_string_value, null);
+            break;
+          case 'active_model': {
+            const [model] = await this.mrmDatabaseService.query(getSumRmModel, { model_id });
+            artefactsForUpdate.push({ model_id, ...artefactItem });
             artefactsForUpdate.push({
               model_id,
               artefact_tech_label: 'update_date',
               artefact_string_value: new Date().toISOString(),
               artefact_value_id: null
-            })
+            });
 
-            if (artefactItem.artefact_string_value !== model.active_model) {
-              let model_identifier
-
-              if (artefactItem.artefact_string_value === '1') {
-                model_identifier = model.regulatory_code_model_pvr ||
+            if (artefact_string_value !== model.active_model) {
+              if (artefact_string_value === '1') {
+                const modelIdentifier = model.regulatory_code_model_pvr ||
                   model.model_id_from_model_owner ||
                   model.identifier_model_algorithm_for_rwa ||
-                  model.model_alias
+                  model.model_alias;
 
                 artefactsForUpdate.push({
                   model_id,
                   artefact_tech_label: 'model_id',
-                  artefact_string_value: model_identifier,
+                  artefact_string_value: modelIdentifier,
                   artefact_value_id: null
-                })
+                });
               }
             }
-            break
+            break;
+          }
           default:
-            artefactsForUpdate.push({ model_id, ...artefactItem })
+            artefactsForUpdate.push({ model_id, ...artefactItem });
         }
       }
     }
 
+    const modelsAllocationForUpdate = Object.entries(allocationMap).reduce((acc, [model_id, allocations]) => {
+      const allocationArray = Object.values(allocations).map(allocation => ({ ...allocation, model_id }));
+      return acc.concat(allocationArray);
+    }, [] as Array<{ model_id: string; gbl_id: string; percent: string | null; comment: string | null }>);
 
-    if (namesForUpdate.length) {
-      await this.mrmDatabaseService.queryAll(updateSumRmModelName, namesForUpdate)
-    }
+    const modelsUsageForUpdate = Object.entries(usageMap).map(([model_id, usage]) => ({
+      model_id,
+      confirmation_date: usage.confirmation_date || null,
+      is_used: usage.is_used ? usage.is_used === 'Да' : null
+    }));
 
-    if (descriptionsForUpdate.length) {
-      await this.mrmDatabaseService.queryAll(updateSumRmModelDesc, descriptionsForUpdate)
-    }
+    // Perform database updates
+    await Promise.all([
+      namesForUpdate.length && this.mrmDatabaseService.queryAll(updateSumRmModelName, namesForUpdate),
+      descriptionsForUpdate.length && this.mrmDatabaseService.queryAll(updateSumRmModelDesc, descriptionsForUpdate),
+      artefactsForUpdate.length && this.mrmDatabaseService.queryAll(updateSumRmArtefact, artefactsForUpdate),
+      modelsAllocationForUpdate.length && this.mrmDatabaseService.queryAll(updateSumRmModelAllocation, modelsAllocationForUpdate),
+      modelsUsageForUpdate.length && this.mrmDatabaseService.queryAll(updateSumRmModelUsage, modelsUsageForUpdate),
+    ]);
 
-    if (artefactsForUpdate.length) {
-      await this.mrmDatabaseService.queryAll(updateSumRmArtefact, artefactsForUpdate)
-    }
 
-    if (modelsAllocationForUpdate.length) {
-      await this.mrmDatabaseService.queryAll(updateSumRmModelAllocation, modelsAllocationForUpdate)
-    }
 
-    if (modelsUsageForUpdate.length) {
-      await this.mrmDatabaseService.queryAll(updateSumRmModelUsage, modelsUsageForUpdate)
-    }
+    if (modelIds.size) {
+      // @TODO: обработка нескольких моделей
+      const [ model ] = await this.mrmDatabaseService.queryAll(getSumRmModel, Array.from(modelIds).map(id => ({ model_id: id, filter_date: null })));
+      const formattedResult = await this.formatResults(model)
 
-    if (modelIds.length) {
-      const result = await this.mrmDatabaseService.queryAll(getSumRmModel, modelIds.map(model_id => ({ model_id })))
-
-      const artefacts_from_mrm = await this.getPreparedArtefacts()
-      const artefacts_type_date = artefacts_from_mrm.data
-        .filter(item => item.artefact_type_id === '4' || item.artefact_type_id === '17')
-        .map(artefact => artefact.artefact_tech_label)
-
-      const formatted_result = result.flat().map((item: Record<string, any>): Record<string, any> => {
-        for (let key in item) {
-          if (artefacts_type_date.includes(key) && item[key] !== null) {
-            if (isValidDate(item[key])) {
-              item[key] = formatDateTime(parseDate(item[key]))
-            } else {
-              item[key] = 'invalid date'
-            }
-          }
+      return {
+        data: {
+          cards: formattedResult
         }
-        return item
-      })
-
-      return formatted_result
+      }
     }
+  }
+
+
+  private static getGblId(label) {
+    const map = {
+      'allocation_kib_usage': 1,
+      'allocation_smb_usage': 2,
+      'allocation_rb_usage': 3,
+      'allocation_kc_usage': 4,
+      'allocation_other_usage': 5,
+      'allocation_kib_comment': 1,
+      'allocation_smb_comment': 2,
+      'allocation_rb_comment': 3,
+      'allocation_kc_comment': 4,
+      'allocation_other_comment': 5,
+    };
+    return map[label];
   }
 
   private createModelTypeDictionary(modelTypes: ModelType[]): Record<string, number> {
