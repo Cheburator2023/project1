@@ -35,4 +35,10 @@ export class SumDatabaseService {
       throw error
     }
   }
+
+  async queryAll(sql: string, params: Object[]): Promise<any> {
+    return Promise.all(
+      params.map(arg => this.query(sql, arg))
+    )
+  }
 }

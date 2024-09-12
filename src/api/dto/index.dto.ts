@@ -113,6 +113,9 @@ export class ModelsUpdateDto {
   @IsUUID()
   model_id: string;
 
+  @IsEnum(ModelSource)
+  model_source: string;
+
   @ApiProperty({
     type: ArtefactDto
   })

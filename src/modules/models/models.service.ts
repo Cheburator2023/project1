@@ -3,7 +3,11 @@ import { SumDatabaseService } from 'src/system/sum-database/database.service'
 import { MrmDatabaseService } from 'src/system/mrm-database/database.service'
 
 import {
-  getModels as getSumModels
+  getModel as getSumModel,
+  getModels as getSumModels,
+  updateModelName as updateSumModelName,
+  updateModelDesc as updateSumModelDesc,
+  updateArtefact as updateSumArtefact
 } from './sql/sum'
 import {
   getModel as getSumRmModel,
@@ -118,12 +122,14 @@ export class ModelsService {
 
   async modelsUpdate(modelsArtefacts: Array<{
     model_id: string;
+    model_source: string;
     artefacts: Array<{
       artefact_tech_label: string;
       artefact_string_value: string | null;
       artefact_value_id?: number | null;
     }>
   }>) {
+    let modelSource = 'sum-rm'
     const modelIds: Set<string> = new Set();
     const namesForUpdate: Array<{ model_id: string; model_name: string }> = [];
     const descriptionsForUpdate: Array<{ model_id: string; model_desc: string }> = [];
@@ -167,7 +173,8 @@ export class ModelsService {
 
     // Process artefacts
     for (const modelItem of modelsArtefacts) {
-      const { model_id, artefacts } = modelItem;
+      const { model_id, model_source, artefacts } = modelItem;
+      modelSource = model_source
       modelIds.add(model_id);
 
       for (const artefactItem of artefacts) {
@@ -207,6 +214,9 @@ export class ModelsService {
             updateUsage(model_id, artefact_string_value, null);
             break;
           case 'active_model': {
+            if (modelSource !== 'sum-rm') {
+              continue;
+            }
             const [model] = await this.mrmDatabaseService.query(getSumRmModel, { model_id });
             artefactsForUpdate.push({ model_id, ...artefactItem });
             artefactsForUpdate.push({
@@ -250,25 +260,42 @@ export class ModelsService {
       is_used: usage.is_used ? usage.is_used === 'Да' : null
     }));
 
-    // Perform database updates
-    await Promise.all([
-      namesForUpdate.length && this.mrmDatabaseService.queryAll(updateSumRmModelName, namesForUpdate),
-      descriptionsForUpdate.length && this.mrmDatabaseService.queryAll(updateSumRmModelDesc, descriptionsForUpdate),
-      artefactsForUpdate.length && this.mrmDatabaseService.queryAll(updateSumRmArtefact, artefactsForUpdate),
-      modelsAllocationForUpdate.length && this.mrmDatabaseService.queryAll(updateSumRmModelAllocation, modelsAllocationForUpdate),
-      modelsUsageForUpdate.length && this.mrmDatabaseService.queryAll(updateSumRmModelUsage, modelsUsageForUpdate),
-    ]);
-
-
+    if (modelSource === 'sum-rm') {
+      // Perform database updates
+      await Promise.all([
+        namesForUpdate.length && this.mrmDatabaseService.queryAll(updateSumRmModelName, namesForUpdate),
+        descriptionsForUpdate.length && this.mrmDatabaseService.queryAll(updateSumRmModelDesc, descriptionsForUpdate),
+        artefactsForUpdate.length && this.mrmDatabaseService.queryAll(updateSumRmArtefact, artefactsForUpdate),
+        modelsAllocationForUpdate.length && this.mrmDatabaseService.queryAll(updateSumRmModelAllocation, modelsAllocationForUpdate),
+        modelsUsageForUpdate.length && this.mrmDatabaseService.queryAll(updateSumRmModelUsage, modelsUsageForUpdate),
+      ]);
+    } else {
+      await Promise.all([
+        namesForUpdate.length && this.sumDatabaseService.queryAll(updateSumModelName, namesForUpdate),
+        descriptionsForUpdate.length && this.sumDatabaseService.queryAll(updateSumModelDesc, descriptionsForUpdate),
+        artefactsForUpdate.length && this.sumDatabaseService.queryAll(updateSumArtefact, artefactsForUpdate)
+      ]);
+    }
 
     if (modelIds.size) {
       // @TODO: обработка нескольких моделей
-      const [ model ] = await this.mrmDatabaseService.queryAll(getSumRmModel, Array.from(modelIds).map(id => ({ model_id: id, filter_date: null })));
-      const formattedResult = await this.formatResults(model)
+      if (modelSource === 'sum-rm') {
+        const [ model ] = await this.mrmDatabaseService.queryAll(getSumRmModel, Array.from(modelIds).map(id => ({ model_id: id, filter_date: null })));
+        const formattedResult = await this.formatResults(model)
 
-      return {
-        data: {
-          cards: formattedResult
+        return {
+          data: {
+            cards: formattedResult
+          }
+        }
+      } else {
+        const [ model ] = await this.sumDatabaseService.queryAll(getSumModel, Array.from(modelIds).map(id => ({ model_id: id, filter_date: null })));
+        const formattedResult = await this.formatResults(model)
+
+        return {
+          data: {
+            cards: formattedResult
+          }
         }
       }
     }
