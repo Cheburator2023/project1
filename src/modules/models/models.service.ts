@@ -221,7 +221,7 @@ export class ModelsService {
             if (modelSource !== 'sum-rm') {
               continue
             }
-            const [model] = await this.mrmDatabaseService.query(getSumRmModel, { model_id })
+            const [model] = await this.mrmDatabaseService.query(getSumRmModel, { model_id, filter_date: null })
             artefactsForUpdate.push({ model_id, ...artefactItem })
             artefactsForUpdate.push({
               model_id,

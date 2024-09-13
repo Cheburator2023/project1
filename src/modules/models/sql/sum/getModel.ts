@@ -78,10 +78,10 @@ FROM models m_
         MAX(CASE WHEN EXTRACT(QUARTER FROM muh.confirmation_date) = 2 THEN muh.confirmation_date ELSE NULL END) AS usage_confirm_date_q2,
         MAX(CASE WHEN EXTRACT(QUARTER FROM muh.confirmation_date) = 3 THEN muh.confirmation_date ELSE NULL END) AS usage_confirm_date_q3,
         MAX(CASE WHEN EXTRACT(QUARTER FROM muh.confirmation_date) = 4 THEN muh.confirmation_date ELSE NULL END) AS usage_confirm_date_q4,
-        MAX(CASE WHEN EXTRACT(QUARTER FROM muh.confirmation_date) = 1 AND muh.confirmed THEN '1' ELSE '0' END)    AS usage_confirm_flag_q1,
-        MAX(CASE WHEN EXTRACT(QUARTER FROM muh.confirmation_date) = 2 AND muh.confirmed THEN '1' ELSE '0' END)    AS usage_confirm_flag_q2,
-        MAX(CASE WHEN EXTRACT(QUARTER FROM muh.confirmation_date) = 3 AND muh.confirmed THEN '1' ELSE '0' END)    AS usage_confirm_flag_q3,
-        MAX(CASE WHEN EXTRACT(QUARTER FROM muh.confirmation_date) = 4 AND muh.confirmed THEN '1' ELSE '0' END)    AS usage_confirm_flag_q4
+        MAX(CASE WHEN EXTRACT(QUARTER FROM muh.confirmation_date) = 1 AND muh.confirmed THEN 'Да' ELSE 'Нет' END)    AS usage_confirm_flag_q1,
+        MAX(CASE WHEN EXTRACT(QUARTER FROM muh.confirmation_date) = 2 AND muh.confirmed THEN 'Да' ELSE 'Нет' END)    AS usage_confirm_flag_q2,
+        MAX(CASE WHEN EXTRACT(QUARTER FROM muh.confirmation_date) = 3 AND muh.confirmed THEN 'Да' ELSE 'Нет' END)    AS usage_confirm_flag_q3,
+        MAX(CASE WHEN EXTRACT(QUARTER FROM muh.confirmation_date) = 4 AND muh.confirmed THEN 'Да' ELSE 'Нет' END)    AS usage_confirm_flag_q4
     FROM model_usage_confirm as muh
     GROUP BY muh.model_id
 ) AS usage_data
