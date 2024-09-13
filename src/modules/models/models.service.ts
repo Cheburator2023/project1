@@ -1,4 +1,6 @@
 import { Injectable } from '@nestjs/common'
+import { AllocationSumService } from 'src/modules/allocation/allocation.sum.service'
+import { UsageSumService } from 'src/modules/usage/usage.sum.service'
 import { SumDatabaseService } from 'src/system/sum-database/database.service'
 import { MrmDatabaseService } from 'src/system/mrm-database/database.service'
 
@@ -33,7 +35,7 @@ interface UsageEntry {
   is_used: string | null;
 }
 
-const usageMap: Record<string, UsageEntry> = {};
+const usageMap: Record<string, UsageEntry> = {}
 
 enum ModelSource {
   SUM = 'sum',
@@ -56,6 +58,8 @@ interface ModelsUpdateDto {
 @Injectable()
 export class ModelsService {
   constructor(
+    private readonly allocationSumService: AllocationSumService,
+    private readonly usageSumService: UsageSumService,
     private readonly sumDatabaseService: SumDatabaseService,
     private readonly mrmDatabaseService: MrmDatabaseService
   ) {
@@ -130,135 +134,135 @@ export class ModelsService {
     }>
   }>) {
     let modelSource = 'sum-rm'
-    const modelIds: Set<string> = new Set();
-    const namesForUpdate: Array<{ model_id: string; model_name: string }> = [];
-    const descriptionsForUpdate: Array<{ model_id: string; model_desc: string }> = [];
+    const modelIds: Set<string> = new Set()
+    const namesForUpdate: Array<{ model_id: string; model_name: string }> = []
+    const descriptionsForUpdate: Array<{ model_id: string; model_desc: string }> = []
     const artefactsForUpdate: Array<{
       model_id: string;
       artefact_tech_label: string;
       artefact_string_value: string | null;
       artefact_value_id?: number | null;
-    }> = [];
-    const allocationMap: Record<string, Record<string, { model_id: string; gbl_id: string; percent: string | null; comment: string | null }>> = {};
-    const usageMap: Record<string, { confirmation_date: string | null; is_used: string | null }> = {};
+    }> = []
+    const allocationMap: Record<string, Record<string, { model_id: string; gbl_id: string; percent: string | null; comment: string | null }>> = {}
+    const usageMap: Record<string, { confirmation_date: string | null; is_used: string | null }> = {}
 
     // Helper functions
     const updateAllocation = (model_id: string, gbl_id: string, percent: string | null, comment: string | null): void => {
       if (!allocationMap[model_id]) {
-        allocationMap[model_id] = {};
+        allocationMap[model_id] = {}
       }
 
       if (!allocationMap[model_id][gbl_id]) {
-        allocationMap[model_id][gbl_id] = { model_id, gbl_id, percent: null, comment: null };
+        allocationMap[model_id][gbl_id] = { model_id, gbl_id, percent: null, comment: null }
       }
 
-      const allocation = allocationMap[model_id][gbl_id];
-      allocation.percent = percent !== null ? percent : allocation.percent;
-      allocation.comment = comment !== null ? comment : allocation.comment;
-    };
+      const allocation = allocationMap[model_id][gbl_id]
+      allocation.percent = percent !== null ? percent : allocation.percent
+      allocation.comment = comment !== null ? comment : allocation.comment
+    }
 
     const updateUsage = (model_id: string, confirmation_date: string | null, is_used: string | null): void => {
       if (!usageMap[model_id]) {
-        usageMap[model_id] = { confirmation_date: null, is_used: null };
+        usageMap[model_id] = { confirmation_date: null, is_used: null }
       }
 
-      const usage = usageMap[model_id];
+      const usage = usageMap[model_id]
       if (confirmation_date !== null) {
-        usage.confirmation_date = confirmation_date;
+        usage.confirmation_date = confirmation_date
       }
       if (is_used !== null) {
-        usage.is_used = is_used;
+        usage.is_used = is_used
       }
-    };
+    }
 
     // Process artefacts
     for (const modelItem of modelsArtefacts) {
-      const { model_id, model_source, artefacts } = modelItem;
+      const { model_id, model_source, artefacts } = modelItem
       modelSource = model_source
-      modelIds.add(model_id);
+      modelIds.add(model_id)
 
       for (const artefactItem of artefacts) {
-        const { artefact_tech_label, artefact_string_value } = artefactItem;
+        const { artefact_tech_label, artefact_string_value } = artefactItem
 
         switch (artefact_tech_label) {
           case 'model_name':
-            namesForUpdate.push({ model_id, model_name: artefact_string_value! });
-            break;
+            namesForUpdate.push({ model_id, model_name: artefact_string_value! })
+            break
           case 'model_desc':
-            descriptionsForUpdate.push({ model_id, model_desc: artefact_string_value! });
-            break;
+            descriptionsForUpdate.push({ model_id, model_desc: artefact_string_value! })
+            break
           case 'allocation_kib_usage':
           case 'allocation_smb_usage':
           case 'allocation_rb_usage':
           case 'allocation_kc_usage':
           case 'allocation_other_usage':
-            updateAllocation(model_id, ModelsService.getGblId(artefact_tech_label), artefact_string_value, null);
-            break;
+            updateAllocation(model_id, ModelsService.getGblId(artefact_tech_label), artefact_string_value, null)
+            break
           case 'allocation_kib_comment':
           case 'allocation_smb_comment':
           case 'allocation_rb_comment':
           case 'allocation_kc_comment':
           case 'allocation_other_comment':
-            updateAllocation(model_id, ModelsService.getGblId(artefact_tech_label), null, artefact_string_value);
-            break;
+            updateAllocation(model_id, ModelsService.getGblId(artefact_tech_label), null, artefact_string_value)
+            break
           case 'usage_confirm_flag_q1':
           case 'usage_confirm_flag_q2':
           case 'usage_confirm_flag_q3':
           case 'usage_confirm_flag_q4':
-            updateUsage(model_id, null, artefact_string_value);
-            break;
+            updateUsage(model_id, null, artefact_string_value)
+            break
           case 'usage_confirm_date_q1':
           case 'usage_confirm_date_q2':
           case 'usage_confirm_date_q3':
           case 'usage_confirm_date_q4':
-            updateUsage(model_id, artefact_string_value, null);
-            break;
+            updateUsage(model_id, artefact_string_value, null)
+            break
           case 'active_model': {
             if (modelSource !== 'sum-rm') {
-              continue;
+              continue
             }
-            const [model] = await this.mrmDatabaseService.query(getSumRmModel, { model_id });
-            artefactsForUpdate.push({ model_id, ...artefactItem });
+            const [model] = await this.mrmDatabaseService.query(getSumRmModel, { model_id })
+            artefactsForUpdate.push({ model_id, ...artefactItem })
             artefactsForUpdate.push({
               model_id,
               artefact_tech_label: 'update_date',
               artefact_string_value: new Date().toISOString(),
               artefact_value_id: null
-            });
+            })
 
             if (artefact_string_value !== model.active_model) {
               if (artefact_string_value === '1') {
                 const modelIdentifier = model.regulatory_code_model_pvr ||
                   model.model_id_from_model_owner ||
                   model.identifier_model_algorithm_for_rwa ||
-                  model.model_alias;
+                  model.model_alias
 
                 artefactsForUpdate.push({
                   model_id,
                   artefact_tech_label: 'model_id',
                   artefact_string_value: modelIdentifier,
                   artefact_value_id: null
-                });
+                })
               }
             }
-            break;
+            break
           }
           default:
-            artefactsForUpdate.push({ model_id, ...artefactItem });
+            artefactsForUpdate.push({ model_id, ...artefactItem })
         }
       }
     }
 
     const modelsAllocationForUpdate = Object.entries(allocationMap).reduce((acc, [model_id, allocations]) => {
-      const allocationArray = Object.values(allocations).map(allocation => ({ ...allocation, model_id }));
-      return acc.concat(allocationArray);
-    }, [] as Array<{ model_id: string; gbl_id: string; percent: string | null; comment: string | null }>);
+      const allocationArray = Object.values(allocations).map(allocation => ({ ...allocation, model_id }))
+      return acc.concat(allocationArray)
+    }, [] as Array<{ model_id: string; gbl_id: string; percent: string | null; comment: string | null }>)
 
     const modelsUsageForUpdate = Object.entries(usageMap).map(([model_id, usage]) => ({
       model_id,
       confirmation_date: usage.confirmation_date || null,
       is_used: usage.is_used ? usage.is_used === 'Да' : null
-    }));
+    }))
 
     if (modelSource === 'sum-rm') {
       // Perform database updates
@@ -267,20 +271,22 @@ export class ModelsService {
         descriptionsForUpdate.length && this.mrmDatabaseService.queryAll(updateSumRmModelDesc, descriptionsForUpdate),
         artefactsForUpdate.length && this.mrmDatabaseService.queryAll(updateSumRmArtefact, artefactsForUpdate),
         modelsAllocationForUpdate.length && this.mrmDatabaseService.queryAll(updateSumRmModelAllocation, modelsAllocationForUpdate),
-        modelsUsageForUpdate.length && this.mrmDatabaseService.queryAll(updateSumRmModelUsage, modelsUsageForUpdate),
-      ]);
+        modelsUsageForUpdate.length && this.mrmDatabaseService.queryAll(updateSumRmModelUsage, modelsUsageForUpdate)
+      ])
     } else {
       await Promise.all([
         namesForUpdate.length && this.sumDatabaseService.queryAll(updateSumModelName, namesForUpdate),
         descriptionsForUpdate.length && this.sumDatabaseService.queryAll(updateSumModelDesc, descriptionsForUpdate),
-        artefactsForUpdate.length && this.sumDatabaseService.queryAll(updateSumArtefact, artefactsForUpdate)
-      ]);
+        artefactsForUpdate.length && this.sumDatabaseService.queryAll(updateSumArtefact, artefactsForUpdate),
+        modelsAllocationForUpdate.length && modelsAllocationForUpdate.map(async item => await this.allocationSumService.update(item)),
+        modelsUsageForUpdate.length && modelsUsageForUpdate.map(async item => await this.usageSumService.update(item))
+      ])
     }
 
     if (modelIds.size) {
       // @TODO: обработка нескольких моделей
       if (modelSource === 'sum-rm') {
-        const [ model ] = await this.mrmDatabaseService.queryAll(getSumRmModel, Array.from(modelIds).map(id => ({ model_id: id, filter_date: null })));
+        const [model] = await this.mrmDatabaseService.queryAll(getSumRmModel, Array.from(modelIds).map(id => ({ model_id: id, filter_date: null })))
         const formattedResult = await this.formatResults(model)
 
         return {
@@ -289,7 +295,7 @@ export class ModelsService {
           }
         }
       } else {
-        const [ model ] = await this.sumDatabaseService.queryAll(getSumModel, Array.from(modelIds).map(id => ({ model_id: id, filter_date: null })));
+        const [model] = await this.sumDatabaseService.queryAll(getSumModel, Array.from(modelIds).map(id => ({ model_id: id, filter_date: null })))
         const formattedResult = await this.formatResults(model)
 
         return {
@@ -313,9 +319,9 @@ export class ModelsService {
       'allocation_smb_comment': 2,
       'allocation_rb_comment': 3,
       'allocation_kc_comment': 4,
-      'allocation_other_comment': 5,
-    };
-    return map[label];
+      'allocation_other_comment': 5
+    }
+    return map[label]
   }
 
   private createModelTypeDictionary(modelTypes: ModelType[]): Record<string, number> {

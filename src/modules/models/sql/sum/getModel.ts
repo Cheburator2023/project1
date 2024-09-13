@@ -47,27 +47,71 @@ SELECT m_.model_id                                                              
        COALESCE(NULLIF(m_.models_is_active_flg, ''), '1')                                                    AS active_model,
        'Нет данных'                                                                                          AS model_status,
        'Нет данных'                                                                                          AS model_status_assignee,
-       mupq.usage_confirm_date_q1,
-       mupq.usage_confirm_date_q2,
-       mupq.usage_confirm_date_q3,
-       mupq.usage_confirm_date_q4
+        -- Столбцы для дат подтверждения и флагов использования по кварталам
+        usage_data.usage_confirm_date_q1,
+        usage_data.usage_confirm_date_q2,
+        usage_data.usage_confirm_date_q3,
+        usage_data.usage_confirm_date_q4,
+        usage_data.usage_confirm_flag_q1,
+        usage_data.usage_confirm_flag_q2,
+        usage_data.usage_confirm_flag_q3,
+        usage_data.usage_confirm_flag_q4,
+
+        -- Столбцы для процентов использования по каждой ГБЛ
+        allocation_data.allocation_kib_usage,
+        allocation_data.allocation_smb_usage,
+        allocation_data.allocation_rb_usage,
+        allocation_data.allocation_kc_usage,
+        allocation_data.allocation_other_usage,
+
+        -- Столбцы для комментариев по каждой ГБЛ
+        allocation_data.allocation_kib_comment,
+        allocation_data.allocation_smb_comment,
+        allocation_data.allocation_rb_comment,
+        allocation_data.allocation_kc_comment,
+        allocation_data.allocation_other_comment
 FROM models m_
-         LEFT JOIN (SELECT model_id               AS system_model_id,
-                           MAX(CASE
-                                   WHEN EXTRACT(QUARTER FROM muc.confirmation_date) = 1 THEN muc.confirmation_date
-                                   ELSE NULL END) AS usage_confirm_date_q1,
-                           MAX(CASE
-                                   WHEN EXTRACT(QUARTER FROM muc.confirmation_date) = 2 THEN muc.confirmation_date
-                                   ELSE NULL END) AS usage_confirm_date_q2,
-                           MAX(CASE
-                                   WHEN EXTRACT(QUARTER FROM muc.confirmation_date) = 3 THEN muc.confirmation_date
-                                   ELSE NULL END) AS usage_confirm_date_q3,
-                           MAX(CASE
-                                   WHEN EXTRACT(QUARTER FROM muc.confirmation_date) = 4 THEN muc.confirmation_date
-                                   ELSE NULL END) AS usage_confirm_date_q4
-                    FROM model_usage_confirm muc
-                    WHERE EXTRACT(YEAR FROM muc.confirmation_date) = EXTRACT(YEAR FROM CURRENT_DATE)
-                    GROUP BY model_id) AS mupq ON m_.model_id = mupq.system_model_id
+         LEFT JOIN (
+    SELECT
+        muh.model_id                                                                                            AS usage_model_id,
+        MAX(CASE WHEN EXTRACT(QUARTER FROM muh.confirmation_date) = 1 THEN muh.confirmation_date ELSE NULL END) AS usage_confirm_date_q1,
+        MAX(CASE WHEN EXTRACT(QUARTER FROM muh.confirmation_date) = 2 THEN muh.confirmation_date ELSE NULL END) AS usage_confirm_date_q2,
+        MAX(CASE WHEN EXTRACT(QUARTER FROM muh.confirmation_date) = 3 THEN muh.confirmation_date ELSE NULL END) AS usage_confirm_date_q3,
+        MAX(CASE WHEN EXTRACT(QUARTER FROM muh.confirmation_date) = 4 THEN muh.confirmation_date ELSE NULL END) AS usage_confirm_date_q4,
+        MAX(CASE WHEN EXTRACT(QUARTER FROM muh.confirmation_date) = 1 AND muh.confirmed THEN '1' ELSE '0' END)    AS usage_confirm_flag_q1,
+        MAX(CASE WHEN EXTRACT(QUARTER FROM muh.confirmation_date) = 2 AND muh.confirmed THEN '1' ELSE '0' END)    AS usage_confirm_flag_q2,
+        MAX(CASE WHEN EXTRACT(QUARTER FROM muh.confirmation_date) = 3 AND muh.confirmed THEN '1' ELSE '0' END)    AS usage_confirm_flag_q3,
+        MAX(CASE WHEN EXTRACT(QUARTER FROM muh.confirmation_date) = 4 AND muh.confirmed THEN '1' ELSE '0' END)    AS usage_confirm_flag_q4
+    FROM model_usage_confirm as muh
+    GROUP BY muh.model_id
+) AS usage_data
+ON m_.model_id = usage_data.usage_model_id
+LEFT JOIN (
+    SELECT
+        mah.model_id                                                                     AS allocation_model_id,
+        MAX(CASE WHEN mah.gbl_name = 'КИБ' THEN mah.allocation_percent ELSE NULL END)    AS allocation_kib_usage,
+        MAX(CASE WHEN mah.gbl_name = 'СМБ' THEN mah.allocation_percent ELSE NULL END)    AS allocation_smb_usage,
+        MAX(CASE WHEN mah.gbl_name = 'РБ' THEN mah.allocation_percent ELSE NULL END)     AS allocation_rb_usage,
+        MAX(CASE WHEN mah.gbl_name = 'КЦ' THEN mah.allocation_percent ELSE NULL END)     AS allocation_kc_usage,
+        MAX(CASE WHEN mah.gbl_name = 'Другое' THEN mah.allocation_percent ELSE NULL END) AS allocation_other_usage,
+
+        MAX(CASE WHEN mah.gbl_name = 'КИБ' THEN mah.comment ELSE NULL END)               AS allocation_kib_comment,
+        MAX(CASE WHEN mah.gbl_name = 'СМБ' THEN mah.comment ELSE NULL END)               AS allocation_smb_comment,
+        MAX(CASE WHEN mah.gbl_name = 'РБ' THEN mah.comment ELSE NULL END)                AS allocation_rb_comment,
+        MAX(CASE WHEN mah.gbl_name = 'КЦ' THEN mah.comment ELSE NULL END)                AS allocation_kc_comment,
+        MAX(CASE WHEN mah.gbl_name = 'Другое' THEN mah.comment ELSE NULL END)            AS allocation_other_comment
+    FROM (
+        SELECT
+            model_id,
+            allocation_name as gbl_name,
+            percentage as allocation_percent,
+            comment
+        FROM model_allocation_usage mah
+        INNER JOIN model_allocations gbl ON mah.allocation_id = gbl.allocation_id
+    ) AS mah
+    GROUP BY mah.model_id
+) AS allocation_data
+ON m_.model_id = allocation_data.allocation_model_id
          LEFT JOIN (SELECT ar_.model_id,
                            STRING_AGG((CASE WHEN ar_.artefact_id = 173 THEN av_.artefact_value ELSE NULL END)::Varchar, ' > '
                                       ORDER BY ar_.artefact_value_id)                           AS model_type,
