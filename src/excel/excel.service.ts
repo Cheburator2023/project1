@@ -36,7 +36,7 @@ export class ExcelService {
         break;
       case "date":
         if (value) {
-          cell.string(isValidDate(value) ? formatDateTime(parseDate(value)) : "invalid date");
+          cell.string(isValidDate(value) ? formatDateTime(parseDate(value)) : "");
         } else {
           cell.string("");
         }
