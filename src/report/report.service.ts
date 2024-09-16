@@ -19,7 +19,7 @@ type Preset = {
 const PRESETS: Record<string, Preset> = {
   system_model_id: {
     key: "system_model_id",
-    title: "Идентифиактор версии модели",
+    title: "Идентификатор версии модели",
     type: "string"
   },
   model_name: {
@@ -99,7 +99,7 @@ export class ReportService {
       .filter(Boolean);
   }
 
-  generateReportHeaders(artefacts: Artefact[], modelArtefacts: string[]): Promise<Preset[]> {
+  private generateReportHeaders(artefacts: Artefact[], modelArtefacts: string[]): Promise<Preset[]> {
     const artefactHeaders = artefacts.map(
       ({ artefact_tech_label, artefact_label, artefact_type_desc }) => ({
         key: artefact_tech_label,
@@ -113,7 +113,7 @@ export class ReportService {
     return [...modelArtefactHeaders, ...artefactHeaders];
   }
 
-  async generateReportBody(filters, artefacts: Artefact[], modelArtefacts): Promise<any[]> {
+  private async generateReportBody(filters, artefacts: Artefact[], modelArtefacts): Promise<any[]> {
     // Генерация конечного SQL запроса
     const request = `
       WITH ranked_artefacts AS (
@@ -160,7 +160,7 @@ FROM models_new m
     return await this.mrmDatabaseService.query(request, []);
   }
 
-  generateAggregateSqlRequest(artefacts) {
+  private generateAggregateSqlRequest(artefacts) {
     // Создание строки для агрегированных значений
     const aggregatedColumns = artefacts.map((artefact, index) => {
       const isLastElement = index === artefacts.length - 1;
@@ -183,7 +183,7 @@ FROM models_new m
     `;
   }
 
-  generateFilterSqlRequest(artefacts, filters) {
+  private generateFilterSqlRequest(artefacts, filters) {
     const constructFilterCondition = (artefact, filter) => {
       if (!filter.length) {
         return "";
@@ -232,7 +232,7 @@ FROM models_new m
     return `SELECT system_model_id FROM sorted_artefacts AS arr WHERE ${mappedArtefacts} GROUP BY system_model_id HAVING COUNT(DISTINCT artefact_id) = ${artefactCount}`;
   }
 
-  generateFilterModelSqlRequest = ({
+  private generateFilterModelSqlRequest = ({
                                      system_model_id,
                                      root_model_id,
                                      update_date,
