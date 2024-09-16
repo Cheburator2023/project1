@@ -8,7 +8,7 @@ import { getModels as getSumModels } from './sql/sum';
 import { distributionByLifecycleStageModels as distributionByLifecycleStageSumModels } from './sql/sum';
 import { tasks as sumTasks } from './sql/sum';
 
-import { developedModels as developedSumRmModels } from './sql/sum-rm';
+import { developedModels as developedSumRmModels } from './sql/sum-rm'
 import { implementedModels as implementedSumRmModels } from './sql/sum-rm';
 import { finalStatusModels as finalStatusSumRmModels } from './sql/sum-rm';
 import { getModels as getSumRmModels } from './sql/sum-rm';
@@ -16,7 +16,7 @@ import { isStage05A as isSumRmStage05A } from './sql/sum-rm';
 import { isTakenOutOfOperationModels as isTakenOutOfOperationSumRmModels } from './sql/sum-rm';
 import { isOnMonitoringModels as isOnMonitoringSumRmModels } from './sql/sum-rm';
 import { stalledModels as stalledSumRmModels } from './sql/sum-rm';
-// import { sql as isFinalStatusByMonthModels } from './sql/finalStatusByMonthModels';
+import { finalStatusByMonthModels as finalStatusByMonthSumRmModels } from './sql/sum-rm';
 
 @Injectable()
 export class MetricsService {
@@ -519,29 +519,29 @@ export class MetricsService {
         };
     }
 
-    // private async getFilnalStatusByMonthModels(
-    //     startDate: string | null = null,
-    //     endDate: string | null = null,
-    //     dsStream: string | null = null,
-    // ) {
-    //     const rawData = await this.mrmDatabaseService.query(
-    //         isFinalStatusByMonthModels,
-    //         [startDate, endDate, dsStream],
-    //     );
+    private async getFilnalStatusByMonthModels(
+      startDate: string | null = null,
+      endDate: string | null = null,
+      dsStream: string[] | null = null,
+    ) {
+        const rawData = await this.mrmDatabaseService.query(
+          finalStatusByMonthSumRmModels,
+          [startDate, endDate, dsStream],
+        );
 
-    //     const finalStatusByMonthModels = Array(12).fill(0);
+        const finalStatusByMonthModels = Array(12).fill(0);
 
-    //     rawData.forEach((row) => {
-    //         const monthIndex = row.month - 1;
-    //         finalStatusByMonthModels[monthIndex] = Number(
-    //             row.final_status_by_month_count,
-    //         );
-    //     });
+        rawData.forEach((row) => {
+            const monthIndex = row.month - 1;
+            finalStatusByMonthModels[monthIndex] = Number(
+              row.final_status_by_month_count,
+            );
+        });
 
-    //     return {
-    //         finalStatusByMonthModels,
-    //     };
-    // }
+        return {
+            finalStatusByMonthModels,
+        };
+    }
 
     private async getTasks(
       startDate: string | null = null,
@@ -581,7 +581,7 @@ export class MetricsService {
             this.getTakenOutOfOperation(startDate, endDate, stream),
             this.getOnMonitoringModels(startDate, endDate, stream),
             this.getStalledModelsByMonth(startDate, endDate, stream),
-            // this.getFilnalStatusByMonthModels(startDate, endDate, stream),
+            this.getFilnalStatusByMonthModels(startDate, endDate, stream),
             this.getTasks(startDate, endDate),
         ]);
 
