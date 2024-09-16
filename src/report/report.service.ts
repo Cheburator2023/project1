@@ -83,12 +83,20 @@ export class ReportService {
     }, {});
 
     const headers = this.generateReportHeaders(artefacts, Object.keys(modelArtefacts));
+    const sortedHeaders = this.sortHeadersByFilters(headers, filters);
     const body = await this.generateReportBody(filters, artefacts, modelArtefacts);
 
     return {
-      headers,
+      headers: sortedHeaders,
       body
     };
+  }
+
+  private sortHeadersByFilters(headers, filters) {
+    return Object
+      .keys(filters)
+      .map(filterKey => headers.find(header => header.key === filterKey))
+      .filter(Boolean);
   }
 
   generateReportHeaders(artefacts: Artefact[], modelArtefacts: string[]): Promise<Preset[]> {
