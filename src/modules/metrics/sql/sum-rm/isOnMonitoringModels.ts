@@ -1,12 +1,9 @@
-const sql = `
-SELECT COUNT(DISTINCT m_.model_id) AS implemented_models_count
+const isOnMonitoringModels = `
+SELECT COUNT(DISTINCT m_.model_id) AS on_monitoring_models_count
 FROM models_new m_
 JOIN artefact_realizations_new ar_ ON m_.model_id = ar_.model_id
-WHERE ar_.artefact_id IN (2081, 2101)
-  AND (
-      ar_.artefact_string_value = 'Внедряется' 
-      OR ar_.artefact_string_value IN ('Внедрена в ПИМ', 'Внедрена вне ПИМ')
-  )
+WHERE ar_.artefact_id = 2090
+  AND ar_.artefact_string_value IS NOT NULL
   AND (
       $1::Date IS NULL
       OR (
@@ -20,4 +17,4 @@ WHERE ar_.artefact_id IN (2081, 2101)
   );
 `;
 
-export { sql };
+export { isOnMonitoringModels };

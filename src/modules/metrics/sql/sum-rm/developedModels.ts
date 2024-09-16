@@ -1,4 +1,4 @@
-const sql = `
+const developedModels = `
 SELECT COUNT(DISTINCT m_.model_id) AS developed_models_count
 FROM models_new m_
 JOIN artefact_realizations_new ar_ ON m_.model_id = ar_.model_id
@@ -20,4 +20,4 @@ WHERE ar_.artefact_id IN (2081, 2101)
   );
 `;
 
-export { sql };
+export { developedModels };

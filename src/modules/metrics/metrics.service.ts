@@ -1,17 +1,22 @@
 import { Injectable } from '@nestjs/common';
 import { SumDatabaseService } from 'src/system/sum-database/database.service';
 import { MrmDatabaseService } from 'src/system/mrm-database/database.service';
-import { sql as distributionByLifecycleStageModels } from './sql/distributionByLifecycleStageModels';
-import { sql as developedModels } from './sql/developedModels';
-import { sql as implementedModels } from './sql/implementedModels';
-import { sql as finalStatusModels } from './sql/filnalStatusModels';
-import { sql as sumRmModels } from './sql/sumRmModels';
-import { sql as isStage05A } from './sql/isStage05A';
-import { sql as isTakenOutOfOperationModels } from './sql/isTakenOutOfOperationModels';
-import { sql as isOnMonitoringModels } from './sql/isOnMonitoringModels';
-import { sql as isStalledModelsByMonth } from './sql/stalledModels';
-import { sql as isFinalStatusByMonthModels } from './sql/finalStatusByMonthModels';
-import { sql as tasks } from './sql/tasks';
+
+import { developedModels as developedSumModels } from './sql/sum';
+import { implementedModels as implementedSumModels } from './sql/sum';
+import { getModels as getSumModels } from './sql/sum';
+import { distributionByLifecycleStageModels as distributionByLifecycleStageSumModels } from './sql/sum';
+import { tasks as sumTasks } from './sql/sum';
+
+import { developedModels as developedSumRmModels } from './sql/sum-rm';
+import { implementedModels as implementedSumRmModels } from './sql/sum-rm';
+import { finalStatusModels as finalStatusSumRmModels } from './sql/sum-rm';
+import { getModels as getSumRmModels } from './sql/sum-rm';
+import { isStage05A as isSumRmStage05A } from './sql/sum-rm';
+import { isTakenOutOfOperationModels as isTakenOutOfOperationSumRmModels } from './sql/sum-rm';
+import { isOnMonitoringModels as isOnMonitoringSumRmModels } from './sql/sum-rm';
+import { stalledModels as stalledSumRmModels } from './sql/sum-rm';
+// import { sql as isFinalStatusByMonthModels } from './sql/finalStatusByMonthModels';
 
 @Injectable()
 export class MetricsService {
@@ -98,7 +103,7 @@ export class MetricsService {
       endDate: string | null = null,
     ) {
         const rawData = await this.sumDatabaseService.query(
-          distributionByLifecycleStageModels,
+          distributionByLifecycleStageSumModels,
           [startDate, endDate],
         );
 
@@ -115,28 +120,44 @@ export class MetricsService {
       endDate: string | null = null,
       dsStream: string[] | null = null,
     ) {
-        const rawData = await this.mrmDatabaseService.query(developedModels, [
+        const sumRawData = await this.sumDatabaseService.query(developedSumModels, [
             startDate,
             endDate,
             dsStream,
         ]);
 
-        const developedModelsCount = Number(
-          rawData[0]?.developed_models_count || 0,
+        const sumRmRawData = await this.mrmDatabaseService.query(developedSumRmModels, [
+            startDate,
+            endDate,
+            dsStream,
+        ]);
+
+        const developedModelsCount =
+          Number(sumRawData[0]?.developed_models_count || 0) +
+          Number(sumRmRawData[0]?.developed_models_count || 0);
+
+        const sumDelta = await this.calculateDelta(
+          developedSumModels,
+          this.sumDatabaseService,
+          dsStream,
+          endDate,
+          'developed_models',
         );
 
-        const delta = await this.calculateDelta(
-          developedModels,
+        const sumRmDelta = await this.calculateDelta(
+          developedSumRmModels,
           this.mrmDatabaseService,
           dsStream,
           endDate,
           'developed_models',
         );
 
+        const deltaCount = sumDelta + sumRmDelta
+
         return {
             developedModels: {
                 count: developedModelsCount,
-                delta: delta,
+                delta: deltaCount,
             },
         };
     }
@@ -146,28 +167,44 @@ export class MetricsService {
       endDate: string | null = null,
       dsStream: string[] | null = null,
     ) {
-        const rawData = await this.mrmDatabaseService.query(implementedModels, [
+        const sumRawData = await this.sumDatabaseService.query(implementedSumModels, [
             startDate,
             endDate,
             dsStream,
         ]);
 
-        const implementedModelsCount = Number(
-          rawData[0]?.implemented_models_count || 0,
+        const sumRmRawData = await this.mrmDatabaseService.query(implementedSumRmModels, [
+            startDate,
+            endDate,
+            dsStream,
+        ]);
+
+        const implementedModelsCount =
+          Number(sumRawData[0]?.implemented_models_count || 0) +
+          Number(sumRmRawData[0]?.implemented_models_count || 0);
+
+        const sumDelta = await this.calculateDelta(
+          implementedSumModels,
+          this.sumDatabaseService,
+          dsStream,
+          endDate,
+          'implemented_models',
         );
 
-        const delta = await this.calculateDelta(
-          implementedModels,
+        const sumRmDelta = await this.calculateDelta(
+          implementedSumRmModels,
           this.mrmDatabaseService,
           dsStream,
           endDate,
           'implemented_models',
         );
 
+        const deltaCount = sumDelta + sumRmDelta
+
         return {
             implementedModels: {
                 count: implementedModelsCount,
-                delta: delta,
+                delta: deltaCount,
             },
         };
     }
@@ -177,7 +214,7 @@ export class MetricsService {
       endDate: string | null = null,
       dsStream: string[] | null = null,
     ) {
-        const rawData = await this.mrmDatabaseService.query(finalStatusModels, [
+        const rawData = await this.mrmDatabaseService.query(finalStatusSumRmModels, [
             startDate,
             endDate,
             dsStream,
@@ -188,7 +225,7 @@ export class MetricsService {
         );
 
         const delta = await this.calculateDelta(
-          finalStatusModels,
+          finalStatusSumRmModels,
           this.mrmDatabaseService,
           dsStream,
           endDate,
@@ -208,26 +245,46 @@ export class MetricsService {
       endDate: string | null = null,
       dsStream: string[] | null = null,
     ) {
-        const rawData = await this.mrmDatabaseService.query(sumRmModels, [
+
+        const sumRawData = await this.sumDatabaseService.query(getSumModels, [
             startDate,
             endDate,
             dsStream,
         ]);
 
-        const sumRmModelsCount = Number(rawData[0]?.sum_rm_models_count || 0);
+        const sumRmRawData = await this.mrmDatabaseService.query(getSumRmModels, [
+            startDate,
+            endDate,
+            dsStream,
+        ]);
 
-        const delta = await this.calculateDelta(
-          sumRmModels,
+        const modelsCount =
+          Number(sumRawData[0]?.sum_models_count || 0) +
+          Number(sumRmRawData[0]?.sum_rm_models_count || 0);
+
+
+        const sumDelta = await this.calculateDelta(
+          getSumModels,
+          this.sumDatabaseService,
+          dsStream,
+          endDate,
+          'sum_rm_models',
+        );
+
+        const sumRmDelta = await this.calculateDelta(
+          getSumRmModels,
           this.mrmDatabaseService,
           dsStream,
           endDate,
           'sum_rm_models',
         );
 
+        const deltaCount = sumDelta + sumRmDelta
+
         return {
             sumRmModels: {
-                count: sumRmModelsCount,
-                delta: delta,
+                count: modelsCount,
+                delta: deltaCount,
             },
         };
     }
@@ -362,7 +419,7 @@ export class MetricsService {
       endDate: string | null = null,
       dsStream: string[] | null = null,
     ) {
-        const rawData = await this.mrmDatabaseService.query(isStage05A, [
+        const rawData = await this.mrmDatabaseService.query(isSumRmStage05A, [
             startDate,
             endDate,
             dsStream,
@@ -384,7 +441,7 @@ export class MetricsService {
       dsStream: string[] | null = null,
     ) {
         const rawData = await this.mrmDatabaseService.query(
-          isTakenOutOfOperationModels,
+          isTakenOutOfOperationSumRmModels,
           [startDate, endDate, dsStream],
         );
 
@@ -393,7 +450,7 @@ export class MetricsService {
         );
 
         const delta = await this.calculateDelta(
-          isTakenOutOfOperationModels,
+          isTakenOutOfOperationSumRmModels,
           this.mrmDatabaseService,
           dsStream,
           endDate,
@@ -415,7 +472,7 @@ export class MetricsService {
       dsStream: string[] | null = null,
     ) {
         const rawData = await this.mrmDatabaseService.query(
-          isOnMonitoringModels,
+          isOnMonitoringSumRmModels,
           [startDate, endDate, dsStream],
         );
 
@@ -424,7 +481,7 @@ export class MetricsService {
         );
 
         const deltaPercent = await this.calculateDelta(
-          isOnMonitoringModels,
+          isOnMonitoringSumRmModels,
           this.mrmDatabaseService,
           dsStream,
           endDate,
@@ -446,7 +503,7 @@ export class MetricsService {
       dsStream: string[] | null = null,
     ) {
         const rawData = await this.mrmDatabaseService.query(
-          isStalledModelsByMonth,
+          stalledSumRmModels,
           [startDate, endDate, dsStream],
         );
 
@@ -490,7 +547,7 @@ export class MetricsService {
       startDate: string | null = null,
       endDate: string | null = null,
     ) {
-        const rawData = await this.sumDatabaseService.query(tasks, [
+        const rawData = await this.sumDatabaseService.query(sumTasks, [
             startDate,
             endDate,
         ]);

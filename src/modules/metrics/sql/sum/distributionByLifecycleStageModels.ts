@@ -1,4 +1,4 @@
-const sql = `
+const distributionByLifecycleStageModels = `
 SELECT CASE
            WHEN bp.bpmn_key_desc = 'initialization' THEN 'Инициализация'
            WHEN bp.bpmn_key_desc = 'data_pilot' THEN 'Пилотирование'
@@ -36,4 +36,4 @@ ORDER BY CASE
              END;
 `;
 
-export { sql };
+export { distributionByLifecycleStageModels };

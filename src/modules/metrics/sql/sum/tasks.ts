@@ -1,4 +1,4 @@
-const sql = `
+const tasks = `
 SELECT 
     SUM(CASE WHEN t.functional_role IN ('validator', 'validator_lead') THEN 1 ELSE 0 END) AS validation_count,
     SUM(CASE WHEN t.functional_role IN ('ds', 'ds_lead') THEN 1 ELSE 0 END) AS datasource_count
@@ -17,4 +17,4 @@ FROM
     ) t;
 `;
 
-export { sql };
+export { tasks };
