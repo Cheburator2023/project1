@@ -262,12 +262,20 @@ export class MetricsDto {
   })
   @IsOptional()
   @IsDateString()
-  date: string;
+  startDate: string;
 
   @ApiModelPropertyOptional({
-    example: 'stream_mame',
+    example: 'YYYY-MM-DD',
   })
   @IsOptional()
-  @IsString()
-  stream: string;
+  @IsDateString()
+  endDate: string;
+
+  @ApiModelPropertyOptional({
+    example: ['stream_name1', 'stream_name2'],
+  })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  stream: string[];
 }

@@ -23,7 +23,7 @@ export class ExcelService {
   setCellValue(cell: excel.Cell, header: Header, item: Item): void {
     const value = item[header.key as keyof Item];
     if (!header?.type) {
-      cell.string(value ? value.toString() : "Нет данных");
+      cell.string(value ? value.toString() : "");
       return;
     }
 
@@ -38,11 +38,11 @@ export class ExcelService {
         if (value) {
           cell.string(isValidDate(value) ? formatDateTime(parseDate(value)) : "invalid date");
         } else {
-          cell.string("Нет данных");
+          cell.string("");
         }
         break;
       default:
-        cell.string(value ? value.toString() : "Нет данных");
+        cell.string(value ? value.toString() : "");
         break;
     }
   }
