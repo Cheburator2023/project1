@@ -1,4 +1,4 @@
-const sql = `
+const getModels = `
 SELECT COUNT(DISTINCT m_.model_id) AS sum_rm_models_count
 FROM models_new m_
 LEFT JOIN artefact_realizations_new ar_ ON m_.model_id = ar_.model_id
@@ -15,4 +15,4 @@ AND (
 );
 `;
 
-export { sql };
+export { getModels };

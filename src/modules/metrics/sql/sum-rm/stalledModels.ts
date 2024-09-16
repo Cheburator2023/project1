@@ -1,4 +1,4 @@
-const sql = `
+const stalledModels = `
 WITH stalled_models AS (
     SELECT DISTINCT
         m_.model_id,
@@ -32,4 +32,4 @@ ORDER BY
     month;
 `;
 
-export { sql };
+export { stalledModels };

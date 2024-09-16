@@ -1,9 +1,9 @@
-const sql = `
-SELECT COUNT(DISTINCT m_.model_id) AS stage_05a_count
+const isTakenOutOfOperationModels = `
+SELECT COUNT(DISTINCT m_.model_id) AS taken_out_of_operation_models_count
 FROM models_new m_
 JOIN artefact_realizations_new ar_ ON m_.model_id = ar_.model_id
-WHERE ar_.artefact_id = 2079
-  AND ar_.artefact_string_value IS NOT NULL
+WHERE ar_.artefact_id = 2011
+  AND ar_.artefact_string_value = '0'
   AND (
       $1::Date IS NULL
       OR (
@@ -17,4 +17,4 @@ WHERE ar_.artefact_id = 2079
   );
 `;
 
-export { sql };
+export { isTakenOutOfOperationModels };
