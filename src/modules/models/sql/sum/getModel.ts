@@ -7,11 +7,10 @@ SELECT m_.model_id                                                              
        m_.model_name,
        m_.model_desc,
        m_.create_date,
-       clsf_.model_type,
        m_.model_version,
-       'Нет данных'                                                                                          AS model_indicator,
-       'Нет данных'                                                                                          AS calibration_version,
-       'Нет данных'                                                                                          AS calibration_date,
+       null                                                                                          AS model_indicator,
+       null                                                                                          AS calibration_version,
+       null                                                                                          AS calibration_date,
        CAST('model' || m_.root_model_id AS Varchar(4000)) || '-v' || CAST(m_.model_version AS Varchar(4000)) AS model_alias,
        dm_.significance_validity,
        dm_.segment_name,
@@ -42,11 +41,11 @@ SELECT m_.model_id                                                              
        dm_.model_changes_info,
        m_.model_id                                                                                           AS uuid,
        dm_.DS_DEPARTMENT                                                                                     AS ds_stream,
-       'Нет данных'                                                                                          AS assignment_contractor,
+       null                                                                                          AS assignment_contractor,
        dm_.solution_to_implement_model,
        COALESCE(NULLIF(m_.models_is_active_flg, ''), '1')                                                    AS active_model,
-       'Нет данных'                                                                                          AS model_status,
-       'Нет данных'                                                                                          AS model_status_assignee,
+       null                                                                                          AS model_status,
+       null                                                                                          AS model_status_assignee,
         -- Столбцы для дат подтверждения и флагов использования по кварталам
         usage_data.usage_confirm_date_q1,
         usage_data.usage_confirm_date_q2,
@@ -113,8 +112,6 @@ LEFT JOIN (
 ) AS allocation_data
 ON m_.model_id = allocation_data.allocation_model_id
          LEFT JOIN (SELECT ar_.model_id,
-                           STRING_AGG((CASE WHEN ar_.artefact_id = 173 THEN av_.artefact_value ELSE NULL END)::Varchar, ' > '
-                                      ORDER BY ar_.artefact_value_id)                           AS model_type,
                            STRING_AGG((CASE WHEN ar_.artefact_id = 57 THEN av_.artefact_value_id ELSE NULL END)::Varchar, ','
                                       ORDER BY ar_.artefact_value_id)                           AS product_and_scope_id,
                            STRING_AGG((CASE WHEN ar_.artefact_id = 73 THEN av_.artefact_value ELSE NULL END)::Varchar, ' > '

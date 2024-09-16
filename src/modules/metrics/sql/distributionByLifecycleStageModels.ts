@@ -14,7 +14,13 @@ LEFT JOIN (
            bpmn_key_id,
            ROW_NUMBER() OVER (PARTITION BY model_id ORDER BY create_dttm DESC) AS row_num
     FROM bpmn_instances
-    WHERE :filter_date::Date IS NULL OR create_dttm <= :filter_date::Date
+    WHERE (
+        $1::Date IS NULL
+        OR (
+            effective_from <= $2::Date
+            AND (effective_to IS NULL OR effective_to >= $1::Date)
+        )
+    )
 ) AS bi
 ON bp.bpmn_key_id = bi.bpmn_key_id
    AND bi.row_num = 1

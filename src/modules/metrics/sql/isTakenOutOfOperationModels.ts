@@ -6,11 +6,14 @@ WHERE ar_.artefact_id = 2011
   AND ar_.artefact_string_value = '0'
   AND (
       $1::Date IS NULL
-      OR (ar_.effective_from <= $1 AND (ar_.effective_to IS NULL OR ar_.effective_to > $1))
+      OR (
+          ar_.effective_from <= $2::Date
+          AND (ar_.effective_to IS NULL OR ar_.effective_to >= $1::Date)
+      )
   )
   AND (
-      $2::VARCHAR IS NULL
-      OR (ar_.artefact_id = 2074 AND ar_.artefact_string_value = $2::VARCHAR)
+      $3::VARCHAR[] IS NULL
+      OR (ar_.artefact_id = 2074 AND ar_.artefact_string_value = ANY($3::VARCHAR[]))
   );
 `;
 

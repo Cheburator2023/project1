@@ -22,11 +22,6 @@ const PRESETS: Record<string, Preset> = {
     title: "Идентифиактор версии модели",
     type: "string"
   },
-  update_date: {
-    key: "update_date",
-    title: "Отчетная дата / дата последних изменений информации о Модели",
-    type: "date"
-  },
   model_name: {
     key: "model_name",
     title: "Название модели",

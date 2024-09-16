@@ -8,8 +8,11 @@ FROM
         FROM assignee_hist
         WHERE
             (
-                :filter_date::Date IS NULL
-                OR (effective_from <= :filter_date AND (effective_to IS NULL OR effective_to > :filter_date))
+                $1::Date IS NULL
+                OR (
+                    effective_from <= $2::Date
+                    AND (effective_to IS NULL OR effective_to >= $1::Date)
+                )
             )
     ) t;
 `;

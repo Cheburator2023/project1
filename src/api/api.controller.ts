@@ -157,8 +157,12 @@ export class ApiController {
 
   @Get('/metrics/')
   async getMetrics(@Query() query: MetricsDto, @Res() response) {
-    const { date, stream } = query;
-    const data = await this.metricsService.getMetrics(date, stream);
+    const { startDate, endDate, stream } = query;
+    const data = await this.metricsService.getMetrics(
+      startDate,
+      endDate,
+      stream,
+    );
     return response.status(HttpStatus.OK).json(data);
   }
 
