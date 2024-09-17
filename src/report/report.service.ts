@@ -37,6 +37,11 @@ const PRESETS: Record<string, Preset> = {
     title: "Алиас модели",
     type: "string"
   },
+  update_date: {
+    key: "update_date",
+    title: "Отчетная дата / дата последних изменений информации о Модели",
+    type: "date"
+  },
   model_source: {
     key: "model_source",
     title: "Система источник данных",

@@ -3,6 +3,7 @@ SELECT
     m.model_name,
     m.model_version,
     m.create_date,
+    m.update_date,
     CASE
         WHEN m.root_model_id != '' THEN
             (CAST('model' AS VARCHAR(4000)) ||  m.root_model_id || '-v' || CAST(m.model_version AS VARCHAR(4000)))
@@ -234,8 +235,7 @@ LEFT JOIN (
         MAX(CASE WHEN artefact_id = 2107 THEN artefact_string_value ELSE NULL END) AS operational_monitoring,
         MAX(CASE WHEN artefact_id = 2108 THEN artefact_string_value ELSE NULL END) AS analytical_monitoring,
         MAX(CASE WHEN artefact_id = 2109 THEN artefact_string_value ELSE NULL END) AS business_model_risk_subtype,
-        MAX(CASE WHEN artefact_id = 2110 THEN artefact_string_value ELSE NULL END) AS rating_model,
-        MAX(CASE WHEN artefact_id = 2111 THEN artefact_string_value ELSE NULL END) AS update_date
+        MAX(CASE WHEN artefact_id = 2110 THEN artefact_string_value ELSE NULL END) AS rating_model
     FROM (
         SELECT
             artefact_realizations_new.model_id,
