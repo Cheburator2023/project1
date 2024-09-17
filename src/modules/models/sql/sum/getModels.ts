@@ -8,6 +8,7 @@ SELECT m_.model_id                                                              
        m_.model_desc,
        m_.create_date,
        m_.model_version,
+       m_.update_date,
        null                                                                                          AS model_indicator,
        null                                                                                          AS calibration_version,
        null                                                                                          AS calibration_date,

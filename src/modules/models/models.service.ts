@@ -9,6 +9,7 @@ import {
   getModels as getSumModels,
   updateModelName as updateSumModelName,
   updateModelDesc as updateSumModelDesc,
+  updateModelUpdateDate as updateSumModelUpdateDate,
   updateArtefact as updateSumArtefact
 } from './sql/sum'
 import {
@@ -20,6 +21,7 @@ import {
   updateModelUsage as updateSumRmModelUsage,
   updateModelName as updateSumRmModelName,
   updateModelDesc as updateSumRmModelDesc,
+  updateModelUpdateDate as updateSumRmModelUpdateDate,
   updateArtefact as updateSumRmArtefact
 } from './sql/sum-rm'
 
@@ -137,6 +139,7 @@ export class ModelsService {
     const modelIds: Set<string> = new Set()
     const namesForUpdate: Array<{ model_id: string; model_name: string }> = []
     const descriptionsForUpdate: Array<{ model_id: string; model_desc: string }> = []
+    const updateDateForUpdate: Array<{ model_id: string; update_date: string }> = []
     const artefactsForUpdate: Array<{
       model_id: string;
       artefact_tech_label: string;
@@ -223,11 +226,9 @@ export class ModelsService {
             }
             const [model] = await this.mrmDatabaseService.query(getSumRmModel, { model_id, filter_date: null })
             artefactsForUpdate.push({ model_id, ...artefactItem })
-            artefactsForUpdate.push({
+            updateDateForUpdate.push({
               model_id,
-              artefact_tech_label: 'update_date',
-              artefact_string_value: new Date().toISOString(),
-              artefact_value_id: null
+              update_date: new Date().toISOString()
             })
 
             if (artefact_string_value !== model.active_model) {
@@ -269,6 +270,7 @@ export class ModelsService {
       await Promise.all([
         namesForUpdate.length && this.mrmDatabaseService.queryAll(updateSumRmModelName, namesForUpdate),
         descriptionsForUpdate.length && this.mrmDatabaseService.queryAll(updateSumRmModelDesc, descriptionsForUpdate),
+        updateDateForUpdate.length && this.mrmDatabaseService.queryAll(updateSumRmModelUpdateDate, updateDateForUpdate),
         artefactsForUpdate.length && this.mrmDatabaseService.queryAll(updateSumRmArtefact, artefactsForUpdate),
         modelsAllocationForUpdate.length && this.mrmDatabaseService.queryAll(updateSumRmModelAllocation, modelsAllocationForUpdate),
         modelsUsageForUpdate.length && this.mrmDatabaseService.queryAll(updateSumRmModelUsage, modelsUsageForUpdate)
@@ -277,6 +279,7 @@ export class ModelsService {
       await Promise.all([
         namesForUpdate.length && this.sumDatabaseService.queryAll(updateSumModelName, namesForUpdate),
         descriptionsForUpdate.length && this.sumDatabaseService.queryAll(updateSumModelDesc, descriptionsForUpdate),
+        updateDateForUpdate.length && this.sumDatabaseService.queryAll(updateSumModelUpdateDate, updateDateForUpdate),
         artefactsForUpdate.length && this.sumDatabaseService.queryAll(updateSumArtefact, artefactsForUpdate),
         modelsAllocationForUpdate.length && modelsAllocationForUpdate.map(async item => await this.allocationSumService.update(item)),
         modelsUsageForUpdate.length && modelsUsageForUpdate.map(async item => await this.usageSumService.update(item))
@@ -411,7 +414,7 @@ export class ModelsService {
 
   private static formatDateField(value: string | null): string | null {
     if (value === null) return null
-    return isValidDate(value) ? formatDateTime(parseDate(value)) : 'invalid date'
+    return isValidDate(value) ? formatDateTime(parseDate(value)) : ''
   }
 
   private static formatNumberField(value: number | null): string | null {

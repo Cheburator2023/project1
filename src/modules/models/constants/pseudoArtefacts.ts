@@ -32,6 +32,17 @@ const pseudoArtefacts: Artefact[] = [
     values: []
   },
 
+  {
+    artefact_id: 2120,
+    artefact_tech_label: 'update_date',
+    artefact_label: 'Дата обновления',
+    is_edit_flg: '0',
+    artefact_desc: '',
+    artefact_type_id: '4',
+    artefact_type_desc: 'date',
+    values: []
+  },
+
   // @TODO: Группа: Аллокация применения (указывается в %, максимально 100 по всем 5 полям)
 
   {

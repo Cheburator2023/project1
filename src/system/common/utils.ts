@@ -88,6 +88,11 @@ const formatDateTime = (date: Date): string => {
   const mm = pad(date.getMinutes());
   const ss = pad(date.getSeconds());
 
+  // @TODO: привести к одному формату фронт + отчеты
+  if (`${HH}:${mm}:${ss}` === '00:00:00') {
+    return `${yyyy}-${MM}-${dd} 24:00`
+  }
+
   return `${yyyy}-${MM}-${dd} ${HH}:${mm}:${ss}`;
 };
 
