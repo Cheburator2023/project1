@@ -67,16 +67,11 @@ export class ModelsService {
   ) {
   }
 
-  async getModels({ date }: ModelsDto): Promise<{ data: { cards: Model[] } }> {
+  async getModels(dto?: ModelsDto): Promise<Model[]> {
+    const { date } = dto || {}
     const results = await this.fetchAndMergeModels(date)
 
-    const formattedResults = await this.formatResults(results)
-
-    return {
-      data: {
-        cards: formattedResults
-      }
-    }
+    return await this.formatResults(results)
   }
 
   async getModelsByDates({ firstDate, secondDate }: CompareModelsDto): Promise<{ data: { cards: GroupedResults } }> {
@@ -371,11 +366,11 @@ export class ModelsService {
   }
 
   private async formatResults(models: Model[]): Promise<Model[]> {
-    const artefactLabels: Record<string, Artefact> = await this.getArtefactLabels()
+    const artefacts: Artefact[] = await this.getArtefactLabels()
 
     return models.map((model: Model): Model => {
       Object.keys(model).forEach((techLabel) => {
-        const artefact = artefactLabels[techLabel]
+        const artefact = artefacts.find(({ artefact_tech_label }) => artefact_tech_label === techLabel)
 
         if (artefact) {
           const artefactTypeId = artefact.artefact_type_id
@@ -383,6 +378,9 @@ export class ModelsService {
 
           if (ArtefactFormatting[artefactTypeId]) {
             switch (ArtefactFormatting[artefactTypeId]) {
+              case ArtefactFormattingType.TEXT:
+                model[techLabel] = ModelsService.formatStringField(value)
+                break
               case ArtefactFormattingType.DATE:
                 model[techLabel] = ModelsService.formatDateField(value)
                 break
@@ -401,20 +399,14 @@ export class ModelsService {
     })
   }
 
-  private async getArtefactLabels(): Promise<Record<string, Artefact>> {
-    const artefacts = await this.getPreparedArtefacts()
-
-    return artefacts.data.reduce((acc: Record<string, Artefact>, artefact: Artefact) => {
-      if (ArtefactFormatting[artefact.artefact_type_id]) {
-        acc[artefact.artefact_tech_label] = artefact
-      }
-      return acc
-    }, {} as Record<string, Artefact>)
-  }
-
   private static formatDateField(value: string | null): string | null {
     if (value === null) return null
     return isValidDate(value) ? formatDateTime(parseDate(value)) : ''
+  }
+
+  private static formatStringField(value: number | string | null): string | null {
+    if (value === null) return null
+    return String(value)
   }
 
   private static formatNumberField(value: number | null): string | null {
@@ -453,13 +445,11 @@ export class ModelsService {
     return groupedResults
   }
 
-  private async getPreparedArtefacts(): Promise<PreparedArtefactsResult> {
+  async getArtefactLabels(): Promise<Artefact[]> {
     const result = await this.mrmDatabaseService.query(getSumRmArtefacts, [])
     const processedArtefacts = this.processArtefactData(result)
 
-    return {
-      data: [...pseudoArtefacts, ...processedArtefacts]
-    }
+    return [...pseudoArtefacts, ...processedArtefacts]
   }
 
   private processArtefactData(data: any[]): Artefact[] {

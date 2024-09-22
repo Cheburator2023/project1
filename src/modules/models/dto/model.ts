@@ -1,5 +1,5 @@
 interface ModelsDto {
-  date: string | null;
+  date?: string | null;
 }
 
 interface CompareModelsDto {
