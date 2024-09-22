@@ -18,7 +18,7 @@ import { ApiBody } from "@nestjs/swagger";
 import { ApiService } from "./api.service";
 import { ModelsService } from "src/modules/models/models.service";
 import { MetricsService } from "src/modules/metrics/metrics.service";
-import { ReportService } from "src/report/report.service";
+import { ReportService } from "src/modules/report/report.service";
 import {
   ModelsDto,
   ModelWithRelationsDto,
@@ -59,9 +59,13 @@ export class ApiController {
 
   @Get("/models/")
   async models(@Query() query: ModelsDto, @Res() response) {
-    const data = await this.modelsService.getModels(query)
+    const result = {
+      data: {
+        cards: await this.modelsService.getModels(query)
+      }
+    }
 
-    return response.status(HttpStatus.OK).json(data);
+    return response.status(HttpStatus.OK).json(result)
   }
 
   @Post("/model/create/")
@@ -168,11 +172,10 @@ export class ApiController {
 
   @Post("report")
   async getReport(@Body() { filters }: FilterDto, @Res() res: Response) {
-    const data = await this.reportService.generateReportData(filters);
-    const xlsxBuffer = await this.reportService.generateExcel(data);
+    const response = await this.reportService.getReport(filters);
 
     res.setHeader("Content-Disposition", "attachment; filename=report.xlsx");
     res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
-    res.send(xlsxBuffer);
+    res.send(response);
   }
 }

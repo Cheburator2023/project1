@@ -84,16 +84,8 @@ const formatDateTime = (date: Date): string => {
   const yyyy = date.getFullYear();
   const MM = pad(date.getMonth() + 1);
   const dd = pad(date.getDate());
-  const HH = pad(date.getHours());
-  const mm = pad(date.getMinutes());
-  const ss = pad(date.getSeconds());
 
-  // @TODO: привести к одному формату фронт + отчеты
-  if (`${HH}:${mm}:${ss}` === '00:00:00') {
-    return `${yyyy}-${MM}-${dd} 24:00`
-  }
-
-  return `${yyyy}-${MM}-${dd} ${HH}:${mm}:${ss}`;
+  return `${yyyy}-${MM}-${dd}`;
 };
 
 /**

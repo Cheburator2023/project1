@@ -1,14 +1,24 @@
-import { Artefact } from '../interfaces'
+import { Artefact, ArtefactTypeEnum, artefactTypeDescMap } from '../interfaces'
 
 const pseudoArtefacts: Artefact[] = [
+  {
+    artefact_id: 1000,
+    artefact_tech_label: 'system_model_id',
+    artefact_label: 'Идентифиактор версии модели',
+    is_edit_flg: '1',
+    artefact_desc: '',
+    artefact_type_id: ArtefactTypeEnum.TEXT,
+    artefact_type_desc: artefactTypeDescMap[ArtefactTypeEnum.TEXT],
+    values: []
+  },
   {
     artefact_id: 1000,
     artefact_tech_label: 'model_name',
     artefact_label: 'Название модели',
     is_edit_flg: '1',
     artefact_desc: '',
-    artefact_type_id: '1',
-    artefact_type_desc: 'text',
+    artefact_type_id: ArtefactTypeEnum.TEXT,
+    artefact_type_desc: artefactTypeDescMap[ArtefactTypeEnum.TEXT],
     values: []
   },
   {
@@ -17,8 +27,8 @@ const pseudoArtefacts: Artefact[] = [
     artefact_label: 'Описание модели',
     is_edit_flg: '1',
     artefact_desc: '',
-    artefact_type_id: '1',
-    artefact_type_desc: 'text',
+    artefact_type_id: ArtefactTypeEnum.TEXT,
+    artefact_type_desc: artefactTypeDescMap[ArtefactTypeEnum.TEXT],
     values: []
   },
   {
@@ -27,19 +37,28 @@ const pseudoArtefacts: Artefact[] = [
     artefact_label: 'Дата создания модели',
     is_edit_flg: '0',
     artefact_desc: '',
-    artefact_type_id: '4',
-    artefact_type_desc: 'date',
+    artefact_type_id: ArtefactTypeEnum.DATE,
+    artefact_type_desc: artefactTypeDescMap[ArtefactTypeEnum.DATE],
     values: []
   },
-
   {
     artefact_id: 2120,
     artefact_tech_label: 'update_date',
-    artefact_label: 'Дата обновления',
+    artefact_label: 'Отчетная дата / дата последних изменений информации о Модели',
     is_edit_flg: '0',
     artefact_desc: '',
-    artefact_type_id: '4',
-    artefact_type_desc: 'date',
+    artefact_type_id: ArtefactTypeEnum.DATE,
+    artefact_type_desc: artefactTypeDescMap[ArtefactTypeEnum.DATE],
+    values: []
+  },
+  {
+    artefact_id: 2121,
+    artefact_tech_label: 'model_source',
+    artefact_label: 'Система источник данных',
+    is_edit_flg: '0',
+    artefact_desc: '',
+    artefact_type_id: ArtefactTypeEnum.TEXT,
+    artefact_type_desc: artefactTypeDescMap[ArtefactTypeEnum.TEXT],
     values: []
   },
 
@@ -51,8 +70,8 @@ const pseudoArtefacts: Artefact[] = [
     artefact_label: 'КИБ',
     is_edit_flg: '1',
     artefact_desc: '',
-    artefact_type_id: '16',
-    artefact_type_desc: 'percentage',
+    artefact_type_id: ArtefactTypeEnum.PERCENTAGE,
+    artefact_type_desc: artefactTypeDescMap[ArtefactTypeEnum.PERCENTAGE],
     group: 'Аллокация применения',
     values: []
   },
@@ -62,8 +81,8 @@ const pseudoArtefacts: Artefact[] = [
     artefact_label: 'CМБ',
     is_edit_flg: '1',
     artefact_desc: '',
-    artefact_type_id: '16',
-    artefact_type_desc: 'percentage',
+    artefact_type_id: ArtefactTypeEnum.PERCENTAGE,
+    artefact_type_desc: artefactTypeDescMap[ArtefactTypeEnum.PERCENTAGE],
     group: 'Аллокация применения',
     values: []
   },
@@ -73,8 +92,8 @@ const pseudoArtefacts: Artefact[] = [
     artefact_label: 'РБ',
     is_edit_flg: '1',
     artefact_desc: '',
-    artefact_type_id: '16',
-    artefact_type_desc: 'percentage',
+    artefact_type_id: ArtefactTypeEnum.PERCENTAGE,
+    artefact_type_desc: artefactTypeDescMap[ArtefactTypeEnum.PERCENTAGE],
     group: 'Аллокация применения',
     values: []
   },
@@ -84,8 +103,8 @@ const pseudoArtefacts: Artefact[] = [
     artefact_label: 'КЦ',
     is_edit_flg: '1',
     artefact_desc: '',
-    artefact_type_id: '16',
-    artefact_type_desc: 'percentage',
+    artefact_type_id: ArtefactTypeEnum.PERCENTAGE,
+    artefact_type_desc: artefactTypeDescMap[ArtefactTypeEnum.PERCENTAGE],
     group: 'Аллокация применения',
     values: []
   },
@@ -95,8 +114,8 @@ const pseudoArtefacts: Artefact[] = [
     artefact_label: 'Другое',
     is_edit_flg: '1',
     artefact_desc: '',
-    artefact_type_id: '16',
-    artefact_type_desc: 'percentage',
+    artefact_type_id: ArtefactTypeEnum.PERCENTAGE,
+    artefact_type_desc: artefactTypeDescMap[ArtefactTypeEnum.PERCENTAGE],
     group: 'Аллокация применения',
     values: []
   },
@@ -109,8 +128,8 @@ const pseudoArtefacts: Artefact[] = [
     artefact_label: 'КИБ',
     is_edit_flg: '1',
     artefact_desc: '',
-    artefact_type_id: '1',
-    artefact_type_desc: 'text',
+    artefact_type_id: ArtefactTypeEnum.TEXT,
+    artefact_type_desc: artefactTypeDescMap[ArtefactTypeEnum.TEXT],
     group: 'Комментарий к аллокации применения',
     values: []
   },
@@ -120,8 +139,8 @@ const pseudoArtefacts: Artefact[] = [
     artefact_label: 'CМБ',
     is_edit_flg: '1',
     artefact_desc: '',
-    artefact_type_id: '1',
-    artefact_type_desc: 'text',
+    artefact_type_id: ArtefactTypeEnum.TEXT,
+    artefact_type_desc: artefactTypeDescMap[ArtefactTypeEnum.TEXT],
     group: 'Комментарий к аллокации применения',
     values: []
   },
@@ -131,8 +150,8 @@ const pseudoArtefacts: Artefact[] = [
     artefact_label: 'РБ',
     is_edit_flg: '1',
     artefact_desc: '',
-    artefact_type_id: '1',
-    artefact_type_desc: 'text',
+    artefact_type_id: ArtefactTypeEnum.TEXT,
+    artefact_type_desc: artefactTypeDescMap[ArtefactTypeEnum.TEXT],
     group: 'Комментарий к аллокации применения',
     values: []
   },
@@ -142,8 +161,8 @@ const pseudoArtefacts: Artefact[] = [
     artefact_label: 'КЦ',
     is_edit_flg: '1',
     artefact_desc: '',
-    artefact_type_id: '1',
-    artefact_type_desc: 'text',
+    artefact_type_id: ArtefactTypeEnum.TEXT,
+    artefact_type_desc: artefactTypeDescMap[ArtefactTypeEnum.TEXT],
     group: 'Комментарий к аллокации применения',
     values: []
   },
@@ -153,8 +172,8 @@ const pseudoArtefacts: Artefact[] = [
     artefact_label: 'Другое',
     is_edit_flg: '1',
     artefact_desc: '',
-    artefact_type_id: '1',
-    artefact_type_desc: 'text',
+    artefact_type_id: ArtefactTypeEnum.TEXT,
+    artefact_type_desc: artefactTypeDescMap[ArtefactTypeEnum.TEXT],
     group: 'Комментарий к аллокации применения',
     values: []
   },
@@ -168,8 +187,8 @@ const pseudoArtefacts: Artefact[] = [
     artefact_label: '1Q',
     is_edit_flg: '1',
     artefact_desc: '',
-    artefact_type_id: '17',
-    artefact_type_desc: 'quarterly_date',
+    artefact_type_id: ArtefactTypeEnum.QUARTERLY_DATE,
+    artefact_type_desc: artefactTypeDescMap[ArtefactTypeEnum.QUARTERLY_DATE],
     group: 'Дата подтверждения использования',
     start_date_depend_artefact: 'create_date',
     values: []
@@ -180,8 +199,8 @@ const pseudoArtefacts: Artefact[] = [
     artefact_label: '2Q',
     is_edit_flg: '1',
     artefact_desc: '',
-    artefact_type_id: '17',
-    artefact_type_desc: 'quarterly_date',
+    artefact_type_id: ArtefactTypeEnum.QUARTERLY_DATE,
+    artefact_type_desc: artefactTypeDescMap[ArtefactTypeEnum.QUARTERLY_DATE],
     group: 'Дата подтверждения использования',
     start_date_depend_artefact: 'create_date',
     values: []
@@ -192,8 +211,8 @@ const pseudoArtefacts: Artefact[] = [
     artefact_label: '3Q',
     is_edit_flg: '1',
     artefact_desc: '',
-    artefact_type_id: '17',
-    artefact_type_desc: 'quarterly_date',
+    artefact_type_id: ArtefactTypeEnum.QUARTERLY_DATE,
+    artefact_type_desc: artefactTypeDescMap[ArtefactTypeEnum.QUARTERLY_DATE],
     group: 'Дата подтверждения использования',
     start_date_depend_artefact: 'create_date',
     values: []
@@ -204,8 +223,8 @@ const pseudoArtefacts: Artefact[] = [
     artefact_label: '4Q',
     is_edit_flg: '1',
     artefact_desc: '',
-    artefact_type_id: '18',
-    artefact_type_desc: 'quarterly_date',
+    artefact_type_id: ArtefactTypeEnum.QUARTERLY_DATE,
+    artefact_type_desc: artefactTypeDescMap[ArtefactTypeEnum.QUARTERLY_DATE],
     group: 'Дата подтверждения использования',
     start_date_depend_artefact: 'create_date',
     values: []
@@ -220,8 +239,8 @@ const pseudoArtefacts: Artefact[] = [
     artefact_label: '1Q',
     is_edit_flg: '1',
     artefact_desc: '',
-    artefact_type_id: '19',
-    artefact_type_desc: 'quarterly_dropdown',
+    artefact_type_id: ArtefactTypeEnum.QUARTERLY_DROPDOWN,
+    artefact_type_desc: artefactTypeDescMap[ArtefactTypeEnum.QUARTERLY_DROPDOWN],
     group: 'Модель используется заказчиком',
     values: [
       {
@@ -246,8 +265,8 @@ const pseudoArtefacts: Artefact[] = [
     artefact_label: '2Q',
     is_edit_flg: '1',
     artefact_desc: '',
-    artefact_type_id: '19',
-    artefact_type_desc: 'quarterly_dropdown',
+    artefact_type_id: ArtefactTypeEnum.QUARTERLY_DROPDOWN,
+    artefact_type_desc: artefactTypeDescMap[ArtefactTypeEnum.QUARTERLY_DROPDOWN],
     group: 'Модель используется заказчиком',
     values: [
       {
@@ -272,8 +291,8 @@ const pseudoArtefacts: Artefact[] = [
     artefact_label: '3Q',
     is_edit_flg: '1',
     artefact_desc: '',
-    artefact_type_id: '19',
-    artefact_type_desc: 'quarterly_dropdown',
+    artefact_type_id: ArtefactTypeEnum.QUARTERLY_DROPDOWN,
+    artefact_type_desc: artefactTypeDescMap[ArtefactTypeEnum.QUARTERLY_DROPDOWN],
     group: 'Модель используется заказчиком',
     values: [
       {
@@ -298,8 +317,8 @@ const pseudoArtefacts: Artefact[] = [
     artefact_label: '4Q',
     is_edit_flg: '1',
     artefact_desc: '',
-    artefact_type_id: '19',
-    artefact_type_desc: 'quarterly_dropdown',
+    artefact_type_id: ArtefactTypeEnum.QUARTERLY_DROPDOWN,
+    artefact_type_desc: artefactTypeDescMap[ArtefactTypeEnum.QUARTERLY_DROPDOWN],
     group: 'Модель используется заказчиком',
     values: [
       {
