@@ -1,5 +1,7 @@
 # Semantic Versioning Changelog
 
+## [1.3.33](https://git.sfera.inno.local/SUMD/mrms-backend/compare/v1.3.32...v1.3.33) (2024-09-22)
+
 ## [1.3.32](https://git.sfera.inno.local/SUMD/mrms-backend/compare/v1.3.31...v1.3.32) (2024-09-18)
 
 ## [1.3.31](https://git.sfera.inno.local/SUMD/mrms-backend/compare/v1.3.30...v1.3.31) (2024-09-17)
