@@ -44,7 +44,6 @@ SELECT m_.model_id                                                              
        dm_.DS_DEPARTMENT                                                                                     AS ds_stream,
        null                                                                                          AS assignment_contractor,
        dm_.solution_to_implement_model,
-       COALESCE(NULLIF(m_.models_is_active_flg, ''), '1')                                                    AS active_model,
        null                                                                                          AS model_status,
        null                                                                                          AS model_status_assignee,
 

@@ -1,6 +1,6 @@
 --liquibase formatted sql
 
---changeset d.kravchenko:09_09_24_03_add_artefact_values
+--changeset d.kravchenko:09_09_24_02_add_artefact_values
 --comment: Добавление словарей для артефактов
 
 INSERT INTO artefact_values (artefact_value_id, artefact_id, artefact_value, artefact_value_label, is_active_flg, artefact_parent_value_id)
