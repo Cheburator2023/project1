@@ -2,44 +2,42 @@ import { Injectable } from '@nestjs/common';
 import { SumDatabaseService } from 'src/system/sum-database/database.service';
 import { MrmDatabaseService } from 'src/system/mrm-database/database.service';
 
-import { developedModels as developedSumModels } from './sql/sum';
-import { implementedModels as implementedSumModels } from './sql/sum';
-import { getModels as getSumModels } from './sql/sum';
+import { ImplementedService } from './implemented.service'
+import { DevelopedService } from './developed.service'
+import { TotalService } from './total.service'
+import { SumRmService } from './sum-rm.service'
+import { PilotsService } from './pilots.service'
+import { OutOfOperationService } from './out-of-operation.service'
+import { RegistryCoverageService } from './registry-coverage.service'
+import { FinalStatusService } from './final-status.service'
+import { FinalStatusByMonthService } from './final-status-by-month.service'
+import { RegistryCoverageFinalService } from './registry-coverage-final.service'
+
 import { distributionByLifecycleStageModels as distributionByLifecycleStageSumModels } from './sql/sum';
 import { tasks as sumTasks } from './sql/sum';
 
-import { developedModels as developedSumRmModels } from './sql/sum-rm'
-import { implementedModels as implementedSumRmModels } from './sql/sum-rm';
-import { finalStatusModels as finalStatusSumRmModels } from './sql/sum-rm';
-import { getModels as getSumRmModels } from './sql/sum-rm';
-import { isStage05A as isSumRmStage05A } from './sql/sum-rm';
-import { isTakenOutOfOperationModels as isTakenOutOfOperationSumRmModels } from './sql/sum-rm';
 import { isOnMonitoringModels as isOnMonitoringSumRmModels } from './sql/sum-rm';
 import { stalledModels as stalledSumRmModels } from './sql/sum-rm';
-import { finalStatusByMonthModels as finalStatusByMonthSumRmModels } from './sql/sum-rm';
 
 @Injectable()
 export class MetricsService {
     constructor(
       private readonly sumDatabaseService: SumDatabaseService,
       private readonly mrmDatabaseService: MrmDatabaseService,
+      private readonly implementedService: ImplementedService,
+      private readonly developedService: DevelopedService,
+      private readonly totalService: TotalService,
+      private readonly sumRmService: SumRmService,
+      private readonly pilotsService: PilotsService,
+      private readonly outOfOperationService: OutOfOperationService,
+      private readonly registryCoverageService: RegistryCoverageService,
+      private readonly finalStatusService: FinalStatusService,
+      private readonly finalStatusByMonthService: FinalStatusByMonthService,
+      private readonly registryCoverageFinalService: RegistryCoverageFinalService,
     ) {}
 
     private boundPercentage(value: number): number {
         return Math.min(100, Math.max(-100, value));
-    }
-
-    private calculatePercentageCount(
-      current: number,
-      previous: number,
-    ): number {
-        if (previous === 0) {
-            return 0;
-        }
-
-        const percentageChange = (current / previous) * 100;
-
-        return this.boundPercentage(Math.round(percentageChange));
     }
 
     private calculatePercentageDelta(
@@ -115,357 +113,6 @@ export class MetricsService {
         };
     }
 
-    private async getDevelopedModels(
-      startDate: string | null = null,
-      endDate: string | null = null,
-      dsStream: string[] | null = null,
-    ) {
-        const sumRawData = await this.sumDatabaseService.query(developedSumModels, [
-            startDate,
-            endDate,
-            dsStream,
-        ]);
-
-        const sumRmRawData = await this.mrmDatabaseService.query(developedSumRmModels, [
-            startDate,
-            endDate,
-            dsStream,
-        ]);
-
-        const developedModelsCount =
-          Number(sumRawData[0]?.developed_models_count || 0) +
-          Number(sumRmRawData[0]?.developed_models_count || 0);
-
-        const sumDelta = await this.calculateDelta(
-          developedSumModels,
-          this.sumDatabaseService,
-          dsStream,
-          endDate,
-          'developed_models',
-        );
-
-        const sumRmDelta = await this.calculateDelta(
-          developedSumRmModels,
-          this.mrmDatabaseService,
-          dsStream,
-          endDate,
-          'developed_models',
-        );
-
-        const deltaCount = sumDelta + sumRmDelta
-
-        return {
-            developedModels: {
-                count: developedModelsCount,
-                delta: deltaCount,
-            },
-        };
-    }
-
-    private async getImplementedModels(
-      startDate: string | null = null,
-      endDate: string | null = null,
-      dsStream: string[] | null = null,
-    ) {
-        const sumRawData = await this.sumDatabaseService.query(implementedSumModels, [
-            startDate,
-            endDate,
-            dsStream,
-        ]);
-
-        const sumRmRawData = await this.mrmDatabaseService.query(implementedSumRmModels, [
-            startDate,
-            endDate,
-            dsStream,
-        ]);
-
-        const implementedModelsCount =
-          Number(sumRawData[0]?.implemented_models_count || 0) +
-          Number(sumRmRawData[0]?.implemented_models_count || 0);
-
-        const sumDelta = await this.calculateDelta(
-          implementedSumModels,
-          this.sumDatabaseService,
-          dsStream,
-          endDate,
-          'implemented_models',
-        );
-
-        const sumRmDelta = await this.calculateDelta(
-          implementedSumRmModels,
-          this.mrmDatabaseService,
-          dsStream,
-          endDate,
-          'implemented_models',
-        );
-
-        const deltaCount = sumDelta + sumRmDelta
-
-        return {
-            implementedModels: {
-                count: implementedModelsCount,
-                delta: deltaCount,
-            },
-        };
-    }
-
-    private async getFinalStatusModels(
-      startDate: string | null = null,
-      endDate: string | null = null,
-      dsStream: string[] | null = null,
-    ) {
-        const rawData = await this.mrmDatabaseService.query(finalStatusSumRmModels, [
-            startDate,
-            endDate,
-            dsStream,
-        ]);
-
-        const finalStatusModelsCount = Number(
-          rawData[0]?.final_status_models_count || 0,
-        );
-
-        const delta = await this.calculateDelta(
-          finalStatusSumRmModels,
-          this.mrmDatabaseService,
-          dsStream,
-          endDate,
-          'final_status_models',
-        );
-
-        return {
-            finalStatusModels: {
-                count: finalStatusModelsCount,
-                delta: delta,
-            },
-        };
-    }
-
-    private async getSumRmModels(
-      startDate: string | null = null,
-      endDate: string | null = null,
-      dsStream: string[] | null = null,
-    ) {
-
-        const sumRawData = await this.sumDatabaseService.query(getSumModels, [
-            startDate,
-            endDate,
-            dsStream,
-        ]);
-
-        const sumRmRawData = await this.mrmDatabaseService.query(getSumRmModels, [
-            startDate,
-            endDate,
-            dsStream,
-        ]);
-
-        const modelsCount =
-          Number(sumRawData[0]?.sum_models_count || 0) +
-          Number(sumRmRawData[0]?.sum_rm_models_count || 0);
-
-
-        const sumDelta = await this.calculateDelta(
-          getSumModels,
-          this.sumDatabaseService,
-          dsStream,
-          endDate,
-          'sum_rm_models',
-        );
-
-        const sumRmDelta = await this.calculateDelta(
-          getSumRmModels,
-          this.mrmDatabaseService,
-          dsStream,
-          endDate,
-          'sum_rm_models',
-        );
-
-        const deltaCount = sumDelta + sumRmDelta
-
-        return {
-            sumRmModels: {
-                count: modelsCount,
-                delta: deltaCount,
-            },
-        };
-    }
-
-    private async getTotalModels(
-      startDate: string | null = null,
-      endDate: string | null = null,
-      dsStream: string[] | null = null,
-    ) {
-        const developedModelsData = await this.getDevelopedModels(
-          startDate,
-          endDate,
-          dsStream,
-        );
-        const implementedModelsData = await this.getImplementedModels(
-          startDate,
-          endDate,
-          dsStream,
-        );
-
-        const { count: developedModelsCount, delta: developedModelsDelta } =
-          developedModelsData.developedModels;
-        const { count: implementedModelsCount, delta: implementedModelsDelta } =
-          implementedModelsData.implementedModels;
-
-        const totalModelsCount = developedModelsCount + implementedModelsCount;
-
-        const delta = developedModelsDelta + implementedModelsDelta;
-
-        return {
-            totalModels: {
-                count: totalModelsCount,
-                delta: delta,
-            },
-        };
-    }
-
-    private async getRiskCovergageFinalStatusModels(
-      startDate: string | null = null,
-      endDate: string | null = null,
-      dsStream: string[] | null = null,
-    ) {
-        const finalStatusModelsData = await this.getFinalStatusModels(
-          startDate,
-          endDate,
-          dsStream,
-        );
-        const totalModelsData = await this.getTotalModels(
-          startDate,
-          endDate,
-          dsStream,
-        );
-
-        const { count: finalStatusModelsCount, delta: finalStatusModelsDelta } =
-          finalStatusModelsData.finalStatusModels;
-        const { count: totalModelsCount, delta: totalModelsDelta } =
-          totalModelsData.totalModels;
-
-        const prevFinalStatusModelsCount =
-          finalStatusModelsCount - finalStatusModelsDelta;
-        const prevTotalModelsCount = totalModelsCount - totalModelsDelta;
-
-        const riskCovergageFinalStatusModelsCount =
-          this.calculatePercentageCount(
-            finalStatusModelsCount,
-            totalModelsCount,
-          );
-
-        const deltaPercent = this.calculatePercentageDelta(
-          riskCovergageFinalStatusModelsCount,
-          this.calculatePercentageCount(
-            prevFinalStatusModelsCount,
-            prevTotalModelsCount,
-          ),
-        );
-
-        return {
-            riskCoverageFinalStatusModels: {
-                countPercent: riskCovergageFinalStatusModelsCount,
-                deltaPercent: deltaPercent,
-            },
-        };
-    }
-
-    private async getModelsRegistryCoverage(
-      startDate: string | null = null,
-      endDate: string | null = null,
-      dsStream: string[] | null = null,
-    ) {
-        const sumRmModelsData = await this.getSumRmModels(
-          startDate,
-          endDate,
-          dsStream,
-        );
-        const totalModelsData = await this.getTotalModels(
-          startDate,
-          endDate,
-          dsStream,
-        );
-
-        const { count: sumRmModelsCount, delta: sumRmModelsDelta } =
-          sumRmModelsData.sumRmModels;
-        const { count: totalModelsCount, delta: totalModelsDelta } =
-          totalModelsData.totalModels;
-
-        const prevSumRmModelsCount = sumRmModelsCount - sumRmModelsDelta;
-        const prevTotalModelsCount = totalModelsCount - totalModelsDelta;
-
-        const registryCoverageModelsCount = this.calculatePercentageCount(
-          sumRmModelsCount,
-          totalModelsCount,
-        );
-
-        const deltaPercent = this.calculatePercentageDelta(
-          registryCoverageModelsCount,
-          this.calculatePercentageCount(
-            prevSumRmModelsCount,
-            prevTotalModelsCount,
-          ),
-        );
-
-        return {
-            registryCoverageModels: {
-                countPercent: registryCoverageModelsCount,
-                deltaPercent: deltaPercent,
-            },
-        };
-    }
-
-    private async getPilots(
-      startDate: string | null = null,
-      endDate: string | null = null,
-      dsStream: string[] | null = null,
-    ) {
-        const rawData = await this.mrmDatabaseService.query(isSumRmStage05A, [
-            startDate,
-            endDate,
-            dsStream,
-        ]);
-
-        const stage05ACount = Number(rawData[0]?.stage_05a_count || 0);
-
-        return {
-            pilots: {
-                stage05A: stage05ACount,
-                stage05B: 0,
-            },
-        };
-    }
-
-    private async getTakenOutOfOperation(
-      startDate: string | null = null,
-      endDate: string | null = null,
-      dsStream: string[] | null = null,
-    ) {
-        const rawData = await this.mrmDatabaseService.query(
-          isTakenOutOfOperationSumRmModels,
-          [startDate, endDate, dsStream],
-        );
-
-        const onTakenOutOfOperation = Number(
-          rawData[0]?.taken_out_of_operation_models_count || 0,
-        );
-
-        const delta = await this.calculateDelta(
-          isTakenOutOfOperationSumRmModels,
-          this.mrmDatabaseService,
-          dsStream,
-          endDate,
-          'taken_out_of_operation_models',
-          true,
-        );
-
-        return {
-            takenOutOfOperationModels: {
-                count: onTakenOutOfOperation,
-                deltaPercent: delta,
-            },
-        };
-    }
-
     private async getOnMonitoringModels(
       startDate: string | null = null,
       endDate: string | null = null,
@@ -519,30 +166,6 @@ export class MetricsService {
         };
     }
 
-    private async getFilnalStatusByMonthModels(
-      startDate: string | null = null,
-      endDate: string | null = null,
-      dsStream: string[] | null = null,
-    ) {
-        const rawData = await this.mrmDatabaseService.query(
-          finalStatusByMonthSumRmModels,
-          [startDate, endDate, dsStream],
-        );
-
-        const finalStatusByMonthModels = Array(12).fill(0);
-
-        rawData.forEach((row) => {
-            const monthIndex = row.month - 1;
-            finalStatusByMonthModels[monthIndex] = Number(
-              row.final_status_by_month_count,
-            );
-        });
-
-        return {
-            finalStatusByMonthModels,
-        };
-    }
-
     private async getTasks(
       startDate: string | null = null,
       endDate: string | null = null,
@@ -569,19 +192,21 @@ export class MetricsService {
       stream: string[] | null,
     ) {
         const metricsResults = await Promise.all([
-            this.getDistributionByLifecycleStageModels(startDate, endDate),
-            this.getDevelopedModels(startDate, endDate, stream),
-            this.getImplementedModels(startDate, endDate, stream),
-            this.getFinalStatusModels(startDate, endDate, stream),
-            this.getSumRmModels(startDate, endDate, stream),
-            this.getTotalModels(startDate, endDate, stream),
-            this.getRiskCovergageFinalStatusModels(startDate, endDate, stream),
-            this.getModelsRegistryCoverage(startDate, endDate, stream),
-            this.getPilots(startDate, endDate, stream),
-            this.getTakenOutOfOperation(startDate, endDate, stream),
+            this.developedService.metric(startDate, endDate, stream),
+            this.finalStatusService.metric(startDate, endDate, stream),
+            this.finalStatusByMonthService.metric(startDate, endDate, stream),
+            this.implementedService.metric(startDate, endDate, stream),
+            this.pilotsService.metric(startDate, endDate, stream),
+            this.registryCoverageService.metric(startDate, endDate, stream),
+            this.registryCoverageFinalService.metric(startDate, endDate, stream),
+            this.sumRmService.metric(startDate, endDate, stream),
+            this.outOfOperationService.metric(startDate, endDate, stream),
+            this.totalService.metric(startDate, endDate, stream),
+
+            // @TODO: нужно пересмотреть
             this.getOnMonitoringModels(startDate, endDate, stream),
+            this.getDistributionByLifecycleStageModels(startDate, endDate),
             this.getStalledModelsByMonth(startDate, endDate, stream),
-            this.getFilnalStatusByMonthModels(startDate, endDate, stream),
             this.getTasks(startDate, endDate),
         ]);
 

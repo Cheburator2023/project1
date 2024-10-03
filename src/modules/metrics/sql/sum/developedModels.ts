@@ -1,18 +1,28 @@
 const developedModels = `
-SELECT COUNT(DISTINCT m_.model_id) AS developed_models_count
-FROM models m_
-JOIN artefact_realizations ar_ ON m_.model_id = ar_.model_id
-WHERE (
-      $1::Date IS NULL
-      OR (
-          ar_.effective_from <= $2::Date
-          AND (ar_.effective_to IS NULL OR ar_.effective_to >= $1::Date)
-      )
-  )
-  AND (
-      $3::VARCHAR[] IS NULL
-      OR (ar_.artefact_id = 7 AND ar_.artefact_string_value = ANY($3::VARCHAR[]))
-  );
+WITH RankedArtefacts AS (
+    SELECT ar.model_id,
+           ar.artefact_id,
+           ar.artefact_string_value,
+           ROW_NUMBER() OVER (
+               PARTITION BY ar.model_id, ar.artefact_id
+               ORDER BY ar.effective_from DESC
+           ) AS rn
+    FROM artefact_realizations AS ar
+    JOIN artefacts AS a
+      ON ar.artefact_id = a.artefact_id
+    WHERE a.artefact_tech_label IN ('data_completion_of_stage_05a', 'date_of_introduction_into_operation', 'Departament')
+)
+SELECT m.model_id,
+       ar1.artefact_string_value AS value,
+       ar3.artefact_string_value AS stream
+FROM models AS m
+JOIN RankedArtefacts AS ar1
+  ON m.model_id = ar1.model_id AND ar1.artefact_id = (SELECT artefact_id FROM artefacts WHERE artefact_tech_label = 'data_completion_of_stage_05a') AND ar1.rn = 1
+LEFT JOIN RankedArtefacts AS ar2
+  ON m.model_id = ar2.model_id AND ar2.artefact_id = (SELECT artefact_id FROM artefacts WHERE artefact_tech_label = 'date_of_introduction_into_operation') AND ar2.rn = 1
+LEFT JOIN RankedArtefacts AS ar3
+  ON m.model_id = ar3.model_id AND ar3.artefact_id = (SELECT artefact_id FROM artefacts WHERE artefact_tech_label = 'Departament') AND ar3.rn = 1
+WHERE ar2.artefact_string_value IS NULL;
 `;
 
 export { developedModels };

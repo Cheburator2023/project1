@@ -1,4 +1,4 @@
-const implementedModels = `
+const isStage05A = `
 WITH RankedArtefacts AS (
     SELECT ar.model_id,
            ar.artefact_id,
@@ -22,4 +22,4 @@ LEFT JOIN RankedArtefacts AS ar2
   ON m.model_id = ar2.model_id AND ar2.artefact_id = (SELECT artefact_id FROM artefacts WHERE artefact_tech_label = 'Departament') AND ar2.rn = 1;
 `;
 
-export { implementedModels };
+export { isStage05A };
