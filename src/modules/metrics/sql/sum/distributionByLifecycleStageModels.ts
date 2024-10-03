@@ -1,4 +1,17 @@
 const distributionByLifecycleStageModels = `
+WITH RankedArtefacts AS (
+    SELECT ar.model_id,
+           ar.artefact_id,
+           ar.artefact_string_value,
+           ROW_NUMBER() OVER (
+               PARTITION BY ar.model_id, ar.artefact_id
+               ORDER BY ar.effective_from DESC
+           ) AS rn
+    FROM artefact_realizations AS ar
+    JOIN artefacts AS a
+      ON ar.artefact_id = a.artefact_id
+    WHERE a.artefact_tech_label IN ('Departament')
+)
 SELECT CASE
            WHEN bp.bpmn_key_desc = 'initialization' THEN 'Инициализация'
            WHEN bp.bpmn_key_desc = 'data_pilot' THEN 'Пилот данных'
@@ -28,7 +41,12 @@ LEFT JOIN (
 ) AS bi
 ON bp.bpmn_key_id = bi.bpmn_key_id
    AND bi.row_num = 1
+LEFT JOIN artefact_realizations ar_ ON bi.model_id = ar_.model_id
 WHERE bp.bpmn_key_desc IN ('initialization', 'data_pilot', 'data_search', 'model', 'data_build', 'integration', 'fast_model_process')
+AND (
+      $3::VARCHAR[] IS NULL
+      OR (ar_.artefact_id = (SELECT artefact_id FROM artefacts WHERE artefact_tech_label = 'Departament') AND ar_.artefact_string_value = ANY($3::VARCHAR[]))
+)
 GROUP BY bp.bpmn_key_desc
 ORDER BY CASE
              WHEN bp.bpmn_key_desc = 'initialization' THEN 1

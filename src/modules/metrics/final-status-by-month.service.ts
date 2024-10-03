@@ -142,14 +142,18 @@ export class FinalStatusByMonthService {
     return filteredData
   }
 
-  private getMonthlyCounts(arr) {
+  private getMonthlyCounts(arr, onlyCurrentYear) {
     const monthlyCounts = Array(12).fill(0)
 
     arr.forEach(item => {
       if (!isValidDate(item.value)) return
 
+      const currentYear = new Date().getFullYear()
       const date = parseDate(item.value)
+      const year = date.getFullYear()
       const month = date.getMonth()
+
+      if (onlyCurrentYear && year !== currentYear) return
 
       monthlyCounts[month]++
     })
@@ -163,7 +167,7 @@ export class FinalStatusByMonthService {
     streams: string[] | null = null
   ) {
     const models = await this.getModels(startDate, endDate, streams)
-    const finalStatusByMonthModels = this.getMonthlyCounts(models)
+    const finalStatusByMonthModels = this.getMonthlyCounts(models, (!startDate && !endDate))
 
     return {
       finalStatusByMonthModels

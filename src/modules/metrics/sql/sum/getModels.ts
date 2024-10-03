@@ -18,7 +18,7 @@ SELECT m.model_id,
          ar2.artefact_string_value,
          ar3.artefact_string_value,
          ar4.artefact_string_value,
-         to_char(_m.create_date, 'YYYY-MM-DD')
+         to_char(m.create_date, 'YYYY-MM-DD')
        ) AS value,
        ar5.artefact_string_value AS stream
 FROM models AS m
@@ -30,8 +30,6 @@ LEFT JOIN RankedArtefacts AS ar3
   ON m.model_id = ar3.model_id AND ar3.artefact_id = (SELECT artefact_id FROM artefacts WHERE artefact_tech_label = 'model_epic_05_date') AND ar3.rn = 1
 LEFT JOIN RankedArtefacts AS ar4
   ON m.model_id = ar4.model_id AND ar4.artefact_id = (SELECT artefact_id FROM artefacts WHERE artefact_tech_label = 'data_completion_of_stage_05a') AND ar4.rn = 1
-LEFT JOIN models as _m
-  ON m.model_id = _m.model_id
 LEFT JOIN RankedArtefacts AS ar5
   ON m.model_id = ar5.model_id AND ar5.artefact_id = (SELECT artefact_id FROM artefacts WHERE artefact_tech_label = 'Departament') AND ar5.rn = 1
 WHERE coalesce(
@@ -39,7 +37,7 @@ WHERE coalesce(
     ar2.artefact_string_value,
     ar3.artefact_string_value,
     ar4.artefact_string_value,
-    to_char(_m.create_date, 'YYYY-MM-DD')
+    to_char(m.create_date, 'YYYY-MM-DD')
 ) IS NOT NULL
 `;
 
