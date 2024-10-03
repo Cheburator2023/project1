@@ -106,7 +106,7 @@ SELECT m.model_id,
          ar2.artefact_string_value,
          ar3.artefact_string_value,
          ar4.artefact_string_value,
-         to_char(_m.create_date, 'YYYY-MM-DD')
+         to_char(m.create_date, 'YYYY-MM-DD')
        ) AS value,
        ar5.artefact_string_value AS stream,
        fm.status AS status
@@ -119,8 +119,6 @@ LEFT JOIN RankedArtefacts AS ar3
   ON m.model_id = ar3.model_id AND ar3.artefact_id = (SELECT artefact_id FROM artefacts WHERE artefact_tech_label = 'model_epic_05_date') AND ar3.rn = 1
 LEFT JOIN RankedArtefacts AS ar4
   ON m.model_id = ar4.model_id AND ar4.artefact_id = (SELECT artefact_id FROM artefacts WHERE artefact_tech_label = 'data_completion_of_stage_05a') AND ar4.rn = 1
-LEFT JOIN models as _m
-  ON m.model_id = _m.model_id
 LEFT JOIN FilteredModels AS fm
     ON m.model_id = fm.model_id
 LEFT JOIN RankedArtefacts AS ar5
@@ -130,7 +128,7 @@ WHERE coalesce(
     ar2.artefact_string_value,
     ar3.artefact_string_value,
     ar4.artefact_string_value,
-    to_char(_m.create_date, 'YYYY-MM-DD')
+    to_char(m.create_date, 'YYYY-MM-DD')
 ) IS NOT NULL
 AND fm.status LIKE '%Модель внедряется в ПИМ%' OR
     fm.status LIKE '%Модель внедряется вне ПИМ%' OR

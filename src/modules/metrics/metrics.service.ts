@@ -99,10 +99,11 @@ export class MetricsService {
     async getDistributionByLifecycleStageModels(
       startDate: string | null = null,
       endDate: string | null = null,
+      dsStream: string[] | null = null,
     ) {
         const rawData = await this.sumDatabaseService.query(
           distributionByLifecycleStageSumModels,
-          [startDate, endDate],
+          [startDate, endDate, dsStream],
         );
 
         return {
@@ -205,7 +206,7 @@ export class MetricsService {
 
             // @TODO: нужно пересмотреть
             this.getOnMonitoringModels(startDate, endDate, stream),
-            this.getDistributionByLifecycleStageModels(startDate, endDate),
+            this.getDistributionByLifecycleStageModels(startDate, endDate, stream),
             this.getStalledModelsByMonth(startDate, endDate, stream),
             this.getTasks(startDate, endDate),
         ]);
