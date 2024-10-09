@@ -125,6 +125,7 @@ FROM models_new m_
            MAX(CASE WHEN artefact_id = 2089 THEN artefact_string_value ELSE NULL END) AS model_epic_11_date,
            MAX(CASE WHEN artefact_id = 2090 THEN artefact_string_value ELSE NULL END) AS model_epic_12,
            MAX(CASE WHEN artefact_id = 2091 THEN artefact_string_value ELSE NULL END) AS model_epic_12_date,
+           MAX(CASE WHEN artefact_id = 2112 THEN artefact_string_value ELSE NULL END) AS date_of_introduction_into_operation,
            MAX(CASE WHEN artefact_id = 2092 THEN artefact_string_value ELSE NULL END) AS pvr,
            MAX(CASE WHEN artefact_id = 2094 THEN artefact_string_value ELSE NULL END) AS validity_approve_date,
            MAX(CASE WHEN artefact_id = 2095 THEN artefact_string_value ELSE NULL END) AS validation_result,

@@ -2,13 +2,17 @@ import { Injectable } from '@nestjs/common'
 import { isValidDate, parseDate } from 'src/system/common/utils'
 
 import { SumDatabaseService } from 'src/system/sum-database/database.service'
+import { MrmDatabaseService } from 'src/system/mrm-database/database.service';
 
 import { getModels as getSumModels } from './sql/sum';
+import { getModels as getSumRmModels } from './sql/sum-rm';
+
 
 @Injectable()
 export class SumRmService {
   constructor(
-    private readonly sumDatabaseService: SumDatabaseService
+    private readonly sumDatabaseService: SumDatabaseService,
+    private readonly mrmDatabaseService: MrmDatabaseService,
   ) {
   }
 
@@ -132,7 +136,7 @@ export class SumRmService {
     streams: string[] | null = null
   ) {
     const sumRawData = await this.sumDatabaseService.query(getSumModels, {})
-    const sumRmRawData = []
+    const sumRmRawData = await this.mrmDatabaseService.query(getSumRmModels, {})
     const mergedData = this.mergeArrays(sumRawData, sumRmRawData)
     const filteredData = mergedData.filter(
       item => this.filterByStringDate(item.value, startDate, endDate) &&

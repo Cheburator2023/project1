@@ -1,6 +1,6 @@
 const stalledModels = `
 WITH stalled_models AS (
-    SELECT DISTINCT
+    SELECT
         m_.model_id,
         EXTRACT(MONTH FROM m_.update_date) AS month,
         m_.update_date,
