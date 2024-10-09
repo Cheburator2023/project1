@@ -1,5 +1,12 @@
 # Semantic Versioning Changelog
 
+# [1.4.0](https://git.sfera.inno.local/SUMD/mrms-backend/compare/v1.3.36...v1.4.0) (2024-10-09)
+
+
+### Features
+
+* Дашборды. Новое поле date_of_introduction_into_operation. Fix ([235aace](https://git.sfera.inno.local/SUMD/mrms-backend/commit/235aace68fa86a781bf184bdaf39a80a480542e2))
+
 ## [1.3.36](https://git.sfera.inno.local/SUMD/mrms-backend/compare/v1.3.35...v1.3.36) (2024-10-03)
 
 ## [1.3.35](https://git.sfera.inno.local/SUMD/mrms-backend/compare/v1.3.34...v1.3.35) (2024-10-03)
