@@ -10,6 +10,7 @@ import { RegistryCoverageService } from './registry-coverage.service'
 import { FinalStatusService } from './final-status.service'
 import { FinalStatusByMonthService } from './final-status-by-month.service'
 import { RegistryCoverageFinalService } from './registry-coverage-final.service'
+import { IsOnMonitoringService } from './isOnMonitoring.service'
 
 import { SumDatabaseModule } from 'src/system/sum-database/database.module'
 import { MrmDatabaseModule } from 'src/system/mrm-database/database.module'
@@ -26,7 +27,8 @@ import { MrmDatabaseModule } from 'src/system/mrm-database/database.module'
     RegistryCoverageService,
     FinalStatusService,
     FinalStatusByMonthService,
-    RegistryCoverageFinalService
+    RegistryCoverageFinalService,
+    IsOnMonitoringService,
   ]
   ,
   imports: [SumDatabaseModule, MrmDatabaseModule],

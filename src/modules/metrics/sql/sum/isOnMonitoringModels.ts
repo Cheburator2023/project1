@@ -1,4 +1,4 @@
-const implementedModels = `
+const isOnMonitoringModels = `
 WITH RankedArtefacts AS (
     SELECT ar.model_id,
            ar.artefact_id,
@@ -10,16 +10,16 @@ WITH RankedArtefacts AS (
     FROM artefact_realizations AS ar
     JOIN artefacts AS a
       ON ar.artefact_id = a.artefact_id
-    WHERE a.artefact_tech_label IN ('date_of_introduction_into_operation', 'Departament')
+    WHERE a.artefact_tech_label IN ('model_epic_12_date', 'Departament')
 )
 SELECT m.model_id,
        ar1.artefact_string_value AS value,
        ar2.artefact_string_value AS stream
 FROM models AS m
 JOIN RankedArtefacts AS ar1
-  ON m.model_id = ar1.model_id AND ar1.artefact_id = (SELECT artefact_id FROM artefacts WHERE artefact_tech_label = 'date_of_introduction_into_operation') AND ar1.rn = 1
+  ON m.model_id = ar1.model_id AND ar1.artefact_id = (SELECT artefact_id FROM artefacts WHERE artefact_tech_label = 'model_epic_12_date') AND ar1.rn = 1
 LEFT JOIN RankedArtefacts AS ar2
   ON m.model_id = ar2.model_id AND ar2.artefact_id = (SELECT artefact_id FROM artefacts WHERE artefact_tech_label = 'Departament') AND ar2.rn = 1;
 `;
 
-export { implementedModels };
+export { isOnMonitoringModels };

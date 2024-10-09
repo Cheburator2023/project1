@@ -12,11 +12,11 @@ import { RegistryCoverageService } from './registry-coverage.service'
 import { FinalStatusService } from './final-status.service'
 import { FinalStatusByMonthService } from './final-status-by-month.service'
 import { RegistryCoverageFinalService } from './registry-coverage-final.service'
+import { IsOnMonitoringService } from './isOnMonitoring.service';
 
 import { distributionByLifecycleStageModels as distributionByLifecycleStageSumModels } from './sql/sum';
 import { tasks as sumTasks } from './sql/sum';
 
-import { isOnMonitoringModels as isOnMonitoringSumRmModels } from './sql/sum-rm';
 import { stalledModels as stalledSumRmModels } from './sql/sum-rm';
 
 @Injectable()
@@ -34,6 +34,7 @@ export class MetricsService {
       private readonly finalStatusService: FinalStatusService,
       private readonly finalStatusByMonthService: FinalStatusByMonthService,
       private readonly registryCoverageFinalService: RegistryCoverageFinalService,
+      private readonly isOnMonitoringService: IsOnMonitoringService
     ) {}
 
     private boundPercentage(value: number): number {
@@ -114,37 +115,6 @@ export class MetricsService {
         };
     }
 
-    private async getOnMonitoringModels(
-      startDate: string | null = null,
-      endDate: string | null = null,
-      dsStream: string[] | null = null,
-    ) {
-        const rawData = await this.mrmDatabaseService.query(
-          isOnMonitoringSumRmModels,
-          [startDate, endDate, dsStream],
-        );
-
-        const onMonitoringCount = Number(
-          rawData[0]?.on_monitoring_models_count || 0,
-        );
-
-        const deltaPercent = await this.calculateDelta(
-          isOnMonitoringSumRmModels,
-          this.mrmDatabaseService,
-          dsStream,
-          endDate,
-          'on_monitoring_models',
-          true,
-        );
-
-        return {
-            onMonitoringModels: {
-                count: onMonitoringCount,
-                deltaPercent: deltaPercent,
-            },
-        };
-    }
-
     private async getStalledModelsByMonth(
       startDate: string | null = null,
       endDate: string | null = null,
@@ -203,9 +173,9 @@ export class MetricsService {
             this.sumRmService.metric(startDate, endDate, stream),
             this.outOfOperationService.metric(startDate, endDate, stream),
             this.totalService.metric(startDate, endDate, stream),
+            this.isOnMonitoringService.metric(startDate, endDate, stream),
 
             // @TODO: нужно пересмотреть
-            this.getOnMonitoringModels(startDate, endDate, stream),
             this.getDistributionByLifecycleStageModels(startDate, endDate, stream),
             this.getStalledModelsByMonth(startDate, endDate, stream),
             this.getTasks(startDate, endDate),
