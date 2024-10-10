@@ -1,5 +1,12 @@
 # Semantic Versioning Changelog
 
+## [1.4.1](https://git.sfera.inno.local/SUMD/mrms-backend/compare/v1.4.0...v1.4.1) (2024-10-10)
+
+
+### Bug Fixes
+
+* Фикс бага - разработанные модели ([5b2b513](https://git.sfera.inno.local/SUMD/mrms-backend/commit/5b2b513314b890704b25d6e04bbb22426539bdf4))
+
 # [1.4.0](https://git.sfera.inno.local/SUMD/mrms-backend/compare/v1.3.36...v1.4.0) (2024-10-09)
 
 
