@@ -13,7 +13,7 @@ WITH RankedArtefacts AS (
     WHERE a.artefact_tech_label IN ('date_of_introduction_into_operation', 'model_epic_05_date', 'developing_end_date', 'data_completion_of_stage_05a', 'Departament')
 )
 SELECT m.model_id,
-       coalesce(ar1.artefact_string_value, ar2.artefact_string_value, ar3.artefact_string_value, ar4.artefact_string_value) AS value,
+       coalesce(ar2.artefact_string_value, ar3.artefact_string_value, ar4.artefact_string_value) AS value,
        ar5.artefact_string_value AS stream
 FROM models AS m
 LEFT JOIN RankedArtefacts AS ar1
