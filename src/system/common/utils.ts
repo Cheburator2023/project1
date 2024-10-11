@@ -39,38 +39,42 @@ const pad = (number: number, length: number = 2): string => {
  */
 const parseDate = (dateInput: string | Date): Date | null => {
   if (dateInput instanceof Date) {
+    // Если это объект Date, просто возвращаем его
     return isNaN(dateInput.getTime()) ? null : new Date(dateInput.getTime() + (3 * 60 * 60 * 1000));
   }
 
   let date: Date | null = null;
-  let day: number, month: number, year: number;
 
-  if (/^\d{2}\.\d{2}\.\d{4}$/.test(dateInput)) {
-    [day, month, year] = dateInput.split('.').map(Number);
+  // Формат "2023-02-22 14:51:23+00:00" (дата с часовым поясом)
+  if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}[+-]\d{2}:\d{2}$/.test(dateInput)) {
+    date = new Date(dateInput.replace(' ', 'T')); // Заменяем пробел на "T", чтобы сделать строку совместимой с ISO
+  } 
+  // Формат "dd.mm.yyyy"
+  else if (/^\d{2}\.\d{2}\.\d{4}$/.test(dateInput)) {
+    const [day, month, year] = dateInput.split('.').map(Number);
     if (month >= 1 && month <= 12) {
       date = new Date(year, month - 1, day);
     }
-  } else if (/^\d{2}\/\d{2}\/\d{4}$/.test(dateInput)) {
-    [month, day, year] = dateInput.split('/').map(Number);
+  }
+  // Формат "mm/dd/yyyy"
+  else if (/^\d{2}\/\d{2}\/\d{4}$/.test(dateInput)) {
+    const [month, day, year] = dateInput.split('/').map(Number);
     if (month >= 1 && month <= 12) {
       date = new Date(year, month - 1, day);
     }
-  } else if (/^\d{4}$/.test(dateInput)) {
-    year = Number(dateInput);
+  }
+  // Формат "yyyy"
+  else if (/^\d{4}$/.test(dateInput)) {
+    const year = Number(dateInput);
     date = new Date(year, 0, 1);
-  } else if (/^\d{4}-\d{2}-\d{2}$/.test(dateInput)) {
-    [year, month, day] = dateInput.split('-').map(Number);
+  }
+  // Формат "yyyy-mm-dd"
+  else if (/^\d{4}-\d{2}-\d{2}$/.test(dateInput)) {
+    const [year, month, day] = dateInput.split('-').map(Number);
     date = new Date(year, month - 1, day);
   }
 
-  // Check for valid date by comparing the original and resulting date components
-  if (date && !/^\d{4}(-\d{2}-\d{2})?$/.test(dateInput)) {
-    const parsedMonth = month - 1;
-    if (date.getFullYear() !== year || date.getMonth() !== parsedMonth || date.getDate() !== day) {
-      return null;
-    }
-  }
-
+  // Проверка на валидность даты
   return date && !isNaN(date.getTime()) ? date : null;
 };
 
