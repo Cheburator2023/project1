@@ -1,5 +1,12 @@
 # Semantic Versioning Changelog
 
+# [1.5.0](https://git.sfera.inno.local/SUMD/mrms-backend/compare/v1.4.1...v1.5.0) (2024-10-11)
+
+
+### Features
+
+* Добавление обработки даты с часовым поясом в parsedDate ([de3b7d7](https://git.sfera.inno.local/SUMD/mrms-backend/commit/de3b7d76e6f46925f0d4e2759c708614ff8f779d))
+
 ## [1.4.1](https://git.sfera.inno.local/SUMD/mrms-backend/compare/v1.4.0...v1.4.1) (2024-10-10)
 
 
