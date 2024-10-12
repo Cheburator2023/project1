@@ -1,5 +1,12 @@
 # Semantic Versioning Changelog
 
+## [1.5.2](https://git.sfera.inno.local/SUMD/mrms-backend/compare/v1.5.1...v1.5.2) (2024-10-12)
+
+
+### Bug Fixes
+
+* **metrics:** add create date to metrics and console logs ([821e1cf](https://git.sfera.inno.local/SUMD/mrms-backend/commit/821e1cfdd4d89e80d04b3eaaed8dbb6478449746))
+
 ## [1.5.1](https://git.sfera.inno.local/SUMD/mrms-backend/compare/v1.5.0...v1.5.1) (2024-10-12)
 
 
