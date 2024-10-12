@@ -1,5 +1,12 @@
 # Semantic Versioning Changelog
 
+## [1.5.1](https://git.sfera.inno.local/SUMD/mrms-backend/compare/v1.5.0...v1.5.1) (2024-10-12)
+
+
+### Bug Fixes
+
+* **datetime:** add new datetime formats ([ab4b2dd](https://git.sfera.inno.local/SUMD/mrms-backend/commit/ab4b2dd803c31bb723f692d3b453ef00f6f735c0))
+
 # [1.5.0](https://git.sfera.inno.local/SUMD/mrms-backend/compare/v1.4.1...v1.5.0) (2024-10-11)
 
 
