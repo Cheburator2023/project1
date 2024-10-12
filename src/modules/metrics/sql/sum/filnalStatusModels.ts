@@ -98,7 +98,7 @@ RankedArtefacts AS (
     FROM artefact_realizations AS ar
     JOIN artefacts AS a
       ON ar.artefact_id = a.artefact_id
-    WHERE a.artefact_tech_label IN ('rs_model_decommiss_date', 'date_of_introduction_into_operation', 'model_epic_05_date', 'data_completion_of_stage_05a', 'Departament')
+    WHERE a.artefact_tech_label IN ('rs_model_decommiss_date', 'date_of_introduction_into_operation', 'model_epic_05_date', 'developing_end_date', 'data_completion_of_stage_05a', 'create_date', 'Departament')
 )
 SELECT m.model_id,
        coalesce(
@@ -106,9 +106,11 @@ SELECT m.model_id,
          ar2.artefact_string_value,
          ar3.artefact_string_value,
          ar4.artefact_string_value,
+         ar5.artefact_string_value,
+         ar6.artefact_string_value,
          to_char(m.create_date, 'YYYY-MM-DD')
        ) AS value,
-       ar5.artefact_string_value AS stream,
+       ar7.artefact_string_value AS stream,
        fm.status AS status
 FROM models AS m
 LEFT JOIN RankedArtefacts AS ar1
@@ -118,16 +120,22 @@ LEFT JOIN RankedArtefacts AS ar2
 LEFT JOIN RankedArtefacts AS ar3
   ON m.model_id = ar3.model_id AND ar3.artefact_id = (SELECT artefact_id FROM artefacts WHERE artefact_tech_label = 'model_epic_05_date') AND ar3.rn = 1
 LEFT JOIN RankedArtefacts AS ar4
-  ON m.model_id = ar4.model_id AND ar4.artefact_id = (SELECT artefact_id FROM artefacts WHERE artefact_tech_label = 'data_completion_of_stage_05a') AND ar4.rn = 1
+  ON m.model_id = ar4.model_id AND ar4.artefact_id = (SELECT artefact_id FROM artefacts WHERE artefact_tech_label = 'developing_end_date') AND ar4.rn = 1
+LEFT JOIN RankedArtefacts AS ar5
+  ON m.model_id = ar5.model_id AND ar5.artefact_id = (SELECT artefact_id FROM artefacts WHERE artefact_tech_label = 'data_completion_of_stage_05a') AND ar5.rn = 1
+LEFT JOIN RankedArtefacts AS ar6
+  ON m.model_id = ar6.model_id AND ar6.artefact_id = (SELECT artefact_id FROM artefacts WHERE artefact_tech_label = 'create_date') AND ar6.rn = 1
 LEFT JOIN FilteredModels AS fm
     ON m.model_id = fm.model_id
-LEFT JOIN RankedArtefacts AS ar5
-  ON m.model_id = ar5.model_id AND ar5.artefact_id = (SELECT artefact_id FROM artefacts WHERE artefact_tech_label = 'Departament') AND ar5.rn = 1
+LEFT JOIN RankedArtefacts AS ar7
+  ON m.model_id = ar7.model_id AND ar7.artefact_id = (SELECT artefact_id FROM artefacts WHERE artefact_tech_label = 'Departament') AND ar7.rn = 1
 WHERE coalesce(
     ar1.artefact_string_value,
     ar2.artefact_string_value,
     ar3.artefact_string_value,
     ar4.artefact_string_value,
+    ar5.artefact_string_value,
+    ar6.artefact_string_value,
     to_char(m.create_date, 'YYYY-MM-DD')
 ) IS NOT NULL
 AND fm.status LIKE '%Модель внедряется в ПИМ%' OR

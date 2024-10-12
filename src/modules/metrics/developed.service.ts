@@ -7,8 +7,13 @@ import { MrmDatabaseService } from 'src/system/mrm-database/database.service'
 import { developedModels as developedSumModels } from './sql/sum';
 import { developedModels as developedSumRmModels } from './sql/sum-rm'
 
+import { Logger } from '@nestjs/common';
+
+
 @Injectable()
 export class DevelopedService {
+  private readonly logger = new Logger(DevelopedService.name)
+
   constructor(
     private readonly sumDatabaseService: SumDatabaseService,
     private readonly mrmDatabaseService: MrmDatabaseService
@@ -136,11 +141,26 @@ export class DevelopedService {
   ) {
     const sumRawData = await this.sumDatabaseService.query(developedSumModels, {})
     const sumRmRawData = await this.mrmDatabaseService.query(developedSumRmModels, {})
+
+    console.log("sumRawData", JSON.stringify(sumRawData, null, 2))
+    console.log(`sumRawData count: ${sumRawData.length}`)
+
+    console.log("sumRmRawData", JSON.stringify(sumRmRawData, null, 2))
+    console.log(`sumRmRawData count, ${sumRmRawData.length}`)
+
     const mergedData = this.mergeArrays(sumRawData, sumRmRawData)
+
+    console.log("mergedData", JSON.stringify(mergedData, null, 2))
+    console.log(`mergedData count, ${mergedData.length}`)
+
+
     const filteredData = mergedData.filter(
       item => this.filterByStringDate(item.value, startDate, endDate) &&
         this.filterByStreams(item.streams, streams)
     )
+
+    console.log("filteredData", JSON.stringify(filteredData, null, 2))
+    console.log(`filteredData count, ${filteredData.length}`)
 
     return filteredData
   }
@@ -161,4 +181,3 @@ export class DevelopedService {
     }
   }
 }
-
