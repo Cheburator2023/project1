@@ -49,6 +49,15 @@ const parseDate = (dateInput: string | Date): Date | null => {
   if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}[+-]\d{2}:\d{2}$/.test(dateInput)) {
     date = new Date(dateInput.replace(' ', 'T')); // Заменяем пробел на "T", чтобы сделать строку совместимой с ISO
   } 
+  // Формат "dd.mm.yyyy hh:mm"
+  else if (/^\d{2}\.\d{2}\.\d{4} \d{2}:\d{2}$/.test(dateInput)) {
+    const [datePart, timePart] = dateInput.split(' ');
+    const [day, month, year] = datePart.split('.').map(Number);
+    const [hours, minutes] = timePart.split(':').map(Number);
+    if (month >= 1 && month <= 12) {
+      date = new Date(year, month - 1, day, hours, minutes);
+    }
+  }
   // Формат "dd.mm.yyyy"
   else if (/^\d{2}\.\d{2}\.\d{4}$/.test(dateInput)) {
     const [day, month, year] = dateInput.split('.').map(Number);
