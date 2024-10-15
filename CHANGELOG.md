@@ -1,5 +1,12 @@
 # Semantic Versioning Changelog
 
+## [1.5.3](https://git.sfera.inno.local/SUMD/mrms-backend/compare/v1.5.2...v1.5.3) (2024-10-15)
+
+
+### Bug Fixes
+
+* **dashboard:** change logic ([f2d5afa](https://git.sfera.inno.local/SUMD/mrms-backend/commit/f2d5afa17e2a6214f911acfda4262d89de7c263b))
+
 ## [1.5.2](https://git.sfera.inno.local/SUMD/mrms-backend/compare/v1.5.1...v1.5.2) (2024-10-12)
 
 
