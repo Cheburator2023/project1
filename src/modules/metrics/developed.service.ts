@@ -7,65 +7,61 @@ import { MrmDatabaseService } from 'src/system/mrm-database/database.service'
 import { developedModels as developedSumModels } from './sql/sum';
 import { developedModels as developedSumRmModels } from './sql/sum-rm'
 
-import { Logger } from '@nestjs/common';
-
 
 @Injectable()
 export class DevelopedService {
-  private readonly logger = new Logger(DevelopedService.name)
-
   constructor(
     private readonly sumDatabaseService: SumDatabaseService,
     private readonly mrmDatabaseService: MrmDatabaseService
   ) {
   }
 
-  private mergeArrays(sum: any[], rm: any[]) {
+  private mergeArrays(rm: any[], sum: any[]) {
     const result = []
 
-    const rmMap = new Map<string, any>()
-    rm.forEach(item => {
-      rmMap.set(item.model_id, item)
+    const sumMap = new Map<string, any>()
+    sum.forEach(item => {
+      sumMap.set(item.model_id, item)
     })
 
-    sum.forEach(sumItem => {
-      const rmItem = rmMap.get(sumItem.model_id)
+    rm.forEach(rmItem => {
+      const sumItem = sumMap.get(rmItem.model_id)
 
-      if (rmItem) {
+      if (sumItem) {
         let value
 
-        const isSumValid = isValidDate(sumItem.value)
         const isRmValid = isValidDate(rmItem.value)
+        const isSumValid = isValidDate(sumItem.value)
 
-        if (isSumValid) {
-          value = sumItem.value
-        } else if (isRmValid) {
+        if (isRmValid) {
           value = rmItem.value
+        } else if (isSumValid) {
+          value = sumItem.value
         } else {
           value = null
         }
 
         result.push({
-          model_id: sumItem.model_id,
+          model_id: rmItem.model_id,
           value,
-          streams: [sumItem.stream, rmItem.stream]
+          streams: [rmItem.stream, sumItem.stream]
         })
 
-        rmMap.delete(sumItem.model_id)
+        sumMap.delete(rmItem.model_id)
       } else {
         result.push({
-          model_id: sumItem.model_id,
-          value: sumItem.value,
-          streams: [sumItem.stream]
+          model_id: rmItem.model_id,
+          value: rmItem.value,
+          streams: [rmItem.stream]
         })
       }
     })
 
-    rmMap.forEach(rmItem => {
+    sumMap.forEach(sumItem => {
       result.push({
-        model_id: rmItem.model_id,
-        value: rmItem.value,
-        streams: [rmItem.stream]
+        model_id: sumItem.model_id,
+        value: sumItem.value,
+        streams: [sumItem.stream]
       })
     })
 
@@ -141,26 +137,13 @@ export class DevelopedService {
   ) {
     const sumRawData = await this.sumDatabaseService.query(developedSumModels, {})
     const sumRmRawData = await this.mrmDatabaseService.query(developedSumRmModels, {})
-
-    console.log("sumRawData", JSON.stringify(sumRawData, null, 2))
-    console.log(`sumRawData count: ${sumRawData.length}`)
-
-    console.log("sumRmRawData", JSON.stringify(sumRmRawData, null, 2))
-    console.log(`sumRmRawData count, ${sumRmRawData.length}`)
-
-    const mergedData = this.mergeArrays(sumRawData, sumRmRawData)
-
-    console.log("mergedData", JSON.stringify(mergedData, null, 2))
-    console.log(`mergedData count, ${mergedData.length}`)
-
+    const mergedData = this.mergeArrays(sumRmRawData, sumRawData)
 
     const filteredData = mergedData.filter(
       item => this.filterByStringDate(item.value, startDate, endDate) &&
         this.filterByStreams(item.streams, streams)
     )
 
-    console.log("filteredData", JSON.stringify(filteredData, null, 2))
-    console.log(`filteredData count, ${filteredData.length}`)
 
     return filteredData
   }

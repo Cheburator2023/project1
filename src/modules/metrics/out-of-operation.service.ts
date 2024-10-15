@@ -33,52 +33,52 @@ export class OutOfOperationService {
     return this.boundPercentage(Math.round(percentageChange));
   }
 
-  private mergeArrays(sum: any[], rm: any[]) {
+  private mergeArrays(rm: any[], sum: any[]) {
     const result = []
 
-    const rmMap = new Map<string, any>()
-    rm.forEach(item => {
-      rmMap.set(item.model_id, item)
+    const sumMap = new Map<string, any>()
+    sum.forEach(item => {
+      sumMap.set(item.model_id, item)
     })
 
-    sum.forEach(sumItem => {
-      const rmItem = rmMap.get(sumItem.model_id)
+    rm.forEach(rmItem => {
+      const sumItem = sumMap.get(rmItem.model_id)
 
-      if (rmItem) {
+      if (sumItem) {
         let value
 
-        const isSumValid = isValidDate(sumItem.value)
         const isRmValid = isValidDate(rmItem.value)
+        const isSumValid = isValidDate(sumItem.value)
 
-        if (isSumValid) {
-          value = sumItem.value
-        } else if (isRmValid) {
+        if (isRmValid) {
           value = rmItem.value
+        } else if (isSumValid) {
+          value = sumItem.value
         } else {
           value = null
         }
 
         result.push({
-          model_id: sumItem.model_id,
+          model_id: rmItem.model_id,
           value,
-          streams: [sumItem.stream, rmItem.stream]
+          streams: [rmItem.stream, sumItem.stream]
         })
 
-        rmMap.delete(sumItem.model_id)
+        sumMap.delete(rmItem.model_id)
       } else {
         result.push({
-          model_id: sumItem.model_id,
-          value: sumItem.value,
-          streams: [sumItem.stream]
+          model_id: rmItem.model_id,
+          value: rmItem.value,
+          streams: [rmItem.stream]
         })
       }
     })
 
-    rmMap.forEach(rmItem => {
+    sumMap.forEach(sumItem => {
       result.push({
-        model_id: rmItem.model_id,
-        value: rmItem.value,
-        streams: [rmItem.stream]
+        model_id: sumItem.model_id,
+        value: sumItem.value,
+        streams: [sumItem.stream]
       })
     })
 
@@ -154,7 +154,7 @@ export class OutOfOperationService {
   ) {
     const sumRawData = await this.sumDatabaseService.query(isTakenOutOfOperationSumModels, {})
     const sumRmRawData = await this.mrmDatabaseService.query(isTakenOutOfOperationSumRmModels, {})
-    const mergedData = this.mergeArrays(sumRawData, sumRmRawData)
+    const mergedData = this.mergeArrays(sumRmRawData, sumRawData)
     const filteredData = mergedData.filter(
       item => this.filterByStringDate(item.value, startDate, endDate) &&
         this.filterByStreams(item.streams, streams)
