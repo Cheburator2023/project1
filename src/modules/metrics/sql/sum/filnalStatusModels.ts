@@ -98,7 +98,7 @@ RankedArtefacts AS (
     FROM artefact_realizations AS ar
     JOIN artefacts AS a
       ON ar.artefact_id = a.artefact_id
-    WHERE a.artefact_tech_label IN ('rs_model_decommiss_date', 'date_of_introduction_into_operation', 'model_epic_05_date', 'developing_end_date', 'data_completion_of_stage_05a', 'create_date', 'Departament')
+    WHERE a.artefact_tech_label IN ('rs_model_decommiss_date', 'date_of_introduction_into_operation', 'model_epic_05_date', 'developing_end_date', 'data_completion_of_stage_05a', 'create_date', 'Departament', 'automl_flg')
 )
 SELECT m.model_id,
        coalesce(
@@ -129,6 +129,8 @@ LEFT JOIN FilteredModels AS fm
     ON m.model_id = fm.model_id
 LEFT JOIN RankedArtefacts AS ar7
   ON m.model_id = ar7.model_id AND ar7.artefact_id = (SELECT artefact_id FROM artefacts WHERE artefact_tech_label = 'Departament') AND ar7.rn = 1
+LEFT JOIN RankedArtefacts AS ar8
+  ON m.model_id = ar8.model_id AND ar8.artefact_id = (SELECT artefact_id FROM artefacts WHERE artefact_tech_label = 'automl_flg' AND artefact_id = 310) AND ar8.rn = 1
 WHERE coalesce(
     ar1.artefact_string_value,
     ar2.artefact_string_value,
@@ -138,9 +140,10 @@ WHERE coalesce(
     ar6.artefact_string_value,
     to_char(m.create_date, 'YYYY-MM-DD')
 ) IS NOT NULL
+AND (ar8.artefact_string_value IS NULL OR ar8.artefact_string_value != 'true')
 AND fm.status LIKE '%Модель внедряется в ПИМ%' OR
     fm.status LIKE '%Модель внедряется вне ПИМ%' OR
-    fm.status LIKE '%Разработана, не внедрена» %' OR
+    fm.status LIKE '%Разработана, не внедрена%' OR
     fm.status LIKE '%Архив%'
 `;
 
