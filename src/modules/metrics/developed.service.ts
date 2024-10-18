@@ -27,7 +27,12 @@ export class DevelopedService {
     rm.forEach(rmItem => {
       const sumItem = sumMap.get(rmItem.model_id)
 
+      if (rmItem.date_of_introduction_into_operation) {
+        return
+      }
+
       if (sumItem) {
+
         let value
 
         const isRmValid = isValidDate(rmItem.value)
@@ -44,7 +49,8 @@ export class DevelopedService {
         result.push({
           model_id: rmItem.model_id,
           value,
-          streams: [rmItem.stream, sumItem.stream]
+          streams: [rmItem.stream, sumItem.stream],
+          date_of_introduction_into_operation: rmItem.date_of_introduction_into_operation
         })
 
         sumMap.delete(rmItem.model_id)
@@ -52,7 +58,8 @@ export class DevelopedService {
         result.push({
           model_id: rmItem.model_id,
           value: rmItem.value,
-          streams: [rmItem.stream]
+          streams: [rmItem.stream],
+          date_of_introduction_into_operation: rmItem.date_of_introduction_into_operation
         })
       }
     })
@@ -61,7 +68,8 @@ export class DevelopedService {
       result.push({
         model_id: sumItem.model_id,
         value: sumItem.value,
-        streams: [sumItem.stream]
+        streams: [sumItem.stream],
+        date_of_introduction_into_operation: sumItem.date_of_introduction_into_operation
       })
     })
 
@@ -143,7 +151,6 @@ export class DevelopedService {
       item => this.filterByStringDate(item.value, startDate, endDate) &&
         this.filterByStreams(item.streams, streams)
     )
-
 
     return filteredData
   }

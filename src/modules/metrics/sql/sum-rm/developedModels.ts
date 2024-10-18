@@ -13,6 +13,7 @@ WITH RankedArtefacts AS (
     WHERE a.artefact_tech_label IN ('date_of_introduction_into_operation', 'developing_end_date', 'data_completion_of_stage_05a', 'ds_stream')
 )
 SELECT m.model_id,
+       ar1.artefact_string_value AS date_of_introduction_into_operation,
        coalesce(ar2.artefact_string_value, ar3.artefact_string_value) AS value,
        ar4.artefact_string_value AS stream
 FROM models_new AS m
@@ -25,7 +26,6 @@ LEFT JOIN RankedArtefacts AS ar3
 LEFT JOIN RankedArtefacts AS ar4
   ON m.model_id = ar4.model_id AND ar4.artefact_id = (SELECT artefact_id FROM artefacts WHERE artefact_tech_label = 'ds_stream') AND ar4.rn = 1
 WHERE coalesce(ar2.artefact_string_value, ar3.artefact_string_value) IS NOT NULL
-      AND ar1.artefact_string_value IS NULL;
 `;
 
 export { developedModels };

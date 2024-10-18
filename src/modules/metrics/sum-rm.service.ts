@@ -137,12 +137,14 @@ export class SumRmService {
   ) {
     const sumRawData = await this.sumDatabaseService.query(getSumModels, {})
     const sumRmRawData = await this.mrmDatabaseService.query(getSumRmModels, {})
+
     const mergedData = this.mergeArrays(sumRmRawData, sumRawData)
+
     const filteredData = mergedData.filter(
       item => this.filterByStringDate(item.value, startDate, endDate) &&
         this.filterByStreams(item.streams, streams)
     )
-
+  
     return filteredData
   }
 

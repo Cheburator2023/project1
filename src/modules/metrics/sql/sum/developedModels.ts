@@ -13,6 +13,7 @@ WITH RankedArtefacts AS (
     WHERE a.artefact_tech_label IN ('date_of_introduction_into_operation', 'model_epic_05_date', 'developing_end_date', 'data_completion_of_stage_05a', 'Departament', 'automl_flg')
 )
 SELECT m.model_id,
+       ar1.artefact_string_value AS date_of_introduction_into_operation,
        coalesce(ar2.artefact_string_value, ar3.artefact_string_value, ar4.artefact_string_value) AS value,
        ar5.artefact_string_value AS stream
 FROM models AS m
@@ -29,7 +30,6 @@ LEFT JOIN RankedArtefacts AS ar5
 LEFT JOIN RankedArtefacts AS ar6
   ON m.model_id = ar6.model_id AND ar6.artefact_id = (SELECT artefact_id FROM artefacts WHERE artefact_tech_label = 'automl_flg' AND artefact_id = 310) AND ar6.rn = 1
 WHERE coalesce(ar2.artefact_string_value, ar3.artefact_string_value, ar4.artefact_string_value) IS NOT NULL
-      AND ar1.artefact_string_value IS NULL
       AND (ar6.artefact_string_value IS NULL OR ar6.artefact_string_value != 'true');
 `;
 

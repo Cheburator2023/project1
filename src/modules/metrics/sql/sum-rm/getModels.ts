@@ -10,7 +10,7 @@ WITH RankedArtefacts AS (
     FROM artefact_realizations_new AS ar
     JOIN artefacts AS a
       ON ar.artefact_id = a.artefact_id
-    WHERE a.artefact_tech_label IN ('rs_model_decommiss_date', 'date_of_introduction_into_operation', 'developing_end_date', 'data_completion_of_stage_05a', 'create_date', 'Departament')
+    WHERE a.artefact_tech_label IN ('remove_date', 'date_of_introduction_into_operation', 'developing_end_date', 'data_completion_of_stage_05a', 'create_date', 'ds_stream')
 )
 SELECT m.model_id,
        coalesce(
@@ -24,7 +24,7 @@ SELECT m.model_id,
        ar6.artefact_string_value AS stream
 FROM models_new AS m
 LEFT JOIN RankedArtefacts AS ar1
-  ON m.model_id = ar1.model_id AND ar1.artefact_id = (SELECT artefact_id FROM artefacts WHERE artefact_tech_label = 'rs_model_decommiss_date') AND ar1.rn = 1
+  ON m.model_id = ar1.model_id AND ar1.artefact_id = (SELECT artefact_id FROM artefacts WHERE artefact_tech_label = 'remove_date') AND ar1.rn = 1
 LEFT JOIN RankedArtefacts AS ar2
   ON m.model_id = ar2.model_id AND ar2.artefact_id = (SELECT artefact_id FROM artefacts WHERE artefact_tech_label = 'date_of_introduction_into_operation') AND ar2.rn = 1
 LEFT JOIN RankedArtefacts AS ar3
@@ -34,7 +34,7 @@ LEFT JOIN RankedArtefacts AS ar4
 LEFT JOIN RankedArtefacts AS ar5
   ON m.model_id = ar5.model_id AND ar5.artefact_id = (SELECT artefact_id FROM artefacts WHERE artefact_tech_label = 'create_date') AND ar5.rn = 1
 LEFT JOIN RankedArtefacts AS ar6
-  ON m.model_id = ar6.model_id AND ar6.artefact_id = (SELECT artefact_id FROM artefacts WHERE artefact_tech_label = 'Departament') AND ar6.rn = 1
+  ON m.model_id = ar6.model_id AND ar6.artefact_id = (SELECT artefact_id FROM artefacts WHERE artefact_tech_label = 'ds_stream') AND ar6.rn = 1
 WHERE coalesce(
     ar1.artefact_string_value,
     ar2.artefact_string_value,
