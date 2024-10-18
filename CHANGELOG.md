@@ -1,5 +1,12 @@
 # Semantic Versioning Changelog
 
+## [1.5.5](https://git.sfera.inno.local/SUMD/mrms-backend/compare/v1.5.4...v1.5.5) (2024-10-18)
+
+
+### Bug Fixes
+
+* **metrics:** fix dash fields ([d98fb9a](https://git.sfera.inno.local/SUMD/mrms-backend/commit/d98fb9a530bb5ac2f7511c9a57497f4130d8db0b))
+
 ## [1.5.4](https://git.sfera.inno.local/SUMD/mrms-backend/compare/v1.5.3...v1.5.4) (2024-10-17)
 
 
