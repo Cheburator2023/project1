@@ -44,7 +44,8 @@ SELECT m_.model_id                                                              
        dm_.DS_DEPARTMENT                                                                                     AS ds_stream,
        null                                                                                          AS assignment_contractor,
        dm_.solution_to_implement_model,
-       null                                                                                          AS model_status,
+       st.status,
+       activeBpmnInstance.bpmn_instance_name                                                         AS model_status,
        null                                                                                          AS model_status_assignee,
 
        -- Столбцы для дат подтверждения и флагов использования по кварталам
@@ -124,6 +125,133 @@ ON m_.model_id = allocation_data.allocation_model_id
                     WHERE ar_.artefact_id IN (173, 6, 67, 73)
                       AND ar_.effective_to = TO_TIMESTAMP('9999-12-3123:59:59', 'YYYY-MM-DDHH24:MI:SS')
                     GROUP BY ar_.model_id) clsf_ ON m_.model_id = clsf_.model_id
+         LEFT JOIN
+         (
+             SELECT model_id,
+             STRING_AGG(status, ';') as status
+             FROM (
+                SELECT model_id,
+                    CASE
+                        WHEN (artefact_id = 896)
+                            AND (artefact_value_id IN (685))
+                            THEN 'Модель не эффективна в бизнес-процессе'
+                        WHEN (artefact_id = 827)
+                            AND (artefact_value_id IN (642))
+                            THEN 'Модель не эффективна в бизнес-процессе'
+                        WHEN artefact_id = 52
+                            AND artefact_string_value = 'Нет, доработки не актуальны'
+                            THEN 'Модель не эффективна в бизнес-процессе'
+
+                        WHEN artefact_id = 174
+                            AND (artefact_string_value is null OR artefact_string_value = 'false')
+                            THEN 'Разработана, не внедрена'
+                        WHEN artefact_id = 201
+                            AND (artefact_value_id IN (313, 314, 315))
+                            THEN artefact_string_value
+                        WHEN artefact_id = 896
+                            AND (artefact_value_id IN (683))
+                            THEN 'Разработана, не внедрена'
+                        WHEN artefact_id = 827
+                            AND (artefact_value_id IN (642, 643))
+                            THEN 'Разработана, не внедрена'
+                        WHEN artefact_id = 822
+                            AND (artefact_value_id IN (637))
+                            THEN 'Разработана, не внедрена'
+                        WHEN artefact_id = 367
+                            AND (artefact_value_id IN (519))
+                            THEN 'Разработана, не внедрена'
+                        WHEN artefact_id = 373
+                            AND (artefact_value_id IN (411))
+                            THEN 'Разработана, не внедрена'
+
+                        WHEN artefact_id = 323
+                            AND (artefact_value_id IN (426))
+                            THEN 'Архив'
+                        WHEN artefact_id = 351
+                            AND (artefact_value_id IN (399))
+                            THEN 'Архив'
+                        WHEN artefact_id = 152
+                            AND (artefact_value_id IN (35))
+                            THEN 'Архив'
+                        WHEN artefact_id = 822
+                            AND (artefact_value_id IN (638))
+                            THEN 'Архив'
+                        WHEN artefact_id = 818
+                            AND (artefact_value_id IN (632))
+                            THEN 'Архив'
+
+                        WHEN artefact_id = 323
+                            AND (artefact_value_id IN (427))
+                            THEN 'Разработана, не внедрена'
+
+                        WHEN (artefact_id = 780 OR artefact_id = 779)
+                            AND artefact_string_value = 'true'
+                            THEN 'Вывод модели из эксплуатации'
+
+                        WHEN (artefact_id = 896)
+                            AND (artefact_value_id IN (684))
+                            THEN 'Разработана, внедрена в ПИМ'
+                        WHEN (artefact_id = 853)
+                            AND (artefact_value_id IN (657, 658))
+                            THEN 'Разработана, внедрена в ПИМ'
+                        WHEN (artefact_id = 872)
+                            AND (artefact_value_id IN (667))
+                            THEN 'Разработана, внедрена в ПИМ'
+
+                        WHEN (artefact_id = 827)
+                            AND (artefact_value_id IN (641))
+                            THEN 'Разработана, внедрена вне ПИМ'
+                        WHEN (artefact_id = 853)
+                            AND (artefact_value_id IN (659))
+                            THEN 'Разработана, внедрена вне ПИМ'
+
+                        WHEN (artefact_id = 825)
+                            AND (artefact_string_value = 'true')
+                            THEN 'Опытная эксплуатация на контуре разработки'
+                        END AS status
+                    FROM artefact_realizations
+                    WHERE effective_to = TO_TIMESTAMP('9999-12-3123:59:59', 'YYYY-MM-DDHH24:MI:SS')
+             ) AS FOO
+             GROUP BY model_id
+         ) st
+         ON m_.model_id = st.model_id
+         LEFT JOIN (
+                SELECT t2.model_id,
+                       t2.bpmn_instance_name,
+                       t2.effective_from
+                FROM (
+                         SELECT t1.model_id,
+                                t1.bpmn_instance_name,
+                                t1.effective_from,
+                                ROW_NUMBER() OVER (
+                                    PARTITION BY t1.model_id
+                                    ORDER BY
+                                        t1.effective_from DESC
+                                    ) AS rnrn_
+                         FROM (
+                                  SELECT bbii.model_id,
+                                         bbii.bpmn_key_desc AS bpmn_instance_name,
+                                         bbii.effective_from
+                                  FROM (
+                                           SELECT bbbiii.model_id,
+                                                  bbbppp.bpmn_key_desc,
+                                                  bbbiii.bpmn_key_id,
+                                                  bbbiii.effective_from,
+                                                  ROW_NUMBER() OVER (
+                                                      PARTITION BY bbbiii.model_id
+                                                      ORDER BY
+                                                          bbbiii.effective_to DESC,
+                                                          bbbiii.effective_from DESC
+                                                      ) AS rn_
+                                           FROM bpmn_instances bbbiii
+                                                    INNER JOIN bpmn_processes bbbppp ON bbbiii.bpmn_key_id = bbbppp.bpmn_key_id
+                                       ) bbii
+                                  WHERE bbii.rn_ = 1
+                              ) t1
+                     ) t2
+                WHERE t2.rnrn_ = 1
+         ) as activeBpmnInstance
+         ON m_.model_id = activeBpmnInstance.model_id
          LEFT JOIN (SELECT model_id,
                            MAX(CASE WHEN artefact_id = 58 THEN artefact_string_value ELSE NULL END)  AS segment_name,
                            MAX(CASE WHEN ARTEFACT_ID = 7 THEN ARTEFACT_STRING_VALUE ELSE NULL END)   AS DS_DEPARTMENT,
