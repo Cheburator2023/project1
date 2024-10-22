@@ -25,7 +25,7 @@ import {
   updateArtefact as updateSumRmArtefact
 } from './sql/sum-rm'
 
-import { pseudoArtefacts } from './constants'
+import { pseudoArtefacts, modelStatuses } from './constants'
 import { Model, GroupedResults, PreparedArtefactsResult, Artefact, ArtefactValue, ModelRelationsResponse, ModelType } from './interfaces'
 import { ModelsDto, CompareModelsDto, ModelWithRelationsDto } from './dto'
 import { ArtefactFormattingType, ArtefactFormatting } from './rules'
@@ -373,6 +373,7 @@ export class ModelsService {
         const artefact = artefacts.find(({ artefact_tech_label }) => artefact_tech_label === techLabel)
 
         if (artefact) {
+          const artefactTechLabel = artefact.artefact_tech_label
           const artefactTypeId = artefact.artefact_type_id
           const value = model[techLabel]
 
@@ -391,6 +392,12 @@ export class ModelsService {
                 break
 
             }
+          }
+
+          if (artefactTechLabel === 'model_status') {
+            const status = model.status
+            const bpmn_instance_name = value
+            model[techLabel] = ModelsService.formatModelStatus(status, bpmn_instance_name)
           }
         }
       })
@@ -412,6 +419,35 @@ export class ModelsService {
   private static formatNumberField(value: number | null): string | null {
     if (value === null) return null
     return String(value)
+  }
+
+  private static getLastActiveStatus = (activeStatuses) => {
+    const activeStatusesList = activeStatuses?.split(';')
+
+    if (activeStatusesList?.includes('Вывод модели из эксплуатации')) {
+      return 'Вывод модели из эксплуатации'
+    }
+
+    if (activeStatusesList?.includes('Разработана, не внедрена')) {
+      return 'Разработана, не внедрена'
+    }
+
+    return activeStatusesList?.[0]
+  }
+
+  private static formatModelStatus(status, bpmn_instance_name) {
+    if (bpmn_instance_name === null) return null
+
+    const lastActiveStatus = ModelsService.getLastActiveStatus(status)
+
+    switch (lastActiveStatus) {
+      case 'Разработана, не внедрена':
+        return lastActiveStatus
+      case 'Вывод модели из эксплуатации':
+        return lastActiveStatus
+      default:
+        return modelStatuses?.[bpmn_instance_name.trim()]
+    }
   }
 
   private groupResultsByModelIdAndSource(
