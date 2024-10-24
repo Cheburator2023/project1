@@ -395,9 +395,9 @@ export class ModelsService {
           }
 
           if (artefactTechLabel === 'model_status') {
-            const status = model.status
-            const bpmn_instance_name = value
-            model[techLabel] = ModelsService.formatModelStatus(status, bpmn_instance_name)
+            const businessStatus = model.business_status
+            const bpmnInstanceName = value
+            model[techLabel] = ModelsService.formatModelStatus(businessStatus, bpmnInstanceName)
           }
         }
       })
