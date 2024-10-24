@@ -44,7 +44,7 @@ SELECT m_.model_id                                                              
        dm_.DS_DEPARTMENT                                                                                     AS ds_stream,
        null                                                                                          AS assignment_contractor,
        dm_.solution_to_implement_model,
-       st.status,
+       st.status                                                                                     AS business_status,
        activeBpmnInstance.bpmn_instance_name                                                         AS model_status,
        null                                                                                          AS model_status_assignee,
 
