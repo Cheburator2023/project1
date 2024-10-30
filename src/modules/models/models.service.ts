@@ -261,7 +261,10 @@ export class ModelsService {
     }
 
     const modelsAllocationForUpdate = Object.entries(allocationMap).reduce((acc, [model_id, allocations]) => {
-      const allocationArray = Object.values(allocations).map(allocation => ({ ...allocation, model_id }))
+      const allocationArray = Object
+        .values(allocations)
+        .filter(allocation => allocation.percent !== '')
+        .map(allocation => ({ ...allocation, model_id }))
       return acc.concat(allocationArray)
     }, [] as Array<{ model_id: string; gbl_id: string; percent: string | null; comment: string | null }>)
 
