@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common'
 import { AllocationSumService } from 'src/modules/allocation/allocation.sum.service'
 import { UsageSumService } from 'src/modules/usage/usage.sum.service'
+import { UsageSumRmService } from 'src/modules/usage/usage.sum.rm.service'
 import { SumDatabaseService } from 'src/system/sum-database/database.service'
 import { MrmDatabaseService } from 'src/system/mrm-database/database.service'
 
@@ -62,6 +63,7 @@ export class ModelsService {
   constructor(
     private readonly allocationSumService: AllocationSumService,
     private readonly usageSumService: UsageSumService,
+    private readonly usageSumRmService: UsageSumRmService,
     private readonly sumDatabaseService: SumDatabaseService,
     private readonly mrmDatabaseService: MrmDatabaseService
   ) {
@@ -129,7 +131,7 @@ export class ModelsService {
       artefact_string_value: string | null;
       artefact_value_id?: number | null;
     }>
-  }>) {
+  }>, user) {
     let modelSource = 'sum-rm'
     const modelIds: Set<string> = new Set()
     const namesForUpdate: Array<{ model_id: string; model_name: string }> = []
@@ -142,7 +144,7 @@ export class ModelsService {
       artefact_value_id?: number | null;
     }> = []
     const allocationMap: Record<string, Record<string, { model_id: string; gbl_id: string; percent: string | null; comment: string | null }>> = {}
-    const usageMap: Record<string, { confirmation_date: string | null; is_used: string | null }> = {}
+    const usageMap: Record<string, Record<string, { confirmation_date: string | null; is_used: string | null }>> = {}
 
     // Helper functions
     const updateAllocation = (model_id: string, gbl_id: string, percent: string | null, comment: string | null): void => {
@@ -159,12 +161,21 @@ export class ModelsService {
       allocation.comment = comment !== null ? comment : allocation.comment
     }
 
-    const updateUsage = (model_id: string, confirmation_date: string | null, is_used: string | null): void => {
+    const updateUsage = (
+      model_id: string,
+      quarter: string,
+      confirmation_date: string | null,
+      is_used: string | null
+    ): void => {
       if (!usageMap[model_id]) {
-        usageMap[model_id] = { confirmation_date: null, is_used: null }
+        usageMap[model_id] = {}
       }
 
-      const usage = usageMap[model_id]
+      if (!usageMap[model_id][quarter]) {
+        usageMap[model_id][quarter] = { confirmation_date: null, is_used: null }
+      }
+
+      const usage = usageMap[model_id][quarter]
       if (confirmation_date !== null) {
         usage.confirmation_date = confirmation_date
       }
@@ -207,13 +218,13 @@ export class ModelsService {
           case 'usage_confirm_flag_q2':
           case 'usage_confirm_flag_q3':
           case 'usage_confirm_flag_q4':
-            updateUsage(model_id, null, artefact_string_value)
+            updateUsage(model_id, artefact_tech_label.slice(-1), null, artefact_string_value)
             break
           case 'usage_confirm_date_q1':
           case 'usage_confirm_date_q2':
           case 'usage_confirm_date_q3':
           case 'usage_confirm_date_q4':
-            updateUsage(model_id, artefact_string_value, null)
+            updateUsage(model_id, artefact_tech_label.slice(-1), artefact_string_value, null)
             break
           case 'active_model': {
             if (modelSource !== 'sum-rm') {
@@ -254,11 +265,37 @@ export class ModelsService {
       return acc.concat(allocationArray)
     }, [] as Array<{ model_id: string; gbl_id: string; percent: string | null; comment: string | null }>)
 
-    const modelsUsageForUpdate = Object.entries(usageMap).map(([model_id, usage]) => ({
-      model_id,
-      confirmation_date: usage.confirmation_date || null,
-      is_used: usage.is_used ? usage.is_used === 'Да' : null
-    }))
+    const getQuarterEndDate = (quarter, year = new Date().getFullYear()) => {
+      const currentDate = new Date();
+      const currentQuarter = Math.floor((currentDate.getMonth() + 3) / 3);
+
+      // Проверяем, передан ли текущий квартал и текущий год
+      if (parseInt(quarter) === currentQuarter && year === currentDate.getFullYear()) {
+        return currentDate;
+      }
+
+      // Если передан не текущий квартал, получаем последний день квартала
+      const quarterEndMonths = {
+        1: 2, // Март
+        2: 5, // Июнь
+        3: 8, // Сентябрь
+        4: 11 // Декабрь
+      };
+
+      const month = quarterEndMonths[quarter];
+      const lastDay = new Date(year, month + 1, 0); // 0-й день следующего месяца - последний день текущего
+
+      return lastDay;
+    }
+
+    const modelsUsageForUpdate = Object.entries(usageMap).reduce((acc, [model_id, usages]) => {
+      const usageArray = Object.entries(usages).map(([quarter, usage]) => ({
+        model_id,
+        confirmation_date: usage.confirmation_date || formatDateTime(getQuarterEndDate(quarter)).split('-').reverse().join('.'),
+        is_used: usage.is_used ? usage.is_used === 'Да' : null
+      }))
+      return acc.concat(usageArray)
+    }, [] as Array<{model_id: string, confirmation_date: string | null, is_used: boolean}>)
 
     if (modelSource === 'sum-rm') {
       // Perform database updates
@@ -268,7 +305,7 @@ export class ModelsService {
         updateDateForUpdate.length && this.mrmDatabaseService.queryAll(updateSumRmModelUpdateDate, updateDateForUpdate),
         artefactsForUpdate.length && this.mrmDatabaseService.queryAll(updateSumRmArtefact, artefactsForUpdate),
         modelsAllocationForUpdate.length && this.mrmDatabaseService.queryAll(updateSumRmModelAllocation, modelsAllocationForUpdate),
-        modelsUsageForUpdate.length && this.mrmDatabaseService.queryAll(updateSumRmModelUsage, modelsUsageForUpdate)
+        modelsUsageForUpdate.length && modelsUsageForUpdate.map(async item => await this.usageSumRmService.update(item, user))
       ])
     } else {
       await Promise.all([
@@ -280,7 +317,9 @@ export class ModelsService {
         modelsUsageForUpdate.length && modelsUsageForUpdate.map(async item => await this.usageSumService.update(item))
       ])
     }
-
+    await new Promise((resolve, reject) => {
+      setTimeout(resolve, 1000)
+    })
     if (modelIds.size) {
       // @TODO: обработка нескольких моделей
       if (modelSource === 'sum-rm') {

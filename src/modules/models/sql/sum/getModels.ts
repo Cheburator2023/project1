@@ -79,10 +79,38 @@ FROM models m_
         MAX(CASE WHEN EXTRACT(QUARTER FROM muh.confirmation_date) = 2 THEN muh.confirmation_date ELSE NULL END) AS usage_confirm_date_q2,
         MAX(CASE WHEN EXTRACT(QUARTER FROM muh.confirmation_date) = 3 THEN muh.confirmation_date ELSE NULL END) AS usage_confirm_date_q3,
         MAX(CASE WHEN EXTRACT(QUARTER FROM muh.confirmation_date) = 4 THEN muh.confirmation_date ELSE NULL END) AS usage_confirm_date_q4,
-        MAX(CASE WHEN EXTRACT(QUARTER FROM muh.confirmation_date) = 1 AND muh.confirmed THEN 'Да' ELSE 'Нет' END)    AS usage_confirm_flag_q1,
-        MAX(CASE WHEN EXTRACT(QUARTER FROM muh.confirmation_date) = 2 AND muh.confirmed THEN 'Да' ELSE 'Нет' END)    AS usage_confirm_flag_q2,
-        MAX(CASE WHEN EXTRACT(QUARTER FROM muh.confirmation_date) = 3 AND muh.confirmed THEN 'Да' ELSE 'Нет' END)    AS usage_confirm_flag_q3,
-        MAX(CASE WHEN EXTRACT(QUARTER FROM muh.confirmation_date) = 4 AND muh.confirmed THEN 'Да' ELSE 'Нет' END)    AS usage_confirm_flag_q4
+        COALESCE(
+            CASE
+                WHEN BOOL_OR(EXTRACT(QUARTER FROM muh.confirmation_date) = 1 AND muh.confirmed) THEN 'Да'
+                WHEN BOOL_OR(EXTRACT(QUARTER FROM muh.confirmation_date) = 1 AND NOT muh.confirmed) THEN 'Нет'
+                ELSE NULL
+                END,
+            NULL
+        ) AS usage_confirm_flag_q1,
+        COALESCE(
+        CASE
+            WHEN BOOL_OR(EXTRACT(QUARTER FROM muh.confirmation_date) = 2 AND muh.confirmed) THEN 'Да'
+            WHEN BOOL_OR(EXTRACT(QUARTER FROM muh.confirmation_date) = 2 AND NOT muh.confirmed) THEN 'Нет'
+            ELSE NULL
+            END,
+        NULL
+        ) AS usage_confirm_flag_q2,
+        COALESCE(
+            CASE
+                WHEN BOOL_OR(EXTRACT(QUARTER FROM muh.confirmation_date) = 3 AND muh.confirmed) THEN 'Да'
+                WHEN BOOL_OR(EXTRACT(QUARTER FROM muh.confirmation_date) = 3 AND NOT muh.confirmed) THEN 'Нет'
+                ELSE NULL
+                END,
+            NULL
+        ) AS usage_confirm_flag_q3,
+        COALESCE(
+            CASE
+                WHEN BOOL_OR(EXTRACT(QUARTER FROM muh.confirmation_date) = 4 AND muh.confirmed) THEN 'Да'
+                WHEN BOOL_OR(EXTRACT(QUARTER FROM muh.confirmation_date) = 4 AND NOT muh.confirmed) THEN 'Нет'
+                ELSE NULL
+                END,
+            NULL
+        ) AS usage_confirm_flag_q4
     FROM model_usage_confirm as muh
     GROUP BY muh.model_id
 ) AS usage_data
