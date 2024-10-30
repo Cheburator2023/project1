@@ -35,6 +35,8 @@ import {
 
 import { isValidDate, parseDate, formatDateTime } from "src/system/common/utils";
 
+import { sortOrder } from './constants'
+
 @Injectable({ scope: Scope.REQUEST })
 export class ApiService {
   constructor(
@@ -741,8 +743,24 @@ export class ApiService {
       },
       []
     );
+    const artefacts = [...defaultArtefacts, ...cl(result)]
+
+    artefacts.forEach(artefact => {
+      const techLabel = artefact.artefact_tech_label
+      const order = sortOrder[techLabel]
+
+      if (order) {
+        artefact.values.sort((a, b) => {
+          const indexA = order.indexOf(a.artefact_value_id)
+          const indexB = order.indexOf(b.artefact_value_id)
+          return (indexA === -1 ? Number.MAX_SAFE_INTEGER : indexA) -
+            (indexB === -1 ? Number.MAX_SAFE_INTEGER : indexB)
+        })
+      }
+    })
+
     return {
-      "data": [...defaultArtefacts, ...cl(result)]
+      data: artefacts
     };
   }
 
