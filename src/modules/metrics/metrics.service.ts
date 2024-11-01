@@ -140,10 +140,12 @@ export class MetricsService {
     private async getTasks(
       startDate: string | null = null,
       endDate: string | null = null,
+      dsStream: string[] | null = null,
     ) {
         const rawData = await this.sumDatabaseService.query(sumTasks, [
             startDate,
             endDate,
+            dsStream,
         ]);
 
         const validationCount = Number(rawData[0]?.validation_count || 0);
@@ -178,7 +180,7 @@ export class MetricsService {
             // @TODO: нужно пересмотреть
             this.getDistributionByLifecycleStageModels(startDate, endDate, stream),
             this.getStalledModelsByMonth(startDate, endDate, stream),
-            this.getTasks(startDate, endDate),
+            this.getTasks(startDate, endDate, stream),
         ]);
 
         const combinedMetrics = metricsResults.reduce(
