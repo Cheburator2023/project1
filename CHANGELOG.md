@@ -1,5 +1,12 @@
 # Semantic Versioning Changelog
 
+## [1.5.10](https://git.sfera.inno.local/SUMD/mrms-backend/compare/v1.5.9...v1.5.10) (2024-11-01)
+
+
+### Bug Fixes
+
+* Дашборды. Доработана фильтрация по стримам для диаграммы "динамика моделей по стримам" ([c82ec24](https://git.sfera.inno.local/SUMD/mrms-backend/commit/c82ec245af4777e147780b6db099d1526e46d00f))
+
 ## [1.5.9](https://git.sfera.inno.local/SUMD/mrms-backend/compare/v1.5.8...v1.5.9) (2024-10-30)
 
 ## [1.5.8](https://git.sfera.inno.local/SUMD/mrms-backend/compare/v1.5.7...v1.5.8) (2024-10-30)
