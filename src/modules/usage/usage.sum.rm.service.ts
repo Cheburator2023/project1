@@ -8,14 +8,14 @@ export class UsageSumRmService {
   ) {
   }
 
-  async update({ model_id, confirmation_date: confirmation_date_string, is_used }, user) {
+  async update({ model_id, confirmation_date: confirmation_date_string, is_used }) {
     const splDateString = confirmation_date_string.split('.')
     const confirmation_date = `${splDateString[2]}-${splDateString[1]}-${splDateString[0]}`
 
     const newDate = new Date(confirmation_date)
     const confirmation_year = newDate.getFullYear()
     const confirmation_quarter = Math.floor(newDate.getMonth() / 3) + 1
-    const creator = user?.preferred_username || null
+    const creator = null
 
     const check = 'SELECT * FROM models_usage WHERE model_id = :model_id AND confirmation_year = :confirmation_year AND confirmation_quarter = :confirmation_quarter'
     const update = `
