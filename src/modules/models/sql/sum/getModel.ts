@@ -155,8 +155,6 @@ ON m_.model_id = allocation_data.allocation_model_id
                            MAX(CASE WHEN artefact_id = 58 THEN artefact_string_value ELSE NULL END)  AS segment_name,
                            MAX(CASE WHEN ARTEFACT_ID = 7 THEN ARTEFACT_STRING_VALUE ELSE NULL END)   AS DS_DEPARTMENT,
                            MAX(CASE WHEN ARTEFACT_ID = 67 THEN ARTEFACT_STRING_VALUE ELSE NULL END)  AS significance_validity,
-                           MAX(CASE WHEN ARTEFACT_ID = 782 THEN ARTEFACT_STRING_VALUE ELSE NULL END) AS model_is_used,
-                           MAX(CASE WHEN ARTEFACT_ID = 783 THEN ARTEFACT_STRING_VALUE ELSE NULL END) AS implementation_decision,
                            MAX(CASE WHEN ARTEFACT_ID = 785 THEN ARTEFACT_STRING_VALUE ELSE NULL END) AS implementation_segment,
                            MAX(CASE WHEN ARTEFACT_ID = 309 THEN ARTEFACT_STRING_VALUE ELSE NULL END) AS business_customer,
                            MAX(CASE WHEN ARTEFACT_ID = 786 THEN ARTEFACT_STRING_VALUE ELSE NULL END) AS implementation_validity,
@@ -184,7 +182,7 @@ ON m_.model_id = allocation_data.allocation_model_id
                            MAX(CASE WHEN ARTEFACT_ID = 123 THEN ARTEFACT_STRING_VALUE ELSE NULL END) AS solution_to_implement_model
                     FROM artefact_realizations
                     WHERE effective_to = TO_TIMESTAMP('9999-12-3123:59:59', 'YYYY-MM-DDHH24:MI:SS')
-                      AND artefact_id IN (7, 58, 67, 782, 783, 785, 309, 786, 787, 788, 789, 33, 34, 103, 277, 249,
+                      AND artefact_id IN (7, 58, 67, 785, 309, 786, 787, 788, 789, 33, 34, 103, 277, 249,
                                           346, 790, 791, 788, 507, 792, 793, 256, 794, 795, 796, 797, 798, 123)
                       AND (
                             :filter_date::Date IS NULL
