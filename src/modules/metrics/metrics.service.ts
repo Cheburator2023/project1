@@ -165,16 +165,18 @@ export class MetricsService {
       stream: string[] | null,
     ) {
         const metricsResults = await Promise.all([
+            this.implementedService.metric(startDate, endDate, stream),
             this.developedService.metric(startDate, endDate, stream),
+            this.totalService.metric(startDate, endDate, stream),
+
             this.finalStatusService.metric(startDate, endDate, stream),
             this.finalStatusByMonthService.metric(startDate, endDate, stream),
-            this.implementedService.metric(startDate, endDate, stream),
             this.pilotsService.metric(startDate, endDate, stream),
             this.registryCoverageService.metric(startDate, endDate, stream),
             this.registryCoverageFinalService.metric(startDate, endDate, stream),
             this.sumRmService.metric(startDate, endDate, stream),
             this.outOfOperationService.metric(startDate, endDate, stream),
-            this.totalService.metric(startDate, endDate, stream),
+
             this.isOnMonitoringService.metric(startDate, endDate, stream),
 
             // @TODO: нужно пересмотреть
