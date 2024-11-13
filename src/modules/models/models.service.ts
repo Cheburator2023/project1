@@ -13,7 +13,8 @@ import {
   getModel as getSumRmModel,
   getModels as getSumRmModels,
   getModelsByTypeAndParentId as getSumRmModelsByTypeAndParentId,
-  updateModelAllocation as updateSumRmModelAllocation
+  updateModelAllocation as updateSumRmModelAllocation,
+  getMaxValueOfRecordId as getSumRmMaxValueOfRecordId
 } from './sql/sum-rm'
 
 import { MODEL_SOURCES } from 'src/system/common'
@@ -183,6 +184,24 @@ export class ModelsService {
     }
   }
 
+  private async handleRatingModel(artefactItem, model_id, artefactsForUpdate) {
+    const [model] = await this.mrmDatabaseService.query(getSumRmModel, { model_id, filter_date: null })
+    artefactsForUpdate.push({ model_id, ...artefactItem })
+
+    if (model.record_id !== null || artefactItem.artefact_value_id !== 482) {
+      return
+    }
+
+    const [data] = await this.mrmDatabaseService.query(getSumRmMaxValueOfRecordId, {})
+
+    artefactsForUpdate.push({
+      model_id,
+      artefact_tech_label: 'record_id',
+      artefact_value_id: null,
+      artefact_string_value: 1 + data.max_value
+    })
+  }
+
   async modelsUpdate(modelsArtefacts) {
     let modelSource = MODEL_SOURCES.MRM
     const modelIds: Set<string> = new Set()
@@ -336,6 +355,11 @@ export class ModelsService {
             continue
           }
           await this.handleActiveModel(artefactItem, model_id, updates.artefactsForUpdate)
+        } else if (artefact_tech_label === 'rating_model') {
+          if (model_source !== MODEL_SOURCES.MRM) {
+            continue
+          }
+          await this.handleRatingModel(artefactItem, model_id, updates.artefactsForUpdate)
         } else {
           updates.artefactsForUpdate.push({ model_id, ...artefactItem })
           if (model_source === MODEL_SOURCES.SUM) {
@@ -524,10 +548,15 @@ export class ModelsService {
   }
 
   private mergeAttributes(sumModels: Model, mrmModels: Model): Model {
-    return {
-      ...mrmModels,
-      ...sumModels
+    const mergedModel = { ...mrmModels }
+
+    for (const key in sumModels) {
+      if (mrmModels[key] === null || mrmModels[key] === undefined) {
+        mergedModel[key] = sumModels[key]
+      }
     }
+
+    return mergedModel
   }
 
   private async formatResults(models: Model[]): Promise<Model[]> {
