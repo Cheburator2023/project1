@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common'
+import { BadRequestException, Injectable } from '@nestjs/common'
 import { MrmModelService, SumModelService } from './services'
 import { ArtefactService } from 'src/modules/artefacts/artefact.services'
 import { AllocationSumService } from 'src/modules/allocation/allocation.sum.service'
@@ -13,8 +13,7 @@ import {
   getModel as getSumRmModel,
   getModels as getSumRmModels,
   getModelsByTypeAndParentId as getSumRmModelsByTypeAndParentId,
-  updateModelAllocation as updateSumRmModelAllocation,
-  getMaxValueOfRecordId as getSumRmMaxValueOfRecordId
+  updateModelAllocation as updateSumRmModelAllocation
 } from './sql/sum-rm'
 
 import { MODEL_SOURCES } from 'src/system/common'
@@ -25,6 +24,12 @@ import { CompareModelsDto, ModelsDto, ModelWithRelationsDto } from './dto'
 import { ArtefactFormatting, ArtefactFormattingType } from './rules'
 
 import { formatDateTime, isValidDate, parseDate } from 'src/system/common/utils'
+import { ModelCreateDto } from 'src/api/dto/index.dto'
+import { randomUUID } from 'crypto'
+import { sql as parentSumRmModel } from 'src/api/sql/models/sum-rm/parent'
+import { sql as createModel } from 'src/api/sql/models/sum-rm/create'
+import { sql as newArtefacts } from 'src/api/sql/artefacts/new'
+import { sql as oneSumRmModels } from 'src/api/sql/models/sum-rm/one'
 
 interface UsageEntry {
   confirmation_date: string | null;
@@ -114,6 +119,73 @@ export class ModelsService {
     }
   }
 
+  async modelCreate(artefacts: ModelCreateDto[]) {
+    const model_id = randomUUID();
+    let model_version = "1";
+    let addParentArtefactsQueryParams;
+
+    const parent_model_id_artefact = artefacts.find(artefact => artefact.artefact_tech_label === "parent_model_id");
+    const parent_model_id = parent_model_id_artefact ? parent_model_id_artefact.artefact_string_value : undefined;
+    const model_name_artefact = artefacts.find(artefact => artefact.artefact_tech_label === "model_name");
+    const model_name = model_name_artefact ? model_name_artefact.artefact_string_value : undefined;
+    const model_desc_artefact = artefacts.find(artefact => artefact.artefact_tech_label === "model_desc");
+    const model_desc = model_desc_artefact ? model_desc_artefact.artefact_string_value : undefined;
+
+    if (!model_name) {
+      throw new BadRequestException("Bad Request", "model_name is required");
+    }
+
+    if (!model_desc) {
+      throw new BadRequestException("Bad Request", "model_desc is required");
+    }
+
+    if (parent_model_id) {
+      // ищем родительскую модель
+      const parentModels = await this.mrmDatabaseService.query(parentSumRmModel, { parent_model_id });
+
+      // находим версию родительской модели
+      const { root_model_id, parent_model_version } = parentModels.reduce(
+        (prev, curr) => {
+          if (
+            !prev.parent_model_version ||
+            prev.parent_model_version < curr.parent_model_version
+          )
+            return curr;
+          return prev;
+        },
+        {}
+      );
+
+      model_version = String(Number(parent_model_version) + 1);
+
+      const parentArtefacts = await this.mrmDatabaseService
+        .query("SELECT * FROM artefact_realizations_new WHERE model_id = :parent_model_id  AND effective_to = TO_TIMESTAMP('9999-12-3123:59:59','YYYY-MM-DDHH24:MI:SS')", { parent_model_id });
+
+      addParentArtefactsQueryParams = parentArtefacts
+        .map(({ artefact_id, artefact_string_value, artefact_value_id }) => ({ artefact_id, artefact_string_value, artefact_value_id, model_id }));
+    }
+
+    const createModelQueryParams = {
+      model_id,
+      model_name,
+      model_desc,
+      model_version
+    };
+    await this.mrmDatabaseService.query(createModel, createModelQueryParams);
+
+    if (addParentArtefactsQueryParams) {
+      await this.mrmDatabaseService.queryAll(newArtefacts, addParentArtefactsQueryParams);
+    }
+
+    const artefactsForUpdate = artefacts
+      .filter(artefact => artefact.artefact_tech_label !== "model_name" && artefact.artefact_tech_label !== "model_desc")
+      .map(artefact => ({ ...artefact, model_id }));
+
+    await this.executeDatabaseUpdates({ artefactsForUpdate }, MODEL_SOURCES.MRM)
+
+    return await this.mrmDatabaseService.query(oneSumRmModels, { model_id });
+  }
+
   private isBasicInfoArtefact(label) {
     return [
       'model_id', 'model_version', 'model_alias',
@@ -182,24 +254,6 @@ export class ModelsService {
         artefact_value_id: null
       });
     }
-  }
-
-  private async handleRatingModel(artefactItem, model_id, artefactsForUpdate) {
-    const [model] = await this.mrmDatabaseService.query(getSumRmModel, { model_id, filter_date: null })
-    artefactsForUpdate.push({ model_id, ...artefactItem })
-
-    if (model.record_id !== null || artefactItem.artefact_value_id !== 482) {
-      return
-    }
-
-    const [data] = await this.mrmDatabaseService.query(getSumRmMaxValueOfRecordId, {})
-
-    artefactsForUpdate.push({
-      model_id,
-      artefact_tech_label: 'record_id',
-      artefact_value_id: null,
-      artefact_string_value: 1 + data.max_value
-    })
   }
 
   async modelsUpdate(modelsArtefacts) {
@@ -355,11 +409,6 @@ export class ModelsService {
             continue
           }
           await this.handleActiveModel(artefactItem, model_id, updates.artefactsForUpdate)
-        } else if (artefact_tech_label === 'rating_model') {
-          if (model_source !== MODEL_SOURCES.MRM) {
-            continue
-          }
-          await this.handleRatingModel(artefactItem, model_id, updates.artefactsForUpdate)
         } else {
           updates.artefactsForUpdate.push({ model_id, ...artefactItem })
           if (model_source === MODEL_SOURCES.SUM) {
@@ -458,11 +507,11 @@ export class ModelsService {
 
   async executeDatabaseUpdates(updates, source: MODEL_SOURCES) {
     const {
-      namesForUpdate,
-      descriptionsForUpdate,
-      modelsAllocationForUpdate,
-      modelsUsageForUpdate,
-      artefactsForUpdate
+      namesForUpdate = [],
+      descriptionsForUpdate = [],
+      modelsAllocationForUpdate = [],
+      modelsUsageForUpdate = [],
+      artefactsForUpdate = []
     } = updates
 
     for (const name of namesForUpdate) {
