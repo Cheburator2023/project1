@@ -11,11 +11,14 @@ export abstract class BaseArtefactService implements IArtefactService {
   protected abstract artefactRealizationsTableName: string
   protected abstract logger: Logger
 
-  protected constructor(protected readonly databaseService) {
+  protected constructor(public readonly databaseService) {}
+
+  async handleUpdateArtefact (data: UpdateArtefactDto) {
+    return await this.updateArtefact(data)
   }
 
   async updateArtefact(artefactData: UpdateArtefactDto): Promise<void> {
-    const { model_id, artefact_tech_label, artefact_value_id, artefact_string_value } = artefactData
+    const { model_id, artefact_tech_label, artefact_string_value } = artefactData
 
     const model = await this.getModelById(model_id)
     if (!model) {
@@ -48,6 +51,7 @@ export abstract class BaseArtefactService implements IArtefactService {
     )
   }
 
+  //@TODO: вынести в модуль models
   private async getModelById(model_id: string): Promise<any> {
     const [model] = await this.databaseService.query(
       `
@@ -61,7 +65,7 @@ export abstract class BaseArtefactService implements IArtefactService {
     return model || null
   }
 
-  private async getArtefactByTechLabel(artefact_tech_label: string): Promise<ArtefactEntity | null> {
+  async getArtefactByTechLabel(artefact_tech_label: UpdateArtefactDto['artefact_tech_label']): Promise<ArtefactEntity | null> {
     const [artefact] = await this.databaseService.query(
       `
       SELECT * FROM ${ this.artefactsTableName } WHERE artefact_tech_label = :artefact_tech_label
@@ -74,7 +78,7 @@ export abstract class BaseArtefactService implements IArtefactService {
     return artefact || null
   }
 
-  private async getArtefactValues(artefact_id: number): Promise<ArtefactValueEntity[]> {
+  async getArtefactValues(artefact_id: ArtefactEntity['artefact_id']): Promise<ArtefactValueEntity[]> {
     const artefactValues = this.databaseService.query(
       `
       SELECT * FROM ${ this.artefactValuesTableName } WHERE artefact_id = :artefact_id
@@ -87,9 +91,9 @@ export abstract class BaseArtefactService implements IArtefactService {
     return artefactValues || null
   }
 
-  private async getLatestArtefactRealization(
+  async getLatestArtefactRealization(
     model_id: string,
-    artefact_id: number
+    artefact_id: ArtefactEntity['artefact_id']
   ): Promise<ArtefactRealizationEntity | null> {
     const [artefactRealization] = await this.databaseService.query(
       `
@@ -144,7 +148,7 @@ export abstract class BaseArtefactService implements IArtefactService {
     )
   }
 
-  private resolveArtefactValueId(
+  resolveArtefactValueId(
     artefactData: UpdateArtefactDto,
     artefactValues: ArtefactValueEntity[] | null
   ): number | null {
@@ -161,11 +165,11 @@ export abstract class BaseArtefactService implements IArtefactService {
     return artefact_value_id
   }
 
-  private async insertArtefactRealization(
+  async insertArtefactRealization(
     model_id: string,
-    artefact_id: number,
-    artefact_value_id: number | null,
-    artefact_string_value: string,
+    artefact_id: ArtefactEntity['artefact_id'],
+    artefact_value_id: ArtefactValueEntity['artefact_value_id'] | null,
+    artefact_string_value: ArtefactRealizationEntity['artefact_string_value'],
     artefact: ArtefactEntity,
     artefactValues: ArtefactValueEntity[] | null
   ): Promise<void> {
@@ -191,8 +195,8 @@ export abstract class BaseArtefactService implements IArtefactService {
 
   private shouldSkipUpdate(
     latestArtefactRealization: ArtefactRealizationEntity | null,
-    artefact_value_id: number | null,
-    artefact_string_value: string | null, //TODO: проверить, может ли быть null
+    artefact_value_id: ArtefactValueEntity['artefact_value_id'] | null,
+    artefact_string_value: ArtefactRealizationEntity['artefact_string_value'],
     isSelectType: boolean
   ): boolean {
     if (!latestArtefactRealization) return false
@@ -204,8 +208,8 @@ export abstract class BaseArtefactService implements IArtefactService {
   private determineFinalStringValue(
     artefact: ArtefactEntity,
     artefactValues: ArtefactValueEntity[] | null,
-    artefact_value_id: number | null,
-    artefact_string_value: string
+    artefact_value_id: ArtefactValueEntity['artefact_value_id'] | null,
+    artefact_string_value: ArtefactRealizationEntity['artefact_string_value']
   ): string | null {
     if (ARTEFACT_TYPES_REQUIRING_VALUES.has(artefact.artefact_type_id) && artefactValues) {
       const value = artefactValues.find(val => val.artefact_value_id === artefact_value_id)
