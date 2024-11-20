@@ -1,38 +1,55 @@
 import { Module } from '@nestjs/common'
-import { MetricsService } from './metrics.service'
-import { ImplementedService } from './implemented.service'
-import { DevelopedService } from './developed.service'
-import { TotalService } from './total.service'
-import { SumRmService } from './sum-rm.service'
-import { PilotsService } from './pilots.service'
-import { OutOfOperationService } from './out-of-operation.service'
-import { RegistryCoverageService } from './registry-coverage.service'
-import { FinalStatusService } from './final-status.service'
-import { FinalStatusByMonthService } from './final-status-by-month.service'
-import { RegistryCoverageFinalService } from './registry-coverage-final.service'
-import { IsOnMonitoringService } from './isOnMonitoring.service'
-
-import { SumDatabaseModule } from 'src/system/sum-database/database.module'
-import { MrmDatabaseModule } from 'src/system/mrm-database/database.module'
+import { DataAggregator, MetricsAggregator } from './aggregators'
+import { ModelsModule } from '../models/models.module'
+import {
+  DevelopedMetric,
+  ImplementedMetric,
+  TotalMetric,
+  MrmMetric,
+  PilotsMetric,
+  FinalStatusMetric,
+  OnMonitoringMetric,
+  TakenOutOfOperationMetric,
+  RegistryCoverageMetric,
+  RiskCoverageFinalStatusMetric,
+  TasksMetric,
+  StalledModelsByMonthsMetric,
+  FinalStatusByMonthsMetric,
+  DistributionByLifecycleStageMetric,
+} from './implementations'
+import { MetricsEnum } from './enums'
 
 @Module({
   providers: [
-    MetricsService,
-    ImplementedService,
-    DevelopedService,
-    TotalService,
-    SumRmService,
-    PilotsService,
-    OutOfOperationService,
-    RegistryCoverageService,
-    FinalStatusService,
-    FinalStatusByMonthService,
-    RegistryCoverageFinalService,
-    IsOnMonitoringService,
-  ]
-  ,
-  imports: [SumDatabaseModule, MrmDatabaseModule],
-  exports: [MetricsService]
+    DataAggregator,
+    MetricsAggregator,
+    {
+      provide: 'INDEPENDENT_METRICS',
+      useFactory: () => [
+        new DevelopedMetric(MetricsEnum.DevelopedModelsMetric),
+        new ImplementedMetric(MetricsEnum.ImplementedModelsMetric),
+        new MrmMetric(MetricsEnum.MrmModelsMetric),
+        new PilotsMetric(MetricsEnum.PilotsMetric),
+        new FinalStatusMetric(MetricsEnum.FinalStatusModelsMetric),
+        new OnMonitoringMetric(MetricsEnum.OnMonitoringModelsMetric),
+        new TakenOutOfOperationMetric(MetricsEnum.TakenOutOfOperationModelsMetric),
+        new TasksMetric(MetricsEnum.TasksMetric),
+        new StalledModelsByMonthsMetric(MetricsEnum.StalledModelsByMonthMetric),
+        new FinalStatusByMonthsMetric(MetricsEnum.FinalStatusByMonthModelsMetric),
+        new DistributionByLifecycleStageMetric(MetricsEnum.DistributionByLifecycleStageModelsMetric),
+      ]
+    },
+    {
+      provide: 'DEPENDENT_METRICS',
+      useFactory: () => [
+        new TotalMetric(MetricsEnum.TotalModelsMetric),
+        new RegistryCoverageMetric(MetricsEnum.RegistryCoverageModelsMetric),
+        new RiskCoverageFinalStatusMetric(MetricsEnum.RiskCoverageFinalStatusModelsMetric),
+      ]
+    }
+  ],
+  imports: [ModelsModule],
+  exports: [MetricsAggregator]
 })
 export class MetricsModule {
 }
