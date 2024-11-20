@@ -1,5 +1,12 @@
 # Semantic Versioning Changelog
 
+# [1.6.0](https://git.sfera.inno.local/SUMD/mrms-backend/compare/v1.5.14...v1.6.0) (2024-11-20)
+
+
+### Features
+
+* major updates for metrics module ([522a056](https://git.sfera.inno.local/SUMD/mrms-backend/commit/522a0562954e4c2a0884cc32752b1ca5a439d276))
+
 ## [1.5.14](https://git.sfera.inno.local/SUMD/mrms-backend/compare/v1.5.13...v1.5.14) (2024-11-14)
 
 ## [1.5.13](https://git.sfera.inno.local/SUMD/mrms-backend/compare/v1.5.12...v1.5.13) (2024-11-13)
