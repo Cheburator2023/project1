@@ -17,7 +17,7 @@ import { Response } from "express";
 import { ApiBody } from "@nestjs/swagger";
 import { ApiService } from "./api.service";
 import { ModelsService } from "src/modules/models/models.service";
-import { MetricsService } from "src/modules/metrics/metrics.service";
+import { MetricsAggregator } from "src/modules/metrics/aggregators";
 import { ReportService } from "src/modules/report/report.service";
 import {
   ModelsDto,
@@ -38,7 +38,7 @@ export class ApiController {
   constructor(
     private readonly apiService: ApiService,
     private readonly modelsService: ModelsService,
-    private readonly metricsService: MetricsService,
+    private readonly metricsAggregator: MetricsAggregator,
     private readonly reportService: ReportService
   ) {
   }
@@ -162,7 +162,7 @@ export class ApiController {
   @Get('/metrics/')
   async getMetrics(@Query() query: MetricsDto, @Res() response) {
     const { startDate, endDate, stream } = query;
-    const data = await this.metricsService.getMetrics(
+    const data = await this.metricsAggregator.getMetrics(
       startDate,
       endDate,
       stream,

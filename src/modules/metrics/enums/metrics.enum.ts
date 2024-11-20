@@ -1,0 +1,16 @@
+export enum MetricsEnum {
+  ImplementedModelsMetric = 'implementedModels',
+  DevelopedModelsMetric = 'developedModels',
+  TotalModelsMetric = 'totalModels',
+  MrmModelsMetric = 'sumRmModels',
+  PilotsMetric = 'pilots',
+  TasksMetric = 'tasks',
+  TakenOutOfOperationModelsMetric = 'takenOutOfOperationModels',
+  StalledModelsByMonthMetric = 'stalledModelsByMonth',
+  RiskCoverageFinalStatusModelsMetric = 'riskCoverageFinalStatusModels',
+  RegistryCoverageModelsMetric = 'registryCoverageModels',
+  OnMonitoringModelsMetric = 'onMonitoringModels',
+  FinalStatusModelsMetric = 'finalStatusModels',
+  FinalStatusByMonthModelsMetric = 'finalStatusByMonthModels',
+  DistributionByLifecycleStageModelsMetric = 'distributionByLifecycleStageModels',
+}
