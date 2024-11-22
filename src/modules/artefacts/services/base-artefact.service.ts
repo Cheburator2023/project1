@@ -11,23 +11,24 @@ export abstract class BaseArtefactService implements IArtefactService {
   protected abstract artefactRealizationsTableName: string
   protected abstract logger: Logger
 
-  protected constructor(public readonly databaseService) {}
+  protected constructor(public readonly databaseService) {
+  }
 
-  async handleUpdateArtefact (data: UpdateArtefactDto) {
+  async handleUpdateArtefact(data: UpdateArtefactDto) {
     return await this.updateArtefact(data)
   }
 
-  async updateArtefact(artefactData: UpdateArtefactDto): Promise<void> {
+  async updateArtefact(artefactData: UpdateArtefactDto): Promise<boolean> {
     const { model_id, artefact_tech_label, artefact_string_value } = artefactData
 
     const model = await this.getModelById(model_id)
     if (!model) {
-      return
+      return false
     }
 
     const artefact: ArtefactEntity | null = await this.getArtefactByTechLabel(artefact_tech_label)
     if (!artefact) {
-      return
+      return false
     }
 
     const isSelectType: boolean = ARTEFACT_TYPES_REQUIRING_VALUES.has(artefact.artefact_type_id)
@@ -35,7 +36,7 @@ export abstract class BaseArtefactService implements IArtefactService {
     const resolvedArtefactValueId = this.resolveArtefactValueId(artefactData, artefactValues)
     const latestArtefactRealization: ArtefactRealizationEntity | null = await this.getLatestArtefactRealization(model_id, artefact.artefact_id)
 
-    if (this.shouldSkipUpdate(latestArtefactRealization, resolvedArtefactValueId, artefact_string_value, isSelectType)) return
+    if (this.shouldSkipUpdate(latestArtefactRealization, resolvedArtefactValueId, artefact_string_value, isSelectType)) return false
 
     if (latestArtefactRealization) {
       await this.setEffectiveToArtefactRealization(latestArtefactRealization, isSelectType)
@@ -49,10 +50,12 @@ export abstract class BaseArtefactService implements IArtefactService {
       artefact,
       artefactValues
     )
+
+    return true
   }
 
   //@TODO: вынести в модуль models
-  private async getModelById(model_id: string): Promise<any> {
+  async getModelById(model_id: UpdateArtefactDto['model_id']): Promise<any> {
     const [model] = await this.databaseService.query(
       `
       SELECT * FROM ${ this.modelsTableName } WHERE model_id = :model_id
@@ -120,7 +123,7 @@ export abstract class BaseArtefactService implements IArtefactService {
     return artefactRealization || null
   }
 
-  private async setEffectiveToArtefactRealization(
+  async setEffectiveToArtefactRealization(
     latestArtefactRealization: ArtefactRealizationEntity,
     isSelectType: boolean
   ): Promise<void> {

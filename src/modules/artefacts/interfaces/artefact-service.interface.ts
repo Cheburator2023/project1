@@ -6,9 +6,9 @@ import { SumDatabaseService } from 'src/system/sum-database/database.service'
 export interface IArtefactService {
   databaseService: MrmDatabaseService | SumDatabaseService
 
-  handleUpdateArtefact(data: UpdateArtefactDto): Promise<void>
+  handleUpdateArtefact(data: UpdateArtefactDto): Promise<boolean>
 
-  updateArtefact(data: UpdateArtefactDto): Promise<void>
+  updateArtefact(data: UpdateArtefactDto): Promise<boolean>
 
   getLatestArtefactRealization(
     model_id: UpdateArtefactDto['model_id'],
@@ -24,6 +24,11 @@ export interface IArtefactService {
     artefactValues: ArtefactValueEntity[] | null
   ): number | null
 
+  setEffectiveToArtefactRealization(
+    latestArtefactRealization: ArtefactRealizationEntity,
+    isSelectType: boolean
+  ): Promise<void>
+
   insertArtefactRealization(
     model_id: string,
     artefact_id: number,
@@ -32,4 +37,8 @@ export interface IArtefactService {
     artefact: ArtefactEntity,
     artefactValues: ArtefactValueEntity[] | null
   ): Promise<void>
+
+  getModelById(
+    model_id: string
+  ): Promise<any>
 }

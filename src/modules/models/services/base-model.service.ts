@@ -1,6 +1,6 @@
 import { Logger } from '@nestjs/common'
 import { ModelEntity } from '../entities'
-import { UpdateModelNameDto, UpdateModelDescDto } from '../dto'
+import { UpdateModelDto } from '../dto'
 import { IModelService } from '../interfaces'
 
 export abstract class BaseModelService implements IModelService {
@@ -10,12 +10,16 @@ export abstract class BaseModelService implements IModelService {
   protected constructor(protected readonly databaseService) {
   }
 
-  async updateModelName(data: UpdateModelNameDto): Promise<void> {
+  async updateModelName(data: Pick<UpdateModelDto, 'model_id' | 'model_name'>): Promise<boolean> {
     const { model_id, model_name } = data
 
     const model: ModelEntity | null = await this.getModelById(model_id)
     if (!model) {
-      return
+      return false
+    }
+
+    if (model.model_name === model_name) {
+      return false
     }
 
     await this.databaseService.query(
@@ -30,14 +34,25 @@ export abstract class BaseModelService implements IModelService {
         model_id: model.model_id
       }
     )
+
+    await this.updateUpdateDate({
+      update_date: new Date(),
+      model_id
+    })
+
+    return true
   }
 
-  async updateModelDesc(data: UpdateModelDescDto): Promise<void> {
+  async updateModelDesc(data: Pick<UpdateModelDto, 'model_id' | 'model_desc'>): Promise<boolean> {
     const { model_id, model_desc } = data
 
     const model: ModelEntity | null = await this.getModelById(model_id)
     if (!model) {
-      return
+      return false
+    }
+
+    if (model.model_desc === model_desc) {
+      return false
     }
 
     await this.databaseService.query(
@@ -52,6 +67,37 @@ export abstract class BaseModelService implements IModelService {
         model_id: model.model_id
       }
     )
+
+    await this.updateUpdateDate({
+      update_date: new Date(),
+      model_id
+    })
+
+    return true
+  }
+
+  async updateUpdateDate(data: Pick<UpdateModelDto, 'model_id' | 'update_date'>): Promise<boolean> {
+    const { model_id, update_date = new Date() } = data
+
+    const model: ModelEntity | null = await this.getModelById(model_id)
+    if (!model) {
+      return false
+    }
+
+    await this.databaseService.query(
+      `
+      UPDATE
+        ${ this.modelsTableName }
+      SET update_date = :update_date
+      WHERE model_id = :model_id
+      `,
+      {
+        update_date,
+        model_id: model.model_id
+      }
+    )
+
+    return true
   }
 
   private async getModelById(model_id: string): Promise<ModelEntity | null> {

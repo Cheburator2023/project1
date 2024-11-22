@@ -20,13 +20,16 @@ export class MrmArtefactService extends BaseArtefactService implements IArtefact
     super(databaseService)
   }
 
-  async handleUpdateArtefact(artefactData: UpdateArtefactDto): Promise<void> {
+  async handleUpdateArtefact(artefactData: UpdateArtefactDto): Promise<boolean> {
     const handler = this.handlers.find(handler => handler.supports(artefactData.artefact_tech_label))
+    let result
 
     if (handler) {
-      await handler.handle(artefactData)
+      result = await handler.handle(artefactData)
     } else {
-      await super.updateArtefact(artefactData)
+      result = await super.updateArtefact(artefactData)
     }
+
+    return result
   }
 }
