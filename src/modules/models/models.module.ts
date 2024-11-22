@@ -6,12 +6,14 @@ import { AllocationModule } from 'src/modules/allocation/allocation.module'
 import { UsageModule } from 'src/modules/usage/usage.module'
 import { SumDatabaseModule } from 'src/system/sum-database/database.module'
 import { MrmDatabaseModule } from 'src/system/mrm-database/database.module'
+import { ModelServiceFactory } from './factories'
 
 @Module({
   providers: [
+    ModelServiceFactory,
     ModelsService,
     SumModelService,
-    MrmModelService,
+    MrmModelService
   ],
   imports: [
     SumDatabaseModule,
@@ -20,7 +22,7 @@ import { MrmDatabaseModule } from 'src/system/mrm-database/database.module'
     AllocationModule,
     UsageModule
   ],
-  exports: [ModelsService]
+  exports: [ModelServiceFactory, ModelsService]
 })
 export class ModelsModule {
 }

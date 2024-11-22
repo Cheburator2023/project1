@@ -34,21 +34,24 @@ export class ArtefactRatingModelHandler implements IArtefactHandler {
    * This includes updating the artefact, verifying the type, and inserting a record if conditions are met.
    * @param artefactData The data of the artefact to be updated.
    */
-  async handle(artefactData: UpdateArtefactDto): Promise<void> {
+  async handle(artefactData: UpdateArtefactDto): Promise<boolean> {
     // Perform the artefact update via the main service
-    await this.artefactService.updateArtefact(artefactData)
+    const result = await this.artefactService.updateArtefact(artefactData)
+    if (!result) {
+      return result
+    }
 
     // Retrieve the "rating_model" and "record_id" artefacts
-    const ratingModelArtefact = await this.getArtefact(artefactData.artefact_tech_label)
-    const recordIdArtefact = await this.getArtefact('record_id')
+    const ratingModelArtefact: ArtefactEntity | null = await this.artefactService.getArtefactByTechLabel(artefactData.artefact_tech_label)
+    const recordIdArtefact: ArtefactEntity | null = await this.artefactService.getArtefactByTechLabel('record_id')
 
     if (!ratingModelArtefact || !recordIdArtefact) {
-      return
+      return false
     }
 
     // Check for the presence of the "Да" value in the "rating_model" artefact
     const isValuePresent = await this.checkIfArtefactHasValue(ratingModelArtefact, artefactData)
-    if (!isValuePresent) return
+    if (!isValuePresent) return false
 
     // Check if the latest realization of the "record_id" artefact exists
     const latestRecordIdArtefactRealization: ArtefactRealizationEntity | null = await this.artefactService.getLatestArtefactRealization(
@@ -57,12 +60,18 @@ export class ArtefactRatingModelHandler implements IArtefactHandler {
     )
 
     if (latestRecordIdArtefactRealization) {
-      return
+      return false
     }
 
     // Get the maximum value of "record_id" and insert a new realization
     const recordIdMaxVal = await this.getMaxValueOfRecordId()
-    await this.insertRecordIdRealization(artefactData.model_id, recordIdArtefact, recordIdMaxVal + 1)
+
+    return await this.artefactService.updateArtefact({
+      model_id: artefactData.model_id,
+      artefact_tech_label: 'record_id',
+      artefact_string_value: String(recordIdMaxVal + 1),
+      artefact_value_id: null
+    })
   }
 
   /**
@@ -81,32 +90,6 @@ export class ArtefactRatingModelHandler implements IArtefactHandler {
     return (
       Array.isArray(artefactValues) &&
       artefactValues.some((value) => value.artefact_value_id === resolvedArtefactValueId && value.artefact_value === 'Да')
-    )
-  }
-
-  /**
-   * Retrieves an artefact by its technical label.
-   * @param techLabel The technical label of the artefact.
-   * @returns The artefact or null if not found.
-   */
-  private async getArtefact(techLabel: string): Promise<ArtefactEntity | null> {
-    return await this.artefactService.getArtefactByTechLabel(techLabel)
-  }
-
-  /**
-   * Inserts a new realization of the "record_id" artefact with the specified value.
-   * @param modelId The ID of the model.
-   * @param recordIdArtefact The "record_id" artefact.
-   * @param newValue The new value to be inserted.
-   */
-  private async insertRecordIdRealization(modelId: string, recordIdArtefact: ArtefactEntity, newValue: number): Promise<void> {
-    await this.artefactService.insertArtefactRealization(
-      modelId,
-      recordIdArtefact.artefact_id,
-      null,
-      String(newValue),
-      recordIdArtefact,
-      null
     )
   }
 

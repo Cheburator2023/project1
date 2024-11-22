@@ -27,14 +27,14 @@ export class PilotsMetric extends IndependentMetric<PilotsMetricResult> {
     const { actualStartDate, actualEndDate } = this.getActualDateRange(startDate, endDate, isDeltaCalculation)
 
     return models.filter((model) => {
-      const releaseDate = model.date_of_introduction_into_operation ? new Date(model.date_of_introduction_into_operation) : null
+      const pilotEndDate = model.data_completion_of_stage_05a ? new Date(model.data_completion_of_stage_05a) : null
 
       /**
-       * 1. Условие: Если "Дата релиза" модели входит в выбранный временной срез,
-       *    ТО модель попадает в категорию "Внедренные модели".
+       * 1. Условие: Если "Дата завершения разработки пилота" модели входит в выбранный временной срез,
+       *    ТО модель попадает в категорию "Пилоты".
        */
       if (
-        this.isWithinDateRange(releaseDate, actualStartDate, actualEndDate)
+        this.isWithinDateRange(pilotEndDate, actualStartDate, actualEndDate)
       ) {
         return true
       }
