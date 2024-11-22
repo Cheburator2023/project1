@@ -2,31 +2,38 @@ import { DependentMetric } from '../base'
 import { MetricDependencyMap, RiskCoverageFinalStatusResult } from '../interfaces'
 import { MetricsEnum } from '../enums'
 
-export class RiskCoverageFinalStatusMetric extends DependentMetric<RiskCoverageFinalStatusResult, Pick<MetricDependencyMap, MetricsEnum.MrmModelsMetric | MetricsEnum.FinalStatusModelsMetric>> {
+export class RiskCoverageFinalStatusMetric extends DependentMetric<RiskCoverageFinalStatusResult,
+  Pick<MetricDependencyMap, MetricsEnum.MrmModelsMetric | MetricsEnum.FinalStatusModelsMetric>> {
   calculate(): RiskCoverageFinalStatusResult {
-    const { count: finalStatusCount, delta: finalStatusDelta } =
+    // Retrieve the count and delta for models with final status
+    const { count: finalStatusModelsCount, delta: finalStatusModelsDelta } =
       this.dependencies[MetricsEnum.FinalStatusModelsMetric]
+
+    // Retrieve the count and delta for MRM models
     const { count: mrmModelsCount, delta: mrmModelsDelta } =
       this.dependencies[MetricsEnum.MrmModelsMetric]
 
-    const prevTotalModelsCount = finalStatusCount - finalStatusDelta
-    const prevMrmModelsCount = mrmModelsCount - mrmModelsDelta
+    // Calculate values for the previous period
+    const previousFinalStatusModelsCount = finalStatusModelsCount - finalStatusModelsDelta
+    const previousMrmModelsCount = mrmModelsCount - mrmModelsDelta
 
-    const riskCoverageFinalStatusCount = this.calculatePercentageCount(
-      finalStatusCount,
+    // Calculate the current percentage of risk coverage based on final status
+    const currentRiskCoverageFinalStatusPercent = this.calculatePercentageCount(
+      finalStatusModelsCount,
       mrmModelsCount
     )
 
+    // Calculate the percentage change (delta)
     const deltaPercent = this.calculatePercentageDelta(
-      riskCoverageFinalStatusCount,
+      currentRiskCoverageFinalStatusPercent,
       this.calculatePercentageCount(
-        prevTotalModelsCount,
-        prevMrmModelsCount
+        previousFinalStatusModelsCount,
+        previousMrmModelsCount
       )
     )
 
     return {
-      countPercent: riskCoverageFinalStatusCount,
+      countPercent: currentRiskCoverageFinalStatusPercent,
       deltaPercent: deltaPercent
     }
   }

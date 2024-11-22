@@ -107,39 +107,45 @@ export abstract class MetricBase<T extends BaseMetricResult> implements IMetric<
   }
 
   protected boundPercentage(value: number): number {
-    return Math.min(100, Math.max(-100, value));
+    return Math.min(100, Math.max(-100, value))
   }
 
   protected calculatePercentageDelta(
     current: number,
-    previous: number,
+    previous: number
   ): number {
     if (previous === 0) {
-      return current > 0 ? 100 : 0;
+      return current > 0 ? 100 : 0
     }
 
-    const difference = current - previous;
-    const percentageChange = (difference / previous) * 100;
+    const difference = current - previous
+    const percentageChange = (difference / previous) * 100
 
-    return this.boundPercentage(Math.round(percentageChange));
+    return this.boundPercentage(Math.round(percentageChange))
   }
 
+  /**
+   * Calculates the percentage ratio of one value to another
+   * @param part The part (e.g., the number of models in MRM)
+   * @param total The total (e.g., the total number of models)
+   * @returns The percentage ratio
+   */
   protected calculatePercentageCount(
-    current: number,
-    previous: number,
+    part: number,
+    total: number
   ): number {
-    if (previous === 0) {
-      return 0;
+    if (total === 0) {
+      return 0
     }
 
-    const percentageChange = (current / previous) * 100;
+    const percentageChange = (part / total) * 100
 
-    return this.boundPercentage(Math.round(percentageChange));
+    return this.boundPercentage(Math.round(percentageChange))
   }
-
-  abstract calculate(): T;
 
   getMetricName(): MetricsEnum {
     return this.metricName
   }
+
+  abstract calculate(): T;
 }
