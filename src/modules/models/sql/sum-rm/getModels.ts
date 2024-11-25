@@ -10,8 +10,6 @@ SELECT
     -- Столбцы всех артефактов
     artefact_data.*,
 
-    -- COALESCE(NULLIF(m.models_is_active_flg, ''), '1') AS active_model,
-
     -- Флаг для взаимосвязей
     CASE
         WHEN EXISTS(
