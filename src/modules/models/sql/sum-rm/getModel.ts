@@ -2,14 +2,10 @@ const getModel = `
 SELECT
     m.model_id AS system_model_id,
     m.model_name,
+    m.model_desc,
     m.model_version,
     m.create_date,
     m.update_date,
-    CASE
-        WHEN m.root_model_id != '' THEN
-            (CAST('model' AS VARCHAR(4000)) ||  m.root_model_id || '-v' || CAST(m.model_version AS VARCHAR(4000)))
-        ELSE NULL
-    END AS model_alias,
 
     -- Столбцы всех артефактов
     artefact_data.*,
