@@ -31,7 +31,7 @@ export class MrmMetric extends IndependentMetric<MetricResult> {
     endDate: string | null,
     isDeltaCalculation: boolean = false
   ) {
-    const { actualStartDate, actualEndDate } = this.getActualDateRange(startDate, endDate, isDeltaCalculation)
+    const { actualStartDate, actualEndDate } = this.getActualDateRange(startDate, endDate, isDeltaCalculation ? 7 : null)
 
     return models.filter((model) => {
       const removeDate = model.remove_date ? new Date(model.remove_date) : null

@@ -10,12 +10,13 @@ export abstract class IndependentMetric<T extends BaseMetricResult> extends Metr
   /**
    * Initializes the metric with models and a date range.
    *
-   * @param models - The models to process.
+   * @param data - The data to process.
    * @param startDate - The start of the date range.
    * @param endDate - The end of the date range.
    */
-  initialize(models: any[], startDate: string | null, endDate: string | null): void {
-    this.models = models;
+  initialize(data: any, startDate: string | null, endDate: string | null): void {
+    this.models = data.models
+    this.assignments = data.assignments
     this.startDate = startDate;
     this.endDate = endDate;
   }

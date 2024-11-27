@@ -34,7 +34,7 @@ export class OnMonitoringMetric extends IndependentMetric<MetricPercentResult> {
     endDate: string | null,
     isDeltaCalculation: boolean = false
   ) {
-    const { actualStartDate, actualEndDate } = this.getActualDateRange(startDate, endDate, isDeltaCalculation)
+    const { actualStartDate, actualEndDate } = this.getActualDateRange(startDate, endDate, isDeltaCalculation ? 7 : null)
 
     return models.filter((model) => {
       const modelEpic12 = model.model_epic_12_date ? new Date(model.model_epic_12_date) : null

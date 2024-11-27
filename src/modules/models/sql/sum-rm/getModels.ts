@@ -163,6 +163,7 @@ LEFT JOIN (
 ON m.model_id = artefact_data.artefacts_model_id
 WHERE 
 (m.temp_block_flag != 1 OR m.temp_block_flag IS NULL)
+AND (:model_id::varchar IS NULL OR m.model_id = :model_id)
 AND (
   :filter_date::DATE IS NULL
   OR TO_DATE(CAST(:filter_date AS VARCHAR(4000)), 'YYYY-MM-DD')

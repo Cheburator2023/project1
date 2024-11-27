@@ -7,7 +7,7 @@ import { UsageSumRmService } from 'src/modules/usage/usage.sum.rm.service'
 import { SumDatabaseService } from 'src/system/sum-database/database.service'
 import { MrmDatabaseService } from 'src/system/mrm-database/database.service'
 
-import { getModel as getSumModel, getModels as getSumModels } from './sql/sum'
+import { getModels as getSumModels } from './sql/sum'
 import {
   getArtefacts as getSumRmArtefacts,
   getModel as getSumRmModel,
@@ -66,8 +66,8 @@ export class ModelsService {
   }
 
   async getModels(dto?: ModelsDto): Promise<Model[]> {
-    const { date } = dto || {}
-    const results = await this.fetchAndMergeModels(date)
+    const { date = null, model_id = null } = dto || {}
+    const results = await this.fetchAndMergeModels(date, model_id)
 
     return await this.formatResults(results)
   }
@@ -440,28 +440,12 @@ export class ModelsService {
     })
 
     if (modelIds.size) {
-      // @TODO: обработка нескольких моделей
-      if (modelSource === MODEL_SOURCES.MRM) {
-        const [model] = await this.mrmDatabaseService.queryAll(getSumRmModel, Array.from(modelIds).map(id => ({ model_id: id, filter_date: null })))
-        const formattedResult = await this.formatResults(model)
+      const modelsArray = Array.from(modelIds)
+      const results = await Promise.all(
+        modelsArray.map((model_id) => this.getModels({ model_id }) )
+      )
 
-        return {
-          data: {
-            cards: formattedResult
-          }
-        }
-      }
-
-      if (modelSource === MODEL_SOURCES.SUM) {
-        const [model] = await this.sumDatabaseService.queryAll(getSumModel, Array.from(modelIds).map(id => ({ model_id: id, filter_date: null })))
-        const formattedResult = await this.formatResults(model)
-
-        return {
-          data: {
-            cards: formattedResult
-          }
-        }
-      }
+      return [].concat(...results)
     }
   }
 
@@ -561,14 +545,16 @@ export class ModelsService {
     return dictionary
   }
 
-  private async fetchAndMergeModels(date: string | null): Promise<Model[]> {
+  private async fetchAndMergeModels(date: string | null, model_id?: string | null): Promise<Model[]> {
     const filterDate = date || null
 
     const sumModels = await this.sumDatabaseService.query(getSumModels, {
-      filter_date: filterDate
+      filter_date: filterDate,
+      model_id
     })
     const mrmModels = await this.mrmDatabaseService.query(getSumRmModels, {
-      filter_date: filterDate
+      filter_date: filterDate,
+      model_id
     })
 
     return this.mergeSumAndMrmModels(sumModels, mrmModels, 'system_model_id')

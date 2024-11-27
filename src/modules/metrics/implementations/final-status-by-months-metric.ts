@@ -14,8 +14,7 @@ export class FinalStatusByMonthsMetric extends IndependentMetric<FinalStatusByMo
    */
   getActualDateRange(
     startDate: string | null,
-    endDate: string | null,
-    isDeltaCalculation: boolean = false
+    endDate: string | null
   ): { actualStartDate: Date; actualEndDate: Date } {
     if (!startDate && !endDate) {
       const now = new Date()
@@ -34,7 +33,7 @@ export class FinalStatusByMonthsMetric extends IndependentMetric<FinalStatusByMo
     }
 
     // Call the base method if startDate and/or endDate are provided
-    return super.getActualDateRange(startDate, endDate, isDeltaCalculation)
+    return super.getActualDateRange(startDate, endDate)
   }
 
   calculate(): FinalStatusByMonthModelsMetricResult {
@@ -45,18 +44,17 @@ export class FinalStatusByMonthsMetric extends IndependentMetric<FinalStatusByMo
       this.endDate
     )
 
-    const { actualStartDate, actualEndDate } = this.getActualDateRange(
-      this.startDate,
-      this.endDate,
-      false
-    )
-
     const filteredModelsWithDates = this.finalStatusMetric.filterModels(
       this.models,
       this.startDate,
       this.endDate,
       false,
       true
+    )
+
+    const { actualStartDate, actualEndDate } = this.getActualDateRange(
+      this.startDate,
+      this.endDate
     )
 
     // Initialize result with 0 counts for all months of the year
