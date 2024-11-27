@@ -33,7 +33,7 @@ export class FinalStatusMetric<T extends MetricResult> extends IndependentMetric
   ): T extends true
     ? { model: any, date: Date }[]
     : any[] {
-    const { actualStartDate, actualEndDate } = this.getActualDateRange(startDate, endDate, isDeltaCalculation)
+    const { actualStartDate, actualEndDate } = this.getActualDateRange(startDate, endDate, isDeltaCalculation ? 7 : null)
 
     return models.map((model) => {
       const removeDate = model.remove_date ? new Date(model.remove_date) : null

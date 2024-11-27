@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common'
 import { DataAggregator, MetricsAggregator } from './aggregators'
-import { ModelsModule } from '../models/models.module'
+import { ModelsModule } from 'src/modules/models/models.module'
+import { AssignmentModule } from 'src/modules/assignments/assignment.module'
 import {
   DevelopedMetric,
   ImplementedMetric,
@@ -48,7 +49,10 @@ import { MetricsEnum } from './enums'
       ]
     }
   ],
-  imports: [ModelsModule],
+  imports: [
+    ModelsModule,
+    AssignmentModule
+  ],
   exports: [MetricsAggregator]
 })
 export class MetricsModule {
