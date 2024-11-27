@@ -1,4 +1,5 @@
 interface ModelsDto {
+  model_id?: string;
   date?: string | null;
 }
 
