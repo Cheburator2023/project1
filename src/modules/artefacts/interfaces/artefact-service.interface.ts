@@ -41,4 +41,6 @@ export interface IArtefactService {
   getModelById(
     model_id: string
   ): Promise<any>
+
+  canEditArtefact(artefact: ArtefactEntity): boolean
 }
