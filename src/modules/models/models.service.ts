@@ -229,33 +229,6 @@ export class ModelsService {
     ].includes(label)
   }
 
-  // Обработка артефакта active_model
-  private async handleActiveModel(artefactItem, model_id, artefactsForUpdate) {
-    const [model] = await this.mrmDatabaseService.query(getSumRmModel, { model_id, filter_date: null });
-
-    artefactsForUpdate.push({ model_id, ...artefactItem });
-    artefactsForUpdate.push({
-      model_id,
-      artefact_tech_label: 'update_date',
-      artefact_string_value: new Date().toISOString(),
-      artefact_value_id: null
-    });
-
-    if (artefactItem.artefact_string_value !== model.active_model && artefactItem.artefact_string_value === '1') {
-      const modelIdentifier = model.regulatory_code_model_pvr ||
-        model.model_id_from_model_owner ||
-        model.identifier_model_algorithm_for_rwa ||
-        model.model_alias;
-
-      artefactsForUpdate.push({
-        model_id,
-        artefact_tech_label: 'model_id',
-        artefact_string_value: modelIdentifier,
-        artefact_value_id: null
-      });
-    }
-  }
-
   async modelsUpdate(modelsArtefacts) {
     let modelSource = MODEL_SOURCES.MRM
     const modelIds: Set<string> = new Set()
@@ -404,11 +377,6 @@ export class ModelsService {
           //   confirmation_date: artefact_string_value,
           //   is_used: null
           // })
-        } else if (artefact_tech_label === 'active_model') {
-          if (model_source !== MODEL_SOURCES.MRM) {
-            continue
-          }
-          await this.handleActiveModel(artefactItem, model_id, updates.artefactsForUpdate)
         } else {
           updates.artefactsForUpdate.push({ model_id, ...artefactItem })
           if (model_source === MODEL_SOURCES.SUM) {
