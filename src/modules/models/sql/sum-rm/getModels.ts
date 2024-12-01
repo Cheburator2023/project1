@@ -5,6 +5,7 @@ SELECT
     m.model_version,
     m.create_date,
     m.update_date,
+    m.model_creator,
     CASE
         WHEN m.root_model_id != '' THEN
             (CAST('model' AS VARCHAR(4000)) ||  m.root_model_id || '-v' || CAST(m.model_version AS VARCHAR(4000)))
@@ -145,7 +146,11 @@ LEFT JOIN (
         MAX(CASE WHEN artefact_id = 2107 THEN artefact_string_value ELSE NULL END) AS operational_monitoring,
         MAX(CASE WHEN artefact_id = 2108 THEN artefact_string_value ELSE NULL END) AS analytical_monitoring,
         MAX(CASE WHEN artefact_id = 2109 THEN artefact_string_value ELSE NULL END) AS business_model_risk_subtype,
-        MAX(CASE WHEN artefact_id = 2110 THEN artefact_string_value ELSE NULL END) AS rating_model
+        MAX(CASE WHEN artefact_id = 2110 THEN artefact_string_value ELSE NULL END) AS rating_model,
+        MAX(CASE WHEN artefact_id = 2655 THEN artefact_string_value ELSE NULL END) AS reason_model_delete,
+        MAX(CASE WHEN artefact_id = 2656 THEN artefact_string_value ELSE NULL END) AS status,
+        MAX(CASE WHEN artefact_id = 2657 THEN artefact_string_value ELSE NULL END) AS lead_validator_comment_model_delete,
+        MAX(CASE WHEN artefact_id = 2658 THEN artefact_string_value ELSE NULL END) AS lead_validator_resolution_model_delete
     FROM (
         SELECT
             artefact_realizations_new.model_id,
@@ -174,7 +179,8 @@ AND (
   OR TO_DATE(CAST(:filter_date AS VARCHAR(4000)), 'YYYY-MM-DD')
     BETWEEN DATE_TRUNC('day', m.create_date)::DATE
     AND DATE_TRUNC('day', NOW())::DATE
-);
+)
+LIMIT 50;
 `;
 
 export { getModels };
