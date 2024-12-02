@@ -13,6 +13,22 @@ export class ArtefactRatingModelHandler implements IArtefactHandler {
   private artefactService: IArtefactService
 
   /**
+   * Configurable list of artefact labels that can be edited programmatically.
+   * This can be expanded or replaced via Dependency Injection.
+   */
+  private readonly editableArtefactLabels: string[] = ['record_id']
+
+  /**
+   * Determines if the given artefact can be edited programmatically.
+   *
+   * @param {ArtefactEntity} artefact - The artefact entity to check.
+   * @returns {boolean} - true if the artefact can be edited, otherwise false.
+   */
+  canEditArtefact(artefact: ArtefactEntity): boolean {
+    return this.editableArtefactLabels.includes(artefact.artefact_tech_label)
+  }
+
+  /**
    * Sets the artefact service needed by the handler.
    * @param service An instance of the artefact service.
    */
@@ -35,6 +51,8 @@ export class ArtefactRatingModelHandler implements IArtefactHandler {
    * @param artefactData The data of the artefact to be updated.
    */
   async handle(artefactData: UpdateArtefactDto): Promise<boolean> {
+    this.artefactService.canEditArtefact = this.canEditArtefact.bind(this)
+
     // Perform the artefact update via the main service
     const result = await this.artefactService.updateArtefact(artefactData)
     if (!result) {

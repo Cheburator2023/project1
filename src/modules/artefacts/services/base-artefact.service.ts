@@ -31,6 +31,10 @@ export abstract class BaseArtefactService implements IArtefactService {
       return false
     }
 
+    if (artefact.is_edit_flg === '0' && !this.canEditArtefact(artefact)) {
+      return false
+    }
+
     const isSelectType: boolean = ARTEFACT_TYPES_REQUIRING_VALUES.has(artefact.artefact_type_id)
     const artefactValues: ArtefactValueEntity[] | null = isSelectType ? await this.getArtefactValues(artefact.artefact_id) : null
     const resolvedArtefactValueId = this.resolveArtefactValueId(artefactData, artefactValues)
@@ -194,6 +198,10 @@ export abstract class BaseArtefactService implements IArtefactService {
         artefact_string_value: finalStringValue
       }
     )
+  }
+
+  canEditArtefact(artefact: ArtefactEntity): boolean {
+    return false
   }
 
   private shouldSkipUpdate(

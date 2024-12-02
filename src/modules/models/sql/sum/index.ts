@@ -1,4 +1,3 @@
-export * from './getModel'
 export * from './getModels'
 export * from './updateModelName'
 export * from './updateModelDesc'

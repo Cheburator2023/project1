@@ -6,12 +6,13 @@ export abstract class DependentMetric<T extends BaseMetricResult, D extends Part
   protected dependencies!: { [K in keyof D]: D[K] }
 
   initialize(
-    models: any[],
+    data: any,
     startDate: string | null,
     endDate: string | null,
     dependencies: { [K in keyof D]: D[K] }
   ): void {
-    this.models = models
+    this.models = data.models
+    this.assignments = data.assignments
     this.startDate = startDate
     this.endDate = endDate
     this.dependencies = dependencies

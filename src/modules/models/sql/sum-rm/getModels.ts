@@ -2,20 +2,13 @@ const getModels = `
 SELECT
     m.model_id AS system_model_id,
     m.model_name,
+    m.model_desc,
     m.model_version,
     m.create_date,
     m.update_date,
     m.model_creator,
-    CASE
-        WHEN m.root_model_id != '' THEN
-            (CAST('model' AS VARCHAR(4000)) ||  m.root_model_id || '-v' || CAST(m.model_version AS VARCHAR(4000)))
-        ELSE NULL
-    END AS model_alias,
-
     -- Столбцы всех артефактов
     artefact_data.*,
-
-    -- COALESCE(NULLIF(m.models_is_active_flg, ''), '1') AS active_model,
 
     -- Флаг для взаимосвязей
     CASE
@@ -174,6 +167,7 @@ LEFT JOIN (
 ON m.model_id = artefact_data.artefacts_model_id
 WHERE 
 (m.temp_block_flag != 1 OR m.temp_block_flag IS NULL)
+AND (:model_id::varchar IS NULL OR m.model_id = :model_id)
 AND (
   :filter_date::DATE IS NULL
   OR TO_DATE(CAST(:filter_date AS VARCHAR(4000)), 'YYYY-MM-DD')

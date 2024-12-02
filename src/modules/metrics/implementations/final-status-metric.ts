@@ -1,7 +1,7 @@
 import { IndependentMetric } from '../base'
-import { MetricResult } from '../interfaces'
+import { IFinalStatusMetric, MetricResult } from '../interfaces'
 
-export class FinalStatusMetric extends IndependentMetric<MetricResult> {
+export class FinalStatusMetric<T extends MetricResult> extends IndependentMetric<T> implements IFinalStatusMetric<T> {
   calculate() {
     const countFilteredModels = this.filterModels(
       this.models,
@@ -18,22 +18,24 @@ export class FinalStatusMetric extends IndependentMetric<MetricResult> {
 
     const count = countFilteredModels.length
     const delta = count - deltaFilteredModels.length
-
     return {
       count,
       delta
-    }
+    } as T
   }
 
-  private filterModels(
+  filterModels<T extends boolean>(
     models,
     startDate: string | null,
     endDate: string | null,
-    isDeltaCalculation: boolean = false
-  ) {
-    const { actualStartDate, actualEndDate } = this.getActualDateRange(startDate, endDate, isDeltaCalculation)
+    isDeltaCalculation: boolean = false,
+    returnDate?: T
+  ): T extends true
+    ? { model: any, date: Date }[]
+    : any[] {
+    const { actualStartDate, actualEndDate } = this.getActualDateRange(startDate, endDate, isDeltaCalculation ? 7 : null)
 
-    return models.filter((model) => {
+    return models.map((model) => {
       const removeDate = model.remove_date ? new Date(model.remove_date) : null
       const releaseDate = model.date_of_introduction_into_operation ? new Date(model.date_of_introduction_into_operation) : null
       const developingEndDate = model.developing_end_date ? new Date(model.developing_end_date) : null
@@ -49,19 +51,29 @@ export class FinalStatusMetric extends IndependentMetric<MetricResult> {
        *    ИЛИ "Дата создания" модели входит в выбранный временной срез,
        *    ТО модель попадает в категорию "Модели с финальным статусом".
        */
-      const isWithinTimeRange =
-        this.isWithinDateRange(removeDate, actualStartDate, actualEndDate) ||
-        this.isWithinDateRange(releaseDate, actualStartDate, actualEndDate) ||
-        this.isWithinDateRange(developingEndDate, actualStartDate, actualEndDate) ||
-        this.isWithinDateRange(pilotEndDate, actualStartDate, actualEndDate) ||
-        this.isWithinDateRange(createDate, actualStartDate, actualEndDate)
+      const modelDates = [
+        removeDate,
+        releaseDate,
+        developingEndDate,
+        pilotEndDate,
+        createDate
+      ]
+      const relevantDate = modelDates.find(
+        (date) => this.isWithinDateRange(date, actualStartDate, actualEndDate)
+      )
 
       /**
        * 2. Условие: Если "Статус модели" равен одному из значений
+       *    ТО модель попадает в категорию "Модели с финальным статусом".
        */
       const hasFinalStatus = this.isFinalStatus(modelStatus)
 
-      return isWithinTimeRange && hasFinalStatus
+      if (relevantDate && hasFinalStatus) {
+        return returnDate ? { model, date: relevantDate } : model
+      }
+
+      return null
     })
+      .filter(Boolean)
   }
 }

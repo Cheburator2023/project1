@@ -31,7 +31,7 @@ export class DevelopedMetric extends IndependentMetric<MetricResult> {
     endDate: string | null,
     isDeltaCalculation: boolean = false
   ) {
-    const { actualStartDate, actualEndDate } = this.getActualDateRange(startDate, endDate, isDeltaCalculation)
+    const { actualStartDate, actualEndDate } = this.getActualDateRange(startDate, endDate, isDeltaCalculation ? 7 : null)
 
     return models.filter((model) => {
       const releaseDate = model.date_of_introduction_into_operation ? new Date(model.date_of_introduction_into_operation) : null

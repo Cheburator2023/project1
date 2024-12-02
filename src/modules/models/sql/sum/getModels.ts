@@ -322,6 +322,7 @@ ON m_.model_id = allocation_data.allocation_model_id
                     GROUP BY model_id) dm_ ON m_.model_id = dm_.model_id
 WHERE 
 m_.MODEL_DESC != 'AutoML'
+AND (:model_id::varchar IS NULL OR m_.model_id = :model_id)
 AND (m_.temp_block_flag != 1 OR m_.temp_block_flag IS NULL)
 AND (
   :filter_date::Date IS NULL

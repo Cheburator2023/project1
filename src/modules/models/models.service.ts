@@ -7,7 +7,7 @@ import { UsageSumRmService } from 'src/modules/usage/usage.sum.rm.service'
 import { SumDatabaseService } from 'src/system/sum-database/database.service'
 import { MrmDatabaseService } from 'src/system/mrm-database/database.service'
 
-import { getModel as getSumModel, getModels as getSumModels } from './sql/sum'
+import { getModels as getSumModels } from './sql/sum'
 import {
   getArtefacts as getSumRmArtefacts,
   getModel as getSumRmModel,
@@ -66,8 +66,8 @@ export class ModelsService {
   }
 
   async getModels(dto?: ModelsDto): Promise<Model[]> {
-    const { date } = dto || {}
-    const results = await this.fetchAndMergeModels(date)
+    const { date = null, model_id = null } = dto || {}
+    const results = await this.fetchAndMergeModels(date, model_id)
 
     return await this.formatResults(results)
   }
@@ -229,33 +229,6 @@ export class ModelsService {
     ].includes(label)
   }
 
-  // Обработка артефакта active_model
-  private async handleActiveModel(artefactItem, model_id, artefactsForUpdate) {
-    const [model] = await this.mrmDatabaseService.query(getSumRmModel, { model_id, filter_date: null });
-
-    artefactsForUpdate.push({ model_id, ...artefactItem });
-    artefactsForUpdate.push({
-      model_id,
-      artefact_tech_label: 'update_date',
-      artefact_string_value: new Date().toISOString(),
-      artefact_value_id: null
-    });
-
-    if (artefactItem.artefact_string_value !== model.active_model && artefactItem.artefact_string_value === '1') {
-      const modelIdentifier = model.regulatory_code_model_pvr ||
-        model.model_id_from_model_owner ||
-        model.identifier_model_algorithm_for_rwa ||
-        model.model_alias;
-
-      artefactsForUpdate.push({
-        model_id,
-        artefact_tech_label: 'model_id',
-        artefact_string_value: modelIdentifier,
-        artefact_value_id: null
-      });
-    }
-  }
-
   async modelsUpdate(modelsArtefacts) {
     let modelSource = MODEL_SOURCES.MRM
     const modelIds: Set<string> = new Set()
@@ -404,11 +377,6 @@ export class ModelsService {
           //   confirmation_date: artefact_string_value,
           //   is_used: null
           // })
-        } else if (artefact_tech_label === 'active_model') {
-          if (model_source !== MODEL_SOURCES.MRM) {
-            continue
-          }
-          await this.handleActiveModel(artefactItem, model_id, updates.artefactsForUpdate)
         } else {
           updates.artefactsForUpdate.push({ model_id, ...artefactItem })
           if (model_source === MODEL_SOURCES.SUM) {
@@ -440,28 +408,12 @@ export class ModelsService {
     })
 
     if (modelIds.size) {
-      // @TODO: обработка нескольких моделей
-      if (modelSource === MODEL_SOURCES.MRM) {
-        const [model] = await this.mrmDatabaseService.queryAll(getSumRmModel, Array.from(modelIds).map(id => ({ model_id: id, filter_date: null })))
-        const formattedResult = await this.formatResults(model)
+      const modelsArray = Array.from(modelIds)
+      const results = await Promise.all(
+        modelsArray.map((model_id) => this.getModels({ model_id }) )
+      )
 
-        return {
-          data: {
-            cards: formattedResult
-          }
-        }
-      }
-
-      if (modelSource === MODEL_SOURCES.SUM) {
-        const [model] = await this.sumDatabaseService.queryAll(getSumModel, Array.from(modelIds).map(id => ({ model_id: id, filter_date: null })))
-        const formattedResult = await this.formatResults(model)
-
-        return {
-          data: {
-            cards: formattedResult
-          }
-        }
-      }
+      return [].concat(...results)
     }
   }
 
@@ -561,14 +513,16 @@ export class ModelsService {
     return dictionary
   }
 
-  private async fetchAndMergeModels(date: string | null): Promise<Model[]> {
+  private async fetchAndMergeModels(date: string | null, model_id?: string | null): Promise<Model[]> {
     const filterDate = date || null
 
     const sumModels = await this.sumDatabaseService.query(getSumModels, {
-      filter_date: filterDate
+      filter_date: filterDate,
+      model_id
     })
     const mrmModels = await this.mrmDatabaseService.query(getSumRmModels, {
-      filter_date: filterDate
+      filter_date: filterDate,
+      model_id
     })
 
     return this.mergeSumAndMrmModels(sumModels, mrmModels, 'system_model_id')

@@ -5,6 +5,7 @@ import { finalStatuses } from '../constants'
 // Базовый класс для метрики
 export abstract class MetricBase<T extends BaseMetricResult> implements IMetric<T> {
   protected models: any[] = []
+  protected assignments: any[] = []
   protected startDate: string | null = null
   protected endDate: string | null = null
 
@@ -21,49 +22,49 @@ export abstract class MetricBase<T extends BaseMetricResult> implements IMetric<
    *
    * @param {Date | null} startDate - The start date of the time slice.
    * @param {Date | null} endDate - The end date of the time slice.
-   * @param {boolean} isDeltaCalculation - Whether to calculate delta (if true, subtracts 7 days from endDate).
+   * @param {number | null} daysToShift - Number of days to shift the end date. Default is null.
    * @returns {{ actualStartDate: Date, actualEndDate: Date }} The actual start and end dates for filtering.
    */
   protected getActualDateRange(
     startDate: string | null,
     endDate: string | null,
-    isDeltaCalculation: boolean
+    daysToShift: number | null = null
   ): {
     actualStartDate: Date,
     actualEndDate: Date
   } {
-    let actualStartDate = new Date(startDate)
-    let actualEndDate = new Date(endDate)
+    let actualStartDate = startDate ? new Date(startDate) : new Date(1970, 0, 1)
+    let actualEndDate = endDate ? new Date(endDate) : new Date(2970, 0, 1)
 
-    // Case 1: If both startDate and endDate are provided
-    if (startDate && endDate) {
-      if (isDeltaCalculation) {
-        actualEndDate = this.subtractDays(endDate, 7) // Subtract 7 days from endDate for delta calculation
-      }
-    } else if (!startDate && !endDate) {
-      // Case 2: If both startDate and endDate are not provided
-      actualStartDate = new Date(1970, 0, 1) // Set to epoch start date (1970-01-01)
-      if (isDeltaCalculation) {
-        actualEndDate = this.getCurrentDateMinusDays(7) // Use current date minus 7 days for delta calculation
-      } else {
-        actualEndDate = new Date(2970, 0, 1) // Set end date to a distant future if no time slice is provided
-      }
+    if (daysToShift !== null) {
+      actualEndDate = this.subtractWorkingDays(actualEndDate, daysToShift)
     }
 
     return { actualStartDate, actualEndDate }
   }
 
   /**
-   * Subtracts a given number of days from a date.
+   * Helper method to subtract a given number of working days from a date.
+   * Considers only weekdays (Monday to Friday).
    *
-   * @param {string} date - The date to subtract days from.
-   * @param {number} days - The number of days to subtract.
-   * @returns {Date} The resulting date after subtracting the specified number of days.
+   * @param {Date} date - The original date.
+   * @param {number} days - The number of working days to subtract.
+   * @returns {Date} The new date with working days subtracted.
    */
-  protected subtractDays(date: string, days: number): Date {
-    const result = new Date(date)
-    result.setDate(result.getDate() - days)
-    return result
+  subtractWorkingDays(date: Date, days: number): Date {
+    const newDate = new Date(date)
+
+    while (days > 0) {
+      newDate.setDate(newDate.getDate() - 1) // Move one day back
+
+      // Check if the new date is a weekday (Monday to Friday)
+      const dayOfWeek = newDate.getDay()
+      if (dayOfWeek !== 0 && dayOfWeek !== 6) { // 0 = Sunday, 6 = Saturday
+        days--
+      }
+    }
+
+    return newDate
   }
 
   /**
@@ -107,39 +108,45 @@ export abstract class MetricBase<T extends BaseMetricResult> implements IMetric<
   }
 
   protected boundPercentage(value: number): number {
-    return Math.min(100, Math.max(-100, value));
+    return Math.min(100, Math.max(-100, value))
   }
 
   protected calculatePercentageDelta(
     current: number,
-    previous: number,
+    previous: number
   ): number {
     if (previous === 0) {
-      return current > 0 ? 100 : 0;
+      return current > 0 ? 100 : 0
     }
 
-    const difference = current - previous;
-    const percentageChange = (difference / previous) * 100;
+    const difference = current - previous
+    const percentageChange = (difference / previous) * 100
 
-    return this.boundPercentage(Math.round(percentageChange));
+    return this.boundPercentage(Math.round(percentageChange))
   }
 
+  /**
+   * Calculates the percentage ratio of one value to another
+   * @param part The part (e.g., the number of models in MRM)
+   * @param total The total (e.g., the total number of models)
+   * @returns The percentage ratio
+   */
   protected calculatePercentageCount(
-    current: number,
-    previous: number,
+    part: number,
+    total: number
   ): number {
-    if (previous === 0) {
-      return 0;
+    if (total === 0) {
+      return 0
     }
 
-    const percentageChange = (current / previous) * 100;
+    const percentageChange = (part / total) * 100
 
-    return this.boundPercentage(Math.round(percentageChange));
+    return this.boundPercentage(Math.round(percentageChange))
   }
-
-  abstract calculate(): T;
 
   getMetricName(): MetricsEnum {
     return this.metricName
   }
+
+  abstract calculate(): T;
 }
