@@ -329,7 +329,6 @@ AND (
   OR TO_DATE(CAST(:filter_date AS Varchar(4000)), 'YYYY-MM-DD')
     BETWEEN DATE_TRUNC('day', m_.create_date)::Date AND DATE_TRUNC('day', NOW())::Date
   )
-LIMIT 50;
 `;
 
 export { getModels };

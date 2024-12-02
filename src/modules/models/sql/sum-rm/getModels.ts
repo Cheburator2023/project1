@@ -174,7 +174,6 @@ AND (
     BETWEEN DATE_TRUNC('day', m.create_date)::DATE
     AND DATE_TRUNC('day', NOW())::DATE
 )
-LIMIT 50;
 `;
 
 export { getModels };
