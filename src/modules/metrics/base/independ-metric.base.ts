@@ -16,7 +16,7 @@ export abstract class IndependentMetric<T extends BaseMetricResult> extends Metr
    */
   initialize(data: any, startDate: string | null, endDate: string | null): void {
     this.models = data.models
-    this.assignments = data.assignments
+    this.tasks = data.tasks
     this.startDate = startDate;
     this.endDate = endDate;
   }

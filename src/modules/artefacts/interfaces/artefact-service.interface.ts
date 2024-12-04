@@ -43,5 +43,7 @@ export interface IArtefactService {
     model_id: string
   ): Promise<any>
 
+  getMaxArtefactUpdateDate(model_id: string): Promise<any>
+
   canEditArtefact(artefact: ArtefactEntity): boolean
 }

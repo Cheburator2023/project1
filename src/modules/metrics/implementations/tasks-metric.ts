@@ -3,13 +3,13 @@ import { TasksMetricResult } from '../interfaces'
 
 export class TasksMetric extends IndependentMetric<TasksMetricResult> {
   calculate() {
-    const filteredAssignments = this.filterAssignments(
-      this.assignments,
+    const filteredTasks = this.filterTasks(
+      this.tasks,
       this.startDate,
       this.endDate
     )
 
-    const { dataSourcesSet, validationSet } = this.groupAssignmentsByRole(filteredAssignments)
+    const { dataSourcesSet, validationSet } = this.groupTasksByRole(filteredTasks)
 
     return {
       datasources: dataSourcesSet.size,
@@ -17,28 +17,28 @@ export class TasksMetric extends IndependentMetric<TasksMetricResult> {
     }
   }
 
-  private filterAssignments(assignments, startDate: string | null, endDate: string | null) {
+  private filterTasks(tasks, startDate: string | null, endDate: string | null) {
     const { actualStartDate, actualEndDate } = this.getActualDateRange(startDate, endDate)
 
-    return assignments.filter((assignment) =>
+    return tasks.filter((task) =>
       this.isWithinDateRange(
-        assignment.effective_from ? new Date(assignment.effective_from) : null,
+        task.effective_from ? new Date(task.effective_from) : null,
         actualStartDate,
         actualEndDate
       )
     )
   }
 
-  private groupAssignmentsByRole(assignments) {
+  private groupTasksByRole(tasks) {
     const dataSourcesSet = new Set()
     const validationSet = new Set()
 
-    assignments.forEach(({ functional_role, model_id }) => {
-      if (this.isDataSourceRole(functional_role)) {
+    tasks.forEach(({ role, model_id }) => {
+      if (this.isDataSourceRole(role)) {
         dataSourcesSet.add(model_id)
       }
 
-      if (this.isValidationRole(functional_role)) {
+      if (this.isValidationRole(role)) {
         validationSet.add(model_id)
       }
     })

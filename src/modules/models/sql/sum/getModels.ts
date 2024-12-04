@@ -47,6 +47,8 @@ SELECT m_.model_id                                                              
        dm_.solution_to_implement_model,
        st.status                                                                                     AS business_status,
        activeBpmnInstance.bpmn_instance_name                                                         AS model_status,
+       -- Используется для подсчета метрик: Динамика моделей по стримам 
+       activeBpmnInstance.bpmn_instance_name                                                         AS bpmn_key,
        null                                                                                          AS model_status_assignee,
 
        -- Столбцы для дат подтверждения и флагов использования по кварталам
@@ -269,8 +271,9 @@ ON m_.model_id = allocation_data.allocation_model_id
                                                   ROW_NUMBER() OVER (
                                                       PARTITION BY bbbiii.model_id
                                                       ORDER BY
-                                                          bbbiii.effective_to DESC,
-                                                          bbbiii.effective_from DESC
+                                                          bbbiii.effective_to desc,
+                                                          bbbiii.effective_from desc,
+                                                          bbbiii.bpmn_key_id desc
                                                       ) AS rn_
                                            FROM bpmn_instances bbbiii
                                                     INNER JOIN bpmn_processes bbbppp ON bbbiii.bpmn_key_id = bbbppp.bpmn_key_id

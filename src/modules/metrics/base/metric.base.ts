@@ -1,11 +1,11 @@
 import { BaseMetricResult, IMetric } from '../interfaces'
 import { MetricsEnum } from '../enums'
-import { finalStatuses } from '../constants'
+import { FINAL_STATUSES } from '../constants'
 
 // Базовый класс для метрики
 export abstract class MetricBase<T extends BaseMetricResult> implements IMetric<T> {
   protected models: any[] = []
-  protected assignments: any[] = []
+  protected tasks: any[] = []
   protected startDate: string | null = null
   protected endDate: string | null = null
 
@@ -104,7 +104,7 @@ export abstract class MetricBase<T extends BaseMetricResult> implements IMetric<
   }
 
   protected isFinalStatus(status: string): boolean {
-    return finalStatuses.includes(status)
+    return FINAL_STATUSES.includes(status)
   }
 
   protected boundPercentage(value: number): number {

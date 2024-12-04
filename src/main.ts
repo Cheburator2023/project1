@@ -3,7 +3,7 @@ require('dotenv').config({ path: '.env.dev' });
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
-import { APIPrefix } from 'src/system/common/constants';
+import { API_PREFIX } from 'src/system/common/constants';
 import * as KeycloakConnect from 'keycloak-connect';
 
 import { AppModule } from './app.module';
@@ -13,7 +13,7 @@ const session = require('express-session');
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   app.enableCors();
-  app.setGlobalPrefix(APIPrefix.Version);
+  app.setGlobalPrefix(API_PREFIX.VERSION);
   app.useGlobalPipes(
     new ValidationPipe({
       transform: true,
