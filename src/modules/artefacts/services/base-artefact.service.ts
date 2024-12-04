@@ -19,7 +19,7 @@ export abstract class BaseArtefactService implements IArtefactService {
   }
 
   async updateArtefact(artefactData: UpdateArtefactDto): Promise<boolean> {
-    const { model_id, artefact_tech_label, artefact_string_value } = artefactData
+    const { model_id, artefact_tech_label, artefact_string_value, creator } = artefactData
 
     const model = await this.getModelById(model_id)
     if (!model) {
@@ -52,7 +52,8 @@ export abstract class BaseArtefactService implements IArtefactService {
       resolvedArtefactValueId,
       artefact_string_value,
       artefact,
-      artefactValues
+      artefactValues,
+      creator
     )
 
     return true
@@ -178,24 +179,30 @@ export abstract class BaseArtefactService implements IArtefactService {
     artefact_value_id: ArtefactValueEntity['artefact_value_id'] | null,
     artefact_string_value: ArtefactRealizationEntity['artefact_string_value'],
     artefact: ArtefactEntity,
-    artefactValues: ArtefactValueEntity[] | null
+    artefactValues: ArtefactValueEntity[] | null,
+    creator: string,
   ): Promise<void> {
+
     const finalStringValue = this.determineFinalStringValue(
       artefact,
       artefactValues,
       artefact_value_id,
       artefact_string_value
     )
+
+    debugger
+
     await this.databaseService.query(
       `
-        INSERT INTO ${ this.artefactRealizationsTableName } (model_id, artefact_id, artefact_value_id, artefact_string_value)
-        SELECT :model_id, :artefact_id, :artefact_value_id, :artefact_string_value;
+        INSERT INTO ${ this.artefactRealizationsTableName } (model_id, artefact_id, artefact_value_id, artefact_string_value, creator)
+        SELECT :model_id, :artefact_id, :artefact_value_id, :artefact_string_value, :creator;
         `,
       {
         model_id,
         artefact_id,
         artefact_value_id,
-        artefact_string_value: finalStringValue
+        artefact_string_value: finalStringValue,
+        creator
       }
     )
   }

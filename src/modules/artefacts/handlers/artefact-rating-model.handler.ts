@@ -88,7 +88,8 @@ export class ArtefactRatingModelHandler implements IArtefactHandler {
       model_id: artefactData.model_id,
       artefact_tech_label: 'record_id',
       artefact_string_value: String(recordIdMaxVal + 1),
-      artefact_value_id: null
+      artefact_value_id: null,
+      creator: artefactData.creator
     })
   }
 
