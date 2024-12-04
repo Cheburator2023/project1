@@ -1,4 +1,4 @@
-FROM docker.repo-ci.sfera.inno.local/sumd-docker-lib/ubi8-base-mrms-backend:v1.0.0
+FROM docker.repo-ci.sfera.inno.local/sumd-docker-lib/ubi8-base-mrms-backend:v1.0.1
 
 #ARG NPM_REGISTRY
 #ARG NPM_EMAIL
@@ -10,6 +10,10 @@ FROM docker.repo-ci.sfera.inno.local/sumd-docker-lib/ubi8-base-mrms-backend:v1.0
 ## Server
 #COPY configuration/certs/ca-bundle.crt /certs/ca-bundle.crt
 #
+#COPY certs/. /ca-certs/.
+#RUN trust anchor --store /ca-certs/* && \
+#    cp /etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem /certs/ca-bundle.crt
+
 #WORKDIR /app
 #COPY package.json /app
 #
@@ -20,7 +24,7 @@ FROM docker.repo-ci.sfera.inno.local/sumd-docker-lib/ubi8-base-mrms-backend:v1.0
 #    npm config set always-auth true && \
 #    npm config set email ${EMAIL} && \
 #    npm config set _auth ${NPM_AUTH} && \
-#    npm config set registry ${NPM_REGISTRY} && \
+#    npm config set registry https://${NPM_REGISTRY} && \
 #    npm i --only-production
 
 COPY src /app/src
