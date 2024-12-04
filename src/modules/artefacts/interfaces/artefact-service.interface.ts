@@ -35,7 +35,8 @@ export interface IArtefactService {
     artefact_value_id: number | null,
     artefact_string_value: string,
     artefact: ArtefactEntity,
-    artefactValues: ArtefactValueEntity[] | null
+    artefactValues: ArtefactValueEntity[] | null,
+    creator: string
   ): Promise<void>
 
   getModelById(

@@ -3,4 +3,5 @@ export type UpdateArtefactDto = {
   artefact_tech_label: string
   artefact_string_value: string
   artefact_value_id: number | null
+  creator: string
 }
