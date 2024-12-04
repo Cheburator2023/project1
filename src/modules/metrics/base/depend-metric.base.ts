@@ -12,7 +12,7 @@ export abstract class DependentMetric<T extends BaseMetricResult, D extends Part
     dependencies: { [K in keyof D]: D[K] }
   ): void {
     this.models = data.models
-    this.assignments = data.assignments
+    this.tasks = data.tasks
     this.startDate = startDate
     this.endDate = endDate
     this.dependencies = dependencies

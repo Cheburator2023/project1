@@ -19,4 +19,9 @@ export class ArtefactService {
     const artefactService = this.artefactServiceFactory.getService(source)
     return await artefactService.handleUpdateArtefact(data)
   }
+
+  async getMaxArtefactUpdateDate(model_id: string, source: MODEL_SOURCES): Promise<any> {
+    const artefactService = this.artefactServiceFactory.getService(source)
+    return await artefactService.getMaxArtefactUpdateDate(model_id)
+  }
 }

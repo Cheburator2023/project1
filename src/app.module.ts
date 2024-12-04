@@ -11,6 +11,8 @@ import {
 import { AuthModule } from 'src/api/config/config.module'
 import { SumDatabaseModule } from 'src/system/sum-database/database.module'
 import { MrmDatabaseModule } from 'src/system/mrm-database/database.module'
+import { CamundaModule } from 'src/system/camunda/camunda.module'
+import { BpmnModule } from 'src/modules/bpmn/bpmn.module'
 import { ApiModule } from 'src/api/api.module'
 import { KeycloakConfigService } from 'src/api/config/keycloak.config.service'
 import { DebounceService } from 'src/debounce/debounce.service'
@@ -18,13 +20,17 @@ import { EmitEventDependencies } from 'src/system/common'
 
 @Module({
   imports: [
-    ConfigModule.forRoot(),
+    ConfigModule.forRoot({
+      isGlobal: true
+    }),
     KeycloakConnectModule.registerAsync({
       useExisting: KeycloakConfigService,
       imports: [AuthModule]
     }),
     SumDatabaseModule,
     MrmDatabaseModule,
+    CamundaModule,
+    BpmnModule,
     ApiModule
   ],
   controllers: [],

@@ -44,8 +44,8 @@ export class StalledModelsByMonthsMetric extends IndependentMetric<StalledModels
   }
 
   calculate() {
-    const filteredAssignments = this.filterAssignments(
-      this.assignments,
+    const filteredTasks = this.filterTasks(
+      this.tasks,
       this.startDate,
       this.endDate
     )
@@ -59,8 +59,8 @@ export class StalledModelsByMonthsMetric extends IndependentMetric<StalledModels
     const months: StalledModelsByMonthMetricResult = Array.from({ length: 12 }, (_, index) => (0)) as StalledModelsByMonthMetricResult
 
     // Populate the months array with counts of models per month
-    filteredAssignments.forEach(({ effective_from }) => {
-      const date = new Date(effective_from)
+    filteredTasks.forEach(({ update_date }) => {
+      const date = new Date(update_date)
       const modelMonth = date.getMonth()
 
       // Check if the date is within the specified range
@@ -72,12 +72,12 @@ export class StalledModelsByMonthsMetric extends IndependentMetric<StalledModels
     return months
   }
 
-  private filterAssignments(assignments, startDate: string | null, endDate: string | null) {
+  private filterTasks(tasks, startDate: string | null, endDate: string | null) {
     const { actualStartDate, actualEndDate } = this.getActualDateRange(startDate, endDate, 5)
 
-    return assignments.filter((assignment) =>
+    return tasks.filter((task) =>
       this.isWithinDateRange(
-        assignment.effective_from ? new Date(assignment.effective_from) : null,
+        task.update_date ? new Date(task.update_date) : null,
         actualStartDate,
         actualEndDate
       )

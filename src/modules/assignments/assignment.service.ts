@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common'
 import { MODEL_SOURCES } from 'src/system/common'
 import { AssignmentServiceFactory } from './factories'
-import { AssigneeHistWithStreamEntity } from './entities'
+import { AssignmentsWithRolesEntity } from './entities'
 
 @Injectable()
 export class AssignmentService {
@@ -10,8 +10,8 @@ export class AssignmentService {
   ) {
   }
 
-  async getAssigneeHist(source: MODEL_SOURCES = MODEL_SOURCES.SUM): Promise<AssigneeHistWithStreamEntity[]> {
+  async getAssignmentsWithRolesByModelId(modelIds?: string[], source: MODEL_SOURCES = MODEL_SOURCES.SUM): Promise<AssignmentsWithRolesEntity[]> {
     const assignmentService = this.assignmentServiceFactory.getService(source)
-    return await assignmentService.getAssigneeHistWithStream()
+    return await assignmentService.getAssignmentsWithRolesByModelId(modelIds)
   }
 }

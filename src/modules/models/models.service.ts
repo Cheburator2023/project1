@@ -16,9 +16,8 @@ import {
   updateModelAllocation as updateSumRmModelAllocation
 } from './sql/sum-rm'
 
-import { MODEL_SOURCES } from 'src/system/common'
-
-import { modelStatuses, pseudoArtefacts } from './constants'
+import { MODEL_SOURCES, LIFE_CYCLE_STAGES_DESCRIPTION } from 'src/system/common/constants'
+import { pseudoArtefacts } from './constants'
 import { Artefact, ArtefactValue, GroupedResults, Model, ModelRelationsResponse, ModelType } from './interfaces'
 import { CompareModelsDto, ModelsDto, ModelWithRelationsDto } from './dto'
 import { ArtefactFormatting, ArtefactFormattingType } from './rules'
@@ -642,7 +641,7 @@ export class ModelsService {
       case 'Вывод модели из эксплуатации':
         return lastActiveStatus
       default:
-        return modelStatuses?.[bpmn_instance_name.trim()]
+        return LIFE_CYCLE_STAGES_DESCRIPTION?.[bpmn_instance_name.trim()]
     }
   }
 
