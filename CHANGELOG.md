@@ -1,5 +1,16 @@
 # Semantic Versioning Changelog
 
+# [1.7.0](https://git.sfera.inno.local/SUMD/mrms-backend/compare/v1.6.4...v1.7.0) (2024-12-04)
+
+
+### Features
+
+* creator update model ([7d5a1e5](https://git.sfera.inno.local/SUMD/mrms-backend/commit/7d5a1e5e15f48e06e6d3dcf08334256899a985de))
+* delete model ([0400d47](https://git.sfera.inno.local/SUMD/mrms-backend/commit/0400d474e229bfa1896b264ddd9ac38d7eee9388))
+* delete model ([8212cac](https://git.sfera.inno.local/SUMD/mrms-backend/commit/8212cac18b11e4a42172ab27c8705925df02b74b))
+* delete_model / add artefacts ([0edb241](https://git.sfera.inno.local/SUMD/mrms-backend/commit/0edb241e533de428cd5e8d47ccdf24772ee63f45))
+* update the calculation of camunda task dependent metrics ([1234b02](https://git.sfera.inno.local/SUMD/mrms-backend/commit/1234b021c4f8915bd43f4ac70f6a66682183c200))
+
 ## [1.6.4](https://git.sfera.inno.local/SUMD/mrms-backend/compare/v1.6.3...v1.6.4) (2024-11-28)
 
 ## [1.6.3](https://git.sfera.inno.local/SUMD/mrms-backend/compare/v1.6.2...v1.6.3) (2024-11-25)
