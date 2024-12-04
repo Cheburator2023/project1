@@ -92,7 +92,8 @@ export class ArtefactModelIdHandler implements IArtefactHandler {
       model_id: artefactData.model_id,
       artefact_tech_label: 'model_id',
       artefact_string_value: resolvedValue,
-      artefact_value_id: null
+      artefact_value_id: null,
+      creator: artefactData.creator
     })
   }
 

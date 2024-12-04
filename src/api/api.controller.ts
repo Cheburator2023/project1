@@ -81,7 +81,7 @@ export class ApiController {
   async modelsUpdate(@Body(new ParseArrayPipe({ items: ModelsUpdateDto, whitelist: true })) modelsArtefacts: ModelsUpdateDto[], @Res() response, @Req() req) {
     const result = {
       data: {
-        cards: await this.modelsService.modelsUpdate(modelsArtefacts)
+        cards: await this.modelsService.modelsUpdate(modelsArtefacts, req)
       }
     }
 
