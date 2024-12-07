@@ -1,0 +1,7 @@
+export enum MODEL_STATUS {
+    DEVELOPED_NOT_IMPLEMENTED = 'Разработана, не внедрена',
+    IMPLEMENTED_IN_PIM = 'Разработана, внедрена в ПИМ',
+    IMPLEMENTED_OUTSIDE_PIM = 'Разработана, внедрена вне ПИМ',
+    REMOVED_FROM_OPERATION = 'Вывод модели из эксплуатации',
+    VALIDATED_OUTSIDE_PIM = 'Внедрена вне ПИМ'
+}
