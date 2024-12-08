@@ -639,26 +639,36 @@ export class ModelsService {
       case LIFE_CYCLE_STAGES_DESCRIPTION[LIFE_CYCLE_STAGES.FAST_MODEL_PROCESS]:
         if (
           modelStatus === MODEL_STATUS.IMPLEMENTED_IN_PIM ||
-          modelStatus === MODEL_STATUS.VALIDATED_OUTSIDE_PIM
+          modelStatus === MODEL_STATUS.VALIDATED_OUTSIDE_PIM || 
+          modelStatus === MODEL_STATUS.IMPLEMENTED_OUTSIDE_PIM
         ) {
           return LIFE_CYCLE_STAGES_DESCRIPTION[LIFE_CYCLE_STAGES.VALIDATION];
         }
         break;
   
       case LIFE_CYCLE_STAGES_DESCRIPTION[LIFE_CYCLE_STAGES.MODEL]:
-        if (modelStatus === MODEL_STATUS.VALIDATED_OUTSIDE_PIM) {
+        if (
+          modelStatus === MODEL_STATUS.VALIDATED_OUTSIDE_PIM || 
+          modelStatus === MODEL_STATUS.IMPLEMENTED_OUTSIDE_PIM
+        ) {
           return LIFE_CYCLE_STAGES_DESCRIPTION[LIFE_CYCLE_STAGES.VALIDATION];
         }
         break;
   
       case LIFE_CYCLE_STAGES_DESCRIPTION[LIFE_CYCLE_STAGES.INTEGRATION_MODEL]:
-        if (modelStatus === MODEL_STATUS.IMPLEMENTED_OUTSIDE_PIM) {
+        if (
+          modelStatus === MODEL_STATUS.VALIDATED_OUTSIDE_PIM || 
+          modelStatus === MODEL_STATUS.IMPLEMENTED_OUTSIDE_PIM
+        ) {
           return LIFE_CYCLE_STAGES_DESCRIPTION[LIFE_CYCLE_STAGES.VALIDATION];
         }
         break;
   
       case LIFE_CYCLE_STAGES_DESCRIPTION[LIFE_CYCLE_STAGES.TEST_PREPROD_TRANSFER_PROD]:
-        if (modelStatus === MODEL_STATUS.IMPLEMENTED_IN_PIM) {
+        if (
+          modelStatus === MODEL_STATUS.IMPLEMENTED_IN_PIM || 
+          modelStatus === MODEL_STATUS.VALIDATED_IN_PIM
+        ) {
           return LIFE_CYCLE_STAGES_DESCRIPTION[LIFE_CYCLE_STAGES.VALIDATION];
         }
         break;

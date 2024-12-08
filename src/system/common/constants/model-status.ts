@@ -3,5 +3,6 @@ export enum MODEL_STATUS {
     IMPLEMENTED_IN_PIM = 'Разработана, внедрена в ПИМ',
     IMPLEMENTED_OUTSIDE_PIM = 'Разработана, внедрена вне ПИМ',
     REMOVED_FROM_OPERATION = 'Вывод модели из эксплуатации',
-    VALIDATED_OUTSIDE_PIM = 'Внедрена вне ПИМ'
+    VALIDATED_OUTSIDE_PIM = 'Внедрена вне ПИМ',
+    VALIDATED_IN_PIM = 'Внедрена в ПИМ'
 }
