@@ -1,19 +1,10 @@
 import { Request } from "express";
 import { REQUEST } from "@nestjs/core";
-import { BadRequestException, Inject, Injectable, Scope } from "@nestjs/common";
-import { randomUUID } from "crypto";
+import { Inject, Injectable, Scope } from "@nestjs/common";
 import { SumDatabaseService } from "src/system/sum-database/database.service";
 import { MrmDatabaseService } from "src/system/mrm-database/database.service";
-import { sql as allSumRmModels } from "./sql/models/sum-rm/all";
-import { sql as oneSumRmModels } from "./sql/models/sum-rm/one";
-import { sql as parentSumRmModel } from "./sql/models/sum-rm/parent";
-import { sql as createModel } from "./sql/models/sum-rm/create";
-import { sql as updateModelName } from "./sql/models/sum-rm/update_model_name";
-import { sql as updateModelDesc } from "./sql/models/sum-rm/update_model_desc";
-import { sql as updateUsageConfirm } from "./sql/models/sum-rm/update_usage_confirm";
 import { sql as getSumRmModelHistory } from "./sql/models/sum-rm/history";
 import { sql as getSumModelHistory } from "./sql/models/sum/history";
-import { sql as allSumModels } from "./sql/models/sum/all";
 import { sql as getTemplate } from "./sql/templates/getTemplate";
 import { sql as getTemplateByLowerName } from "./sql/templates/getTemplateByLowerName";
 import { sql as getTemplates } from "./sql/templates/getTemplates";
@@ -21,19 +12,13 @@ import { sql as addTemplate } from "./sql/templates/addTemplate";
 import { sql as deleteTemplate } from "./sql/templates/deleteTemplate";
 import { sql as updateTemplate } from "./sql/templates/updateTemplate";
 import { sql as getClasses } from "./sql/artefacts/classes";
-import { sql as updateArtefacts } from "./sql/artefacts/update";
-import { sql as newArtefacts } from "./sql/artefacts/new";
+
 import {
-  ModelsDto,
-  ArtefactsUpdateDto,
   ModelArtefactHistoryDto,
-  ModelCreateDto,
   ModelSource,
   TemplateCreateDto,
   TemplateUpdateDto
 } from "./dto/index.dto";
-
-import { isValidDate, parseDate, formatDateTime } from "src/system/common/utils";
 
 import { sortOrder } from './constants'
 
@@ -532,31 +517,6 @@ export class ApiService {
     return {
       data: artefacts
     };
-  }
-
-  async artefactsUpdate(artefacts: ArtefactsUpdateDto[]) {
-    const modelNameArtefact = artefacts.filter(artefact => artefact.artefact_tech_label === "model_name");
-    if (modelNameArtefact.length) {
-      await this.mrmDatabaseService.query(updateModelName, {
-        model_name: modelNameArtefact[0].artefact_string_value,
-        model_id: modelNameArtefact[0].model_id
-      });
-    }
-
-    const modelDescArtefact = artefacts.filter(artefact => artefact.artefact_tech_label === "model_desc");
-    if (modelDescArtefact.length) {
-      await this.mrmDatabaseService.query(updateModelDesc, {
-        model_desc: modelDescArtefact[0].artefact_string_value,
-        model_id: modelDescArtefact[0].model_id
-      });
-    }
-
-    const baseArtefacts = artefacts.filter(artefact => artefact.artefact_tech_label !== "model_name" && artefact.artefact_tech_label !== "model_desc");
-    if (baseArtefacts.length) {
-      await this.mrmDatabaseService.queryAll(updateArtefacts, artefacts);
-    }
-
-    return;
   }
 }
 

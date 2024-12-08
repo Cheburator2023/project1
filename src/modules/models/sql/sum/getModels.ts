@@ -16,7 +16,6 @@ SELECT m_.model_id                                                              
        dm_.significance_validity,
        dm_.segment_name,
        dm_.implementation_segment,
-       dm_.business_customer,
        clsf_.CUSTOMER_DEPT                                                                                   AS business_customer_departament,
        dm_.implementation_validity,
        dm_.validity_approve,
@@ -43,8 +42,25 @@ SELECT m_.model_id                                                              
        dm_.model_changes_info,
        m_.model_id                                                                                           AS uuid,
        dm_.DS_DEPARTMENT                                                                                     AS ds_stream,
-       null                                                                                          AS assignment_contractor,
        dm_.solution_to_implement_model,
+       dm_.rs_model_decommiss_date,
+       dm_.rfd,
+       dm_.model_epic_04,
+       dm_.model_epic_04_date,
+       dm_.model_epic_05,
+       dm_.model_epic_05a,
+       dm_.model_epic_05_date,
+       dm_.model_epic_07,
+       dm_.model_epic_07_date,
+       dm_.customer_model_id,
+       dm_.model_algorithm,
+       dm_.release,
+       dm_.model_epic_09,
+       dm_.model_epic_11,
+       dm_.model_epic_11_date,
+       dm_.model_epic_12,
+       dm_.model_epic_12_date,
+       dm_.developing_model_reason,
        st.status                                                                                     AS business_status,
        activeBpmnInstance.bpmn_instance_name                                                         AS model_status,
        -- Используется для подсчета метрик: Динамика моделей по стримам 
@@ -73,9 +89,44 @@ SELECT m_.model_id                                                              
         allocation_data.allocation_smb_comment,
         allocation_data.allocation_rb_comment,
         allocation_data.allocation_kc_comment,
-        allocation_data.allocation_other_comment
+        allocation_data.allocation_other_comment,
+        
+        -- Столбец business_customer
+        assignee_hist_data.business_customer AS business_customer,
+        
+        -- Столбец assignment_contractor
+        tasks_operations_logs_data.user_name AS assignment_contractor
 FROM models m_
- LEFT JOIN (
+
+LEFT JOIN (
+    SELECT * FROM (
+        SELECT model_id,
+            user_name,
+            ROW_NUMBER() OVER (
+                PARTITION BY model_id, operation
+                ORDER BY
+                    create_date DESC
+                ) AS rn
+        FROM tasks_operations_logs
+        WHERE task_id = 'development_results_approving'
+        AND operation = 'complete'
+    ) AS dummy
+    WHERE rn = 1
+) AS tasks_operations_logs_data
+ON m_.model_id = tasks_operations_logs_data.model_id
+
+LEFT JOIN (
+    SELECT 
+        model_id,
+        string_agg(assignee_name, ' | ' ORDER BY effective_from) AS business_customer
+    FROM assignee_hist
+    WHERE effective_to = TO_TIMESTAMP('9999-12-31 23:59:59', 'YYYY-MM-DD HH24:MI:SS')
+        AND functional_role = 'business_customer'
+    GROUP BY model_id
+) AS assignee_hist_data
+ON m_.model_id = assignee_hist_data.model_id
+
+LEFT JOIN (
     SELECT
         muh.model_id                                                                                            AS usage_model_id,
         MAX(CASE WHEN EXTRACT(QUARTER FROM muh.confirmation_date) = 1 THEN muh.confirmation_date ELSE NULL END) AS usage_confirm_date_q1,
@@ -292,7 +343,6 @@ ON m_.model_id = allocation_data.allocation_model_id
                            MAX(CASE WHEN ARTEFACT_ID = 7 THEN ARTEFACT_STRING_VALUE ELSE NULL END)   AS DS_DEPARTMENT,
                            MAX(CASE WHEN ARTEFACT_ID = 67 THEN ARTEFACT_STRING_VALUE ELSE NULL END)  AS significance_validity,
                            MAX(CASE WHEN ARTEFACT_ID = 785 THEN ARTEFACT_STRING_VALUE ELSE NULL END) AS implementation_segment,
-                           MAX(CASE WHEN ARTEFACT_ID = 309 THEN ARTEFACT_STRING_VALUE ELSE NULL END) AS business_customer,
                            MAX(CASE WHEN ARTEFACT_ID = 786 THEN ARTEFACT_STRING_VALUE ELSE NULL END) AS implementation_validity,
                            MAX(CASE WHEN ARTEFACT_ID = 787 THEN ARTEFACT_STRING_VALUE ELSE NULL END) AS validity_approve,
                            MAX(CASE WHEN ARTEFACT_ID = 788 THEN ARTEFACT_STRING_VALUE ELSE NULL END) AS validity_approve_date,
@@ -315,11 +365,31 @@ ON m_.model_id = allocation_data.allocation_model_id
                            MAX(CASE WHEN ARTEFACT_ID = 796 THEN ARTEFACT_STRING_VALUE ELSE NULL END) AS approve_importance_changes,
                            MAX(CASE WHEN ARTEFACT_ID = 797 THEN ARTEFACT_STRING_VALUE ELSE NULL END) AS model_risk_type,
                            MAX(CASE WHEN ARTEFACT_ID = 798 THEN ARTEFACT_STRING_VALUE ELSE NULL END) AS model_changes_info,
-                           MAX(CASE WHEN ARTEFACT_ID = 123 THEN ARTEFACT_STRING_VALUE ELSE NULL END) AS solution_to_implement_model
+                           MAX(CASE WHEN ARTEFACT_ID = 123 THEN ARTEFACT_STRING_VALUE ELSE NULL END) AS solution_to_implement_model,
+                           MAX(CASE WHEN ARTEFACT_ID = 888 THEN ARTEFACT_STRING_VALUE ELSE NULL END) AS rs_model_decommiss_date,
+                           MAX(CASE WHEN ARTEFACT_ID = 803 THEN ARTEFACT_STRING_VALUE ELSE NULL END) AS rfd,
+                           MAX(CASE WHEN ARTEFACT_ID = 811 THEN ARTEFACT_STRING_VALUE ELSE NULL END) AS model_epic_04,
+                           MAX(CASE WHEN ARTEFACT_ID = 812 THEN ARTEFACT_STRING_VALUE ELSE NULL END) AS model_epic_04_date,
+                           MAX(CASE WHEN ARTEFACT_ID = 823 THEN ARTEFACT_STRING_VALUE ELSE NULL END) AS model_epic_05,
+                           MAX(CASE WHEN ARTEFACT_ID = 820 THEN ARTEFACT_STRING_VALUE ELSE NULL END) AS model_epic_05a,
+                           MAX(CASE WHEN ARTEFACT_ID = 900 THEN ARTEFACT_STRING_VALUE ELSE NULL END) AS model_epic_05_date,
+                           MAX(CASE WHEN ARTEFACT_ID = 839 THEN ARTEFACT_STRING_VALUE ELSE NULL END) AS model_epic_07,
+                           MAX(CASE WHEN ARTEFACT_ID = 840 THEN ARTEFACT_STRING_VALUE ELSE NULL END) AS model_epic_07_date,
+                           MAX(CASE WHEN ARTEFACT_ID = 873 THEN ARTEFACT_STRING_VALUE ELSE NULL END) AS customer_model_id,
+                           MAX(CASE WHEN ARTEFACT_ID = 781 THEN ARTEFACT_STRING_VALUE ELSE NULL END) AS model_algorithm,
+                           MAX(CASE WHEN ARTEFACT_ID = 867 THEN ARTEFACT_STRING_VALUE ELSE NULL END) AS release,
+                           MAX(CASE WHEN ARTEFACT_ID = 868 THEN ARTEFACT_STRING_VALUE ELSE NULL END) AS model_epic_09,
+                           MAX(CASE WHEN ARTEFACT_ID = 869 THEN ARTEFACT_STRING_VALUE ELSE NULL END) AS model_epic_11,
+                           MAX(CASE WHEN ARTEFACT_ID = 870 THEN ARTEFACT_STRING_VALUE ELSE NULL END) AS model_epic_11_date,
+                           MAX(CASE WHEN ARTEFACT_ID = 898 THEN ARTEFACT_STRING_VALUE ELSE NULL END) AS model_epic_12,
+                           MAX(CASE WHEN ARTEFACT_ID = 899 THEN ARTEFACT_STRING_VALUE ELSE NULL END) AS model_epic_12_date,
+                           MAX(CASE WHEN ARTEFACT_ID = 69 THEN ARTEFACT_STRING_VALUE ELSE NULL END) AS developing_model_reason
                     FROM artefact_realizations
                     WHERE effective_to = TO_TIMESTAMP('9999-12-3123:59:59', 'YYYY-MM-DDHH24:MI:SS')
-                      AND artefact_id IN (7, 58, 67, 785, 309, 786, 787, 788, 789, 33, 34, 103, 277, 249,
-                                          346, 790, 791, 788, 507, 792, 793, 256, 794, 795, 796, 797, 798, 123)
+                      AND artefact_id IN (7, 58, 67, 785, 786, 787, 788, 789, 33, 34, 103, 277, 249,
+                                          346, 790, 791, 788, 507, 792, 793, 256, 794, 795, 796, 797,
+                                          798, 123, 888, 803, 811, 812, 823, 820, 900, 839, 840, 873,
+                                          781, 867, 868, 869, 870, 898, 899, 69)
                       AND (
                             :filter_date::Date IS NULL
                             OR TO_DATE(CAST(:filter_date AS Varchar(4000)), 'YYYY-MM-DD')

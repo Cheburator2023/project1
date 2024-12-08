@@ -37,13 +37,13 @@ export class TakenOutOfOperationMetric extends IndependentMetric<MetricPercentRe
     const { actualStartDate, actualEndDate } = this.getActualDateRange(startDate, endDate, isDeltaCalculation ? 7 : null)
 
     return models.filter((model) => {
-      const removeDate = model.remove_date ? new Date(model.remove_date) : null
+      const decomissDate = model.rs_model_decommiss_date ? new Date(model.rs_model_decommiss_date) : null
 
       /**
        * 1. Условие: Если "Дата выведения РС/Модели из эксплуатации" модели входит в выбранный временной срез,
        *    ТО модель попадает в категорию "Кол-во моделей, выведенных из эксп.".
        */
-      return this.isWithinDateRange(removeDate, actualStartDate, actualEndDate);
+      return this.isWithinDateRange(decomissDate, actualStartDate, actualEndDate);
     })
   }
 }

@@ -28,7 +28,6 @@ import { randomUUID } from 'crypto'
 import { sql as parentSumRmModel } from 'src/api/sql/models/sum-rm/parent'
 import { sql as createModel } from 'src/api/sql/models/sum-rm/create'
 import { sql as newArtefacts } from 'src/api/sql/artefacts/new'
-import { sql as oneSumRmModels } from 'src/api/sql/models/sum-rm/one'
 
 interface UsageEntry {
   confirmation_date: string | null;
@@ -182,7 +181,7 @@ export class ModelsService {
 
     await this.executeDatabaseUpdates({ artefactsForUpdate }, MODEL_SOURCES.MRM)
 
-    return await this.mrmDatabaseService.query(oneSumRmModels, { model_id });
+    return this.getModels({ model_id });
   }
 
   private isBasicInfoArtefact(label) {
@@ -556,7 +555,7 @@ export class ModelsService {
     const mergedModel = { ...mrmModels }
 
     for (const key in sumModels) {
-      if (mrmModels[key] === null || mrmModels[key] === undefined) {
+      if (mrmModels[key] === null || mrmModels[key] === undefined || key === 'model_source') {
         mergedModel[key] = sumModels[key]
       }
     }
