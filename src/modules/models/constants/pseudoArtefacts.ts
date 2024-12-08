@@ -14,7 +14,7 @@ const pseudoArtefacts: Artefact[] = [
   {
     artefact_id: 1000,
     artefact_tech_label: 'model_name',
-    artefact_label: 'Название модели',
+    artefact_label: 'Название модели в реестре ДАДМ',
     is_edit_flg: '1',
     artefact_desc: '',
     artefact_type_id: ArtefactTypeEnum.TEXT,

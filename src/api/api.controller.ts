@@ -155,14 +155,6 @@ export class ApiController {
     return this.apiService.getClasses();
   }
 
-  @Put("/artefacts/update/")
-  @ApiBody({ type: [ArtefactsUpdateDto] })
-  async artefactsUpdate(@Body(new ParseArrayPipe({ items: ArtefactsUpdateDto, whitelist: true })) artefacts: ArtefactsUpdateDto[], @Res() response) {
-    await this.apiService.artefactsUpdate(artefacts);
-
-    return response.status(HttpStatus.OK).json({ result: true });
-  }
-
   @Get('/metrics/')
   async getMetrics(@Query() query: MetricsDto, @Res() response) {
     const { startDate, endDate, stream } = query;

@@ -34,10 +34,10 @@ export class MrmMetric extends IndependentMetric<MetricResult> {
     const { actualStartDate, actualEndDate } = this.getActualDateRange(startDate, endDate, isDeltaCalculation ? 7 : null)
 
     return models.filter((model) => {
-      const removeDate = model.remove_date ? new Date(model.remove_date) : null
+      const decomissDate = model.rs_model_decommiss_date ? new Date(model.rs_model_decommiss_date) : null
       const releaseDate = model.date_of_introduction_into_operation ? new Date(model.date_of_introduction_into_operation) : null
       const developingEndDate = model.developing_end_date ? new Date(model.developing_end_date) : null
-      const pilotEndDate = model.data_completion_of_stage_05a ? new Date(model.data_completion_of_stage_05a) : null
+      const pilotEndDate = model.model_epic_05_date ? new Date(model.model_epic_05_date) : null
       const createDate = model.create_date ? new Date(model.create_date) : null
 
       /**
@@ -49,7 +49,7 @@ export class MrmMetric extends IndependentMetric<MetricResult> {
        *    ТО модель попадает в категорию "Модели в MRM СУМ".
        */
       if (
-        this.isWithinDateRange(removeDate, actualStartDate, actualEndDate) ||
+        this.isWithinDateRange(decomissDate, actualStartDate, actualEndDate) ||
         this.isWithinDateRange(releaseDate, actualStartDate, actualEndDate) ||
         this.isWithinDateRange(developingEndDate, actualStartDate, actualEndDate) ||
         this.isWithinDateRange(pilotEndDate, actualStartDate, actualEndDate) ||
