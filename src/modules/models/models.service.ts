@@ -16,7 +16,7 @@ import {
   updateModelAllocation as updateSumRmModelAllocation
 } from './sql/sum-rm'
 
-import { MODEL_SOURCES, LIFE_CYCLE_STAGES_DESCRIPTION } from 'src/system/common/constants'
+import { MODEL_SOURCES, LIFE_CYCLE_STAGES_DESCRIPTION, LIFE_CYCLE_STAGES, MODEL_STATUS } from 'src/system/common/constants'
 import { pseudoArtefacts } from './constants'
 import { Artefact, ArtefactValue, GroupedResults, Model, ModelRelationsResponse, ModelType } from './interfaces'
 import { CompareModelsDto, ModelsDto, ModelWithRelationsDto } from './dto'
@@ -592,6 +592,7 @@ export class ModelsService {
             }
           }
 
+
           if (artefactTechLabel === 'model_status') {
             const businessStatus = model.business_status
             const bpmnInstanceName = value
@@ -622,29 +623,78 @@ export class ModelsService {
   private static getLastActiveStatus = (activeStatuses) => {
     const activeStatusesList = activeStatuses?.split(';')
 
-    if (activeStatusesList?.includes('Вывод модели из эксплуатации')) {
-      return 'Вывод модели из эксплуатации'
+    if (activeStatusesList?.includes(MODEL_STATUS.REMOVED_FROM_OPERATION)) {
+      return MODEL_STATUS.REMOVED_FROM_OPERATION
     }
 
-    if (activeStatusesList?.includes('Разработана, не внедрена')) {
-      return 'Разработана, не внедрена'
+    if (activeStatusesList?.includes(MODEL_STATUS.DEVELOPED_NOT_IMPLEMENTED)) {
+      return MODEL_STATUS.DEVELOPED_NOT_IMPLEMENTED
     }
 
     return activeStatusesList?.[0]
   }
 
+  private static determineLifecycleStage = (businessStatus, modelStatus) => {
+    switch (businessStatus) {
+      case LIFE_CYCLE_STAGES_DESCRIPTION[LIFE_CYCLE_STAGES.FAST_MODEL_PROCESS]:
+        if (
+          modelStatus === MODEL_STATUS.IMPLEMENTED_IN_PIM ||
+          modelStatus === MODEL_STATUS.VALIDATED_OUTSIDE_PIM || 
+          modelStatus === MODEL_STATUS.IMPLEMENTED_OUTSIDE_PIM
+        ) {
+          return LIFE_CYCLE_STAGES_DESCRIPTION[LIFE_CYCLE_STAGES.VALIDATION];
+        }
+        break;
+  
+      case LIFE_CYCLE_STAGES_DESCRIPTION[LIFE_CYCLE_STAGES.MODEL]:
+        if (
+          modelStatus === MODEL_STATUS.VALIDATED_OUTSIDE_PIM || 
+          modelStatus === MODEL_STATUS.IMPLEMENTED_OUTSIDE_PIM
+        ) {
+          return LIFE_CYCLE_STAGES_DESCRIPTION[LIFE_CYCLE_STAGES.VALIDATION];
+        }
+        break;
+  
+      case LIFE_CYCLE_STAGES_DESCRIPTION[LIFE_CYCLE_STAGES.INTEGRATION_MODEL]:
+        if (
+          modelStatus === MODEL_STATUS.VALIDATED_OUTSIDE_PIM || 
+          modelStatus === MODEL_STATUS.IMPLEMENTED_OUTSIDE_PIM
+        ) {
+          return LIFE_CYCLE_STAGES_DESCRIPTION[LIFE_CYCLE_STAGES.VALIDATION];
+        }
+        break;
+  
+      case LIFE_CYCLE_STAGES_DESCRIPTION[LIFE_CYCLE_STAGES.TEST_PREPROD_TRANSFER_PROD]:
+        if (
+          modelStatus === MODEL_STATUS.IMPLEMENTED_IN_PIM || 
+          modelStatus === MODEL_STATUS.VALIDATED_IN_PIM
+        ) {
+          return LIFE_CYCLE_STAGES_DESCRIPTION[LIFE_CYCLE_STAGES.VALIDATION];
+        }
+        break;
+  
+      default:
+        return businessStatus;
+    }
+  
+    return businessStatus;
+  };
+
   private static formatModelStatus(status, bpmn_instance_name) {
     if (bpmn_instance_name === null) return null
 
     const lastActiveStatus = ModelsService.getLastActiveStatus(status)
+    let currentBusinessStatus = LIFE_CYCLE_STAGES_DESCRIPTION?.[bpmn_instance_name.trim()]
+
+    currentBusinessStatus = ModelsService.determineLifecycleStage(currentBusinessStatus, lastActiveStatus)
 
     switch (lastActiveStatus) {
-      case 'Разработана, не внедрена':
+      case MODEL_STATUS.DEVELOPED_NOT_IMPLEMENTED:
         return lastActiveStatus
-      case 'Вывод модели из эксплуатации':
+      case MODEL_STATUS.REMOVED_FROM_OPERATION:
         return lastActiveStatus
       default:
-        return LIFE_CYCLE_STAGES_DESCRIPTION?.[bpmn_instance_name.trim()]
+        return currentBusinessStatus
     }
   }
 
