@@ -124,7 +124,7 @@ export class ModelsService {
 
     const parent_model_id_artefact = artefacts.find(artefact => artefact.artefact_tech_label === "parent_model_id");
     const parent_model_id = parent_model_id_artefact ? parent_model_id_artefact.artefact_string_value : undefined;
-    const model_name_artefact = artefacts.find(artefact => artefact.artefact_tech_label === "model_name");
+    const model_name_artefact = artefacts.find(artefact => artefact.artefact_tech_label === "model_name_validation");
     const model_name = model_name_artefact ? model_name_artefact.artefact_string_value : undefined;
     const model_desc_artefact = artefacts.find(artefact => artefact.artefact_tech_label === "model_desc");
     const model_desc = model_desc_artefact ? model_desc_artefact.artefact_string_value : undefined;
