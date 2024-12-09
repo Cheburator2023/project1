@@ -49,7 +49,6 @@ SELECT m_.model_id                                                              
        dm_.model_epic_04_date,
        dm_.model_epic_05,
        dm_.model_epic_05a,
-       dm_.model_epic_05_date,
        dm_.model_epic_07,
        dm_.model_epic_07_date,
        dm_.customer_model_id,
@@ -348,7 +347,13 @@ ON m_.model_id = allocation_data.allocation_model_id
                            MAX(CASE WHEN ARTEFACT_ID = 788 THEN ARTEFACT_STRING_VALUE ELSE NULL END) AS validity_approve_date,
                            MAX(CASE WHEN ARTEFACT_ID = 789 THEN ARTEFACT_STRING_VALUE ELSE NULL END) AS remove_decision,
                            MAX(CASE WHEN ARTEFACT_ID = 33 THEN ARTEFACT_STRING_VALUE ELSE NULL END)  AS developing_start_date,
-                           MAX(CASE WHEN ARTEFACT_ID = 34 THEN ARTEFACT_STRING_VALUE ELSE NULL END)  AS developing_end_date,
+                           -- Схемы версии 2 работают с атрибутом 34/developing_end_date
+                           -- Схемы версии 3 работают с атрибутов 900/model_epic_05_date (заведен по ошибке)
+                           -- На выходе должны получить одно значение в колонке developing_end_date
+                           COALESCE(
+                              MAX(CASE WHEN artefact_id = 34 THEN artefact_string_value ELSE NULL END),
+                              MAX(CASE WHEN artefact_id = 900 THEN artefact_string_value ELSE NULL END)
+                           ) AS developing_end_date,
                            MAX(CASE WHEN ARTEFACT_ID = 103 THEN ARTEFACT_STRING_VALUE ELSE NULL END) AS data_source_description,
                            MAX(CASE WHEN ARTEFACT_ID = 277 THEN ARTEFACT_STRING_VALUE ELSE NULL END) AS target,
                            MAX(CASE WHEN ARTEFACT_ID = 249 THEN ARTEFACT_STRING_VALUE ELSE NULL END) AS analize_text_about_developing,
@@ -372,7 +377,6 @@ ON m_.model_id = allocation_data.allocation_model_id
                            MAX(CASE WHEN ARTEFACT_ID = 812 THEN ARTEFACT_STRING_VALUE ELSE NULL END) AS model_epic_04_date,
                            MAX(CASE WHEN ARTEFACT_ID = 823 THEN ARTEFACT_STRING_VALUE ELSE NULL END) AS model_epic_05,
                            MAX(CASE WHEN ARTEFACT_ID = 820 THEN ARTEFACT_STRING_VALUE ELSE NULL END) AS model_epic_05a,
-                           MAX(CASE WHEN ARTEFACT_ID = 900 THEN ARTEFACT_STRING_VALUE ELSE NULL END) AS model_epic_05_date,
                            MAX(CASE WHEN ARTEFACT_ID = 839 THEN ARTEFACT_STRING_VALUE ELSE NULL END) AS model_epic_07,
                            MAX(CASE WHEN ARTEFACT_ID = 840 THEN ARTEFACT_STRING_VALUE ELSE NULL END) AS model_epic_07_date,
                            MAX(CASE WHEN ARTEFACT_ID = 873 THEN ARTEFACT_STRING_VALUE ELSE NULL END) AS customer_model_id,

@@ -67,7 +67,13 @@ LEFT JOIN (
         MAX(CASE WHEN artefact_id = 2038 THEN artefact_string_value ELSE NULL END) AS remove_decision,
         MAX(CASE WHEN artefact_id = 2039 THEN artefact_string_value ELSE NULL END) AS ds_department,
         MAX(CASE WHEN artefact_id = 2040 THEN artefact_string_value ELSE NULL END) AS developing_start_date,
-        MAX(CASE WHEN artefact_id = 2041 THEN artefact_string_value ELSE NULL END) AS developing_end_date,
+        -- Схемы версии 2 работают с атрибутом 2041/developing_end_date
+        -- Схемы версии 3 работают с атрибутов 2080/model_epic_05_date (заведен по ошибке)
+        -- На выходе должны получить одно значение в колонке developing_end_date
+        COALESCE(
+            MAX(CASE WHEN artefact_id = 2041 THEN artefact_string_value ELSE NULL END),
+            MAX(CASE WHEN artefact_id = 2080 THEN artefact_string_value ELSE NULL END)
+        ) AS developing_end_date,
         MAX(CASE WHEN artefact_id = 2042 THEN artefact_string_value ELSE NULL END) AS data_source_description,
         MAX(CASE WHEN artefact_id = 2043 THEN artefact_string_value ELSE NULL END) AS target,
         MAX(CASE WHEN artefact_id = 2044 THEN artefact_string_value ELSE NULL END) AS calibration_method,
@@ -106,7 +112,6 @@ LEFT JOIN (
         MAX(CASE WHEN artefact_id = 2077 THEN artefact_string_value ELSE NULL END) AS model_epic_04_date,
         MAX(CASE WHEN artefact_id = 2078 THEN artefact_string_value ELSE NULL END) AS model_epic_05,
         MAX(CASE WHEN artefact_id = 2079 THEN artefact_string_value ELSE NULL END) AS model_epic_05a,
-        MAX(CASE WHEN artefact_id = 2080 THEN artefact_string_value ELSE NULL END) AS model_epic_05_date,
         MAX(CASE WHEN artefact_id = 2081 THEN artefact_string_value ELSE NULL END) AS solution_to_implement_model,
         MAX(CASE WHEN artefact_id = 2082 THEN artefact_string_value ELSE NULL END) AS model_epic_07,
         MAX(CASE WHEN artefact_id = 2083 THEN artefact_string_value ELSE NULL END) AS model_epic_07_date,

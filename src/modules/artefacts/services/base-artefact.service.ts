@@ -190,8 +190,6 @@ export abstract class BaseArtefactService implements IArtefactService {
       artefact_string_value
     )
 
-    debugger
-
     await this.databaseService.query(
       `
         INSERT INTO ${ this.artefactRealizationsTableName } (model_id, artefact_id, artefact_value_id, artefact_string_value, creator)
