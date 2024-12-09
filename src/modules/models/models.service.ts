@@ -592,7 +592,7 @@ export class ModelsService {
           }
 
 
-          if (artefactTechLabel === 'model_status' && model.model_source === MODEL_SOURCES.SUM) {
+          if (artefactTechLabel === 'model_status' && Object.values(LIFE_CYCLE_STAGES).includes(value)) {
             const businessStatus = model.business_status
             const bpmnInstanceName = value
             model[techLabel] = ModelsService.formatModelStatus(businessStatus, bpmnInstanceName)

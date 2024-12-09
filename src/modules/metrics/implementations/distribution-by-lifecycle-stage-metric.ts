@@ -9,6 +9,11 @@ export class DistributionByLifecycleStageMetric extends IndependentMetric<Distri
     // Iterate through all models to count model_status occurrences
     this.models.forEach((model) => {
       const status = model.model_status
+
+      if (!status) {
+        return
+      }
+
       if (lifecycleStages.has(status)) {
         lifecycleStages.set(status, lifecycleStages.get(status)! + 1)
       } else {
