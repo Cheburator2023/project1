@@ -49,6 +49,7 @@ SELECT m_.model_id                                                              
        dm_.model_epic_04_date,
        dm_.model_epic_05,
        dm_.model_epic_05a,
+       dm_.data_completion_of_stage_05a,
        dm_.model_epic_07,
        dm_.model_epic_07_date,
        dm_.customer_model_id,
@@ -365,6 +366,7 @@ ON m_.model_id = allocation_data.allocation_model_id
                            MAX(CASE WHEN ARTEFACT_ID = 793 THEN ARTEFACT_STRING_VALUE ELSE NULL END) AS validation_result_approve_date,
                            MAX(CASE WHEN ARTEFACT_ID = 871 THEN ARTEFACT_STRING_VALUE ELSE NULL END) AS date_of_introduction_into_operation,
                            MAX(CASE WHEN ARTEFACT_ID = 256 THEN ARTEFACT_STRING_VALUE ELSE NULL END) AS auto_validation_result,
+                           MAX(CASE WHEN ARTEFACT_ID = 781 THEN ARTEFACT_STRING_VALUE ELSE NULL END) AS model_algorithm,
                            MAX(CASE WHEN ARTEFACT_ID = 794 THEN ARTEFACT_STRING_VALUE ELSE NULL END) AS importance_changes,
                            MAX(CASE WHEN ARTEFACT_ID = 795 THEN ARTEFACT_STRING_VALUE ELSE NULL END) AS approve_importance,
                            MAX(CASE WHEN ARTEFACT_ID = 796 THEN ARTEFACT_STRING_VALUE ELSE NULL END) AS approve_importance_changes,
@@ -375,12 +377,12 @@ ON m_.model_id = allocation_data.allocation_model_id
                            MAX(CASE WHEN ARTEFACT_ID = 803 THEN ARTEFACT_STRING_VALUE ELSE NULL END) AS rfd,
                            MAX(CASE WHEN ARTEFACT_ID = 811 THEN ARTEFACT_STRING_VALUE ELSE NULL END) AS model_epic_04,
                            MAX(CASE WHEN ARTEFACT_ID = 812 THEN ARTEFACT_STRING_VALUE ELSE NULL END) AS model_epic_04_date,
-                           MAX(CASE WHEN ARTEFACT_ID = 823 THEN ARTEFACT_STRING_VALUE ELSE NULL END) AS model_epic_05,
                            MAX(CASE WHEN ARTEFACT_ID = 820 THEN ARTEFACT_STRING_VALUE ELSE NULL END) AS model_epic_05a,
+                           MAX(CASE WHEN ARTEFACT_ID = 821 THEN ARTEFACT_STRING_VALUE ELSE NULL END) AS data_completion_of_stage_05a,
+                           MAX(CASE WHEN ARTEFACT_ID = 823 THEN ARTEFACT_STRING_VALUE ELSE NULL END) AS model_epic_05,
                            MAX(CASE WHEN ARTEFACT_ID = 839 THEN ARTEFACT_STRING_VALUE ELSE NULL END) AS model_epic_07,
                            MAX(CASE WHEN ARTEFACT_ID = 840 THEN ARTEFACT_STRING_VALUE ELSE NULL END) AS model_epic_07_date,
                            MAX(CASE WHEN ARTEFACT_ID = 873 THEN ARTEFACT_STRING_VALUE ELSE NULL END) AS customer_model_id,
-                           MAX(CASE WHEN ARTEFACT_ID = 781 THEN ARTEFACT_STRING_VALUE ELSE NULL END) AS model_algorithm,
                            MAX(CASE WHEN ARTEFACT_ID = 867 THEN ARTEFACT_STRING_VALUE ELSE NULL END) AS release,
                            MAX(CASE WHEN ARTEFACT_ID = 868 THEN ARTEFACT_STRING_VALUE ELSE NULL END) AS model_epic_09,
                            MAX(CASE WHEN ARTEFACT_ID = 869 THEN ARTEFACT_STRING_VALUE ELSE NULL END) AS model_epic_11,
@@ -391,9 +393,9 @@ ON m_.model_id = allocation_data.allocation_model_id
                     FROM artefact_realizations
                     WHERE effective_to = TO_TIMESTAMP('9999-12-3123:59:59', 'YYYY-MM-DDHH24:MI:SS')
                       AND artefact_id IN (7, 58, 67, 785, 786, 787, 788, 789, 33, 34, 103, 277, 249,
-                                          346, 790, 791, 788, 507, 792, 793, 871, 256, 794, 795, 796, 797,
-                                          798, 123, 888, 803, 811, 812, 823, 820, 900, 839, 840, 873,
-                                          781, 867, 868, 869, 870, 898, 899, 69)
+                                          346, 790, 791, 781, 788, 507, 792, 793, 871, 256, 794, 795, 796, 797,
+                                          798, 123, 888, 803, 811, 812, 820, 821, 823, 839, 840, 873,
+                                          867, 868, 869, 870, 898, 899, 900, 69)
                       AND (
                             :filter_date::Date IS NULL
                             OR TO_DATE(CAST(:filter_date AS Varchar(4000)), 'YYYY-MM-DD')
