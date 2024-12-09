@@ -24,8 +24,7 @@ SELECT
     -- Источник модели
     'sum-rm' AS model_source,
     
-    -- Этап ЖЦМ Модели (всегда берем значение из СУМ, для этого явно прописываем model_status и business_status как null)
-    null as model_status,
+    -- Бизнес статус Модели (всегда берем значение из СУМ, для этого явно прописываем business_status как null)
     null as business_status
 FROM models_new m
 LEFT JOIN (
@@ -136,6 +135,7 @@ LEFT JOIN (
         MAX(CASE WHEN artefact_id = 2098 THEN artefact_string_value ELSE NULL END) AS notification_date_and_number_of_application_model_for_segment,
         MAX(CASE WHEN artefact_id = 2099 THEN artefact_string_value ELSE NULL END) AS decision_date_and_number_of_application_model,
         MAX(CASE WHEN artefact_id = 2100 THEN artefact_string_value ELSE NULL END) AS notification_date_and_number_of_application_model,
+        MAX(CASE WHEN artefact_id = 2101 THEN artefact_string_value ELSE NULL END) AS model_status,
         MAX(CASE WHEN artefact_id = 2102 THEN artefact_string_value ELSE NULL END) AS model_status_assignee,
         MAX(CASE WHEN artefact_id = 2104 THEN artefact_string_value ELSE NULL END) AS developing_model_reason,
         MAX(CASE WHEN artefact_id = 2105 THEN artefact_string_value ELSE NULL END) AS product_name,
