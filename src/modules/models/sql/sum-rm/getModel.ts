@@ -22,7 +22,10 @@ SELECT
     END AS relations,
 
     -- Источник модели
-    'sum-rm' AS model_source
+    'sum-rm' AS model_source,
+    
+    -- Бизнес статус Модели (всегда берем значение из СУМ, для этого явно прописываем business_status как null)
+    null as business_status
 FROM models_new m
 LEFT JOIN (
     SELECT
