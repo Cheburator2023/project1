@@ -1,5 +1,18 @@
 # Semantic Versioning Changelog
 
+# [1.8.0](https://git.sfera.inno.local/SUMD/mrms-backend/compare/v1.7.1...v1.8.0) (2024-12-09)
+
+
+### Bug Fixes
+
+* Revert package-lock.json ([0d33b80](https://git.sfera.inno.local/SUMD/mrms-backend/commit/0d33b8051726692767e9d118a0a50fb7ffd714dd))
+
+
+### Features
+
+* determine lifecycle stages ([4cfbf9d](https://git.sfera.inno.local/SUMD/mrms-backend/commit/4cfbf9dade4ce19a9167f3b26789bde8b8ec73ff))
+* determine lifecycle stages ([577f492](https://git.sfera.inno.local/SUMD/mrms-backend/commit/577f492d4af30d1874b0446d1387915a8f84c2ac))
+
 ## [1.7.1](https://git.sfera.inno.local/SUMD/mrms-backend/compare/v1.7.0...v1.7.1) (2024-12-05)
 
 # [1.7.0](https://git.sfera.inno.local/SUMD/mrms-backend/compare/v1.6.4...v1.7.0) (2024-12-04)
