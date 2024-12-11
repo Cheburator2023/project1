@@ -4,12 +4,16 @@ INSERT INTO models_new
  model_id,
  model_name,
  model_desc,
- model_version)
+ model_version,
+ create_date,
+ update_date)
 VALUES (nextval('models_seq'),
         :model_id,
         :model_name,
         :model_desc,
-        :model_version)
+        :model_version,
+        :create_date,
+        :update_date)
 `;
 
 export { sql };

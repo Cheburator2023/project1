@@ -58,10 +58,10 @@ export class ApiController {
   }
 
   @Get("/models/")
-  async models(@Query() query: ModelsDto, @Res() response) {
+  async models(@Query() query: ModelsDto, @Res() response, @Req() req) {
     const result = {
       data: {
-        cards: await this.modelsService.getModels(query)
+        cards: await this.modelsService.getModels(query, req.user.groups)
       }
     }
 

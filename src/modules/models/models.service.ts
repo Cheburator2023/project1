@@ -17,7 +17,7 @@ import {
 } from './sql/sum-rm'
 
 import { MODEL_SOURCES, LIFE_CYCLE_STAGES_DESCRIPTION, LIFE_CYCLE_STAGES, MODEL_STATUS } from 'src/system/common/constants'
-import { pseudoArtefacts } from './constants'
+import { pseudoArtefacts, RETAIL_CREDIT_RISK_DEPARTMENTS } from './constants'
 import { Artefact, ArtefactValue, GroupedResults, Model, ModelRelationsResponse, ModelType } from './interfaces'
 import { CompareModelsDto, ModelsDto, ModelWithRelationsDto } from './dto'
 import { ArtefactFormatting, ArtefactFormattingType } from './rules'
@@ -63,11 +63,13 @@ export class ModelsService {
   ) {
   }
 
-  async getModels(dto?: ModelsDto): Promise<Model[]> {
+  async getModels(dto?: ModelsDto, groups?: []): Promise<Model[]> {
     const { date = null, model_id = null } = dto || {}
     const results = await this.fetchAndMergeModels(date, model_id)
 
-    return await this.formatResults(results)
+    const filteredResults = groups ? this.filterModelsByUserGroups(results, groups) : results
+
+    return await this.formatResults(filteredResults)
   }
 
   async getModelsByDates({ firstDate, secondDate }: CompareModelsDto): Promise<{ data: { cards: GroupedResults } }> {
@@ -167,7 +169,9 @@ export class ModelsService {
       model_id,
       model_name,
       model_desc,
-      model_version
+      model_version,
+      create_date: new Date(),
+      update_date: new Date(),
     };
     await this.mrmDatabaseService.query(createModel, createModelQueryParams);
 
@@ -182,6 +186,34 @@ export class ModelsService {
     await this.executeDatabaseUpdates({ artefactsForUpdate }, MODEL_SOURCES.MRM)
 
     return this.getModels({ model_id });
+  }
+
+  // Фильтрация моделей в зависимости от групп пользователя
+  private filterModelsByUserGroups(models: Model[], userGroups: string[]): Model[] {
+    const formattedGroups = userGroups.map(group => group.trim())
+
+    // Если пользователь входит в группу /business_customer
+    if (formattedGroups.includes('/business_customer')) {
+      // Если пользователь входит в "Департамент финансового урегулирования"
+      if (formattedGroups.includes('/departament_business_customer/Департамент финансового урегулирования')) {
+        return models.filter(
+          (model) => model.business_customer_departament === 'Департамент финансового урегулирования'
+        )
+      }
+
+      // Если пользователь входит в "Департамент розничных кредитных рисков"
+      if (formattedGroups.includes('/departament_business_customer/Департамент розничных кредитных рисков')) {
+        return models.filter((model) =>
+          RETAIL_CREDIT_RISK_DEPARTMENTS.includes(model.business_customer_departament || '')
+        )
+      }
+
+      // Если пользователь входит в другие департаменты, то модели не фильтруются
+      return models
+    }
+
+    // Если пользователь не входит в группу /business_customer, возвращаем все модели
+    return models
   }
 
   private isBasicInfoArtefact(label) {
