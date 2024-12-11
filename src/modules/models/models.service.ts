@@ -17,7 +17,7 @@ import {
 } from './sql/sum-rm'
 
 import { MODEL_SOURCES, LIFE_CYCLE_STAGES_DESCRIPTION, LIFE_CYCLE_STAGES, MODEL_STATUS } from 'src/system/common/constants'
-import { pseudoArtefacts, RETAIL_CREDIT_RISK_DEPARTMENTS } from './constants'
+import { pseudoArtefacts, RETAIL_CREDIT_RISK_DEPARTMENTS, STREAM_MAPPING } from './constants'
 import { Artefact, ArtefactValue, GroupedResults, Model, ModelRelationsResponse, ModelType } from './interfaces'
 import { CompareModelsDto, ModelsDto, ModelWithRelationsDto } from './dto'
 import { ArtefactFormatting, ArtefactFormattingType } from './rules'
@@ -193,7 +193,7 @@ export class ModelsService {
     const formattedGroups = userGroups.map(group => group.trim())
 
     // Если пользователь входит в группу /business_customer
-    if (formattedGroups.includes('/business_customer')) {
+    if (userGroups.some(group => group.startsWith('/departament_business_customer'))) {
       // Если пользователь входит в "Департамент финансового урегулирования"
       if (formattedGroups.includes('/departament_business_customer/Департамент финансового урегулирования')) {
         return models.filter(
@@ -212,8 +212,61 @@ export class ModelsService {
       return models
     }
 
-    // Если пользователь не входит в группу /business_customer, возвращаем все модели
+    // Если пользователь входит в группы /ds или /ds/ds_lead
+    if (userGroups.includes('/ds') || userGroups.includes('/ds/ds_lead')) {
+      return models.filter((model) => {
+        const modelStream = model.ds_stream
+
+        // Извлекаем последние сегменты групп
+        const userStreams = userGroups
+          .filter(group => group.startsWith('/departament') || group === '/ds')
+          .map(group => group.split('/').pop() || '')
+
+        // Проверяем соответствие модели и группы
+        return userStreams.some((userStream) => {
+          if (Object.values(STREAM_MAPPING).includes(userStream as STREAM_MAPPING)) {
+            const mappedStreams = this.getMappedStreams(userStream as STREAM_MAPPING)
+            return modelStream === userStream || mappedStreams.includes(modelStream)
+          }
+          return modelStream === userStream
+        })
+      })
+    }
+
     return models
+  }
+
+  private getMappedStreams(stream: STREAM_MAPPING): string[] {
+    switch (stream) {
+      case STREAM_MAPPING.KIB_SMB_MANAGEMENT:
+        return [STREAM_MAPPING.KIB_SMB_DEVELOPMENT]
+      case STREAM_MAPPING.KIB_SMB_DEVELOPMENT:
+        return [STREAM_MAPPING.KIB_SMB_MANAGEMENT]
+
+      case STREAM_MAPPING.PARTNERSHIP_MANAGEMENT_IT:
+        return [
+          STREAM_MAPPING.PARTNERSHIP_MANAGEMENT_IT_ALTERNATE_1,
+          STREAM_MAPPING.PARTNERSHIP_MANAGEMENT_IT_ALTERNATE_2,
+          STREAM_MAPPING.ADVANCED_ALGORITHMS_MANAGEMENT
+        ]
+      case STREAM_MAPPING.PARTNERSHIP_MANAGEMENT_IT_ALTERNATE_1:
+      case STREAM_MAPPING.PARTNERSHIP_MANAGEMENT_IT_ALTERNATE_2:
+      case STREAM_MAPPING.ADVANCED_ALGORITHMS_MANAGEMENT:
+        return [STREAM_MAPPING.PARTNERSHIP_MANAGEMENT_IT]
+
+      case STREAM_MAPPING.RB_MANAGEMENT:
+        return [STREAM_MAPPING.RB_DEVELOPMENT]
+      case STREAM_MAPPING.RB_DEVELOPMENT:
+        return [STREAM_MAPPING.RB_MANAGEMENT]
+
+      case STREAM_MAPPING.PROCESS_FINANCE_MANAGEMENT:
+        return [STREAM_MAPPING.PROCESS_FINANCE_DEVELOPMENT]
+      case STREAM_MAPPING.PROCESS_FINANCE_DEVELOPMENT:
+        return [STREAM_MAPPING.PROCESS_FINANCE_MANAGEMENT]
+
+      default:
+        return []
+    }
   }
 
   private isBasicInfoArtefact(label) {

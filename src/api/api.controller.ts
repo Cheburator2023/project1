@@ -167,8 +167,8 @@ export class ApiController {
   }
 
   @Post("report")
-  async getReport(@Body() { filters }: FilterDto, @Res() res: Response) {
-    const response = await this.reportService.getReport(filters);
+  async getReport(@Body() { filters }: FilterDto, @Res() res: Response, @Req() req) {
+    const response = await this.reportService.getReport(filters, req.user?.groups);
 
     res.setHeader("Content-Disposition", "attachment; filename=report.xlsx");
     res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
