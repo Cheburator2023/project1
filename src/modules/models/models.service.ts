@@ -319,43 +319,6 @@ export class ModelsService {
     }
     const allocationMap: Record<string, Record<string, { model_id: string; gbl_id: string; percent: string | null; comment: string | null }>> = {}
     const usageMap: Record<string, Record<string, { confirmation_date: string | null; is_used: string | null }>> = {}
-    const modelsAllocationForUpdate = Object.entries(allocationMap).reduce((acc, [model_id, allocations]) => {
-      const allocationArray = Object
-        .values(allocations)
-        .filter(allocation => allocation.percent !== '')
-        .map(allocation => ({ ...allocation, model_id }))
-      return acc.concat(allocationArray)
-    }, [] as Array<{ model_id: string; gbl_id: string; percent: string | null; comment: string | null }>)
-    const getQuarterEndDate = (quarter, year = new Date().getFullYear()) => {
-      const currentDate = new Date();
-      const currentQuarter = Math.floor((currentDate.getMonth() + 3) / 3);
-
-      // Проверяем, передан ли текущий квартал и текущий год
-      if (parseInt(quarter) === currentQuarter && year === currentDate.getFullYear()) {
-        return currentDate;
-      }
-
-      // Если передан не текущий квартал, получаем последний день квартала
-      const quarterEndMonths = {
-        1: 2, // Март
-        2: 5, // Июнь
-        3: 8, // Сентябрь
-        4: 11 // Декабрь
-      };
-
-      const month = quarterEndMonths[quarter];
-      const lastDay = new Date(year, month + 1, 0); // 0-й день следующего месяца - последний день текущего
-
-      return lastDay;
-    }
-    const modelsUsageForUpdate = Object.entries(usageMap).reduce((acc, [model_id, usages]) => {
-      const usageArray = Object.entries(usages).map(([quarter, usage]) => ({
-        model_id,
-        confirmation_date: usage.confirmation_date || formatDateTime(getQuarterEndDate(quarter)).split('-').reverse().join('.'),
-        is_used: usage.is_used ? usage.is_used === 'Да' : null
-      }))
-      return acc.concat(usageArray)
-    }, [] as Array<{model_id: string, confirmation_date: string | null, is_used: boolean}>)
 
     for (const modelItem of modelsArtefacts) {
       const { model_id, artefacts, model_source } = modelItem
@@ -418,6 +381,44 @@ export class ModelsService {
         }
       }
     }
+
+    const modelsAllocationForUpdate = Object.entries(allocationMap).reduce((acc, [model_id, allocations]) => {
+      const allocationArray = Object
+        .values(allocations)
+        .filter(allocation => allocation.percent !== '')
+        .map(allocation => ({ ...allocation, model_id }))
+      return acc.concat(allocationArray)
+    }, [] as Array<{ model_id: string; gbl_id: string; percent: string | null; comment: string | null }>)
+    const getQuarterEndDate = (quarter, year = new Date().getFullYear()) => {
+      const currentDate = new Date();
+      const currentQuarter = Math.floor((currentDate.getMonth() + 3) / 3);
+
+      // Проверяем, передан ли текущий квартал и текущий год
+      if (parseInt(quarter) === currentQuarter && year === currentDate.getFullYear()) {
+        return currentDate;
+      }
+
+      // Если передан не текущий квартал, получаем последний день квартала
+      const quarterEndMonths = {
+        1: 2, // Март
+        2: 5, // Июнь
+        3: 8, // Сентябрь
+        4: 11 // Декабрь
+      };
+
+      const month = quarterEndMonths[quarter];
+      const lastDay = new Date(year, month + 1, 0); // 0-й день следующего месяца - последний день текущего
+
+      return lastDay;
+    }
+    const modelsUsageForUpdate = Object.entries(usageMap).reduce((acc, [model_id, usages]) => {
+      const usageArray = Object.entries(usages).map(([quarter, usage]) => ({
+        model_id,
+        confirmation_date: usage.confirmation_date || formatDateTime(getQuarterEndDate(quarter)).split('-').reverse().join('.'),
+        is_used: usage.is_used ? usage.is_used === 'Да' : null
+      }))
+      return acc.concat(usageArray)
+    }, [] as Array<{model_id: string, confirmation_date: string | null, is_used: boolean}>)
 
     await this.executeDatabaseUpdates(updatesBySource[MODEL_SOURCES.SUM], MODEL_SOURCES.SUM)
     await this.executeDatabaseUpdates(updatesBySource[MODEL_SOURCES.MRM], MODEL_SOURCES.MRM)
