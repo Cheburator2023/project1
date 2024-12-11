@@ -13,4 +13,24 @@ export const RETAIL_CREDIT_RISK_DEPARTMENTS = [
   'ДРКР_Управление Рисков Автолизинга Департамента Рисков АО ВТБ Лизинг',
   'ДРКР_Управление рисков ВТБ Беларусь',
   'Управление количественной оценки рисков Департамент розничных кредитных рисков'
-];
+]
+
+export enum STREAM_MAPPING {
+  // КИБ и СМБ
+  KIB_SMB_MANAGEMENT = 'Разработка моделей для КМБ и КСБ',
+  KIB_SMB_DEVELOPMENT = 'Управление моделирования КИБ и СМБ',
+
+  // Партнерства и ИТ процессы
+  PARTNERSHIP_MANAGEMENT_IT = 'Моделирование RnD',
+  PARTNERSHIP_MANAGEMENT_IT_ALTERNATE_1 = 'Управление моделирования партнерств и ИТ процессов',
+  PARTNERSHIP_MANAGEMENT_IT_ALTERNATE_2 = 'Управление моделирования партнерств и ИТ-процессов',
+  ADVANCED_ALGORITHMS_MANAGEMENT = 'Управление перспективных алгоритмов машинного обучения',
+
+  // РБ
+  RB_MANAGEMENT = 'Моделирование РБ',
+  RB_DEVELOPMENT = 'Управление моделирования РБ',
+
+  // Процессные и финансовые модели
+  PROCESS_FINANCE_MANAGEMENT = 'Финансовое моделирование',
+  PROCESS_FINANCE_DEVELOPMENT = 'Управление процессных и финансовых моделей',
+}

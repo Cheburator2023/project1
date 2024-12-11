@@ -261,6 +261,9 @@ ON m_.model_id = allocation_data.allocation_model_id
                         WHEN artefact_id = 818
                             AND (artefact_value_id IN (632))
                             THEN 'Архив'
+                        WHEN (artefact_id = 789)
+                            AND (artefact_string_value IS NOT NULL)
+                            THEN 'Архив'
 
                         WHEN artefact_id = 323
                             AND (artefact_value_id IN (427))
@@ -288,6 +291,9 @@ ON m_.model_id = allocation_data.allocation_model_id
                             THEN 'Разработана, внедрена вне ПИМ'
                         WHEN (artefact_id = 853)
                             AND (artefact_value_id IN (659))
+                            THEN 'Разработана, внедрена вне ПИМ'
+                        WHEN (artefact_id = 896)
+                            AND (artefact_value_id IN (684))
                             THEN 'Разработана, внедрена вне ПИМ'
 
                         WHEN (artefact_id = 825)
