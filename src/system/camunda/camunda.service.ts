@@ -39,7 +39,6 @@ export class CamundaService implements ICamundaService {
   ): Promise<T> {
     const url = `${ this.baseUrl }/${ endpoint }`
     try {
-      // Лимитируем выполнение запроса
       const response = await firstValueFrom(
         this.httpService.request<T>({
           method,
