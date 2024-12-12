@@ -15,22 +15,30 @@ export const RETAIL_CREDIT_RISK_DEPARTMENTS = [
   'Управление количественной оценки рисков Департамент розничных кредитных рисков'
 ]
 
-export enum STREAM_MAPPING {
-  // КИБ и СМБ
-  KIB_SMB_MANAGEMENT = 'Разработка моделей для КМБ и КСБ',
-  KIB_SMB_DEVELOPMENT = 'Управление моделирования КИБ и СМБ',
+const DEPARTMENTS = {
+  KIB_SMB: 'Управление моделирования КИБ и СМБ',
+  PARTNERSHIPS_IT: 'Управление моделирования партнерств и ИТ-процессов',
+  RB: 'Управление моделирования РБ',
+  ML_ALGORITHMS: 'Управление перспективных алгоритмов машинного обучения',
+  PROCESS_FINANCIAL: 'Управление процессных и финансовых моделей'
+}
 
-  // Партнерства и ИТ процессы
-  PARTNERSHIP_MANAGEMENT_IT = 'Моделирование RnD',
-  PARTNERSHIP_MANAGEMENT_IT_ALTERNATE_1 = 'Управление моделирования партнерств и ИТ процессов',
-  PARTNERSHIP_MANAGEMENT_IT_ALTERNATE_2 = 'Управление моделирования партнерств и ИТ-процессов',
-  ADVANCED_ALGORITHMS_MANAGEMENT = 'Управление перспективных алгоритмов машинного обучения',
+const STREAMS = {
+  KIB_SMB: 'Разработка моделей для КМБ и КСБ',
+  PARTNERSHIPS_IT_IT: 'Модели партнерств и платформы больших данных',
+  PARTNERSHIPS_IT_RND: 'Моделирование RnD',
+  RB: 'Моделирование РБ',
+  ML_ALGORITHMS: 'Моделирование RnD',
+  PROCESS_FINANCIAL: 'Финансовое моделирование'
+}
 
-  // РБ
-  RB_MANAGEMENT = 'Моделирование РБ',
-  RB_DEVELOPMENT = 'Управление моделирования РБ',
-
-  // Процессные и финансовые модели
-  PROCESS_FINANCE_MANAGEMENT = 'Финансовое моделирование',
-  PROCESS_FINANCE_DEVELOPMENT = 'Управление процессных и финансовых моделей',
+export const DEPARTMENT_TO_STREAM_MAPPING = {
+  [DEPARTMENTS.KIB_SMB]: [STREAMS.KIB_SMB],
+  [DEPARTMENTS.PARTNERSHIPS_IT]: [
+    STREAMS.PARTNERSHIPS_IT_IT,
+    STREAMS.PARTNERSHIPS_IT_RND
+  ],
+  [DEPARTMENTS.RB]: [STREAMS.RB],
+  [DEPARTMENTS.ML_ALGORITHMS]: [STREAMS.ML_ALGORITHMS],
+  [DEPARTMENTS.PROCESS_FINANCIAL]: [STREAMS.PROCESS_FINANCIAL]
 }

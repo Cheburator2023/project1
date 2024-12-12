@@ -17,7 +17,7 @@ import {
 } from './sql/sum-rm'
 
 import { MODEL_SOURCES, LIFE_CYCLE_STAGES_DESCRIPTION, LIFE_CYCLE_STAGES, MODEL_STATUS } from 'src/system/common/constants'
-import { pseudoArtefacts, RETAIL_CREDIT_RISK_DEPARTMENTS, STREAM_MAPPING } from './constants'
+import { pseudoArtefacts, RETAIL_CREDIT_RISK_DEPARTMENTS, DEPARTMENT_TO_STREAM_MAPPING } from './constants'
 import { Artefact, ArtefactValue, GroupedResults, Model, ModelRelationsResponse, ModelType } from './interfaces'
 import { CompareModelsDto, ModelsDto, ModelWithRelationsDto } from './dto'
 import { ArtefactFormatting, ArtefactFormattingType } from './rules'
@@ -72,12 +72,15 @@ export class ModelsService {
     return await this.formatResults(filteredResults)
   }
 
-  async getModelsByDates({ firstDate, secondDate }: CompareModelsDto): Promise<{ data: { cards: GroupedResults } }> {
+  async getModelsByDates({ firstDate, secondDate }: CompareModelsDto, groups?: []): Promise<{ data: { cards: GroupedResults } }> {
     const firstDateResults = await this.fetchAndMergeModels(firstDate)
     const secondDateResults = await this.fetchAndMergeModels(secondDate)
 
-    const formattedFirstDateResults = await this.formatResults(firstDateResults)
-    const formattedSecondDateResults = await this.formatResults(secondDateResults)
+    const filteredFirstDateResults = groups ? this.filterModelsByUserGroups(firstDateResults, groups) : firstDateResults
+    const filteredSecondDateResults = groups ? this.filterModelsByUserGroups(secondDateResults, groups) : secondDateResults
+
+    const formattedFirstDateResults = await this.formatResults(filteredFirstDateResults)
+    const formattedSecondDateResults = await this.formatResults(filteredSecondDateResults)
 
     const groupedResults = this.groupResultsByModelIdAndSource(
       formattedFirstDateResults,
@@ -193,7 +196,7 @@ export class ModelsService {
     const formattedGroups = userGroups.map(group => group.trim())
 
     // Если пользователь входит в группу /business_customer
-    if (userGroups.some(group => group.startsWith('/departament_business_customer'))) {
+    if (formattedGroups.some(group => group.startsWith('/departament_business_customer'))) {
       // Если пользователь входит в "Департамент финансового урегулирования"
       if (formattedGroups.includes('/departament_business_customer/Департамент финансового урегулирования')) {
         return models.filter(
@@ -213,60 +216,24 @@ export class ModelsService {
     }
 
     // Если пользователь входит в группы /ds или /ds/ds_lead
-    if (userGroups.includes('/ds') || userGroups.includes('/ds/ds_lead')) {
+    if (formattedGroups.includes('/ds') || formattedGroups.includes('/ds/ds_lead')) {
+      // Извлекаем последние сегменты групп
+      const userDepartments = formattedGroups
+        .filter(group => group.startsWith('/departament'))
+        .map(group => group.split('/').pop() || '')
+
+      const userStreams = userDepartments.flatMap(department => {
+        return DEPARTMENT_TO_STREAM_MAPPING[department] || []
+      })
+
       return models.filter((model) => {
         const modelStream = model.ds_stream
 
-        // Извлекаем последние сегменты групп
-        const userStreams = userGroups
-          .filter(group => group.startsWith('/departament') || group === '/ds')
-          .map(group => group.split('/').pop() || '')
-
-        // Проверяем соответствие модели и группы
-        return userStreams.some((userStream) => {
-          if (Object.values(STREAM_MAPPING).includes(userStream as STREAM_MAPPING)) {
-            const mappedStreams = this.getMappedStreams(userStream as STREAM_MAPPING)
-            return modelStream === userStream || mappedStreams.includes(modelStream)
-          }
-          return modelStream === userStream
-        })
+        return userStreams.includes(modelStream) || userDepartments.includes(modelStream)
       })
     }
 
     return models
-  }
-
-  private getMappedStreams(stream: STREAM_MAPPING): string[] {
-    switch (stream) {
-      case STREAM_MAPPING.KIB_SMB_MANAGEMENT:
-        return [STREAM_MAPPING.KIB_SMB_DEVELOPMENT]
-      case STREAM_MAPPING.KIB_SMB_DEVELOPMENT:
-        return [STREAM_MAPPING.KIB_SMB_MANAGEMENT]
-
-      case STREAM_MAPPING.PARTNERSHIP_MANAGEMENT_IT:
-        return [
-          STREAM_MAPPING.PARTNERSHIP_MANAGEMENT_IT_ALTERNATE_1,
-          STREAM_MAPPING.PARTNERSHIP_MANAGEMENT_IT_ALTERNATE_2,
-          STREAM_MAPPING.ADVANCED_ALGORITHMS_MANAGEMENT
-        ]
-      case STREAM_MAPPING.PARTNERSHIP_MANAGEMENT_IT_ALTERNATE_1:
-      case STREAM_MAPPING.PARTNERSHIP_MANAGEMENT_IT_ALTERNATE_2:
-      case STREAM_MAPPING.ADVANCED_ALGORITHMS_MANAGEMENT:
-        return [STREAM_MAPPING.PARTNERSHIP_MANAGEMENT_IT]
-
-      case STREAM_MAPPING.RB_MANAGEMENT:
-        return [STREAM_MAPPING.RB_DEVELOPMENT]
-      case STREAM_MAPPING.RB_DEVELOPMENT:
-        return [STREAM_MAPPING.RB_MANAGEMENT]
-
-      case STREAM_MAPPING.PROCESS_FINANCE_MANAGEMENT:
-        return [STREAM_MAPPING.PROCESS_FINANCE_DEVELOPMENT]
-      case STREAM_MAPPING.PROCESS_FINANCE_DEVELOPMENT:
-        return [STREAM_MAPPING.PROCESS_FINANCE_MANAGEMENT]
-
-      default:
-        return []
-    }
   }
 
   private isBasicInfoArtefact(label) {
