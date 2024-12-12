@@ -1,5 +1,12 @@
 # Semantic Versioning Changelog
 
+# [1.9.0](https://git.sfera.inno.local/SUMD/mrms-backend/compare/v1.8.4...v1.9.0) (2024-12-12)
+
+
+### Features
+
+* up proj version ([e741c0a](https://git.sfera.inno.local/SUMD/mrms-backend/commit/e741c0a8048350374b1a8b731a2149aaddc30b15))
+
 ## [1.8.4](https://git.sfera.inno.local/SUMD/mrms-backend/compare/v1.8.3...v1.8.4) (2024-12-11)
 
 ## [1.8.3](https://git.sfera.inno.local/SUMD/mrms-backend/compare/v1.8.2...v1.8.3) (2024-12-09)
