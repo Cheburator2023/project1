@@ -7,7 +7,6 @@ import { AssignmentService } from 'src/modules/assignments/assignment.service'
 import { BpmnService } from 'src/modules/bpmn/bpmn.service'
 import { MODEL_SOURCES, USER_ROLES } from 'src/system/common/constants'
 import { VALID_BPMN_KEYS } from '../constants'
-import { STREAM_MAPPING } from 'src/modules/models/constants'
 
 type Model = {
   bpmn_key: string
@@ -145,53 +144,10 @@ export class DataAggregator {
     values: string[],
     key: keyof T
   ): T[] {
-    return items.filter((item) => {
-      const itemValue = item[key]
-
-      return values.some((value) => {
-        if (Object.values(STREAM_MAPPING).includes(value as STREAM_MAPPING)) {
-          const mappedStreams = this.getMappedStreams(value as STREAM_MAPPING)
-          return itemValue === value || mappedStreams.includes(itemValue)
-        }
-        return itemValue === value
-      })
-    })
+    return items.filter((item) => values.includes(item[key]))
   }
 
   private filterByBpmnKey(validBpmnKeys: string[], key: string | undefined): boolean {
     return validBpmnKeys.includes(key || '')
-  }
-
-  private getMappedStreams(stream: STREAM_MAPPING): string[] {
-    switch (stream) {
-      case STREAM_MAPPING.KIB_SMB_MANAGEMENT:
-        return [STREAM_MAPPING.KIB_SMB_DEVELOPMENT]
-      case STREAM_MAPPING.KIB_SMB_DEVELOPMENT:
-        return [STREAM_MAPPING.KIB_SMB_MANAGEMENT]
-
-      case STREAM_MAPPING.PARTNERSHIP_MANAGEMENT_IT:
-        return [
-          STREAM_MAPPING.PARTNERSHIP_MANAGEMENT_IT_ALTERNATE_1,
-          STREAM_MAPPING.PARTNERSHIP_MANAGEMENT_IT_ALTERNATE_2,
-          STREAM_MAPPING.ADVANCED_ALGORITHMS_MANAGEMENT
-        ]
-      case STREAM_MAPPING.PARTNERSHIP_MANAGEMENT_IT_ALTERNATE_1:
-      case STREAM_MAPPING.PARTNERSHIP_MANAGEMENT_IT_ALTERNATE_2:
-      case STREAM_MAPPING.ADVANCED_ALGORITHMS_MANAGEMENT:
-        return [STREAM_MAPPING.PARTNERSHIP_MANAGEMENT_IT]
-
-      case STREAM_MAPPING.RB_MANAGEMENT:
-        return [STREAM_MAPPING.RB_DEVELOPMENT]
-      case STREAM_MAPPING.RB_DEVELOPMENT:
-        return [STREAM_MAPPING.RB_MANAGEMENT]
-
-      case STREAM_MAPPING.PROCESS_FINANCE_MANAGEMENT:
-        return [STREAM_MAPPING.PROCESS_FINANCE_DEVELOPMENT]
-      case STREAM_MAPPING.PROCESS_FINANCE_DEVELOPMENT:
-        return [STREAM_MAPPING.PROCESS_FINANCE_MANAGEMENT]
-
-      default:
-        return []
-    }
   }
 }

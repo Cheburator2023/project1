@@ -51,8 +51,8 @@ export class ApiController {
   }
 
   @Get("/models/compare/")
-  async compareModels(@Query() query: CompareModelsDto, @Res() response) {
-    const data = await this.modelsService.getModelsByDates(query)
+  async compareModels(@Query() query: CompareModelsDto, @Res() response, @Req() req) {
+    const data = await this.modelsService.getModelsByDates(query, req.user?.groups)
 
     return response.status(HttpStatus.OK).json(data);
   }
