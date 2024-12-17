@@ -14,8 +14,8 @@ import {
   ValidateIf,
   ValidateNested
 } from "class-validator";
-import { ApiProperty } from "@nestjs/swagger";
-import { Type } from "class-transformer";
+import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
+import { Transform, Type } from "class-transformer";
 import { ApiModelPropertyOptional } from "@nestjs/swagger/dist/decorators/api-model-property.decorator";
 
 export enum ModelSource {
@@ -38,6 +38,15 @@ export class ModelsDto {
   @IsOptional()
   @IsUUID()
   model_id: string
+
+  @ApiPropertyOptional({
+    example: 'true',
+    description: "Exclude models with the status 'Ошибка заведения'",
+  })
+  @IsOptional()
+  @IsBoolean()
+  @Transform(({value}) => value === 'true')
+  excludeError: boolean;
 }
 
 export class ModelWithRelationsDto {

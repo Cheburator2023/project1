@@ -1,6 +1,7 @@
 interface ModelsDto {
   model_id?: string;
   date?: string | null;
+  excludeError?: boolean;
 }
 
 interface CompareModelsDto {

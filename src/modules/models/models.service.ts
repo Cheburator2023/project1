@@ -64,8 +64,8 @@ export class ModelsService {
   }
 
   async getModels(dto?: ModelsDto, groups?: []): Promise<Model[]> {
-    const { date = null, model_id = null } = dto || {}
-    const results = await this.fetchAndMergeModels(date, model_id)
+    const { date = null, model_id = null, excludeError = null} = dto || {}
+    const results = await this.fetchAndMergeModels(date, model_id, excludeError)
 
     const filteredResults = groups ? this.filterModelsByUserGroups(results, groups) : results
 
@@ -567,7 +567,7 @@ export class ModelsService {
     return dictionary
   }
 
-  private async fetchAndMergeModels(date: string | null, model_id?: string | null): Promise<Model[]> {
+  private async fetchAndMergeModels(date: string | null, model_id?: string | null, excludeError?: boolean | null): Promise<Model[]> {
     const filterDate = date || null
 
     const sumModels = await this.sumDatabaseService.query(getSumModels, {
@@ -576,7 +576,8 @@ export class ModelsService {
     })
     const mrmModels = await this.mrmDatabaseService.query(getSumRmModels, {
       filter_date: filterDate,
-      model_id
+      model_id,
+      exclude_error: excludeError
     })
 
     return this.mergeSumAndMrmModels(sumModels, mrmModels, 'system_model_id')
