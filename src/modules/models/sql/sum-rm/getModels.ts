@@ -173,6 +173,20 @@ AND (
     BETWEEN DATE_TRUNC('day', m.create_date)::DATE
     AND DATE_TRUNC('day', NOW())::DATE
 )
+AND (
+    CASE
+        WHEN :exclude_error::BOOLEAN = true THEN NOT EXISTS (
+            SELECT 1 
+            FROM artefact_realizations_new ar
+            WHERE ar.model_id = m.model_id
+              AND ar.artefact_id = 2656
+              AND ar.artefact_string_value = 'Ошибка заведения'
+              AND ar.effective_from <= NOW()
+              AND ar.effective_to > NOW()
+        )
+        ELSE true
+    END
+)
 `;
 
 export { getModels };
