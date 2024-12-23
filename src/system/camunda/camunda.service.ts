@@ -18,7 +18,7 @@ export class CamundaService implements ICamundaService {
     const pwd = this.configService.get<string>('BPMN_PWD', 'demo')
     this.baseUrl = this.configService.get<string>(
       'BPMN_API',
-      'http://localhost:8080/engine-rest'
+      `${process.env.KEYCLOAK_URL}`
     )
     this.authorizationHeader = `Basic ${ Buffer.from(`${ user }:${ pwd }`).toString('base64') }`
   }

@@ -1,3 +1,4 @@
+import moment from 'moment'
 import { IndependentMetric } from '../base'
 import { TasksMetricResult } from '../interfaces'
 
@@ -22,7 +23,7 @@ export class TasksMetric extends IndependentMetric<TasksMetricResult> {
 
     return tasks.filter((task) =>
       this.isWithinDateRange(
-        task.effective_from ? new Date(task.effective_from) : null,
+        task.update_date ? new Date(task.update_date) : null,
         actualStartDate,
         actualEndDate
       )
@@ -30,16 +31,18 @@ export class TasksMetric extends IndependentMetric<TasksMetricResult> {
   }
 
   private groupTasksByRole(tasks) {
-    const dataSourcesSet = new Set()
-    const validationSet = new Set()
+    const dataSourcesSet = new Map<string, any>()
+    const validationSet = new Map<string, any>()
 
-    tasks.forEach(({ role, model_id }) => {
-      if (this.isDataSourceRole(role)) {
-        dataSourcesSet.add(model_id)
+    tasks.forEach(({ role, model_id, processInstanceId }) => {
+      const uniqueKey = `${model_id}-${role}-${processInstanceId}`
+      
+      if (this.isDataSourceRole(role) && !dataSourcesSet.has(uniqueKey)) {
+        dataSourcesSet.set(uniqueKey, { model_id, role, processInstanceId})
       }
 
-      if (this.isValidationRole(role)) {
-        validationSet.add(model_id)
+      if (this.isValidationRole(role) && !dataSourcesSet.has(uniqueKey)) {
+        validationSet.set(uniqueKey, { model_id, role, processInstanceId})
       }
     })
 
@@ -54,3 +57,6 @@ export class TasksMetric extends IndependentMetric<TasksMetricResult> {
     return ['validator', 'validator_lead'].includes(role)
   }
 }
+
+
+
