@@ -74,7 +74,7 @@ LEFT JOIN (
         MAX(CASE WHEN artefact_id = 2042 THEN artefact_string_value ELSE NULL END) AS data_source_description,
         MAX(CASE WHEN artefact_id = 2043 THEN artefact_string_value ELSE NULL END) AS target,
         MAX(CASE WHEN artefact_id = 2044 THEN artefact_string_value ELSE NULL END) AS calibration_method,
-        MAX(CASE WHEN artefact_id = 2045 THEN artefact_string_value ELSE NULL END) AS analize_text_about_developing,
+        MAX(CASE WHEN artefact_id = 2045 THEN artefact_string_value ELSE NULL END) AS developing_report,
         MAX(CASE WHEN artefact_id = 2046 THEN artefact_string_value ELSE NULL END) AS name_and_version_rating_system,
         MAX(CASE WHEN artefact_id = 2047 THEN artefact_string_value ELSE NULL END) AS version_it_implementation,
         MAX(CASE WHEN artefact_id = 2048 THEN artefact_string_value ELSE NULL END) AS responsible_subdivision_and_project_lead_for_it_implementation,
