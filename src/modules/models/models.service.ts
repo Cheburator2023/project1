@@ -397,7 +397,7 @@ export class ModelsService {
             case 'responsible_for_significance_validity':
             case 'segment_name':
             case 'implementation_segment':
-            case 'analize_text_about_developing':
+            case 'developing_report':
             case 'data_source_description':
             case 'target':
             case 'psi_protocol':
