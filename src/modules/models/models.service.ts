@@ -359,10 +359,7 @@ export class ModelsService {
             updatesBySource[MODEL_SOURCES.MRM].namesForUpdate.push({ model_id, model_name: artefact_string_value })
           }
         } else if (this.isDescriptionArtefact(artefact_tech_label)) {
-          updates.descriptionsForUpdate.push({ model_id, model_desc: artefact_string_value })
-          if (model_source === MODEL_SOURCES.SUM) {
-            updatesBySource[MODEL_SOURCES.MRM].descriptionsForUpdate.push({ model_id, model_desc: artefact_string_value })
-          }
+          updatesBySource[MODEL_SOURCES.MRM].descriptionsForUpdate.push({ model_id, model_desc: artefact_string_value })
         } else if (this.isAllocationUsageArtefact(artefact_tech_label)) {
           updateAllocation(model_id, this.getGblId(artefact_tech_label), artefact_string_value, null)
           // updates.modelsAllocationForUpdate.push({
@@ -394,6 +391,27 @@ export class ModelsService {
           //   is_used: null
           // })
         } else {
+          switch (artefact_tech_label) {
+            case 'model_type':
+            case 'significance_validity':
+            case 'responsible_for_significance_validity':
+            case 'segment_name':
+            case 'implementation_segment':
+            case 'analize_text_about_developing':
+            case 'data_source_description':
+            case 'target':
+            case 'psi_protocol':
+            case 'validation_department':
+            case 'plan_validation_type':
+            case 'validation_period':
+            case 'validation_report_approve_date':
+            case 'validation_result':
+            case 'validation_result_approve_date':
+            case 'auto_validation_result':
+            case 'model_changes_info':
+              updatesBySource[MODEL_SOURCES.MRM].artefactsForUpdate.push({ model_id, ...artefactItem, creator })
+              continue
+          }
           updates.artefactsForUpdate.push({ model_id, ...artefactItem, creator })
           if (model_source === MODEL_SOURCES.SUM) {
             updatesBySource[MODEL_SOURCES.MRM].artefactsForUpdate.push({ model_id, ...artefactItem, creator })
