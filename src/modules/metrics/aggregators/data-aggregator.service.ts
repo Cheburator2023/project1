@@ -7,6 +7,8 @@ import { AssignmentService } from 'src/modules/assignments/assignment.service'
 import { BpmnService } from 'src/modules/bpmn/bpmn.service'
 import { MODEL_SOURCES, USER_ROLES } from 'src/system/common/constants'
 import { VALID_BPMN_KEYS } from '../constants'
+import { KeycloakService } from 'src/system/keycloak/keycloak.service'
+import { DEPARTMENT_TO_STREAM_MAPPING } from 'src/modules/models/constants'
 
 type Model = {
   bpmn_key: string
@@ -33,7 +35,8 @@ export class DataAggregator {
     private readonly modelsService: ModelsService,
     private readonly artefactService: ArtefactService,
     private readonly assignmentService: AssignmentService,
-    private readonly bpmnService: BpmnService
+    private readonly bpmnService: BpmnService,
+    private readonly keycloakService: KeycloakService
   ) {
     this.cache = new NodeCache({ stdTTL: 300 }) // Кэш на 5 минут
   }
@@ -43,8 +46,8 @@ export class DataAggregator {
     const tasks = await this.getCachedTasks(models)
 
     const filteredModels = this.filterByStreams(models, streams, 'ds_stream')
-    const filteredTasks = this.filterByStreams(tasks, streams, 'ds_stream')
-      .filter((task) => this.filterByBpmnKey(VALID_BPMN_KEYS, task.bpmn_key))
+    const filteredTasks = this.filterByStreamsTasks(tasks, streams, 'ds_stream')
+      // .filter((task) => this.filterByBpmnKey(VALID_BPMN_KEYS, task.bpmn_key))
 
     return {
       models: filteredModels,
@@ -74,6 +77,23 @@ export class DataAggregator {
     return tasks
   }
 
+  private async getUsersInGroups(groups: any[]): Promise<Record<string, string[]>> {
+    const userGroupsMap: Record<string, string[]> = {};
+  
+    for (const group of groups) {
+      const users = await this.keycloakService.getUsersInGroup(group.id);
+      users.forEach((user) => {
+        const username = user.username;
+        if (!userGroupsMap[username]) {
+          userGroupsMap[username] = [];
+        }
+        userGroupsMap[username].push(group.name);
+      });
+    }
+  
+    return userGroupsMap;
+  }
+
   private async fetchUserTasks(models: Model[]): Promise<Task[]> {
     const rawTasks = await this.fetchRawTasks()
     const taskMap = new Map(rawTasks.map((task) => [task.processInstanceId + task.role, task]))
@@ -82,10 +102,19 @@ export class DataAggregator {
     const instanceMap = new Map(instances.map((instance) => [instance.model_id, instance]))
 
     const assignments = await this.assignmentService.getAssignmentsWithRolesByModelId(
-      instances.map((instance) => instance.model_id)
-    )
+      instances.map((instance) => instance.model_id),
+      MODEL_SOURCES.SUM,
+      5
+    );
 
-    const enrichedTasks = this.enrichTasksWithAssignments(assignments, taskMap, instanceMap, models)
+    const allGroups = await this.keycloakService.getSubGroupsByGroupsName([
+      'departament',
+      'departament_business_customer',
+    ]);
+  
+    const users = await this.getUsersInGroups(allGroups);
+
+    const enrichedTasks = this.enrichTasksWithAssignments(assignments, taskMap, instanceMap, models, users)
 
     return this.updateTasksWithArtefacts(enrichedTasks)
   }
@@ -103,24 +132,39 @@ export class DataAggregator {
     assignments: any[],
     taskMap: Map<string, Task>,
     instanceMap: Map<string, any>,
-    models: Model[]
+    models: Model[],
+    users: Record<string, string[]>
   ): Task[] {
-    return assignments.reduce<Task[]>((acc, assignment) => {
-      const instance = instanceMap.get(assignment.model_id)
+    return assignments.reduce<Task[]>((acc, assigneeHistItem) => {
+      const instance = instanceMap.get(assigneeHistItem.model_id)
       if (!instance) return acc
 
-      const taskKey = instance.bpmn_instance_id + assignment.functional_role
+      const taskKey = instance.bpmn_instance_id + assigneeHistItem.functional_role
       const task = taskMap.get(taskKey)
+      if (!task || task.role !== assigneeHistItem.functional_role) return acc
 
-      if (!task || task.role !== assignment.functional_role) return acc
+      const model = models.find((model) => model.system_model_id === assigneeHistItem.model_id)
 
-      const model = models.find((model) => model.system_model_id === assignment.model_id)
+      const streams = new Set<string>();
+      assigneeHistItem.assignee_name.split(', ').map((username) => {
+        if (username in users) {
+          users[username].map(department => {
+            const streamsAfterMapping = DEPARTMENT_TO_STREAM_MAPPING[department]
+            if (Array.isArray(streamsAfterMapping)) {
+              streamsAfterMapping.forEach((stream) => streams.add(stream))
+            } else if (streamsAfterMapping) {
+              streams.add(streamsAfterMapping)
+            }
+          })
+        }
+      });
+
       acc.push({
         ...task,
-        model_id: assignment.model_id,
-        effective_from: assignment.effective_from,
+        model_id: assigneeHistItem.model_id,
+        effective_from: assigneeHistItem.update_date,
         bpmn_key: model?.bpmn_key || null,
-        ds_stream: model?.ds_stream || null
+        ds_stream:  Array.from(streams).join(', ')
       })
 
       return acc
@@ -144,10 +188,24 @@ export class DataAggregator {
     values: string[],
     key: keyof T
   ): T[] {
+
     return items.filter((item) => values.includes(item[key]))
   }
 
-  private filterByBpmnKey(validBpmnKeys: string[], key: string | undefined): boolean {
-    return validBpmnKeys.includes(key || '')
+  private filterByStreamsTasks<T extends Record<string, any>>(
+    items: T[],
+    values: string[],
+    key: keyof T
+  ): T[] {
+    return items.filter((item) => {
+      const streams = item[key]?.split(',').map((stream) => stream.trim());
+      return streams?.some((stream) => values.includes(stream));
+    });
   }
+
+  // private filterByBpmnKey(validBpmnKeys: string[], key: string | undefined): boolean {
+  //   return validBpmnKeys.includes(key || '')
+  // }
 }
+
+

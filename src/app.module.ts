@@ -17,6 +17,7 @@ import { ApiModule } from 'src/api/api.module'
 import { KeycloakConfigService } from 'src/api/config/keycloak.config.service'
 import { DebounceService } from 'src/debounce/debounce.service'
 import { EmitEventDependencies } from 'src/system/common'
+import { KeycloakModule } from 'src/system/keycloak/keycloak.module'
 
 @Module({
   imports: [
@@ -31,7 +32,8 @@ import { EmitEventDependencies } from 'src/system/common'
     MrmDatabaseModule,
     CamundaModule,
     BpmnModule,
-    ApiModule
+    ApiModule,
+    KeycloakModule
   ],
   controllers: [],
   providers: [
