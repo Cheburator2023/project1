@@ -3,7 +3,7 @@ import { Injectable } from '@nestjs/common';
 
 @Injectable()
 export class KeycloakService {
-  private readonly keycloakHost = process.env.KEYCLOAK_TEST;
+  private readonly keycloakHost = process.env.KEYCLOAK_URL;
   private readonly keycloakClient = process.env.KEYCLOAK_CLIENT;
   private readonly keycloakUser = process.env.KEYCLOAK_USER;
   private readonly keycloakPwd = process.env.KEYCLOAK_PWD;
@@ -12,7 +12,7 @@ export class KeycloakService {
   constructor(private readonly httpService: HttpService) {}
 
   async getToken(): Promise<string> {
-    const url = `${this.keycloakHost}auth/realms/${this.realms}/protocol/openid-connect/token`;
+    const url = `${this.keycloakHost}realms/${this.realms}/protocol/openid-connect/token`;
     const data = new URLSearchParams({
       grant_type: 'password',
       client_id: this.keycloakClient,
@@ -29,7 +29,7 @@ export class KeycloakService {
 
   async getUsersInGroup(groupId: string): Promise<any[]> {
     const token = await this.getToken();
-    const url = `${this.keycloakHost}auth/admin/realms/${this.realms}/groups/${groupId}/members`;
+    const url = `${this.keycloakHost}admin/realms/${this.realms}/groups/${groupId}/members`;
 
     const response = await this.httpService.get(url, {
       headers: { Authorization: `Bearer ${token}` },
@@ -40,7 +40,7 @@ export class KeycloakService {
 
   async getSubGroupsByGroupsName(groupNames: string[]): Promise<any[]> {
     const token = await this.getToken();
-    const url = `${this.keycloakHost}auth/admin/realms/${this.realms}/groups`;
+    const url = `${this.keycloakHost}admin/realms/${this.realms}/groups`;
 
     const response = await this.httpService.get(url, {
       headers: { Authorization: `Bearer ${token}` },
