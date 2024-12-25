@@ -1,4 +1,3 @@
-import moment from 'moment'
 import { IndependentMetric } from '../base'
 import { TasksMetricResult } from '../interfaces'
 

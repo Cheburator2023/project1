@@ -6,7 +6,6 @@ import { ArtefactService } from 'src/modules/artefacts/artefact.services'
 import { AssignmentService } from 'src/modules/assignments/assignment.service'
 import { BpmnService } from 'src/modules/bpmn/bpmn.service'
 import { MODEL_SOURCES, USER_ROLES } from 'src/system/common/constants'
-import { VALID_BPMN_KEYS } from '../constants'
 import { KeycloakService } from 'src/system/keycloak/keycloak.service'
 import { DEPARTMENT_TO_STREAM_MAPPING } from 'src/modules/models/constants'
 
@@ -47,7 +46,6 @@ export class DataAggregator {
 
     const filteredModels = this.filterByStreams(models, streams, 'ds_stream')
     const filteredTasks = this.filterByStreamsTasks(tasks, streams, 'ds_stream')
-      // .filter((task) => this.filterByBpmnKey(VALID_BPMN_KEYS, task.bpmn_key))
 
     return {
       models: filteredModels,
@@ -202,10 +200,6 @@ export class DataAggregator {
       return streams?.some((stream) => values.includes(stream));
     });
   }
-
-  // private filterByBpmnKey(validBpmnKeys: string[], key: string | undefined): boolean {
-  //   return validBpmnKeys.includes(key || '')
-  // }
 }
 
 
