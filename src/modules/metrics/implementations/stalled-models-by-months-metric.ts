@@ -73,7 +73,7 @@ export class StalledModelsByMonthsMetric extends IndependentMetric<StalledModels
   }
 
   private filterTasks(tasks, startDate: string | null, endDate: string | null) {
-    const { actualStartDate, actualEndDate } = this.getActualDateRange(startDate, endDate, 5)
+    const { actualStartDate, actualEndDate } = this.getActualDateRange(startDate, endDate)
 
     return tasks.filter((task) =>
       this.isWithinDateRange(

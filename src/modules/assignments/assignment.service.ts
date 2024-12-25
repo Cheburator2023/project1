@@ -2,7 +2,6 @@ import { Injectable } from '@nestjs/common';
 import { MODEL_SOURCES } from 'src/system/common';
 import { AssignmentServiceFactory } from './factories';
 import { AssignmentsWithRolesEntity } from './entities';
-import * as moment from 'moment';
 @Injectable()
 export class AssignmentService {
   constructor(private readonly assignmentServiceFactory: AssignmentServiceFactory) {}
@@ -15,8 +14,11 @@ export class AssignmentService {
     const assignmentService = this.assignmentServiceFactory.getService(source);
   
     const dateOfDelay = daysOfDelay
-      ? moment().subtract(daysOfDelay, 'days').format('YYYY-MM-DD HH:mm:ss')
-      : null;
+    ? new Date(Date.now() - daysOfDelay * 24 * 60 * 60 * 1000)
+        .toISOString()
+        .slice(0, 19)
+        .replace('T', ' ')
+    : null;
   
     const query = `
       SELECT 
