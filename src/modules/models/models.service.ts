@@ -279,9 +279,8 @@ export class ModelsService {
     ].includes(label)
   }
 
-  async modelsUpdate(modelsArtefacts, req) {
-    const user = req.user
-    const creator = user?.preferred_username || "unknown"
+  async modelsUpdate(modelsArtefacts, user) {
+    const creator = user.name
 
     let modelSource = MODEL_SOURCES.MRM
     const modelIds: Set<string> = new Set()
