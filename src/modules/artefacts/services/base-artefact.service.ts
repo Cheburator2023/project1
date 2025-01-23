@@ -27,19 +27,17 @@ export abstract class BaseArtefactService implements IArtefactService {
     return { data: enrichedArtefacts };
   }
 
-  async getAllArtefactRoles(): Promise<Map<number, Set<string>>> {
+  async getAllArtefactRoles(): Promise<Map<number, string[]>> {
     const roles = await this.databaseService.query(`
-      SELECT ar.artefact_id, r.role_name
+      SELECT ar.artefact_id, ARRAY_AGG(r.role_name) AS roles
       FROM artefact_roles ar
       JOIN roles r ON ar.role_id = r.role_id
+      GROUP BY ar.artefact_id;
     `);
   
-    const artefactRolesMap = new Map<number, Set<string>>();
+    const artefactRolesMap = new Map<number, string[]>();
     for (const row of roles) {
-      if (!artefactRolesMap.has(row.artefact_id)) {
-        artefactRolesMap.set(row.artefact_id, new Set());
-      }
-      artefactRolesMap.get(row.artefact_id).add(row.role_name);
+      artefactRolesMap.set(row.artefact_id, row.roles);
     }
   
     return artefactRolesMap;
@@ -649,19 +647,19 @@ export abstract class BaseArtefactService implements IArtefactService {
   canEditArtefact(
     artefact: ArtefactEntity,
     user: User,
-    artefactRolesMap: Map<number, Set<string>>
+    artefactRolesMap: Map<number, string[]>
   ): boolean {
     if (artefact.is_edit_flg === '0') {
       return false;
     }
   
-    const allowedRoles = artefactRolesMap.get(artefact.artefact_id) || new Set();
+    const allowedRoles = artefactRolesMap.get(artefact.artefact_id) || [];
   
-    if (allowedRoles.size === 0) {
+    if (allowedRoles.length === 0) {
       return true;
     }
   
-    return user.groups.some((role) => allowedRoles.has(role));
+    return user.groups.some((role) => allowedRoles.includes(role));
   }
 
   private shouldSkipUpdate(
