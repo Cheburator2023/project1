@@ -15,8 +15,10 @@ import {
 } from "@nestjs/common";
 import { Response } from "express";
 import { ApiBody } from "@nestjs/swagger";
+import { MODEL_SOURCES } from "src/system/common";
 import { ApiService } from "./api.service";
 import { ModelsService } from "src/modules/models/models.service";
+import { ArtefactService } from "src/modules/artefacts/artefact.services";
 import { MetricsAggregator } from "src/modules/metrics/aggregators";
 import { ReportService } from "src/modules/report/report.service";
 import {
@@ -26,12 +28,12 @@ import {
   ModelCreateDto,
   ModelsUpdateDto,
   ModelArtefactHistoryDto,
-  ArtefactsUpdateDto,
   TemplateCreateDto,
   TemplateUpdateDto,
   FilterDto,
   MetricsDto
 } from "./dto/index.dto";
+import { User } from "src/decorators";
 
 @Controller()
 export class ApiController {
@@ -39,7 +41,8 @@ export class ApiController {
     private readonly apiService: ApiService,
     private readonly modelsService: ModelsService,
     private readonly metricsAggregator: MetricsAggregator,
-    private readonly reportService: ReportService
+    private readonly reportService: ReportService,
+    private readonly artefactService: ArtefactService
   ) {
   }
 
@@ -151,19 +154,20 @@ export class ApiController {
   }
 
   @Get("/artefacts/")
-  async getClasses() {
-    return this.apiService.getClasses();
+  async getArtefacts(@Res() response, @User() user) {
+    const result = await this.artefactService.getArtefacts(MODEL_SOURCES.MRM, user);
+    return response.status(HttpStatus.OK).json(result)
   }
 
   @Get('/metrics/')
   async getMetrics(@Query() query: MetricsDto, @Res() response) {
     const { startDate, endDate, stream } = query;
-    const data = await this.metricsAggregator.getMetrics(
+    const result = await this.metricsAggregator.getMetrics(
       startDate,
       endDate,
       stream,
     );
-    return response.status(HttpStatus.OK).json(data);
+    return response.status(HttpStatus.OK).json(result);
   }
 
   @Post("report")
