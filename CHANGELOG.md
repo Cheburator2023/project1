@@ -1,5 +1,15 @@
 # Semantic Versioning Changelog
 
+# [1.11.0](https://git.sfera.inno.local/SUMD/mrms-backend/compare/v1.10.1...v1.11.0) (2025-01-27)
+
+
+### Features
+
+* dashboards task ([2fb146e](https://git.sfera.inno.local/SUMD/mrms-backend/commit/2fb146ed1e54495e0cb6fb22dc680302cd1c9527))
+* dashboards task ([23ebbd3](https://git.sfera.inno.local/SUMD/mrms-backend/commit/23ebbd3591cb21665fafb97b2e3de96101f38506))
+* dashboards_tasks ([415d337](https://git.sfera.inno.local/SUMD/mrms-backend/commit/415d337ce111f612fe291ff54587d46080f014ba))
+* dashboards_tasks ([c4ad0a7](https://git.sfera.inno.local/SUMD/mrms-backend/commit/c4ad0a7546deb11c515ef6500f38da262c9e7d50))
+
 ## [1.10.1](https://git.sfera.inno.local/SUMD/mrms-backend/compare/v1.10.0...v1.10.1) (2024-12-24)
 
 # [1.10.0](https://git.sfera.inno.local/SUMD/mrms-backend/compare/v1.9.0...v1.10.0) (2024-12-24)
