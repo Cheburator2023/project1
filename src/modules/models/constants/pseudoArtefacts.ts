@@ -4,7 +4,7 @@ const pseudoArtefacts: Artefact[] = [
   {
     artefact_id: 1000,
     artefact_tech_label: 'system_model_id',
-    artefact_label: 'Идентифиактор версии модели',
+    artefact_label: 'Идентификатор версии модели',
     is_edit_flg: '0',
     artefact_desc: '',
     artefact_type_id: ArtefactTypeEnum.TEXT,
