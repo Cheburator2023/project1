@@ -142,7 +142,9 @@ LEFT JOIN (
         MAX(CASE WHEN artefact_id = 2655 THEN artefact_string_value ELSE NULL END) AS reason_model_delete,
         MAX(CASE WHEN artefact_id = 2656 THEN artefact_string_value ELSE NULL END) AS status,
         MAX(CASE WHEN artefact_id = 2657 THEN artefact_string_value ELSE NULL END) AS lead_validator_comment_model_delete,
-        MAX(CASE WHEN artefact_id = 2658 THEN artefact_string_value ELSE NULL END) AS lead_validator_resolution_model_delete
+        MAX(CASE WHEN artefact_id = 2658 THEN artefact_string_value ELSE NULL END) AS lead_validator_resolution_model_delete,
+        MAX(CASE WHEN artefact_id = 2558 THEN artefact_string_value ELSE NULL END) AS remove_date_validation,
+        MAX(CASE WHEN artefact_id = 2559 THEN artefact_string_value ELSE NULL END) AS model_version_validation
     FROM (
         SELECT
             artefact_realizations_new.model_id,

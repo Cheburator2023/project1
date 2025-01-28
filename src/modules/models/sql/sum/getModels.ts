@@ -4,6 +4,7 @@ SELECT m_.model_id                                                              
        m_.model_id                                                                                           AS model_version_id,
        CAST('model' || m_.root_model_id AS Varchar(4000)) || '-v' || CAST(m_.model_version AS Varchar(4000)) AS model_id,
        clsf_.group_company,
+       clsf_.business_customer_departament,
        m_.model_name,
        m_.model_desc,
        m_.create_date,
@@ -14,7 +15,6 @@ SELECT m_.model_id                                                              
        null                                                                                          AS calibration_date,
        CAST('model' || m_.root_model_id AS Varchar(4000)) || '-v' || CAST(m_.model_version AS Varchar(4000)) AS model_alias,
        dm_.model_type,
-       clsf_.CUSTOMER_DEPT                                                                                   AS business_customer_departament,
        dm_.implementation_validity,
        dm_.validity_approve,
        dm_.remove_decision,
@@ -186,9 +186,10 @@ ON m_.model_id = allocation_data.allocation_model_id
          LEFT JOIN (SELECT ar_.model_id,
                            STRING_AGG((CASE WHEN ar_.artefact_id = 57 THEN av_.artefact_value_id ELSE NULL END)::Varchar, ','
                                       ORDER BY ar_.artefact_value_id)                           AS product_and_scope_id,
-                           STRING_AGG((CASE WHEN ar_.artefact_id = 73 THEN av_.artefact_value ELSE NULL END)::Varchar, ' > '
+                           STRING_AGG((CASE WHEN ar_.artefact_id = 73 THEN av_.artefact_value ELSE NULL END)::Varchar, ','
                                       ORDER BY ar_.artefact_value_id)                           AS group_company,
-                           MAX(CASE WHEN ar_.ARTEFACT_ID = 6 THEN ARTEFACT_VALUE ELSE NULL END) AS CUSTOMER_DEPT
+                           STRING_AGG((CASE WHEN ar_.artefact_id = 6 THEN av_.artefact_value ELSE NULL END)::Varchar, ','
+                                      ORDER BY ar_.artefact_value_id)                           AS business_customer_departament
                     FROM artefact_realizations ar_
                              INNER JOIN artefact_values av_ ON ar_.artefact_value_id = av_.artefact_value_id AND av_.is_active_flg = '1'
                     WHERE ar_.artefact_id IN (173, 6, 67, 73)

@@ -19,6 +19,7 @@ import { MODEL_SOURCES } from "src/system/common";
 import { ApiService } from "./api.service";
 import { ModelsService } from "src/modules/models/models.service";
 import { ArtefactService } from "src/modules/artefacts/artefact.services";
+import { User } from "src/decorators";
 import { MetricsAggregator } from "src/modules/metrics/aggregators";
 import { ReportService } from "src/modules/report/report.service";
 import {
@@ -33,7 +34,6 @@ import {
   FilterDto,
   MetricsDto
 } from "./dto/index.dto";
-import { User } from "src/decorators";
 
 @Controller()
 export class ApiController {
@@ -81,10 +81,10 @@ export class ApiController {
 
   @Put("/models/update/")
   @ApiBody({ type: [ModelsUpdateDto] })
-  async modelsUpdate(@Body(new ParseArrayPipe({ items: ModelsUpdateDto, whitelist: true })) modelsArtefacts: ModelsUpdateDto[], @Res() response, @Req() req) {
+  async modelsUpdate(@Body(new ParseArrayPipe({ items: ModelsUpdateDto, whitelist: true })) modelsArtefacts: ModelsUpdateDto[], @Res() response, @User() user) {
     const result = {
       data: {
-        cards: await this.modelsService.modelsUpdate(modelsArtefacts, req)
+        cards: await this.modelsService.modelsUpdate(modelsArtefacts, user)
       }
     }
 
