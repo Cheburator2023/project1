@@ -17,6 +17,7 @@ import { Response } from "express";
 import { ApiBody } from "@nestjs/swagger";
 import { ApiService } from "./api.service";
 import { ModelsService } from "src/modules/models/models.service";
+import { User } from "src/decorators";
 import { MetricsAggregator } from "src/modules/metrics/aggregators";
 import { ReportService } from "src/modules/report/report.service";
 import {
@@ -78,10 +79,10 @@ export class ApiController {
 
   @Put("/models/update/")
   @ApiBody({ type: [ModelsUpdateDto] })
-  async modelsUpdate(@Body(new ParseArrayPipe({ items: ModelsUpdateDto, whitelist: true })) modelsArtefacts: ModelsUpdateDto[], @Res() response, @Req() req) {
+  async modelsUpdate(@Body(new ParseArrayPipe({ items: ModelsUpdateDto, whitelist: true })) modelsArtefacts: ModelsUpdateDto[], @Res() response, @User() user) {
     const result = {
       data: {
-        cards: await this.modelsService.modelsUpdate(modelsArtefacts, req)
+        cards: await this.modelsService.modelsUpdate(modelsArtefacts, user)
       }
     }
 
