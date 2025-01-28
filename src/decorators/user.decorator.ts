@@ -1,7 +1,19 @@
 import { createParamDecorator, ExecutionContext, UnauthorizedException } from '@nestjs/common';
 
+export interface UserType {
+  name: string;
+  username: string;
+  email: string;
+  keycloakGroups: string[];
+  family_name: string;
+  given_name: string;
+  preferred_username: string;
+  groups: string[];
+  roles: string[];
+}
+
 export const User = createParamDecorator(
-  (data: unknown, ctx: ExecutionContext) => {
+  (data: unknown, ctx: ExecutionContext): UserType => {
     const request = ctx.switchToHttp().getRequest();
 
     if (!request.user) {

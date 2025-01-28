@@ -3,7 +3,8 @@ import { ARTEFACT_TYPES_REQUIRING_VALUES } from '../constants'
 import { ArtefactEntity, ArtefactValueEntity, ArtefactRealizationEntity } from '../entities'
 import { UpdateArtefactDto } from '../dto'
 import { IArtefactService } from '../interfaces'
-import { User } from 'src/decorators'
+import { UserType } from 'src/decorators'
+
 export abstract class BaseArtefactService implements IArtefactService {
   protected abstract modelsTableName: string
   protected abstract artefactsTableName: string
@@ -14,7 +15,7 @@ export abstract class BaseArtefactService implements IArtefactService {
   protected constructor(public readonly databaseService) {
   }
 
-  async getArtefactWithPermissions(user: User) {
+  async getArtefactWithPermissions(user: UserType) {
     const artefacts = await this.getArtefacts();
 
     const artefactRolesMap = await this.getAllArtefactRoles()
@@ -646,7 +647,7 @@ export abstract class BaseArtefactService implements IArtefactService {
 
   canEditArtefact(
     artefact: ArtefactEntity,
-    user: User,
+    user: UserType,
     artefactRolesMap: Map<number, string[]>
   ): boolean {
     if (artefact.is_edit_flg === '0') {
