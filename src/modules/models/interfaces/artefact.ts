@@ -38,6 +38,8 @@ interface Artefact {
   values: ArtefactValue[];
   group?: string;
   start_date_depend_artefact?: string;
+  is_edit_sum_flg?: string;
+  is_edit_for_business_creator_flg?: string;
 }
 
 interface ArtefactValue {

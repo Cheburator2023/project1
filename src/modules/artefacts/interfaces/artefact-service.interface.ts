@@ -1,5 +1,6 @@
+import { User } from 'src/decorators'
 import { UpdateArtefactDto } from '../dto'
-import { ArtefactEntity, ArtefactRealizationEntity, ArtefactValueEntity } from '../entities'
+import { ArtefactEntity, ArtefactRealizationEntity, ArtefactValueEntity, EnrichedArtefact } from '../entities'
 import { MrmDatabaseService } from 'src/system/mrm-database/database.service'
 import { SumDatabaseService } from 'src/system/sum-database/database.service'
 
@@ -45,5 +46,9 @@ export interface IArtefactService {
 
   getMaxArtefactUpdateDate(model_id: string): Promise<any>
 
-  canEditArtefact(artefact: ArtefactEntity): boolean
+  canEditArtefact(artefact: ArtefactEntity, user?: User, artefactRolesMap?: Map<number, string[]>): boolean;
+  
+  getArtefacts(): Promise<{ data: ArtefactEntity[] }>;
+
+  getArtefactWithPermissions(user: User): Promise<{ data: EnrichedArtefact[] }>;
 }

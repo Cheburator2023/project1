@@ -7,6 +7,8 @@ export type ArtefactEntity = {
   is_main_info_flg: string;
   is_class_flg: string;
   is_edit_flg: string;
+  is_edit_sum_flg: string;
+  is_edit_for_business_creator_flg: string;
   artefact_type_id: number;
   artefact_business_group_id: number;
   is_multi_fill_flg: string;
