@@ -72,9 +72,9 @@ export class ModelsService {
     return await this.formatResults(filteredResults)
   }
 
-  async getModelsByDates({ firstDate, secondDate }: CompareModelsDto, groups?: []): Promise<{ data: { cards: GroupedResults } }> {
-    const firstDateResults = await this.fetchAndMergeModels(firstDate)
-    const secondDateResults = await this.fetchAndMergeModels(secondDate)
+  async getModelsByDates({ firstDate, secondDate, excludeError }: CompareModelsDto, groups?: []): Promise<{ data: { cards: GroupedResults } }> {
+    const firstDateResults = await this.fetchAndMergeModels(firstDate, null, excludeError)
+    const secondDateResults = await this.fetchAndMergeModels(secondDate, null, excludeError)
 
     const filteredFirstDateResults = groups ? this.filterModelsByUserGroups(firstDateResults, groups) : firstDateResults
     const filteredSecondDateResults = groups ? this.filterModelsByUserGroups(secondDateResults, groups) : secondDateResults
@@ -234,6 +234,23 @@ export class ModelsService {
     }
 
     return models
+  }
+
+  private getModelStatusExcludeErrorCondition(alias: string = 'm'): string {
+    return `
+      CASE
+        WHEN :exclude_error::BOOLEAN = true THEN NOT EXISTS (
+          SELECT 1 
+          FROM artefact_realizations_new ar
+          WHERE ar.model_id = ${alias}.model_id
+            AND ar.artefact_id = 2656
+            AND ar.artefact_string_value = 'Ошибка заведения'
+            AND ar.effective_from <= NOW()
+            AND ar.effective_to > NOW()
+        )
+        ELSE true
+      END
+    `;
   }
 
   private isBasicInfoArtefact(label) {
@@ -586,16 +603,18 @@ export class ModelsService {
 
   private async fetchAndMergeModels(date: string | null, model_id?: string | null, excludeError?: boolean | null): Promise<Model[]> {
     const filterDate = date || null
+    const excludeErrorCondition = this.getModelStatusExcludeErrorCondition('m');
 
     const sumModels = await this.sumDatabaseService.query(getSumModels, {
       filter_date: filterDate,
       model_id
     })
-    const mrmModels = await this.mrmDatabaseService.query(getSumRmModels, {
+    const mrmModels = await this.mrmDatabaseService.query(getSumRmModels(excludeErrorCondition), {
       filter_date: filterDate,
       model_id,
       exclude_error: excludeError
     })
+
 
     return this.mergeSumAndMrmModels(sumModels, mrmModels, 'system_model_id')
   }
