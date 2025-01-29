@@ -7,6 +7,7 @@ interface ModelsDto {
 interface CompareModelsDto {
   firstDate: string;
   secondDate: string;
+  excludeError?: boolean;
 }
 
 interface ModelWithRelationsDto {

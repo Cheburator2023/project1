@@ -70,6 +70,14 @@ export class CompareModelsDto {
   })
   @IsDateString()
   secondDate: string
+  @ApiPropertyOptional({
+    example: 'true',
+    description: "Exclude models with the status 'Ошибка заведения'",
+  })
+  @IsOptional()
+  @IsBoolean()
+  @Transform(({value}) => value === 'true')
+  excludeError: boolean;
 }
 
 export class ModelCreateDto {
@@ -271,6 +279,14 @@ export class FilterDto {
 
   @IsObject()
   filters: FilterValueType;
+
+  @ApiPropertyOptional({
+    example: 'true',
+    description: "Exclude models with the status 'Ошибка заведения'",
+  })
+  @IsOptional()
+  @IsBoolean()
+  excludeError: boolean;
 }
 
 export class MetricsDto {
