@@ -244,7 +244,10 @@ export class ModelsService {
           FROM artefact_realizations_new ar
           WHERE ar.model_id = ${alias}.model_id
             AND ar.artefact_id = 2656
-            AND ar.artefact_string_value = 'Ошибка заведения'
+            AND (
+                ar.artefact_string_value = 'Ошибка заведения'
+                OR ar.artefact_string_value = 'Ожидает удаления'
+            )
             AND ar.effective_from <= NOW()
             AND ar.effective_to > NOW()
         )
