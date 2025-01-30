@@ -1,5 +1,98 @@
 # Semantic Versioning Changelog
 
+# [1.11.0](https://git.sfera.inno.local/SUMD/mrms-backend/compare/v1.10.1...v1.11.0) (2025-01-27)
+
+
+### Features
+
+* dashboards task ([2fb146e](https://git.sfera.inno.local/SUMD/mrms-backend/commit/2fb146ed1e54495e0cb6fb22dc680302cd1c9527))
+* dashboards task ([23ebbd3](https://git.sfera.inno.local/SUMD/mrms-backend/commit/23ebbd3591cb21665fafb97b2e3de96101f38506))
+* dashboards_tasks ([415d337](https://git.sfera.inno.local/SUMD/mrms-backend/commit/415d337ce111f612fe291ff54587d46080f014ba))
+* dashboards_tasks ([c4ad0a7](https://git.sfera.inno.local/SUMD/mrms-backend/commit/c4ad0a7546deb11c515ef6500f38da262c9e7d50))
+
+## [1.10.1](https://git.sfera.inno.local/SUMD/mrms-backend/compare/v1.10.0...v1.10.1) (2024-12-24)
+
+# [1.10.0](https://git.sfera.inno.local/SUMD/mrms-backend/compare/v1.9.0...v1.10.0) (2024-12-24)
+
+
+### Features
+
+* delete model ([15760e8](https://git.sfera.inno.local/SUMD/mrms-backend/commit/15760e89d4d3a529260a29111f34ed721c61de6f))
+* determine lifecycle stages ([552b34f](https://git.sfera.inno.local/SUMD/mrms-backend/commit/552b34fd8352d1b371afc89cc7f322a4a8f98c4b))
+
+# [1.9.0](https://git.sfera.inno.local/SUMD/mrms-backend/compare/v1.8.4...v1.9.0) (2024-12-12)
+
+
+### Features
+
+* up proj version ([e741c0a](https://git.sfera.inno.local/SUMD/mrms-backend/commit/e741c0a8048350374b1a8b731a2149aaddc30b15))
+
+## [1.8.4](https://git.sfera.inno.local/SUMD/mrms-backend/compare/v1.8.3...v1.8.4) (2024-12-11)
+
+## [1.8.3](https://git.sfera.inno.local/SUMD/mrms-backend/compare/v1.8.2...v1.8.3) (2024-12-09)
+
+## [1.8.2](https://git.sfera.inno.local/SUMD/mrms-backend/compare/v1.8.1...v1.8.2) (2024-12-09)
+
+## [1.8.1](https://git.sfera.inno.local/SUMD/mrms-backend/compare/v1.8.0...v1.8.1) (2024-12-09)
+
+# [1.8.0](https://git.sfera.inno.local/SUMD/mrms-backend/compare/v1.7.1...v1.8.0) (2024-12-09)
+
+
+### Bug Fixes
+
+* Revert package-lock.json ([0d33b80](https://git.sfera.inno.local/SUMD/mrms-backend/commit/0d33b8051726692767e9d118a0a50fb7ffd714dd))
+
+
+### Features
+
+* determine lifecycle stages ([4cfbf9d](https://git.sfera.inno.local/SUMD/mrms-backend/commit/4cfbf9dade4ce19a9167f3b26789bde8b8ec73ff))
+* determine lifecycle stages ([577f492](https://git.sfera.inno.local/SUMD/mrms-backend/commit/577f492d4af30d1874b0446d1387915a8f84c2ac))
+
+## [1.7.1](https://git.sfera.inno.local/SUMD/mrms-backend/compare/v1.7.0...v1.7.1) (2024-12-05)
+
+# [1.7.0](https://git.sfera.inno.local/SUMD/mrms-backend/compare/v1.6.4...v1.7.0) (2024-12-04)
+
+
+### Features
+
+* creator update model ([7d5a1e5](https://git.sfera.inno.local/SUMD/mrms-backend/commit/7d5a1e5e15f48e06e6d3dcf08334256899a985de))
+* delete model ([0400d47](https://git.sfera.inno.local/SUMD/mrms-backend/commit/0400d474e229bfa1896b264ddd9ac38d7eee9388))
+* delete model ([8212cac](https://git.sfera.inno.local/SUMD/mrms-backend/commit/8212cac18b11e4a42172ab27c8705925df02b74b))
+* delete_model / add artefacts ([0edb241](https://git.sfera.inno.local/SUMD/mrms-backend/commit/0edb241e533de428cd5e8d47ccdf24772ee63f45))
+* update the calculation of camunda task dependent metrics ([1234b02](https://git.sfera.inno.local/SUMD/mrms-backend/commit/1234b021c4f8915bd43f4ac70f6a66682183c200))
+
+## [1.6.4](https://git.sfera.inno.local/SUMD/mrms-backend/compare/v1.6.3...v1.6.4) (2024-11-28)
+
+## [1.6.3](https://git.sfera.inno.local/SUMD/mrms-backend/compare/v1.6.2...v1.6.3) (2024-11-25)
+
+## [1.6.2](https://git.sfera.inno.local/SUMD/mrms-backend/compare/v1.6.1...v1.6.2) (2024-11-22)
+
+## [1.6.1](https://git.sfera.inno.local/SUMD/mrms-backend/compare/v1.6.0...v1.6.1) (2024-11-22)
+
+# [1.6.0](https://git.sfera.inno.local/SUMD/mrms-backend/compare/v1.5.14...v1.6.0) (2024-11-20)
+
+
+### Features
+
+* major updates for metrics module ([522a056](https://git.sfera.inno.local/SUMD/mrms-backend/commit/522a0562954e4c2a0884cc32752b1ca5a439d276))
+
+## [1.5.14](https://git.sfera.inno.local/SUMD/mrms-backend/compare/v1.5.13...v1.5.14) (2024-11-14)
+
+## [1.5.13](https://git.sfera.inno.local/SUMD/mrms-backend/compare/v1.5.12...v1.5.13) (2024-11-13)
+
+## [1.5.12](https://git.sfera.inno.local/SUMD/mrms-backend/compare/v1.5.11...v1.5.12) (2024-11-12)
+
+## [1.5.11](https://git.sfera.inno.local/SUMD/mrms-backend/compare/v1.5.10...v1.5.11) (2024-11-03)
+
+## [1.5.10](https://git.sfera.inno.local/SUMD/mrms-backend/compare/v1.5.9...v1.5.10) (2024-11-01)
+
+
+### Bug Fixes
+
+* Дашборды. Доработана фильтрация по стримам для диаграммы "динамика моделей по стримам" ([c82ec24](https://git.sfera.inno.local/SUMD/mrms-backend/commit/c82ec245af4777e147780b6db099d1526e46d00f))
+
+## [1.5.9](https://git.sfera.inno.local/SUMD/mrms-backend/compare/v1.5.8...v1.5.9) (2024-10-30)
+
 ## [1.5.8](https://git.sfera.inno.local/SUMD/mrms-backend/compare/v1.5.7...v1.5.8) (2024-10-30)
 
 ## [1.5.7](https://git.sfera.inno.local/SUMD/mrms-backend/compare/v1.5.6...v1.5.7) (2024-10-24)

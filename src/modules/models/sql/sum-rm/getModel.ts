@@ -2,43 +2,13 @@ const getModel = `
 SELECT
     m.model_id AS system_model_id,
     m.model_name,
+    m.model_desc,
     m.model_version,
     m.create_date,
     m.update_date,
-    CASE
-        WHEN m.root_model_id != '' THEN
-            (CAST('model' AS VARCHAR(4000)) ||  m.root_model_id || '-v' || CAST(m.model_version AS VARCHAR(4000)))
-        ELSE NULL
-    END AS model_alias,
-
-    -- Столбцы для дат подтверждения и флагов использования по кварталам
-    usage_data.usage_confirm_date_q1,
-    usage_data.usage_confirm_date_q2,
-    usage_data.usage_confirm_date_q3,
-    usage_data.usage_confirm_date_q4,
-    usage_data.usage_confirm_flag_q1,
-    usage_data.usage_confirm_flag_q2,
-    usage_data.usage_confirm_flag_q3,
-    usage_data.usage_confirm_flag_q4,
-
-    -- Столбцы для процентов использования по каждой ГБЛ
-    allocation_data.allocation_kib_usage,
-    allocation_data.allocation_smb_usage,
-    allocation_data.allocation_rb_usage,
-    allocation_data.allocation_kc_usage,
-    allocation_data.allocation_other_usage,
-
-    -- Столбцы для комментариев по каждой ГБЛ
-    allocation_data.allocation_kib_comment,
-    allocation_data.allocation_smb_comment,
-    allocation_data.allocation_rb_comment,
-    allocation_data.allocation_kc_comment,
-    allocation_data.allocation_other_comment,
 
     -- Столбцы всех артефактов
     artefact_data.*,
-
-    COALESCE(NULLIF(m.models_is_active_flg, ''), '1') AS active_model,
 
     -- Флаг для взаимосвязей
     CASE
@@ -52,107 +22,11 @@ SELECT
     END AS relations,
 
     -- Источник модели
-    'sum-rm' AS model_source
+    'sum-rm' AS model_source,
+    
+    -- Бизнес статус Модели (всегда берем значение из СУМ, для этого явно прописываем business_status как null)
+    null as business_status
 FROM models_new m
-         LEFT JOIN (
-    SELECT
-        muh.model_id                                                                                            AS usage_model_id,
-        MAX(CASE WHEN EXTRACT(QUARTER FROM muh.confirmation_date) = 1 THEN muh.confirmation_date ELSE NULL END) AS usage_confirm_date_q1,
-        MAX(CASE WHEN EXTRACT(QUARTER FROM muh.confirmation_date) = 2 THEN muh.confirmation_date ELSE NULL END) AS usage_confirm_date_q2,
-        MAX(CASE WHEN EXTRACT(QUARTER FROM muh.confirmation_date) = 3 THEN muh.confirmation_date ELSE NULL END) AS usage_confirm_date_q3,
-        MAX(CASE WHEN EXTRACT(QUARTER FROM muh.confirmation_date) = 4 THEN muh.confirmation_date ELSE NULL END) AS usage_confirm_date_q4,
-        COALESCE(
-            CASE
-                WHEN BOOL_OR(EXTRACT(QUARTER FROM muh.confirmation_date) = 1 AND muh.is_used) THEN 'Да'
-                WHEN BOOL_OR(EXTRACT(QUARTER FROM muh.confirmation_date) = 1 AND NOT muh.is_used) THEN 'Нет'
-                ELSE NULL
-                END,
-            NULL
-        ) AS usage_confirm_flag_q1,
-        COALESCE(
-        CASE
-            WHEN BOOL_OR(EXTRACT(QUARTER FROM muh.confirmation_date) = 2 AND muh.is_used) THEN 'Да'
-            WHEN BOOL_OR(EXTRACT(QUARTER FROM muh.confirmation_date) = 2 AND NOT muh.is_used) THEN 'Нет'
-            ELSE NULL
-            END,
-        NULL
-        ) AS usage_confirm_flag_q2,
-        COALESCE(
-            CASE
-                WHEN BOOL_OR(EXTRACT(QUARTER FROM muh.confirmation_date) = 3 AND muh.is_used) THEN 'Да'
-                WHEN BOOL_OR(EXTRACT(QUARTER FROM muh.confirmation_date) = 3 AND NOT muh.is_used) THEN 'Нет'
-                ELSE NULL
-                END,
-            NULL
-        ) AS usage_confirm_flag_q3,
-        COALESCE(
-            CASE
-                WHEN BOOL_OR(EXTRACT(QUARTER FROM muh.confirmation_date) = 4 AND muh.is_used) THEN 'Да'
-                WHEN BOOL_OR(EXTRACT(QUARTER FROM muh.confirmation_date) = 4 AND NOT muh.is_used) THEN 'Нет'
-                ELSE NULL
-                END,
-            NULL
-        ) AS usage_confirm_flag_q4
-    FROM (
-        SELECT
-            model_id,
-            confirmation_date,
-            is_used,
-            ROW_NUMBER() OVER (
-                PARTITION BY usage_id
-                ORDER BY change_date DESC
-            ) AS rn
-        FROM models_usage_history
-        WHERE (
-            :filter_date::Date IS NULL
-            OR TO_DATE(CAST(:filter_date AS Varchar(4000)), 'YYYY-MM-DD')
-                BETWEEN DATE_TRUNC('day', change_date)::Date
-                AND DATE_TRUNC('day', change_date)::Date
-        )
-    ) AS muh
-    WHERE muh.rn = 1
-    GROUP BY muh.model_id
-) AS usage_data
-ON m.model_id = usage_data.usage_model_id
-
-LEFT JOIN (
-    SELECT
-        mah.model_id                                                                     AS allocation_model_id,
-        MAX(CASE WHEN mah.gbl_name = 'КИБ' THEN mah.allocation_percent ELSE NULL END)    AS allocation_kib_usage,
-        MAX(CASE WHEN mah.gbl_name = 'СМБ' THEN mah.allocation_percent ELSE NULL END)    AS allocation_smb_usage,
-        MAX(CASE WHEN mah.gbl_name = 'РБ' THEN mah.allocation_percent ELSE NULL END)     AS allocation_rb_usage,
-        MAX(CASE WHEN mah.gbl_name = 'КЦ' THEN mah.allocation_percent ELSE NULL END)     AS allocation_kc_usage,
-        MAX(CASE WHEN mah.gbl_name = 'Другое' THEN mah.allocation_percent ELSE NULL END) AS allocation_other_usage,
-
-        MAX(CASE WHEN mah.gbl_name = 'КИБ' THEN mah.comment ELSE NULL END)               AS allocation_kib_comment,
-        MAX(CASE WHEN mah.gbl_name = 'СМБ' THEN mah.comment ELSE NULL END)               AS allocation_smb_comment,
-        MAX(CASE WHEN mah.gbl_name = 'РБ' THEN mah.comment ELSE NULL END)                AS allocation_rb_comment,
-        MAX(CASE WHEN mah.gbl_name = 'КЦ' THEN mah.comment ELSE NULL END)                AS allocation_kc_comment,
-        MAX(CASE WHEN mah.gbl_name = 'Другое' THEN mah.comment ELSE NULL END)            AS allocation_other_comment
-    FROM (
-        SELECT
-            model_id,
-            gbl_name,
-            allocation_percent,
-            comment,
-            ROW_NUMBER() OVER (
-                PARTITION BY allocation_id, model_id
-                ORDER BY change_date DESC
-            ) AS rn
-        FROM models_allocation_history mah
-        INNER JOIN global_business_lines gbl ON mah.gbl_id = gbl.gbl_id
-        WHERE (
-            :filter_date::Date IS NULL
-            OR TO_DATE(CAST(:filter_date AS Varchar(4000)), 'YYYY-MM-DD')
-                BETWEEN DATE_TRUNC('day', change_date)::Date
-                AND DATE_TRUNC('day', change_date)::Date
-        )
-    ) AS mah
-    WHERE mah.rn = 1
-    GROUP BY mah.model_id
-) AS allocation_data
-ON m.model_id = allocation_data.allocation_model_id
-
 LEFT JOIN (
     SELECT
         ar.model_id                                                                AS artefacts_model_id,
@@ -169,7 +43,6 @@ LEFT JOIN (
         MAX(CASE WHEN artefact_id = 2010 THEN artefact_string_value ELSE NULL END) AS internal_model_number,
         MAX(CASE WHEN artefact_id = 2011 THEN artefact_string_value ELSE NULL END) AS active_model,
         MAX(CASE WHEN artefact_id = 2012 THEN artefact_string_value ELSE NULL END) AS model_indicator,
-        MAX(CASE WHEN artefact_id = 2013 THEN artefact_string_value ELSE NULL END) AS calibration_version,
         MAX(CASE WHEN artefact_id = 2014 THEN artefact_string_value ELSE NULL END) AS calibration_version,
         MAX(CASE WHEN artefact_id = 2015 THEN artefact_string_value ELSE NULL END) AS calibration_date,
         MAX(CASE WHEN artefact_id = 2016 THEN artefact_string_value ELSE NULL END) AS regulatory_code_of_asset_class,
@@ -193,7 +66,7 @@ LEFT JOIN (
         MAX(CASE WHEN artefact_id = 2034 THEN artefact_string_value ELSE NULL END) AS implementation_validity,
         MAX(CASE WHEN artefact_id = 2035 THEN artefact_string_value ELSE NULL END) AS validity_approve,
         MAX(CASE WHEN artefact_id = 2036 THEN artefact_string_value ELSE NULL END) AS bank_document,
-        MAX(CASE WHEN artefact_id = 2037 THEN artefact_string_value ELSE NULL END) AS remove_date,
+        MAX(CASE WHEN artefact_id = 2037 THEN artefact_string_value ELSE NULL END) AS rs_model_decommiss_date,
         MAX(CASE WHEN artefact_id = 2038 THEN artefact_string_value ELSE NULL END) AS remove_decision,
         MAX(CASE WHEN artefact_id = 2039 THEN artefact_string_value ELSE NULL END) AS ds_department,
         MAX(CASE WHEN artefact_id = 2040 THEN artefact_string_value ELSE NULL END) AS developing_start_date,
@@ -201,7 +74,7 @@ LEFT JOIN (
         MAX(CASE WHEN artefact_id = 2042 THEN artefact_string_value ELSE NULL END) AS data_source_description,
         MAX(CASE WHEN artefact_id = 2043 THEN artefact_string_value ELSE NULL END) AS target,
         MAX(CASE WHEN artefact_id = 2044 THEN artefact_string_value ELSE NULL END) AS calibration_method,
-        MAX(CASE WHEN artefact_id = 2045 THEN artefact_string_value ELSE NULL END) AS analize_text_about_developing,
+        MAX(CASE WHEN artefact_id = 2045 THEN artefact_string_value ELSE NULL END) AS developing_report,
         MAX(CASE WHEN artefact_id = 2046 THEN artefact_string_value ELSE NULL END) AS name_and_version_rating_system,
         MAX(CASE WHEN artefact_id = 2047 THEN artefact_string_value ELSE NULL END) AS version_it_implementation,
         MAX(CASE WHEN artefact_id = 2048 THEN artefact_string_value ELSE NULL END) AS responsible_subdivision_and_project_lead_for_it_implementation,
@@ -240,8 +113,8 @@ LEFT JOIN (
         MAX(CASE WHEN artefact_id = 2081 THEN artefact_string_value ELSE NULL END) AS solution_to_implement_model,
         MAX(CASE WHEN artefact_id = 2082 THEN artefact_string_value ELSE NULL END) AS model_epic_07,
         MAX(CASE WHEN artefact_id = 2083 THEN artefact_string_value ELSE NULL END) AS model_epic_07_date,
-        MAX(CASE WHEN artefact_id = 2084 THEN artefact_string_value ELSE NULL END) AS custom_model_id,
-        MAX(CASE WHEN artefact_id = 2085 THEN artefact_string_value ELSE NULL END) AS custom_model_type,
+        MAX(CASE WHEN artefact_id = 2084 THEN artefact_string_value ELSE NULL END) AS customer_model_id,
+        MAX(CASE WHEN artefact_id = 2085 THEN artefact_string_value ELSE NULL END) AS model_algorithm,
         MAX(CASE WHEN artefact_id = 2086 THEN artefact_string_value ELSE NULL END) AS release,
         MAX(CASE WHEN artefact_id = 2087 THEN artefact_string_value ELSE NULL END) AS model_epic_09,
         MAX(CASE WHEN artefact_id = 2088 THEN artefact_string_value ELSE NULL END) AS model_epic_11,
@@ -252,7 +125,7 @@ LEFT JOIN (
         MAX(CASE WHEN artefact_id = 2092 THEN artefact_string_value ELSE NULL END) AS pvr,
         MAX(CASE WHEN artefact_id = 2094 THEN artefact_string_value ELSE NULL END) AS validity_approve_date,
         MAX(CASE WHEN artefact_id = 2095 THEN artefact_string_value ELSE NULL END) AS validation_result,
-        MAX(CASE WHEN artefact_id = 2096 THEN artefact_string_value ELSE NULL END) AS model_name_dadm,
+        MAX(CASE WHEN artefact_id = 2557 THEN artefact_string_value ELSE NULL END) AS model_name_validation,
         MAX(CASE WHEN artefact_id = 2097 THEN artefact_string_value ELSE NULL END) AS decision_date_and_number_of_application_model_for_segment,
         MAX(CASE WHEN artefact_id = 2098 THEN artefact_string_value ELSE NULL END) AS notification_date_and_number_of_application_model_for_segment,
         MAX(CASE WHEN artefact_id = 2099 THEN artefact_string_value ELSE NULL END) AS decision_date_and_number_of_application_model,
@@ -265,7 +138,13 @@ LEFT JOIN (
         MAX(CASE WHEN artefact_id = 2107 THEN artefact_string_value ELSE NULL END) AS operational_monitoring,
         MAX(CASE WHEN artefact_id = 2108 THEN artefact_string_value ELSE NULL END) AS analytical_monitoring,
         MAX(CASE WHEN artefact_id = 2109 THEN artefact_string_value ELSE NULL END) AS business_model_risk_subtype,
-        MAX(CASE WHEN artefact_id = 2110 THEN artefact_string_value ELSE NULL END) AS rating_model
+        MAX(CASE WHEN artefact_id = 2110 THEN artefact_string_value ELSE NULL END) AS rating_model,
+        MAX(CASE WHEN artefact_id = 2655 THEN artefact_string_value ELSE NULL END) AS reason_model_delete,
+        MAX(CASE WHEN artefact_id = 2656 THEN artefact_string_value ELSE NULL END) AS status,
+        MAX(CASE WHEN artefact_id = 2657 THEN artefact_string_value ELSE NULL END) AS lead_validator_comment_model_delete,
+        MAX(CASE WHEN artefact_id = 2658 THEN artefact_string_value ELSE NULL END) AS lead_validator_resolution_model_delete,
+        MAX(CASE WHEN artefact_id = 2558 THEN artefact_string_value ELSE NULL END) AS remove_date_validation,
+        MAX(CASE WHEN artefact_id = 2559 THEN artefact_string_value ELSE NULL END) AS model_version_validation
     FROM (
         SELECT
             artefact_realizations_new.model_id,

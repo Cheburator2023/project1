@@ -23,7 +23,7 @@ export class MrmDatabaseService {
     })
   }
 
-  async query(sql: string, params: any): Promise<any> {
+  async query(sql: string, params: any = {}): Promise<any> {
     try {
       const client = await this.pool.connect();
       const result = await client.query(queryConvert(sql, params));
@@ -36,7 +36,7 @@ export class MrmDatabaseService {
     }
   }
 
-  async queryAll(sql: string, params: Object[]): Promise<any> {
+  async queryAll(sql: string, params: Object[] = [{}]): Promise<any> {
     return Promise.all(
       params.map(arg => this.query(sql, arg))
     )

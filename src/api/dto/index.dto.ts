@@ -14,8 +14,8 @@ import {
   ValidateIf,
   ValidateNested
 } from "class-validator";
-import { ApiProperty } from "@nestjs/swagger";
-import { Type } from "class-transformer";
+import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
+import { Transform, Type } from "class-transformer";
 import { ApiModelPropertyOptional } from "@nestjs/swagger/dist/decorators/api-model-property.decorator";
 
 export enum ModelSource {
@@ -30,6 +30,23 @@ export class ModelsDto {
   @IsOptional()
   @IsDateString()
   date: string
+
+  @ApiProperty({
+    example: '3009b53c-507d-11ed-9b68-0a5801020704',
+    format: 'uuid'
+  })
+  @IsOptional()
+  @IsUUID()
+  model_id: string
+
+  @ApiPropertyOptional({
+    example: 'true',
+    description: "Exclude models with the status 'Ошибка заведения'",
+  })
+  @IsOptional()
+  @IsBoolean()
+  @Transform(({value}) => value === 'true')
+  excludeError: boolean;
 }
 
 export class ModelWithRelationsDto {
@@ -53,6 +70,14 @@ export class CompareModelsDto {
   })
   @IsDateString()
   secondDate: string
+  @ApiPropertyOptional({
+    example: 'true',
+    description: "Exclude models with the status 'Ошибка заведения'",
+  })
+  @IsOptional()
+  @IsBoolean()
+  @Transform(({value}) => value === 'true')
+  excludeError: boolean;
 }
 
 export class ModelCreateDto {
@@ -254,6 +279,14 @@ export class FilterDto {
 
   @IsObject()
   filters: FilterValueType;
+
+  @ApiPropertyOptional({
+    example: 'true',
+    description: "Exclude models with the status 'Ошибка заведения'",
+  })
+  @IsOptional()
+  @IsBoolean()
+  excludeError: boolean;
 }
 
 export class MetricsDto {

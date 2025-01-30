@@ -1,0 +1,9 @@
+import { UpdateModelDto } from '../dto'
+
+export interface IModelService {
+  updateModelName(data: Pick<UpdateModelDto, 'model_id' | 'model_name'>): Promise<boolean>
+
+  updateModelDesc(data: Pick<UpdateModelDto, 'model_id' | 'model_desc'>): Promise<boolean>
+
+  updateUpdateDate(data: Pick<UpdateModelDto, 'model_id' | 'update_date'>): Promise<boolean>
+}

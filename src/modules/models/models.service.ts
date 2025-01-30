@@ -1,37 +1,33 @@
-import { Injectable } from '@nestjs/common'
+import { BadRequestException, Injectable } from '@nestjs/common'
+import { MrmModelService, SumModelService } from './services'
+import { ArtefactService } from 'src/modules/artefacts/artefact.services'
 import { AllocationSumService } from 'src/modules/allocation/allocation.sum.service'
 import { UsageSumService } from 'src/modules/usage/usage.sum.service'
 import { UsageSumRmService } from 'src/modules/usage/usage.sum.rm.service'
 import { SumDatabaseService } from 'src/system/sum-database/database.service'
 import { MrmDatabaseService } from 'src/system/mrm-database/database.service'
 
+import { getModels as getSumModels } from './sql/sum'
 import {
-  getModel as getSumModel,
-  getModels as getSumModels,
-  updateModelName as updateSumModelName,
-  updateModelDesc as updateSumModelDesc,
-  updateModelUpdateDate as updateSumModelUpdateDate,
-  updateArtefact as updateSumArtefact
-} from './sql/sum'
-import {
+  getArtefacts as getSumRmArtefacts,
   getModel as getSumRmModel,
   getModels as getSumRmModels,
-  getArtefacts as getSumRmArtefacts,
   getModelsByTypeAndParentId as getSumRmModelsByTypeAndParentId,
-  updateModelAllocation as updateSumRmModelAllocation,
-  updateModelUsage as updateSumRmModelUsage,
-  updateModelName as updateSumRmModelName,
-  updateModelDesc as updateSumRmModelDesc,
-  updateModelUpdateDate as updateSumRmModelUpdateDate,
-  updateArtefact as updateSumRmArtefact
+  updateModelAllocation as updateSumRmModelAllocation
 } from './sql/sum-rm'
 
-import { pseudoArtefacts, modelStatuses } from './constants'
-import { Model, GroupedResults, PreparedArtefactsResult, Artefact, ArtefactValue, ModelRelationsResponse, ModelType } from './interfaces'
-import { ModelsDto, CompareModelsDto, ModelWithRelationsDto } from './dto'
-import { ArtefactFormattingType, ArtefactFormatting } from './rules'
+import { MODEL_SOURCES, LIFE_CYCLE_STAGES_DESCRIPTION, LIFE_CYCLE_STAGES, MODEL_STATUS } from 'src/system/common/constants'
+import { pseudoArtefacts, RETAIL_CREDIT_RISK_DEPARTMENTS, DEPARTMENT_TO_STREAM_MAPPING } from './constants'
+import { Artefact, ArtefactValue, GroupedResults, Model, ModelRelationsResponse, ModelType } from './interfaces'
+import { CompareModelsDto, ModelsDto, ModelWithRelationsDto } from './dto'
+import { ArtefactFormatting, ArtefactFormattingType } from './rules'
 
-import { isValidDate, parseDate, formatDateTime } from 'src/system/common/utils'
+import { formatDateTime, isValidDate, parseDate } from 'src/system/common/utils'
+import { ModelCreateDto } from 'src/api/dto/index.dto'
+import { randomUUID } from 'crypto'
+import { sql as parentSumRmModel } from 'src/api/sql/models/sum-rm/parent'
+import { sql as createModel } from 'src/api/sql/models/sum-rm/create'
+import { sql as newArtefacts } from 'src/api/sql/artefacts/new'
 
 interface UsageEntry {
   confirmation_date: string | null;
@@ -39,11 +35,6 @@ interface UsageEntry {
 }
 
 const usageMap: Record<string, UsageEntry> = {}
-
-enum ModelSource {
-  SUM = 'sum',
-  SUM_RM = 'sum-rm'
-}
 
 interface ArtefactUpdateDto {
   artefact_tech_label: string,
@@ -53,7 +44,7 @@ interface ArtefactUpdateDto {
 
 interface ModelsUpdateDto {
   model_id: string;
-  model_source?: ModelSource,
+  model_source?: MODEL_SOURCES,
   artefacts: ArtefactUpdateDto[]
 }
 
@@ -61,6 +52,9 @@ interface ModelsUpdateDto {
 @Injectable()
 export class ModelsService {
   constructor(
+    private readonly sumModelService: SumModelService,
+    private readonly mrmModelService: MrmModelService,
+    private readonly artefactService: ArtefactService,
     private readonly allocationSumService: AllocationSumService,
     private readonly usageSumService: UsageSumService,
     private readonly usageSumRmService: UsageSumRmService,
@@ -69,19 +63,24 @@ export class ModelsService {
   ) {
   }
 
-  async getModels(dto?: ModelsDto): Promise<Model[]> {
-    const { date } = dto || {}
-    const results = await this.fetchAndMergeModels(date)
+  async getModels(dto?: ModelsDto, groups?: []): Promise<Model[]> {
+    const { date = null, model_id = null, excludeError = null} = dto || {}
+    const results = await this.fetchAndMergeModels(date, model_id, excludeError)
 
-    return await this.formatResults(results)
+    const filteredResults = groups ? this.filterModelsByUserGroups(results, groups) : results
+
+    return await this.formatResults(filteredResults)
   }
 
-  async getModelsByDates({ firstDate, secondDate }: CompareModelsDto): Promise<{ data: { cards: GroupedResults } }> {
-    const firstDateResults = await this.fetchAndMergeModels(firstDate)
-    const secondDateResults = await this.fetchAndMergeModels(secondDate)
+  async getModelsByDates({ firstDate, secondDate, excludeError }: CompareModelsDto, groups?: []): Promise<{ data: { cards: GroupedResults } }> {
+    const firstDateResults = await this.fetchAndMergeModels(firstDate, null, excludeError)
+    const secondDateResults = await this.fetchAndMergeModels(secondDate, null, excludeError)
 
-    const formattedFirstDateResults = await this.formatResults(firstDateResults)
-    const formattedSecondDateResults = await this.formatResults(secondDateResults)
+    const filteredFirstDateResults = groups ? this.filterModelsByUserGroups(firstDateResults, groups) : firstDateResults
+    const filteredSecondDateResults = groups ? this.filterModelsByUserGroups(secondDateResults, groups) : secondDateResults
+
+    const formattedFirstDateResults = await this.formatResults(filteredFirstDateResults)
+    const formattedSecondDateResults = await this.formatResults(filteredSecondDateResults)
 
     const groupedResults = this.groupResultsByModelIdAndSource(
       formattedFirstDateResults,
@@ -123,30 +122,205 @@ export class ModelsService {
     }
   }
 
-  async modelsUpdate(modelsArtefacts: Array<{
-    model_id: string;
-    model_source: string;
-    artefacts: Array<{
-      artefact_tech_label: string;
-      artefact_string_value: string | null;
-      artefact_value_id?: number | null;
-    }>
-  }>, user) {
-    let modelSource = 'sum-rm'
-    const modelIds: Set<string> = new Set()
-    const namesForUpdate: Array<{ model_id: string; model_name: string }> = []
-    const descriptionsForUpdate: Array<{ model_id: string; model_desc: string }> = []
-    const updateDateForUpdate: Array<{ model_id: string; update_date: string }> = []
-    const artefactsForUpdate: Array<{
-      model_id: string;
-      artefact_tech_label: string;
-      artefact_string_value: string | null;
-      artefact_value_id?: number | null;
-    }> = []
-    const allocationMap: Record<string, Record<string, { model_id: string; gbl_id: string; percent: string | null; comment: string | null }>> = {}
-    const usageMap: Record<string, Record<string, { confirmation_date: string | null; is_used: string | null }>> = {}
+  async modelCreate(artefacts: ModelCreateDto[]) {
+    const model_id = randomUUID();
+    let model_version = "1";
+    let addParentArtefactsQueryParams;
 
-    // Helper functions
+    const parent_model_id_artefact = artefacts.find(artefact => artefact.artefact_tech_label === "parent_model_id");
+    const parent_model_id = parent_model_id_artefact ? parent_model_id_artefact.artefact_string_value : undefined;
+    const model_name_artefact = artefacts.find(artefact => artefact.artefact_tech_label === "model_name_validation");
+    const model_name = model_name_artefact ? model_name_artefact.artefact_string_value : undefined;
+    const model_desc_artefact = artefacts.find(artefact => artefact.artefact_tech_label === "model_desc");
+    const model_desc = model_desc_artefact ? model_desc_artefact.artefact_string_value : undefined;
+
+    if (!model_name) {
+      throw new BadRequestException("Bad Request", "model_name is required");
+    }
+
+    if (!model_desc) {
+      throw new BadRequestException("Bad Request", "model_desc is required");
+    }
+
+    if (parent_model_id) {
+      // ищем родительскую модель
+      const parentModels = await this.mrmDatabaseService.query(parentSumRmModel, { parent_model_id });
+
+      // находим версию родительской модели
+      const { root_model_id, parent_model_version } = parentModels.reduce(
+        (prev, curr) => {
+          if (
+            !prev.parent_model_version ||
+            prev.parent_model_version < curr.parent_model_version
+          )
+            return curr;
+          return prev;
+        },
+        {}
+      );
+
+      model_version = String(Number(parent_model_version) + 1);
+
+      const parentArtefacts = await this.mrmDatabaseService
+        .query("SELECT * FROM artefact_realizations_new WHERE model_id = :parent_model_id  AND effective_to = TO_TIMESTAMP('9999-12-3123:59:59','YYYY-MM-DDHH24:MI:SS')", { parent_model_id });
+
+      addParentArtefactsQueryParams = parentArtefacts
+        .map(({ artefact_id, artefact_string_value, artefact_value_id }) => ({ artefact_id, artefact_string_value, artefact_value_id, model_id }));
+    }
+
+    const createModelQueryParams = {
+      model_id,
+      model_name,
+      model_desc,
+      model_version,
+      create_date: new Date(),
+      update_date: new Date(),
+    };
+    await this.mrmDatabaseService.query(createModel, createModelQueryParams);
+
+    if (addParentArtefactsQueryParams) {
+      await this.mrmDatabaseService.queryAll(newArtefacts, addParentArtefactsQueryParams);
+    }
+
+    const artefactsForUpdate = artefacts
+      .filter(artefact => artefact.artefact_tech_label !== "model_name" && artefact.artefact_tech_label !== "model_desc")
+      .map(artefact => ({ ...artefact, model_id }));
+
+    await this.executeDatabaseUpdates({ artefactsForUpdate }, MODEL_SOURCES.MRM)
+
+    return this.getModels({ model_id });
+  }
+
+  // Фильтрация моделей в зависимости от групп пользователя
+  private filterModelsByUserGroups(models: Model[], userGroups: string[]): Model[] {
+    const formattedGroups = userGroups.map(group => group.trim())
+
+    // Если пользователь входит в группу /business_customer
+    if (formattedGroups.some(group => group.startsWith('/departament_business_customer'))) {
+      // Если пользователь входит в "Департамент финансового урегулирования"
+      if (formattedGroups.includes('/departament_business_customer/Департамент финансового урегулирования')) {
+        return models.filter(
+          (model) => model.business_customer_departament === 'Департамент финансового урегулирования'
+        )
+      }
+
+      // Если пользователь входит в "Департамент розничных кредитных рисков"
+      if (formattedGroups.includes('/departament_business_customer/Департамент розничных кредитных рисков')) {
+        return models.filter((model) =>
+          RETAIL_CREDIT_RISK_DEPARTMENTS.includes(model.business_customer_departament || '')
+        )
+      }
+
+      // Если пользователь входит в другие департаменты, то модели не фильтруются
+      return models
+    }
+
+    // Если пользователь входит в группы /ds или /ds/ds_lead
+    if (formattedGroups.includes('/ds') || formattedGroups.includes('/ds/ds_lead')) {
+      // Извлекаем последние сегменты групп
+      const userDepartments = formattedGroups
+        .filter(group => group.startsWith('/departament'))
+        .map(group => group.split('/').pop() || '')
+
+      const userStreams = userDepartments.flatMap(department => {
+        return DEPARTMENT_TO_STREAM_MAPPING[department] || []
+      })
+
+      return models.filter((model) => {
+        const modelStream = model.ds_stream
+
+        return userStreams.includes(modelStream) || userDepartments.includes(modelStream)
+      })
+    }
+
+    return models
+  }
+
+  private getModelStatusExcludeErrorCondition(alias: string = 'm'): string {
+    return `
+      CASE
+        WHEN :exclude_error::BOOLEAN = true THEN NOT EXISTS (
+          SELECT 1 
+          FROM artefact_realizations_new ar
+          WHERE ar.model_id = ${alias}.model_id
+            AND ar.artefact_id = 2656
+            AND (
+                ar.artefact_string_value = 'Ошибка заведения'
+                OR ar.artefact_string_value = 'Ожидает удаления'
+            )
+            AND ar.effective_from <= NOW()
+            AND ar.effective_to > NOW()
+        )
+        ELSE true
+      END
+    `;
+  }
+
+  private isBasicInfoArtefact(label) {
+    return [
+      'model_id', 'model_version', 'model_alias',
+      'model_status', 'create_date'
+    ].includes(label)
+  }
+
+  private isNameArtefact(label) {
+    return label === 'model_name'
+  }
+
+  private isDescriptionArtefact(label) {
+    return label === 'model_desc'
+  }
+
+  private isAllocationUsageArtefact(label) {
+    return [
+      'allocation_kib_usage', 'allocation_smb_usage', 'allocation_rb_usage',
+      'allocation_kc_usage', 'allocation_other_usage'
+    ].includes(label)
+  }
+
+  private isAllocationCommentArtefact(label) {
+    return [
+      'allocation_kib_comment', 'allocation_smb_comment', 'allocation_rb_comment',
+      'allocation_kc_comment', 'allocation_other_comment'
+    ].includes(label)
+  }
+
+  private isUsageFlagArtefact(label) {
+    return [
+      'usage_confirm_flag_q1', 'usage_confirm_flag_q2',
+      'usage_confirm_flag_q3', 'usage_confirm_flag_q4'
+    ].includes(label)
+  }
+
+  private isUsageDateArtefact(label) {
+    return [
+      'usage_confirm_date_q1', 'usage_confirm_date_q2',
+      'usage_confirm_date_q3', 'usage_confirm_date_q4'
+    ].includes(label)
+  }
+
+  async modelsUpdate(modelsArtefacts, user) {
+    const creator = user.name
+
+    let modelSource = MODEL_SOURCES.MRM
+    const modelIds: Set<string> = new Set()
+    const updatesBySource = {
+      [MODEL_SOURCES.SUM]: {
+        namesForUpdate: [],
+        descriptionsForUpdate: [],
+        artefactsForUpdate: [],
+        modelsAllocationForUpdate: [],
+        modelsUsageForUpdate: []
+      },
+      [MODEL_SOURCES.MRM]: {
+        namesForUpdate: [],
+        descriptionsForUpdate: [],
+        artefactsForUpdate: [],
+        modelsAllocationForUpdate: [],
+        modelsUsageForUpdate: []
+      }
+    }
+
     const updateAllocation = (model_id: string, gbl_id: string, percent: string | null, comment: string | null): void => {
       if (!allocationMap[model_id]) {
         allocationMap[model_id] = {}
@@ -160,7 +334,6 @@ export class ModelsService {
       allocation.percent = percent !== null ? percent : allocation.percent
       allocation.comment = comment !== null ? comment : allocation.comment
     }
-
     const updateUsage = (
       model_id: string,
       quarter: string,
@@ -183,88 +356,96 @@ export class ModelsService {
         usage.is_used = is_used
       }
     }
+    const allocationMap: Record<string, Record<string, { model_id: string; gbl_id: string; percent: string | null; comment: string | null }>> = {}
+    const usageMap: Record<string, Record<string, { confirmation_date: string | null; is_used: string | null }>> = {}
 
-    // Process artefacts
     for (const modelItem of modelsArtefacts) {
-      const { model_id, model_source, artefacts } = modelItem
-      modelSource = model_source
+      const { model_id, artefacts, model_source } = modelItem
       modelIds.add(model_id)
+      modelSource = model_source
+      const updates = updatesBySource[model_source]
 
       for (const artefactItem of artefacts) {
         const { artefact_tech_label, artefact_string_value } = artefactItem
 
-        switch (artefact_tech_label) {
-          case 'model_name':
-            namesForUpdate.push({ model_id, model_name: artefact_string_value! })
-            break
-          case 'model_desc':
-            descriptionsForUpdate.push({ model_id, model_desc: artefact_string_value! })
-            break
-          case 'allocation_kib_usage':
-          case 'allocation_smb_usage':
-          case 'allocation_rb_usage':
-          case 'allocation_kc_usage':
-          case 'allocation_other_usage':
-            updateAllocation(model_id, ModelsService.getGblId(artefact_tech_label), artefact_string_value, null)
-            break
-          case 'allocation_kib_comment':
-          case 'allocation_smb_comment':
-          case 'allocation_rb_comment':
-          case 'allocation_kc_comment':
-          case 'allocation_other_comment':
-            updateAllocation(model_id, ModelsService.getGblId(artefact_tech_label), null, artefact_string_value)
-            break
-          case 'usage_confirm_flag_q1':
-          case 'usage_confirm_flag_q2':
-          case 'usage_confirm_flag_q3':
-          case 'usage_confirm_flag_q4':
-            updateUsage(model_id, artefact_tech_label.slice(-1), null, artefact_string_value)
-            break
-          case 'usage_confirm_date_q1':
-          case 'usage_confirm_date_q2':
-          case 'usage_confirm_date_q3':
-          case 'usage_confirm_date_q4':
-            updateUsage(model_id, artefact_tech_label.slice(-1), artefact_string_value, null)
-            break
-          case 'active_model': {
-            if (modelSource !== 'sum-rm') {
-              continue
-            }
-            const [model] = await this.mrmDatabaseService.query(getSumRmModel, { model_id, filter_date: null })
-            artefactsForUpdate.push({ model_id, ...artefactItem })
-            updateDateForUpdate.push({
-              model_id,
-              update_date: new Date().toISOString()
-            })
+        if (this.isBasicInfoArtefact(artefact_tech_label)) {
+          continue
+        }
 
-            if (artefact_string_value !== model.active_model) {
-              if (artefact_string_value === '1') {
-                const modelIdentifier = model.regulatory_code_model_pvr ||
-                  model.model_id_from_model_owner ||
-                  model.identifier_model_algorithm_for_rwa ||
-                  model.model_alias
-
-                artefactsForUpdate.push({
-                  model_id,
-                  artefact_tech_label: 'model_id',
-                  artefact_string_value: modelIdentifier,
-                  artefact_value_id: null
-                })
-              }
-            }
-            break
+        if (this.isNameArtefact(artefact_tech_label)) {
+          updates.namesForUpdate.push({ model_id, model_name: artefact_string_value })
+          if (model_source === MODEL_SOURCES.SUM) {
+            updatesBySource[MODEL_SOURCES.MRM].namesForUpdate.push({ model_id, model_name: artefact_string_value })
           }
-          default:
-            artefactsForUpdate.push({ model_id, ...artefactItem })
+        } else if (this.isDescriptionArtefact(artefact_tech_label)) {
+          updatesBySource[MODEL_SOURCES.MRM].descriptionsForUpdate.push({ model_id, model_desc: artefact_string_value })
+        } else if (this.isAllocationUsageArtefact(artefact_tech_label)) {
+          updateAllocation(model_id, this.getGblId(artefact_tech_label), artefact_string_value, null)
+          // updates.modelsAllocationForUpdate.push({
+          //   model_id,
+          //   gbl_id: this.getGblId(artefact_tech_label),
+          //   percent: artefact_string_value,
+          //   comment: null
+          // })
+        } else if (this.isAllocationCommentArtefact(artefact_tech_label)) {
+          updateAllocation(model_id, this.getGblId(artefact_tech_label), null, artefact_string_value)
+          // updates.modelsAllocationForUpdate.push({
+          //   model_id,
+          //   gbl_id: this.getGblId(artefact_tech_label),
+          //   percent: null,
+          //   comment: artefact_string_value
+          // })
+        } else if (this.isUsageFlagArtefact(artefact_tech_label)) {
+          updateUsage(model_id, artefact_tech_label.slice(-1), null, artefact_string_value)
+          // updates.modelsUsageForUpdate.push({
+          //   model_id,
+          //   confirmation_date: null,
+          //   is_used: artefact_string_value
+          // })
+        } else if (this.isUsageDateArtefact(artefact_tech_label)) {
+          updateUsage(model_id, artefact_tech_label.slice(-1), artefact_string_value, null)
+          // updates.modelsUsageForUpdate.push({
+          //   model_id,
+          //   confirmation_date: artefact_string_value,
+          //   is_used: null
+          // })
+        } else {
+          switch (artefact_tech_label) {
+            case 'model_type':
+            case 'significance_validity':
+            case 'responsible_for_significance_validity':
+            case 'segment_name':
+            case 'implementation_segment':
+            case 'developing_report':
+            case 'data_source_description':
+            case 'target':
+            case 'psi_protocol':
+            case 'validation_department':
+            case 'plan_validation_type':
+            case 'validation_period':
+            case 'validation_report_approve_date':
+            case 'validation_result':
+            case 'validation_result_approve_date':
+            case 'auto_validation_result':
+            case 'model_changes_info':
+              updatesBySource[MODEL_SOURCES.MRM].artefactsForUpdate.push({ model_id, ...artefactItem, creator })
+              continue
+          }
+          updates.artefactsForUpdate.push({ model_id, ...artefactItem, creator })
+          if (model_source === MODEL_SOURCES.SUM) {
+            updatesBySource[MODEL_SOURCES.MRM].artefactsForUpdate.push({ model_id, ...artefactItem, creator })
+          }
         }
       }
     }
 
     const modelsAllocationForUpdate = Object.entries(allocationMap).reduce((acc, [model_id, allocations]) => {
-      const allocationArray = Object.values(allocations).map(allocation => ({ ...allocation, model_id }))
+      const allocationArray = Object
+        .values(allocations)
+        .filter(allocation => allocation.percent !== '')
+        .map(allocation => ({ ...allocation, model_id }))
       return acc.concat(allocationArray)
     }, [] as Array<{ model_id: string; gbl_id: string; percent: string | null; comment: string | null }>)
-
     const getQuarterEndDate = (quarter, year = new Date().getFullYear()) => {
       const currentDate = new Date();
       const currentQuarter = Math.floor((currentDate.getMonth() + 3) / 3);
@@ -287,7 +468,6 @@ export class ModelsService {
 
       return lastDay;
     }
-
     const modelsUsageForUpdate = Object.entries(usageMap).reduce((acc, [model_id, usages]) => {
       const usageArray = Object.entries(usages).map(([quarter, usage]) => ({
         model_id,
@@ -297,22 +477,19 @@ export class ModelsService {
       return acc.concat(usageArray)
     }, [] as Array<{model_id: string, confirmation_date: string | null, is_used: boolean}>)
 
-    if (modelSource === 'sum-rm') {
+    await this.executeDatabaseUpdates(updatesBySource[MODEL_SOURCES.SUM], MODEL_SOURCES.SUM)
+    await this.executeDatabaseUpdates(updatesBySource[MODEL_SOURCES.MRM], MODEL_SOURCES.MRM)
+
+    if (modelSource === MODEL_SOURCES.MRM) {
       // Perform database updates
       await Promise.all([
-        namesForUpdate.length && this.mrmDatabaseService.queryAll(updateSumRmModelName, namesForUpdate),
-        descriptionsForUpdate.length && this.mrmDatabaseService.queryAll(updateSumRmModelDesc, descriptionsForUpdate),
-        updateDateForUpdate.length && this.mrmDatabaseService.queryAll(updateSumRmModelUpdateDate, updateDateForUpdate),
-        artefactsForUpdate.length && this.mrmDatabaseService.queryAll(updateSumRmArtefact, artefactsForUpdate),
         modelsAllocationForUpdate.length && this.mrmDatabaseService.queryAll(updateSumRmModelAllocation, modelsAllocationForUpdate),
-        modelsUsageForUpdate.length && modelsUsageForUpdate.map(async item => await this.usageSumRmService.update(item, user))
+        modelsUsageForUpdate.length && modelsUsageForUpdate.map(async item => await this.usageSumRmService.update(item))
       ])
-    } else {
+    }
+
+    if (modelSource === MODEL_SOURCES.SUM) {
       await Promise.all([
-        namesForUpdate.length && this.sumDatabaseService.queryAll(updateSumModelName, namesForUpdate),
-        descriptionsForUpdate.length && this.sumDatabaseService.queryAll(updateSumModelDesc, descriptionsForUpdate),
-        updateDateForUpdate.length && this.sumDatabaseService.queryAll(updateSumModelUpdateDate, updateDateForUpdate),
-        artefactsForUpdate.length && this.sumDatabaseService.queryAll(updateSumArtefact, artefactsForUpdate),
         modelsAllocationForUpdate.length && modelsAllocationForUpdate.map(async item => await this.allocationSumService.update(item)),
         modelsUsageForUpdate.length && modelsUsageForUpdate.map(async item => await this.usageSumService.update(item))
       ])
@@ -320,32 +497,88 @@ export class ModelsService {
     await new Promise((resolve, reject) => {
       setTimeout(resolve, 1000)
     })
+
     if (modelIds.size) {
-      // @TODO: обработка нескольких моделей
-      if (modelSource === 'sum-rm') {
-        const [model] = await this.mrmDatabaseService.queryAll(getSumRmModel, Array.from(modelIds).map(id => ({ model_id: id, filter_date: null })))
-        const formattedResult = await this.formatResults(model)
+      const modelsArray = Array.from(modelIds)
+      const results = await Promise.all(
+        modelsArray.map((model_id) => this.getModels({ model_id }) )
+      )
 
-        return {
-          data: {
-            cards: formattedResult
-          }
-        }
-      } else {
-        const [model] = await this.sumDatabaseService.queryAll(getSumModel, Array.from(modelIds).map(id => ({ model_id: id, filter_date: null })))
-        const formattedResult = await this.formatResults(model)
-
-        return {
-          data: {
-            cards: formattedResult
-          }
-        }
-      }
+      return [].concat(...results)
     }
   }
 
+  async updateModelName(data, source) {
+    if (source === MODEL_SOURCES.SUM) {
+      await this.sumModelService.updateModelName(data)
+    } else if (source === MODEL_SOURCES.MRM) {
+      await this.mrmModelService.updateModelName(data)
+    } else {
+      throw new Error(`Unknown model source: ${ source }`)
+    }
+  }
 
-  private static getGblId(label) {
+  async updateModelDesc(data, source) {
+    if (source === MODEL_SOURCES.SUM) {
+      await this.sumModelService.updateModelDesc(data)
+    } else if (source === MODEL_SOURCES.MRM) {
+      await this.mrmModelService.updateModelDesc(data)
+    } else {
+      throw new Error(`Unknown model source: ${ source }`)
+    }
+  }
+
+  async updateModelAllocation(data, source) {
+    if (source === MODEL_SOURCES.SUM) {
+      await this.allocationSumService.update(data)
+    } else if (source === MODEL_SOURCES.MRM) {
+      await this.mrmModelService.updateModelDesc(data)
+    } else {
+      throw new Error(`Unknown model source: ${ source }`)
+    }
+  }
+
+  async updateModelUsage(data, source) {
+    if (source === MODEL_SOURCES.SUM) {
+      await this.usageSumService.update(data)
+    } else if (source === MODEL_SOURCES.MRM) {
+      await this.usageSumRmService.update(data)
+    } else {
+      throw new Error(`Unknown model source: ${ source }`)
+    }
+  }
+
+  async executeDatabaseUpdates(updates, source: MODEL_SOURCES) {
+    const {
+      namesForUpdate = [],
+      descriptionsForUpdate = [],
+      modelsAllocationForUpdate = [],
+      modelsUsageForUpdate = [],
+      artefactsForUpdate = []
+    } = updates
+
+    for (const name of namesForUpdate) {
+      await this.updateModelName(name, source)
+    }
+
+    for (const description of descriptionsForUpdate) {
+      await this.updateModelDesc(description, source)
+    }
+
+    for (const artefact of artefactsForUpdate) {
+      await this.artefactService.updateArtefact(artefact, source)
+    }
+
+    // for (const allocation of modelsAllocationForUpdate) {
+    //   await this.updateModelAllocation(allocation, source)
+    // }
+    //
+    // for (const usage of modelsUsageForUpdate) {
+    //   await this.updateModelUsage(usage, source)
+    // }
+  }
+
+  private getGblId(label) {
     const map = {
       'allocation_kib_usage': 1,
       'allocation_smb_usage': 2,
@@ -371,37 +604,56 @@ export class ModelsService {
     return dictionary
   }
 
-  private async fetchAndMergeModels(date: string | null): Promise<Model[]> {
+  private async fetchAndMergeModels(date: string | null, model_id?: string | null, excludeError?: boolean | null): Promise<Model[]> {
     const filterDate = date || null
+    const excludeErrorCondition = this.getModelStatusExcludeErrorCondition('m');
 
     const sumModels = await this.sumDatabaseService.query(getSumModels, {
-      filter_date: filterDate
+      filter_date: filterDate,
+      model_id
     })
-    const mrmModels = await this.mrmDatabaseService.query(getSumRmModels, {
-      filter_date: filterDate
+    const mrmModels = await this.mrmDatabaseService.query(getSumRmModels(excludeErrorCondition), {
+      filter_date: filterDate,
+      model_id,
+      exclude_error: excludeError
     })
 
-    this.mergeAttributes(sumModels, mrmModels, 'system_model_id')
 
-    return this.mergeModels(sumModels, mrmModels, 'system_model_id')
+    return this.mergeSumAndMrmModels(sumModels, mrmModels, 'system_model_id')
   }
 
-  private mergeAttributes(sumModels: Model[], mrmModels: Model[], prop: string): void {
-    mrmModels.forEach(mrmModel => {
-      const sumModel = sumModels.find(sumModel => mrmModel[prop] === sumModel[prop])
-      if (sumModel) {
-        Object.keys(mrmModel).forEach(key => {
-          if (mrmModel[key] == null) {
-            mrmModel[key] = sumModel[key] || null
-          }
-        })
+  private mergeSumAndMrmModels(sumModels: Model[], mrmModels: Model[], prop: string): Model[] {
+    const combineModels = mrmModels.map((mrmModel) => {
+      const matchingSumModel = sumModels.find(
+        (sumModel) => sumModel[prop] === mrmModel[prop]
+      )
+
+      if (matchingSumModel) {
+        return this.mergeAttributes(matchingSumModel, mrmModel)
       }
+
+      return mrmModel
     })
+
+    const uniqueSumModels = sumModels.filter(
+      (sumModel) => !mrmModels.some(
+        (mrmModel) => mrmModel[prop] === sumModel[prop]
+      )
+    )
+
+    return [...combineModels, ...uniqueSumModels]
   }
 
-  private mergeModels(a: Model[], b: Model[], prop: string): Model[] {
-    const uniqueA = a.filter(aitem => !b.some(bitem => aitem[prop] === bitem[prop]))
-    return uniqueA.concat(b)
+  private mergeAttributes(sumModels: Model, mrmModels: Model): Model {
+    const mergedModel = { ...mrmModels }
+
+    for (const key in sumModels) {
+      if (mrmModels[key] === null || mrmModels[key] === undefined || key === 'model_source') {
+        mergedModel[key] = sumModels[key]
+      }
+    }
+
+    return mergedModel
   }
 
   private async formatResults(models: Model[]): Promise<Model[]> {
@@ -429,11 +681,11 @@ export class ModelsService {
                 break
               default:
                 break
-
             }
           }
 
-          if (artefactTechLabel === 'model_status') {
+
+          if (artefactTechLabel === 'model_status' && Object.values(LIFE_CYCLE_STAGES).includes(value)) {
             const businessStatus = model.business_status
             const bpmnInstanceName = value
             model[techLabel] = ModelsService.formatModelStatus(businessStatus, bpmnInstanceName)
@@ -463,29 +715,78 @@ export class ModelsService {
   private static getLastActiveStatus = (activeStatuses) => {
     const activeStatusesList = activeStatuses?.split(';')
 
-    if (activeStatusesList?.includes('Вывод модели из эксплуатации')) {
-      return 'Вывод модели из эксплуатации'
+    if (activeStatusesList?.includes(MODEL_STATUS.REMOVED_FROM_OPERATION)) {
+      return MODEL_STATUS.REMOVED_FROM_OPERATION
     }
 
-    if (activeStatusesList?.includes('Разработана, не внедрена')) {
-      return 'Разработана, не внедрена'
+    if (activeStatusesList?.includes(MODEL_STATUS.DEVELOPED_NOT_IMPLEMENTED)) {
+      return MODEL_STATUS.DEVELOPED_NOT_IMPLEMENTED
     }
 
     return activeStatusesList?.[0]
   }
 
+  private static determineLifecycleStage = (businessStatus, modelStatus) => {
+    switch (businessStatus) {
+      case LIFE_CYCLE_STAGES_DESCRIPTION[LIFE_CYCLE_STAGES.FAST_MODEL_PROCESS]:
+        if (
+          modelStatus === MODEL_STATUS.IMPLEMENTED_IN_PIM ||
+          modelStatus === MODEL_STATUS.VALIDATED_OUTSIDE_PIM || 
+          modelStatus === MODEL_STATUS.IMPLEMENTED_OUTSIDE_PIM
+        ) {
+          return LIFE_CYCLE_STAGES_DESCRIPTION[LIFE_CYCLE_STAGES.VALIDATION];
+        }
+        break;
+  
+      case LIFE_CYCLE_STAGES_DESCRIPTION[LIFE_CYCLE_STAGES.MODEL]:
+        if (
+          modelStatus === MODEL_STATUS.VALIDATED_OUTSIDE_PIM || 
+          modelStatus === MODEL_STATUS.IMPLEMENTED_OUTSIDE_PIM
+        ) {
+          return LIFE_CYCLE_STAGES_DESCRIPTION[LIFE_CYCLE_STAGES.VALIDATION];
+        }
+        break;
+  
+      case LIFE_CYCLE_STAGES_DESCRIPTION[LIFE_CYCLE_STAGES.INTEGRATION_MODEL]:
+        if (
+          modelStatus === MODEL_STATUS.VALIDATED_OUTSIDE_PIM || 
+          modelStatus === MODEL_STATUS.IMPLEMENTED_OUTSIDE_PIM
+        ) {
+          return LIFE_CYCLE_STAGES_DESCRIPTION[LIFE_CYCLE_STAGES.VALIDATION];
+        }
+        break;
+  
+      case LIFE_CYCLE_STAGES_DESCRIPTION[LIFE_CYCLE_STAGES.TEST_PREPROD_TRANSFER_PROD]:
+        if (
+          modelStatus === MODEL_STATUS.IMPLEMENTED_IN_PIM || 
+          modelStatus === MODEL_STATUS.VALIDATED_IN_PIM
+        ) {
+          return LIFE_CYCLE_STAGES_DESCRIPTION[LIFE_CYCLE_STAGES.VALIDATION];
+        }
+        break;
+  
+      default:
+        return businessStatus;
+    }
+  
+    return businessStatus;
+  };
+
   private static formatModelStatus(status, bpmn_instance_name) {
     if (bpmn_instance_name === null) return null
 
     const lastActiveStatus = ModelsService.getLastActiveStatus(status)
+    let currentBusinessStatus = LIFE_CYCLE_STAGES_DESCRIPTION?.[bpmn_instance_name.trim()]
+
+    currentBusinessStatus = ModelsService.determineLifecycleStage(currentBusinessStatus, lastActiveStatus)
 
     switch (lastActiveStatus) {
-      case 'Разработана, не внедрена':
+      case MODEL_STATUS.DEVELOPED_NOT_IMPLEMENTED:
         return lastActiveStatus
-      case 'Вывод модели из эксплуатации':
+      case MODEL_STATUS.REMOVED_FROM_OPERATION:
         return lastActiveStatus
       default:
-        return modelStatuses?.[bpmn_instance_name.trim()]
+        return currentBusinessStatus
     }
   }
 

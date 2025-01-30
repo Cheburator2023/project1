@@ -78,3 +78,5 @@ secret:
  SUM_PG_PASSWORD: "sum_user_pass"
  RM_PG_USER: "rm_user"
  RM_PG_PASSWORD: "rm_user_pass"
+ BPMN_USER: demo
+ BPMN_PWD: demo

@@ -15,9 +15,12 @@ import {
 } from "@nestjs/common";
 import { Response } from "express";
 import { ApiBody } from "@nestjs/swagger";
+import { MODEL_SOURCES } from "src/system/common";
 import { ApiService } from "./api.service";
 import { ModelsService } from "src/modules/models/models.service";
-import { MetricsService } from "src/modules/metrics/metrics.service";
+import { ArtefactService } from "src/modules/artefacts/artefact.services";
+import { User } from "src/decorators";
+import { MetricsAggregator } from "src/modules/metrics/aggregators";
 import { ReportService } from "src/modules/report/report.service";
 import {
   ModelsDto,
@@ -26,7 +29,6 @@ import {
   ModelCreateDto,
   ModelsUpdateDto,
   ModelArtefactHistoryDto,
-  ArtefactsUpdateDto,
   TemplateCreateDto,
   TemplateUpdateDto,
   FilterDto,
@@ -38,8 +40,9 @@ export class ApiController {
   constructor(
     private readonly apiService: ApiService,
     private readonly modelsService: ModelsService,
-    private readonly metricsService: MetricsService,
-    private readonly reportService: ReportService
+    private readonly metricsAggregator: MetricsAggregator,
+    private readonly reportService: ReportService,
+    private readonly artefactService: ArtefactService
   ) {
   }
 
@@ -51,17 +54,17 @@ export class ApiController {
   }
 
   @Get("/models/compare/")
-  async compareModels(@Query() query: CompareModelsDto, @Res() response) {
-    const data = await this.modelsService.getModelsByDates(query)
+  async compareModels(@Query() query: CompareModelsDto, @Res() response, @Req() req) {
+    const data = await this.modelsService.getModelsByDates(query, req.user?.groups)
 
     return response.status(HttpStatus.OK).json(data);
   }
 
   @Get("/models/")
-  async models(@Query() query: ModelsDto, @Res() response) {
+  async models(@Query() query: ModelsDto, @Res() response, @Req() req) {
     const result = {
       data: {
-        cards: await this.modelsService.getModels(query)
+        cards: await this.modelsService.getModels(query, req.user?.groups)
       }
     }
 
@@ -71,15 +74,19 @@ export class ApiController {
   @Post("/model/create/")
   @ApiBody({ type: [ModelCreateDto] })
   async modelCreate(@Body(new ParseArrayPipe({ items: ModelCreateDto, whitelist: true })) artefacts: ModelCreateDto[], @Res() response) {
-    const result = await this.apiService.modelCreate(artefacts);
+    const result = await this.modelsService.modelCreate(artefacts);
 
     return response.status(HttpStatus.CREATED).json(result[0]);
   }
 
   @Put("/models/update/")
   @ApiBody({ type: [ModelsUpdateDto] })
-  async modelsUpdate(@Body(new ParseArrayPipe({ items: ModelsUpdateDto, whitelist: true })) modelsArtefacts: ModelsUpdateDto[], @Res() response, @Req() req) {
-    const result = await this.modelsService.modelsUpdate(modelsArtefacts, req.user);
+  async modelsUpdate(@Body(new ParseArrayPipe({ items: ModelsUpdateDto, whitelist: true })) modelsArtefacts: ModelsUpdateDto[], @Res() response, @User() user) {
+    const result = {
+      data: {
+        cards: await this.modelsService.modelsUpdate(modelsArtefacts, user)
+      }
+    }
 
     return response.status(HttpStatus.ACCEPTED).json(result);
   }
@@ -147,32 +154,25 @@ export class ApiController {
   }
 
   @Get("/artefacts/")
-  async getClasses() {
-    return this.apiService.getClasses();
-  }
-
-  @Put("/artefacts/update/")
-  @ApiBody({ type: [ArtefactsUpdateDto] })
-  async artefactsUpdate(@Body(new ParseArrayPipe({ items: ArtefactsUpdateDto, whitelist: true })) artefacts: ArtefactsUpdateDto[], @Res() response) {
-    await this.apiService.artefactsUpdate(artefacts);
-
-    return response.status(HttpStatus.OK).json({ result: true });
+  async getArtefacts(@Res() response, @User() user) {
+    const result = await this.artefactService.getArtefacts(MODEL_SOURCES.MRM, user);
+    return response.status(HttpStatus.OK).json(result)
   }
 
   @Get('/metrics/')
   async getMetrics(@Query() query: MetricsDto, @Res() response) {
     const { startDate, endDate, stream } = query;
-    const data = await this.metricsService.getMetrics(
+    const result = await this.metricsAggregator.getMetrics(
       startDate,
       endDate,
       stream,
     );
-    return response.status(HttpStatus.OK).json(data);
+    return response.status(HttpStatus.OK).json(result);
   }
 
   @Post("report")
-  async getReport(@Body() { filters }: FilterDto, @Res() res: Response) {
-    const response = await this.reportService.getReport(filters);
+  async getReport(@Body() { filters, excludeError }: FilterDto, @Res() res: Response, @Req() req) {
+    const response = await this.reportService.getReport(filters, req.user?.groups, excludeError);
 
     res.setHeader("Content-Disposition", "attachment; filename=report.xlsx");
     res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
