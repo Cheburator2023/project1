@@ -27,7 +27,7 @@ export class MrmArtefactService extends BaseArtefactService implements IArtefact
     if (handler) {
       result = await handler.handle(artefactData)
     } else {
-      result = await super.updateArtefact(artefactData)
+      result = await super.handleUpdateArtefact(artefactData)
     }
 
     return result

@@ -9,6 +9,7 @@ SELECT
     m.model_creator,
     -- Столбцы всех артефактов
     artefact_data.*,
+    artefact_values_data.*,
 
     -- Флаг для взаимосвязей
     CASE
@@ -27,6 +28,18 @@ SELECT
     -- Бизнес статус Модели (всегда берем значение из СУМ, для этого явно прописываем business_status как null)
     null as business_status
 FROM models_new m
+
+LEFT JOIN (
+    SELECT
+        ar.model_id as artefacts_model_id,
+        STRING_AGG((CASE WHEN ar.artefact_id = 2032 THEN av.artefact_value ELSE NULL END)::Varchar, ',' ORDER BY ar.artefact_value_id) AS business_customer_departament
+    FROM artefact_realizations_new ar
+    INNER JOIN artefact_values av ON ar.artefact_value_id = av.artefact_value_id AND av.is_active_flg = '1'
+    WHERE ar.effective_to = TO_TIMESTAMP('9999-12-3123:59:59', 'YYYY-MM-DDHH24:MI:SS')
+    GROUP BY ar.model_id
+) AS artefact_values_data
+ON m.model_id = artefact_values_data.artefacts_model_id
+
 LEFT JOIN (
     SELECT
         ar.model_id                                                                AS artefacts_model_id,
@@ -61,7 +74,6 @@ LEFT JOIN (
         MAX(CASE WHEN artefact_id = 2029 THEN artefact_string_value ELSE NULL END) AS regulatory_class,
         MAX(CASE WHEN artefact_id = 2030 THEN artefact_string_value ELSE NULL END) AS regulatory_subclass,
         MAX(CASE WHEN artefact_id = 2031 THEN artefact_string_value ELSE NULL END) AS business_customer,
-        MAX(CASE WHEN artefact_id = 2032 THEN artefact_string_value ELSE NULL END) AS business_customer_departament,
         MAX(CASE WHEN artefact_id = 2033 THEN artefact_string_value ELSE NULL END) AS goals_using_results_of_work_rs,
         MAX(CASE WHEN artefact_id = 2034 THEN artefact_string_value ELSE NULL END) AS implementation_validity,
         MAX(CASE WHEN artefact_id = 2035 THEN artefact_string_value ELSE NULL END) AS validity_approve,

@@ -17,7 +17,7 @@ import {
 } from './sql/sum-rm'
 
 import { MODEL_SOURCES, LIFE_CYCLE_STAGES_DESCRIPTION, LIFE_CYCLE_STAGES, MODEL_STATUS } from 'src/system/common/constants'
-import { pseudoArtefacts, RETAIL_CREDIT_RISK_DEPARTMENTS, DEPARTMENT_TO_STREAM_MAPPING } from './constants'
+import { pseudoArtefacts, RETAIL_CREDIT_RISK_DEPARTMENTS, DEPARTMENT_TO_STREAM_MAPPING, BUSINESS_CUSTOMER_DEPARTMENT_MAPPING } from './constants'
 import { Artefact, ArtefactValue, GroupedResults, Model, ModelRelationsResponse, ModelType } from './interfaces'
 import { CompareModelsDto, ModelsDto, ModelWithRelationsDto } from './dto'
 import { ArtefactFormatting, ArtefactFormattingType } from './rules'
@@ -197,22 +197,18 @@ export class ModelsService {
 
     // Если пользователь входит в группу /business_customer
     if (formattedGroups.some(group => group.startsWith('/departament_business_customer'))) {
-      // Если пользователь входит в "Департамент финансового урегулирования"
-      if (formattedGroups.includes('/departament_business_customer/Департамент финансового урегулирования')) {
-        return models.filter(
-          (model) => model.business_customer_departament === 'Департамент финансового урегулирования'
-        )
-      }
+      const userDepartments = formattedGroups
+        .map(group => BUSINESS_CUSTOMER_DEPARTMENT_MAPPING[group.split('/').pop() || ''])
+        .filter(Boolean)
 
-      // Если пользователь входит в "Департамент розничных кредитных рисков"
-      if (formattedGroups.includes('/departament_business_customer/Департамент розничных кредитных рисков')) {
-        return models.filter((model) =>
-          RETAIL_CREDIT_RISK_DEPARTMENTS.includes(model.business_customer_departament || '')
-        )
-      }
-
-      // Если пользователь входит в другие департаменты, то модели не фильтруются
-      return models
+      return models.filter((model) => {
+        const modelDepartments = (model.business_customer_departament || '')
+          .split(',')
+          .map((dep) => dep.trim())
+        console.log('modelDepartments', modelDepartments)
+        console.log('userDepartments', userDepartments)
+        return userDepartments.some((userDep) => modelDepartments.includes(userDep))
+      })
     }
 
     // Если пользователь входит в группы /ds или /ds/ds_lead
@@ -338,8 +334,9 @@ export class ModelsService {
     }
     const allocationMap: Record<string, Record<string, { model_id: string; gbl_id: string; percent: string | null; comment: string | null }>> = {}
     const usageMap: Record<string, Record<string, { confirmation_date: string | null; is_used: string | null }>> = {}
+    const formattedModelsArtefacts = this.mergeArtefacts(modelsArtefacts)
 
-    for (const modelItem of modelsArtefacts) {
+    for (const modelItem of formattedModelsArtefacts) {
       const { model_id, artefacts, model_source } = modelItem
       modelIds.add(model_id)
       modelSource = model_source
@@ -486,6 +483,48 @@ export class ModelsService {
 
       return [].concat(...results)
     }
+  }
+
+  mergeArtefacts(modelsArtefacts) {
+    return modelsArtefacts.map((modelItem) => {
+      const artefactMap = new Map<string, { stringValues: string[], valueIds: (number | null)[] }>()
+
+      modelItem.artefacts.forEach((artefact) => {
+        const { artefact_tech_label, artefact_string_value, artefact_value_id } = artefact
+
+        if (!artefactMap.has(artefact_tech_label)) {
+          artefactMap.set(artefact_tech_label, {
+            stringValues: [],
+            valueIds: []
+          })
+        }
+
+        const entry = artefactMap.get(artefact_tech_label)
+        entry.stringValues.push(artefact_string_value)
+        entry.valueIds.push(artefact_value_id)
+      })
+
+      const mergedArtefacts = Array.from(artefactMap.entries()).map(([label, { stringValues, valueIds }]) => {
+        if (stringValues.length === 1) {
+          return {
+            artefact_tech_label: label,
+            artefact_string_value: stringValues[0],
+            artefact_value_id: valueIds[0]
+          }
+        }
+
+        return {
+          artefact_tech_label: label,
+          artefact_string_value: stringValues,
+          artefact_value_id: valueIds
+        }
+      })
+
+      return {
+        ...modelItem,
+        artefacts: mergedArtefacts
+      }
+    })
   }
 
   async updateModelName(data, source) {
