@@ -205,8 +205,6 @@ export class ModelsService {
         const modelDepartments = (model.business_customer_departament || '')
           .split(',')
           .map((dep) => dep.trim())
-        console.log('modelDepartments', modelDepartments)
-        console.log('userDepartments', userDepartments)
         return userDepartments.some((userDep) => modelDepartments.includes(userDep))
       })
     }
