@@ -46,7 +46,7 @@ export interface IArtefactService {
 
   getMaxArtefactUpdateDate(model_id: string): Promise<any>
 
-  canEditArtefact(artefact: ArtefactEntity, user?: UserType, artefactRolesMap?: Map<number, string[]>): boolean;
+  canEditArtefact(artefact: ArtefactEntity): boolean
   
   getArtefacts(): Promise<{ data: ArtefactEntity[] }>;
 
