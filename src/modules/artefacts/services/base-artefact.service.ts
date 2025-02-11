@@ -1,7 +1,7 @@
 import { Logger } from '@nestjs/common'
 import { ARTEFACT_TYPES_REQUIRING_VALUES } from '../constants'
 import { ArtefactEntity, ArtefactValueEntity, ArtefactRealizationEntity } from '../entities'
-import { UpdateArtefactDto } from '../dto'
+import { UpdateArtefactDto, SingleValueArtefact, MultiDropdownArtefact } from '../dto'
 import { IArtefactService } from '../interfaces'
 import { UserType } from 'src/decorators'
 
@@ -447,10 +447,81 @@ export abstract class BaseArtefactService implements IArtefactService {
   }
 
   async handleUpdateArtefact(data: UpdateArtefactDto) {
-    return await this.updateArtefact(data)
+    if (this.isMultiDropdownArtefact(data)) {
+      return await this.updateMultiDropdownArtefact(data as MultiDropdownArtefact)
+    } else {
+      return await this.updateArtefact(data as SingleValueArtefact)
+    }
   }
 
-  async updateArtefact(artefactData: UpdateArtefactDto): Promise<boolean> {
+  private isMultiDropdownArtefact(data: UpdateArtefactDto): boolean {
+    return Array.isArray(data.artefact_string_value) && Array.isArray(data.artefact_value_id)
+  }
+
+  async updateMultiDropdownArtefact(artefactData: MultiDropdownArtefact): Promise<boolean> {
+    const { model_id, artefact_tech_label, artefact_string_value, artefact_value_id, creator } = artefactData
+
+    const model = await this.getModelById(model_id)
+    if (!model) {
+      return false
+    }
+
+    const artefact: ArtefactEntity | null = await this.getArtefactByTechLabel(artefact_tech_label)
+    if (!artefact) {
+      return false
+    }
+
+    const differenceById = (arr1, arr2) => {
+      const set = new Set(arr2.map((obj) => obj.artefact_value_id))
+      return arr1.filter((obj) => !set.has(obj.artefact_value_id))
+    }
+
+    const artefactValues: ArtefactValueEntity[] = await this.getArtefactValues(artefact.artefact_id)
+    const latestArtefactRealizations: ArtefactRealizationEntity[] | null = await this.getLatestArtefactRealizations(model_id, artefact.artefact_id)
+
+    const newArr = artefact_string_value.map((item, index) => {
+      const resolvedArtefactValueId = this.resolveArtefactValueId({
+        artefact_string_value: artefact_string_value[index],
+        artefact_value_id: artefact_value_id[index]
+      } as SingleValueArtefact, artefactValues)
+
+
+      return {
+        model_id,
+        artefact_tech_label,
+        artefact_string_value: artefact_string_value[index],
+        artefact_value_id: resolvedArtefactValueId,
+        creator
+      }
+    })
+
+    const addCandidates = latestArtefactRealizations ? differenceById(newArr, latestArtefactRealizations) : newArr
+    const deleteCandidates = latestArtefactRealizations ? differenceById(latestArtefactRealizations, newArr) : null
+
+    if (deleteCandidates) {
+      await deleteCandidates.reduce(async (prevPromise, item) => {
+        await this.setEffectiveToArtefactRealization(item, true)
+      }, Promise.resolve())
+    }
+
+    if (addCandidates.length) {
+      await addCandidates.reduce(async (prevPromise, item) => {
+        await this.insertArtefactRealization(
+          model_id,
+          artefact.artefact_id,
+          item.artefact_value_id,
+          item.artefact_string_value,
+          artefact,
+          artefactValues,
+          creator
+        )
+      }, Promise.resolve())
+    }
+
+    return true
+  }
+
+  async updateArtefact(artefactData: SingleValueArtefact): Promise<boolean> {
     const { model_id, artefact_tech_label, artefact_string_value, creator } = artefactData
 
     const model = await this.getModelById(model_id)
@@ -556,6 +627,28 @@ export abstract class BaseArtefactService implements IArtefactService {
     return artefactRealization || null
   }
 
+  async getLatestArtefactRealizations(
+    model_id: string,
+    artefact_id: ArtefactEntity['artefact_id']
+  ): Promise<ArtefactRealizationEntity[] | null> {
+    const artefactRealizations = await this.databaseService.query(
+      `
+      SELECT
+        *
+      FROM ${ this.artefactRealizationsTableName }
+      WHERE model_id = :model_id
+            AND artefact_id = :artefact_id
+        AND EFFECTIVE_TO = TO_TIMESTAMP('9999-12-3123:59:59','YYYY-MM-DDHH24:MI:SS');
+      `,
+      {
+        model_id,
+        artefact_id
+      }
+    )
+
+    return artefactRealizations.length ? artefactRealizations : null
+  }
+
   async setEffectiveToArtefactRealization(
     latestArtefactRealization: ArtefactRealizationEntity,
     isSelectType: boolean
@@ -585,7 +678,7 @@ export abstract class BaseArtefactService implements IArtefactService {
   }
 
   resolveArtefactValueId(
-    artefactData: UpdateArtefactDto,
+    artefactData: SingleValueArtefact,
     artefactValues: ArtefactValueEntity[] | null
   ): number | null {
     const { artefact_value_id, artefact_string_value } = artefactData

@@ -1,5 +1,14 @@
 # Semantic Versioning Changelog
 
+# [1.12.0](https://git.sfera.inno.local/SUMD/mrms-backend/compare/v1.11.2...v1.12.0) (2025-02-07)
+
+
+### Features
+
+* add model allocation factory ([d176017](https://git.sfera.inno.local/SUMD/mrms-backend/commit/d1760174d030adb64a00196bc0f583f7cffaf3a1))
+
+## [1.11.2](https://git.sfera.inno.local/SUMD/mrms-backend/compare/v1.11.1...v1.11.2) (2025-02-05)
+
 # [1.11.0](https://git.sfera.inno.local/SUMD/mrms-backend/compare/v1.10.1...v1.11.0) (2025-01-27)
 
 
