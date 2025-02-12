@@ -17,7 +17,7 @@ import {
 } from './sql/sum-rm'
 
 import { MODEL_SOURCES, LIFE_CYCLE_STAGES_DESCRIPTION, LIFE_CYCLE_STAGES, MODEL_STATUS } from 'src/system/common/constants'
-import { pseudoArtefacts, RETAIL_CREDIT_RISK_DEPARTMENTS, DEPARTMENT_TO_STREAM_MAPPING, BUSINESS_CUSTOMER_DEPARTMENT_MAPPING } from './constants'
+import { pseudoArtefacts, DEPARTMENT_TO_STREAM_MAPPING, BUSINESS_CUSTOMER_DEPARTMENT_MAPPING } from './constants'
 import { Artefact, ArtefactValue, GroupedResults, Model, ModelRelationsResponse, ModelType } from './interfaces'
 import { CompareModelsDto, ModelsDto, ModelWithRelationsDto } from './dto'
 import { ArtefactFormatting, ArtefactFormattingType } from './rules'
@@ -197,15 +197,20 @@ export class ModelsService {
 
     // Если пользователь входит в группу /business_customer
     if (formattedGroups.some(group => group.startsWith('/departament_business_customer'))) {
+      // Собираем все департаменты пользователя в один массив
       const userDepartments = formattedGroups
-        .map(group => BUSINESS_CUSTOMER_DEPARTMENT_MAPPING[group.split('/').pop() || ''])
+        .flatMap(group => {
+          const key = group.split('/').pop() || ''
+          return BUSINESS_CUSTOMER_DEPARTMENT_MAPPING[key] || []
+        })
         .filter(Boolean)
 
       return models.filter((model) => {
         const modelDepartments = (model.business_customer_departament || '')
           .split(',')
-          .map((dep) => dep.trim())
-        return userDepartments.some((userDep) => modelDepartments.includes(userDep))
+          .map(dep => dep.trim())
+
+        return userDepartments.some(userDep => modelDepartments.includes(userDep))
       })
     }
 
