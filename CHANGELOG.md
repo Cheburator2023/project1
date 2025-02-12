@@ -1,5 +1,12 @@
 # Semantic Versioning Changelog
 
+## [1.12.1](https://git.sfera.inno.local/SUMD/mrms-backend/compare/v1.12.0...v1.12.1) (2025-02-12)
+
+
+### Bug Fixes
+
+* update business customer customer department mapping ([cf491e3](https://git.sfera.inno.local/SUMD/mrms-backend/commit/cf491e3f5a2b94c6785185fc6952004ca03b6938))
+
 # [1.12.0](https://git.sfera.inno.local/SUMD/mrms-backend/compare/v1.11.2...v1.12.0) (2025-02-07)
 
 
