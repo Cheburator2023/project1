@@ -17,30 +17,59 @@ export abstract class BaseArtefactService implements IArtefactService {
 
   async getArtefactWithPermissions(user: UserType) {
     const artefacts = await this.getArtefacts();
+    const artefactRolesMap = await this.getAllArtefactRoles();
 
-    const artefactRolesMap = await this.getAllArtefactRoles()
+    debugger
   
-    const enrichedArtefacts = artefacts.data.map((artefact: ArtefactEntity) => ({
-      ...artefact,
-      'is_editable_by_role': this.canEditArtefact(artefact, user, artefactRolesMap) ? '1' : '0',
-    }));
+    const enrichedArtefacts = artefacts.data.map((artefact: ArtefactEntity) => {
+      const permissions = this.canEditArtefactBySource(artefact, user, artefactRolesMap);
+      return {
+        ...artefact,
+        is_editable_by_role_sum: permissions.is_editable_by_role_sum,
+        is_editable_by_role_sum_rm: permissions.is_editable_by_role_sum_rm,
+      };
+    });
   
     return { data: enrichedArtefacts };
   }
 
-  async getAllArtefactRoles(): Promise<Map<number, string[]>> {
+  async getAllArtefactRoles(): Promise<Map<number, { sum: string[], sum_rm: string[] }>> {
+    const pseudoArtefactsRoles = [
+      {
+          artefact_id: 1001,
+          roles: {
+              sum: ['ds_lead', 'business_customer', 'ds', 'mipm'],
+              sum_rm: ['ds_lead', 'business_customer']
+          }
+      }
+    ];
+
+
     const roles = await this.databaseService.query(`
-      SELECT ar.artefact_id, ARRAY_AGG(r.role_name) AS roles
-      FROM artefact_roles ar
+      SELECT ar.artefact_id, ar.model_source, ARRAY_AGG(r.role_name) AS roles
+      FROM artefact_source_roles ar
       JOIN roles r ON ar.role_id = r.role_id
-      GROUP BY ar.artefact_id;
+      GROUP BY ar.artefact_id, ar.model_source;
     `);
-  
-    const artefactRolesMap = new Map<number, string[]>();
+
+    const artefactRolesMap = new Map<number, { sum: string[], sum_rm: string[] }>();
+
     for (const row of roles) {
-      artefactRolesMap.set(row.artefact_id, row.roles);
+        const modelSource = row.model_source as 'sum' | 'sum_rm';
+        if (!artefactRolesMap.has(row.artefact_id)) {
+            artefactRolesMap.set(row.artefact_id, { sum: [], sum_rm: [] });
+        }
+        artefactRolesMap.get(row.artefact_id)![modelSource] = row.roles;
     }
-  
+
+    for (const pseudoArtefactRole of pseudoArtefactsRoles) {
+      if (!artefactRolesMap.has(pseudoArtefactRole.artefact_id)) {
+          artefactRolesMap.set(pseudoArtefactRole.artefact_id, { sum: [], sum_rm: [] });
+      }
+      artefactRolesMap.get(pseudoArtefactRole.artefact_id).sum = pseudoArtefactRole.roles.sum;
+      artefactRolesMap.get(pseudoArtefactRole.artefact_id).sum_rm = pseudoArtefactRole.roles.sum_rm;
+    }
+
     return artefactRolesMap;
   }
 
@@ -75,8 +104,6 @@ export abstract class BaseArtefactService implements IArtefactService {
         artefact_tech_label: "model_name",
         artefact_label: "Название модели в реестре ДАДМ",
         is_edit_flg: "1",
-        is_edit_sum_flg: '0',
-        is_edit_for_business_creator_flg: "1",
         artefact_desc: "",
         artefact_type_id: "1",
         artefact_type_desc: "text",
@@ -87,8 +114,6 @@ export abstract class BaseArtefactService implements IArtefactService {
         artefact_tech_label: "model_desc",
         artefact_label: "Описание модели",
         is_edit_flg: "1",
-        is_edit_sum_flg: '1',
-        is_edit_for_business_creator_flg: "1",
         artefact_desc: "",
         artefact_type_id: "1",
         artefact_type_desc: "text",
@@ -99,8 +124,6 @@ export abstract class BaseArtefactService implements IArtefactService {
         artefact_tech_label: "create_date",
         artefact_label: "Дата создания модели",
         is_edit_flg: "0",
-        is_edit_sum_flg: '0',
-        is_edit_for_business_creator_flg: "1",
         artefact_desc: "",
         artefact_type_id: "4",
         artefact_type_desc: "date",
@@ -113,8 +136,6 @@ export abstract class BaseArtefactService implements IArtefactService {
         artefact_tech_label: 'allocation_kib_usage',
         artefact_label: 'КИБ',
         is_edit_flg: '1',
-        is_edit_sum_flg: '0',
-        is_edit_for_business_creator_flg: "1",
         artefact_desc: '',
         artefact_type_id: '16',
         artefact_type_desc: 'percentage',
@@ -126,8 +147,6 @@ export abstract class BaseArtefactService implements IArtefactService {
         artefact_tech_label: 'allocation_smb_usage',
         artefact_label: 'CМБ',
         is_edit_flg: '1',
-        is_edit_sum_flg: '0',
-        is_edit_for_business_creator_flg: "1",
         artefact_desc: '',
         artefact_type_id: '16',
         artefact_type_desc: 'percentage',
@@ -139,8 +158,6 @@ export abstract class BaseArtefactService implements IArtefactService {
         artefact_tech_label: 'allocation_rb_usage',
         artefact_label: 'РБ',
         is_edit_flg: '1',
-        is_edit_sum_flg: '0',
-        is_edit_for_business_creator_flg: "1",
         artefact_desc: '',
         artefact_type_id: '16',
         artefact_type_desc: 'percentage',
@@ -152,8 +169,6 @@ export abstract class BaseArtefactService implements IArtefactService {
         artefact_tech_label: 'allocation_kc_usage',
         artefact_label: 'КЦ',
         is_edit_flg: '1',
-        is_edit_sum_flg: '0',
-        is_edit_for_business_creator_flg: "1",
         artefact_desc: '',
         artefact_type_id: '16',
         artefact_type_desc: 'percentage',
@@ -165,8 +180,6 @@ export abstract class BaseArtefactService implements IArtefactService {
         artefact_tech_label: 'allocation_other_usage',
         artefact_label: 'Другое',
         is_edit_flg: '1',
-        is_edit_sum_flg: '0',
-        is_edit_for_business_creator_flg: "1",
         artefact_desc: '',
         artefact_type_id: '16',
         artefact_type_desc: 'percentage',
@@ -181,8 +194,6 @@ export abstract class BaseArtefactService implements IArtefactService {
         artefact_tech_label: 'allocation_kib_comment',
         artefact_label: 'КИБ',
         is_edit_flg: '1',
-        is_edit_sum_flg: '0',
-        is_edit_for_business_creator_flg: "1",
         artefact_desc: '',
         artefact_type_id: '1',
         artefact_type_desc: 'text',
@@ -194,8 +205,6 @@ export abstract class BaseArtefactService implements IArtefactService {
         artefact_tech_label: 'allocation_smb_comment',
         artefact_label: 'CМБ',
         is_edit_flg: '1',
-        is_edit_sum_flg: '0',
-        is_edit_for_business_creator_flg: "1",
         artefact_desc: '',
         artefact_type_id: '1',
         artefact_type_desc: 'text',
@@ -207,8 +216,6 @@ export abstract class BaseArtefactService implements IArtefactService {
         artefact_tech_label: 'allocation_rb_comment',
         artefact_label: 'РБ',
         is_edit_flg: '1',
-        is_edit_sum_flg: '0',
-        is_edit_for_business_creator_flg: "1",
         artefact_desc: '',
         artefact_type_id: '1',
         artefact_type_desc: 'text',
@@ -220,8 +227,6 @@ export abstract class BaseArtefactService implements IArtefactService {
         artefact_tech_label: 'allocation_kc_comment',
         artefact_label: 'КЦ',
         is_edit_flg: '1',
-        is_edit_sum_flg: '0',
-        is_edit_for_business_creator_flg: "1",
         artefact_desc: '',
         artefact_type_id: '1',
         artefact_type_desc: 'text',
@@ -233,8 +238,6 @@ export abstract class BaseArtefactService implements IArtefactService {
         artefact_tech_label: 'allocation_other_comment',
         artefact_label: 'Другое',
         is_edit_flg: '1',
-        is_edit_sum_flg: '0',
-        is_edit_for_business_creator_flg: "1",
         artefact_desc: '',
         artefact_type_id: '1',
         artefact_type_desc: 'text',
@@ -250,8 +253,6 @@ export abstract class BaseArtefactService implements IArtefactService {
         artefact_tech_label: 'usage_confirm_date_q1',
         artefact_label: '1Q',
         is_edit_flg: '1',
-        is_edit_sum_flg: '0',
-        is_edit_for_business_creator_flg: "1",
         artefact_desc: '',
         artefact_type_id: '17',
         artefact_type_desc: 'quarterly_date',
@@ -264,8 +265,6 @@ export abstract class BaseArtefactService implements IArtefactService {
         artefact_tech_label: 'usage_confirm_date_q2',
         artefact_label: '2Q',
         is_edit_flg: '1',
-        is_edit_sum_flg: '0',
-        is_edit_for_business_creator_flg: "1",
         artefact_desc: '',
         artefact_type_id: '17',
         artefact_type_desc: 'quarterly_date',
@@ -278,8 +277,6 @@ export abstract class BaseArtefactService implements IArtefactService {
         artefact_tech_label: 'usage_confirm_date_q3',
         artefact_label: '3Q',
         is_edit_flg: '1',
-        is_edit_sum_flg: '0',
-        is_edit_for_business_creator_flg: "1",
         artefact_desc: '',
         artefact_type_id: '17',
         artefact_type_desc: 'quarterly_date',
@@ -292,8 +289,6 @@ export abstract class BaseArtefactService implements IArtefactService {
         artefact_tech_label: 'usage_confirm_date_q4',
         artefact_label: '4Q',
         is_edit_flg: '1',
-        is_edit_sum_flg: '0',
-        is_edit_for_business_creator_flg: "1",
         artefact_desc: '',
         artefact_type_id: '18',
         artefact_type_desc: 'quarterly_date',
@@ -310,8 +305,6 @@ export abstract class BaseArtefactService implements IArtefactService {
         artefact_tech_label: 'usage_confirm_flag_q1',
         artefact_label: '1Q',
         is_edit_flg: '1',
-        is_edit_sum_flg: '0',
-        is_edit_for_business_creator_flg: "1",
         artefact_desc: '',
         artefact_type_id: '19',
         artefact_type_desc: 'quarterly_dropdown',
@@ -338,8 +331,6 @@ export abstract class BaseArtefactService implements IArtefactService {
         artefact_tech_label: 'usage_confirm_flag_q2',
         artefact_label: '2Q',
         is_edit_flg: '1',
-        is_edit_sum_flg: '0',
-        is_edit_for_business_creator_flg: "1",
         artefact_desc: '',
         artefact_type_id: '19',
         artefact_type_desc: 'quarterly_dropdown',
@@ -366,8 +357,6 @@ export abstract class BaseArtefactService implements IArtefactService {
         artefact_tech_label: 'usage_confirm_flag_q3',
         artefact_label: '3Q',
         is_edit_flg: '1',
-        is_edit_sum_flg: '0',
-        is_edit_for_business_creator_flg: "1",
         artefact_desc: '',
         artefact_type_id: '19',
         artefact_type_desc: 'quarterly_dropdown',
@@ -394,8 +383,6 @@ export abstract class BaseArtefactService implements IArtefactService {
         artefact_tech_label: 'usage_confirm_flag_q4',
         artefact_label: '4Q',
         is_edit_flg: '1',
-        is_edit_sum_flg: '0',
-        is_edit_for_business_creator_flg: "1",
         artefact_desc: '',
         artefact_type_id: '19',
         artefact_type_desc: 'quarterly_dropdown',
@@ -738,22 +725,31 @@ export abstract class BaseArtefactService implements IArtefactService {
     )
   }
 
-  canEditArtefact(
+  canEditArtefact(artefact: ArtefactEntity): boolean {
+    return false;
+  }
+
+  canEditArtefactBySource(
     artefact: ArtefactEntity,
     user: UserType,
-    artefactRolesMap: Map<number, string[]>
-  ): boolean {
+    artefactRolesMap: Map<number, { sum: string[], sum_rm: string[] }>
+  ): { is_editable_by_role_sum: string, is_editable_by_role_sum_rm: string } {
+
     if (artefact.is_edit_flg === '0') {
-      return false;
+      return { is_editable_by_role_sum: '0', is_editable_by_role_sum_rm: '0' };
     }
   
-    const allowedRoles = artefactRolesMap.get(artefact.artefact_id) || [];
+    const rolesForArtefact = artefactRolesMap.get(artefact.artefact_id) || { sum: [], sum_rm: [] };
   
-    if (allowedRoles.length === 0) {
-      return true;
-    }
+    const isEditableSum = rolesForArtefact.sum.length > 0 && user.groups.some((role) => rolesForArtefact.sum.includes(role));
+    const isEditableSumRm = rolesForArtefact.sum_rm.length > 0 && user.groups.some((role) => rolesForArtefact.sum_rm.includes(role));
+
+    debugger
   
-    return user.groups.some((role) => allowedRoles.includes(role));
+    return {
+      is_editable_by_role_sum: isEditableSum ? '1' : '0',
+      is_editable_by_role_sum_rm: isEditableSumRm ? '1' : '0',
+    };
   }
 
   private shouldSkipUpdate(
