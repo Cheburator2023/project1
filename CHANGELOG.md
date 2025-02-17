@@ -1,5 +1,17 @@
 # Semantic Versioning Changelog
 
+# [1.13.0](https://git.sfera.inno.local/SUMD/mrms-backend/compare/v1.12.1...v1.13.0) (2025-02-17)
+
+
+### Bug Fixes
+
+* query tasks ([c62d51d](https://git.sfera.inno.local/SUMD/mrms-backend/commit/c62d51d841b861a421b5b1810d87803890528b91))
+
+
+### Features
+
+* can edit artefact ([7f10037](https://git.sfera.inno.local/SUMD/mrms-backend/commit/7f100379ff747dea75c6871b15240b44280bd309))
+
 ## [1.12.1](https://git.sfera.inno.local/SUMD/mrms-backend/compare/v1.12.0...v1.12.1) (2025-02-12)
 
 
