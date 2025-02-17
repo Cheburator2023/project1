@@ -25,6 +25,21 @@ type Task = {
   update_date?: string;
 };
 
+const user_roles = [
+  "de",
+  "de_lead",
+  "ds",
+  "ds_lead",
+  "mipm",
+  "mipm_lead",
+  "modelops",
+  "modelops_lead",
+  "validator",
+  "validator_lead",
+  "business_customer",
+];
+
+
 @Injectable()
 export class DataAggregator {
   private readonly cache: NodeCache
@@ -70,9 +85,36 @@ export class DataAggregator {
 
     if (cachedTasks) return cachedTasks
 
-    const tasks = await this.fetchUserTasks(models)
+    const tasks = await this.usersActiveTasks(models)
     this.cache.set(cacheKey, tasks)
     return tasks
+  }
+
+  private usersActiveTasks = async (models) => {
+    const userTasksPromises = user_roles.map((userRole) => this.camundaService.tasks([userRole]))
+
+    const userTasks = this.formatUserTasks(await Promise.all(userTasksPromises))
+    const taskMap = new Map(userTasks.map(task => [task.processInstanceId + task.role, task]))
+
+    const bpmnInstances = await this.bpmnService.getInstances(userTasks.map((task) => task.processInstanceId))
+
+    const instanceMap = new Map(bpmnInstances.map(instance => [instance.model_id, instance]))
+
+    const assignments = await this.assignmentService.getAssignmentsWithRolesByModelId(
+      Array.from(instanceMap.keys()),
+      5
+    );
+
+    const allGroups = await this.keycloakService.getSubGroupsByGroupsName([
+      'departament',
+      'departament_business_customer',
+    ]);
+  
+    const users = await this.getUsersInGroups(allGroups);
+
+    const enrichedTasks = this.enrichTasksWithAssignments(assignments, taskMap, instanceMap, models, users)
+
+    return this.updateTasksWithArtefacts(enrichedTasks)
   }
 
   private async getUsersInGroups(groups: any[]): Promise<Record<string, string[]>> {
@@ -92,43 +134,23 @@ export class DataAggregator {
     return userGroupsMap;
   }
 
-  private async fetchUserTasks(models: Model[]): Promise<Task[]> {
-    const rawTasks = await this.fetchRawTasks()
-    const taskMap = new Map(rawTasks.map((task) => [task.processInstanceId + task.role, task]))
-
-    const instances = await this.bpmnService.getInstances(rawTasks.map((task) => task.processInstanceId))
-    const instanceMap = new Map(instances.map((instance) => [instance.model_id, instance]))
-
-    const assignments = await this.assignmentService.getAssignmentsWithRolesByModelId(
-      instances.map((instance) => instance.model_id),
-      MODEL_SOURCES.SUM,
-      5
-    );
-
-    const allGroups = await this.keycloakService.getSubGroupsByGroupsName([
-      'departament',
-      'departament_business_customer',
-    ]);
+  private formatUserTasks = (userTasks) =>
+    userTasks.reduce((allTasks, groupTask, index) => {
+      const formattedGroupTasks = groupTask.map(
+        ({ name, processInstanceId }) => ({
+          name,
+          processInstanceId,
+          role: Object.values(USER_ROLES)[index],
+        })
+      );
   
-    const users = await this.getUsersInGroups(allGroups);
-
-    const enrichedTasks = this.enrichTasksWithAssignments(assignments, taskMap, instanceMap, models, users)
-
-    return this.updateTasksWithArtefacts(enrichedTasks)
-  }
-
-  private async fetchRawTasks(): Promise<Task[]> {
-    const tasks: Task[] = []
-    for (const role of Object.values(USER_ROLES)) {
-      const roleTasks = await this.camundaService.getTasksByGroups([role])
-      tasks.push(...roleTasks.map((task) => ({ ...task, role })))
-    }
-    return tasks
-  }
+      return [...allTasks, ...formattedGroupTasks];
+    }, []);
+    
 
   private enrichTasksWithAssignments(
     assignments: any[],
-    taskMap: Map<string, Task>,
+    taskMap: any,
     instanceMap: Map<string, any>,
     models: Model[],
     users: Record<string, string[]>
@@ -156,6 +178,7 @@ export class DataAggregator {
           })
         }
       });
+
 
       acc.push({
         ...task,
