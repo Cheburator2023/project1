@@ -177,19 +177,23 @@ export class DataAggregator {
 
       const model = models.find((model) => model.system_model_id === assigneeHistItem.model_id)
       
+      // TODO: Вернуть логику определения streams, если снова потребуется учитывать привязку пользователей к департаментам.
+      // Сейчас streams не используется, поэтому код временно закомментирован, но может понадобиться в будущем.
+      /*
       const streams = new Set<string>();
-      assigneeHistItem.assignee_name.split(', ').map((username) => {
+      assigneeHistItem.assignee_name.split(',').map((username) => {
         if (username in users) {
           users[username].map(department => {
-            const streamsAfterMapping = DEPARTMENT_TO_STREAM_MAPPING[department]
+            const streamsAfterMapping = DEPARTMENT_TO_STREAM_MAPPING[department];
             if (Array.isArray(streamsAfterMapping)) {
-              streamsAfterMapping.forEach((stream) => streams.add(stream))
+              streamsAfterMapping.forEach((stream) => streams.add(stream));
             } else if (streamsAfterMapping) {
-              streams.add(streamsAfterMapping)
+              streams.add(streamsAfterMapping);
             }
-          })
+          });
         }
       });
+      */
 
       acc.push({
         ...task,
