@@ -7,7 +7,7 @@ import { AssignmentService } from 'src/modules/assignments/assignment.service'
 import { BpmnService } from 'src/modules/bpmn/bpmn.service'
 import { MODEL_SOURCES, USER_ROLES } from 'src/system/common/constants'
 import { KeycloakService } from 'src/system/keycloak/keycloak.service'
-import { DEPARTMENT_TO_STREAM_MAPPING } from 'src/modules/models/constants'
+// import { DEPARTMENT_TO_STREAM_MAPPING } from 'src/modules/models/constants'
 
 type Model = {
   bpmn_key: string
@@ -105,18 +105,29 @@ export class DataAggregator {
       5
     );
 
+    // TODO: Реализовать получение пользователей по группам из Keycloak
+    // Закомментировано временно, так как сейчас работа ведётся без групповой фильтрации.
+    // Позже нужно вернуть этот код, если появится необходимость учитывать группы пользователей.
+    /*
     const allGroups = await this.keycloakService.getSubGroupsByGroupsName([
       'departament',
       'departament_business_customer',
     ]);
   
     const users = await this.getUsersInGroups(allGroups);
+    */
 
-    const enrichedTasks = this.enrichTasksWithAssignments(assignments, taskMap, instanceMap, models, users)
+    const enrichedTasks = this.enrichTasksWithAssignments(assignments, taskMap, instanceMap, models, 
+      // users
+    )
 
     return this.updateTasksWithArtefacts(enrichedTasks)
   }
 
+  // TODO: Реализовать получение пользователей по группам из Keycloak
+  // Закомментировано временно, так как сейчас работа ведётся без групповой фильтрации.
+  // Позже нужно вернуть этот код, если появится необходимость учитывать группы пользователей.
+  /*
   private async getUsersInGroups(groups: any[]): Promise<Record<string, string[]>> {
     const userGroupsMap: Record<string, string[]> = {};
   
@@ -133,6 +144,7 @@ export class DataAggregator {
   
     return userGroupsMap;
   }
+  */
 
   private formatUserTasks = (userTasks) =>
     userTasks.reduce((allTasks, groupTask, index) => {
@@ -153,7 +165,7 @@ export class DataAggregator {
     taskMap: any,
     instanceMap: Map<string, any>,
     models: Model[],
-    users: Record<string, string[]>
+    // users: Record<string, string[]>
   ): Task[] {
     return assignments.reduce<Task[]>((acc, assigneeHistItem) => {
       const instance = instanceMap.get(assigneeHistItem.model_id)
@@ -164,7 +176,7 @@ export class DataAggregator {
       if (!task || task.role !== assigneeHistItem.functional_role) return acc
 
       const model = models.find((model) => model.system_model_id === assigneeHistItem.model_id)
-
+      
       const streams = new Set<string>();
       assigneeHistItem.assignee_name.split(', ').map((username) => {
         if (username in users) {
@@ -178,7 +190,6 @@ export class DataAggregator {
           })
         }
       });
-
 
       acc.push({
         ...task,
