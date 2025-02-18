@@ -185,7 +185,7 @@ export class DataAggregator {
         model_id: assigneeHistItem.model_id,
         effective_from: assigneeHistItem.update_date,
         bpmn_key: model?.bpmn_key || null,
-        ds_stream:  Array.from(streams).join(', ')
+        ds_stream: model?.ds_stream || null
       })
 
       return acc
