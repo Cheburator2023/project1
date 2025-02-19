@@ -1,5 +1,14 @@
 # Semantic Versioning Changelog
 
+## [1.13.1](https://git.sfera.inno.local/SUMD/mrms-backend/compare/v1.13.0...v1.13.1) (2025-02-18)
+
+
+### Bug Fixes
+
+* query tasks ([10a4ec1](https://git.sfera.inno.local/SUMD/mrms-backend/commit/10a4ec1c51888183679ee5c70851377d3e162024))
+* query tasks ([13404d6](https://git.sfera.inno.local/SUMD/mrms-backend/commit/13404d6286ba69c245f683aaebbee48a74d9ec2f))
+* query tasks ([1aeab50](https://git.sfera.inno.local/SUMD/mrms-backend/commit/1aeab50a302d9f0387f564def85c363caff8c286))
+
 # [1.13.0](https://git.sfera.inno.local/SUMD/mrms-backend/compare/v1.12.1...v1.13.0) (2025-02-17)
 
 
