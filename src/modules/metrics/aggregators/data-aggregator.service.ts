@@ -59,9 +59,12 @@ export class DataAggregator {
     const models = await this.getCachedModels()
     const tasks = await this.getCachedTasks(models)
 
+    console.log("tasks", tasks)
+
     const filteredModels = this.filterByStreams(models, streams, 'ds_stream')
     const filteredTasks = this.filterByStreamsTasks(tasks, streams, 'ds_stream')
 
+    console.log("filteredTasks", filteredTasks)
     return {
       models: filteredModels,
       tasks: filteredTasks
@@ -120,6 +123,8 @@ export class DataAggregator {
     const enrichedTasks = this.enrichTasksWithAssignments(assignments, taskMap, instanceMap, models, 
       // users
     )
+
+    console.log("enrichedTasks", enrichedTasks)
 
     return this.updateTasksWithArtefacts(enrichedTasks)
   }
@@ -202,7 +207,7 @@ export class DataAggregator {
         bpmn_key: model?.bpmn_key || null,
         ds_stream: model?.ds_stream || null
       })
-
+      
       return acc
     }, [])
   }
