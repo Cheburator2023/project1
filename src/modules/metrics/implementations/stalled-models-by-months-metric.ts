@@ -12,36 +12,36 @@ export class StalledModelsByMonthsMetric extends IndependentMetric<StalledModels
    * @param {number | null} daysToShift - Number of working days to shift the end date. Default is null (no shift).
    * @returns {{ actualStartDate: Date; actualEndDate: Date }} The actual start and end dates for filtering.
    */
-  getActualDateRange(
-    startDate: string | null,
-    endDate: string | null,
-    daysToShift: number | null = null
-  ): { actualStartDate: Date; actualEndDate: Date } {
-    let actualStartDate: Date
-    let actualEndDate: Date
+  // getActualDateRange(
+  //   startDate: string | null,
+  //   endDate: string | null,
+  //   daysToShift: number | null = null
+  // ): { actualStartDate: Date; actualEndDate: Date } {
+  //   let actualStartDate: Date
+  //   let actualEndDate: Date
 
-    if (!startDate && !endDate) {
-      const now = new Date()
-      const year = now.getFullYear()
+  //   if (!startDate && !endDate) {
+  //     const now = new Date()
+  //     const year = now.getFullYear()
 
-      // Default to the start of the current year
-      actualStartDate = new Date(year, 0, 1) // January 1st
-      // Default to the current date
-      actualEndDate = now
-    } else {
-      // Call the base method to get actual start and end dates
-      const baseDates = super.getActualDateRange(startDate, endDate, daysToShift)
-      actualStartDate = baseDates.actualStartDate
-      actualEndDate = baseDates.actualEndDate
-    }
+  //     // Default to the start of the current year
+  //     actualStartDate = new Date(year, 0, 1) // January 1st
+  //     // Default to the current date
+  //     actualEndDate = now
+  //   } else {
+  //     // Call the base method to get actual start and end dates
+  //     const baseDates = super.getActualDateRange(startDate, endDate, daysToShift)
+  //     actualStartDate = baseDates.actualStartDate
+  //     actualEndDate = baseDates.actualEndDate
+  //   }
 
-    // Apply shift to end date if daysToShift is provided
-    if (daysToShift !== null) {
-      actualEndDate = this.subtractWorkingDays(actualEndDate, daysToShift)
-    }
+  //   // Apply shift to end date if daysToShift is provided
+  //   if (daysToShift !== null) {
+  //     actualEndDate = this.subtractWorkingDays(actualEndDate, daysToShift)
+  //   }
 
-    return { actualStartDate, actualEndDate }
-  }
+  //   return { actualStartDate, actualEndDate }
+  // }
 
   calculate() {
     const filteredTasks = this.filterTasks(
