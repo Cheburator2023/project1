@@ -7,7 +7,7 @@ import { AssignmentService } from 'src/modules/assignments/assignment.service'
 import { BpmnService } from 'src/modules/bpmn/bpmn.service'
 import { MODEL_SOURCES, USER_ROLES } from 'src/system/common/constants'
 import { KeycloakService } from 'src/system/keycloak/keycloak.service'
-import { DEPARTMENT_TO_STREAM_MAPPING } from 'src/modules/models/constants'
+// import { DEPARTMENT_TO_STREAM_MAPPING } from 'src/modules/models/constants'
 
 type Model = {
   bpmn_key: string
@@ -24,6 +24,21 @@ type Task = {
   ds_stream?: string;
   update_date?: string;
 };
+
+const user_roles = [
+  "de",
+  "de_lead",
+  "ds",
+  "ds_lead",
+  "mipm",
+  "mipm_lead",
+  "modelops",
+  "modelops_lead",
+  "validator",
+  "validator_lead",
+  "business_customer",
+];
+
 
 @Injectable()
 export class DataAggregator {
@@ -70,11 +85,49 @@ export class DataAggregator {
 
     if (cachedTasks) return cachedTasks
 
-    const tasks = await this.fetchUserTasks(models)
+    const tasks = await this.usersActiveTasks(models)
     this.cache.set(cacheKey, tasks)
     return tasks
   }
 
+  private usersActiveTasks = async (models) => {
+    const userTasksPromises = user_roles.map((userRole) => this.camundaService.tasks([userRole]))
+
+    const userTasks = this.formatUserTasks(await Promise.all(userTasksPromises))
+    const taskMap = new Map(userTasks.map(task => [task.processInstanceId + task.role, task]))
+
+    const bpmnInstances = await this.bpmnService.getInstances(userTasks.map((task) => task.processInstanceId))
+
+    const instanceMap = new Map(bpmnInstances.map(instance => [instance.model_id, instance]))
+
+    const assignments = await this.assignmentService.getAssignmentsWithRolesByModelId(
+      Array.from(instanceMap.keys()),
+      5
+    );
+
+    // TODO: Реализовать получение пользователей по группам из Keycloak
+    // Закомментировано временно, так как сейчас работа ведётся без групповой фильтрации.
+    // Позже нужно вернуть этот код, если появится необходимость учитывать группы пользователей.
+    /*
+    const allGroups = await this.keycloakService.getSubGroupsByGroupsName([
+      'departament',
+      'departament_business_customer',
+    ]);
+  
+    const users = await this.getUsersInGroups(allGroups);
+    */
+
+    const enrichedTasks = this.enrichTasksWithAssignments(assignments, taskMap, instanceMap, models, 
+      // users
+    )
+
+    return this.updateTasksWithArtefacts(enrichedTasks)
+  }
+
+  // TODO: Реализовать получение пользователей по группам из Keycloak
+  // Закомментировано временно, так как сейчас работа ведётся без групповой фильтрации.
+  // Позже нужно вернуть этот код, если появится необходимость учитывать группы пользователей.
+  /*
   private async getUsersInGroups(groups: any[]): Promise<Record<string, string[]>> {
     const userGroupsMap: Record<string, string[]> = {};
   
@@ -91,47 +144,28 @@ export class DataAggregator {
   
     return userGroupsMap;
   }
+  */
 
-  private async fetchUserTasks(models: Model[]): Promise<Task[]> {
-    const rawTasks = await this.fetchRawTasks()
-    const taskMap = new Map(rawTasks.map((task) => [task.processInstanceId + task.role, task]))
-
-    const instances = await this.bpmnService.getInstances(rawTasks.map((task) => task.processInstanceId))
-    const instanceMap = new Map(instances.map((instance) => [instance.model_id, instance]))
-
-    const assignments = await this.assignmentService.getAssignmentsWithRolesByModelId(
-      instances.map((instance) => instance.model_id),
-      MODEL_SOURCES.SUM,
-      5
-    );
-
-    const allGroups = await this.keycloakService.getSubGroupsByGroupsName([
-      'departament',
-      'departament_business_customer',
-    ]);
+  private formatUserTasks = (userTasks) =>
+    userTasks.reduce((allTasks, groupTask, index) => {
+      const formattedGroupTasks = groupTask.map(
+        ({ name, processInstanceId }) => ({
+          name,
+          processInstanceId,
+          role: Object.values(USER_ROLES)[index],
+        })
+      );
   
-    const users = await this.getUsersInGroups(allGroups);
-
-    const enrichedTasks = this.enrichTasksWithAssignments(assignments, taskMap, instanceMap, models, users)
-
-    return this.updateTasksWithArtefacts(enrichedTasks)
-  }
-
-  private async fetchRawTasks(): Promise<Task[]> {
-    const tasks: Task[] = []
-    for (const role of Object.values(USER_ROLES)) {
-      const roleTasks = await this.camundaService.getTasksByGroups([role])
-      tasks.push(...roleTasks.map((task) => ({ ...task, role })))
-    }
-    return tasks
-  }
+      return [...allTasks, ...formattedGroupTasks];
+    }, []);
+    
 
   private enrichTasksWithAssignments(
     assignments: any[],
-    taskMap: Map<string, Task>,
+    taskMap: any,
     instanceMap: Map<string, any>,
     models: Model[],
-    users: Record<string, string[]>
+    // users: Record<string, string[]>
   ): Task[] {
     return assignments.reduce<Task[]>((acc, assigneeHistItem) => {
       const instance = instanceMap.get(assigneeHistItem.model_id)
@@ -142,27 +176,31 @@ export class DataAggregator {
       if (!task || task.role !== assigneeHistItem.functional_role) return acc
 
       const model = models.find((model) => model.system_model_id === assigneeHistItem.model_id)
-
+      
+      // TODO: Вернуть логику определения streams, если снова потребуется учитывать привязку пользователей к департаментам.
+      // Сейчас streams не используется, поэтому код временно закомментирован, но может понадобиться в будущем.
+      /*
       const streams = new Set<string>();
-      assigneeHistItem.assignee_name.split(', ').map((username) => {
+      assigneeHistItem.assignee_name.split(',').map((username) => {
         if (username in users) {
           users[username].map(department => {
-            const streamsAfterMapping = DEPARTMENT_TO_STREAM_MAPPING[department]
+            const streamsAfterMapping = DEPARTMENT_TO_STREAM_MAPPING[department];
             if (Array.isArray(streamsAfterMapping)) {
-              streamsAfterMapping.forEach((stream) => streams.add(stream))
+              streamsAfterMapping.forEach((stream) => streams.add(stream));
             } else if (streamsAfterMapping) {
-              streams.add(streamsAfterMapping)
+              streams.add(streamsAfterMapping);
             }
-          })
+          });
         }
       });
+      */
 
       acc.push({
         ...task,
         model_id: assigneeHistItem.model_id,
         effective_from: assigneeHistItem.update_date,
         bpmn_key: model?.bpmn_key || null,
-        ds_stream:  Array.from(streams).join(', ')
+        ds_stream: model?.ds_stream || null
       })
 
       return acc

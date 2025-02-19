@@ -4,6 +4,8 @@ import { ConfigService } from '@nestjs/config'
 import { firstValueFrom } from 'rxjs'
 import { ICamundaService } from './interfaces'
 import { CamundaTask } from './entities'
+import * as querystring from 'querystring';
+
 
 @Injectable()
 export class CamundaService implements ICamundaService {
@@ -78,6 +80,16 @@ export class CamundaService implements ICamundaService {
       return tasks
     } catch (error) {
       throw new Error(`Failed to fetch tasks by groups: ${ error.message }`)
+    }
+  }
+
+  async tasks(groups: string[] = ['mipm']): Promise<CamundaTask[]> {
+    const queryParams = querystring.stringify({ candidateGroups: groups.join(','), includeAssignedTasks: true });
+
+    try {
+      return await this.makeRequest<CamundaTask[]>('get', `task?${queryParams}`);
+    } catch (error) {
+      throw new Error(`Failed to fetch tasks: ${error.message}`);
     }
   }
 }

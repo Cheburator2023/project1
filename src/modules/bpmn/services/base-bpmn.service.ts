@@ -13,7 +13,6 @@ export abstract class BaseBpmnService implements IBpmnService {
     FROM BPMN_INSTANCES
     ${bpmnIds ? 'WHERE BPMN_INSTANCE_ID = ANY(:bpmnIds::text[])' : ''}
   `
-
     return await this.databaseService.query(query, bpmnIds ? { bpmnIds } : {});
   }
 }
