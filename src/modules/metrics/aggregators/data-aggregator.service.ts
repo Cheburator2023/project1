@@ -60,6 +60,7 @@ export class DataAggregator {
     const tasks = await this.getCachedTasks(models)
 
     console.log("tasks", tasks)
+    console.log("models", models)
 
     const filteredModels = this.filterByStreams(models, streams, 'ds_stream')
     const filteredTasks = this.filterByStreamsTasks(tasks, streams, 'ds_stream')
@@ -107,6 +108,11 @@ export class DataAggregator {
       Array.from(instanceMap.keys()),
       5
     );
+
+    console.log("userTasks", userTasks)
+    console.log("bpmnInstances", bpmnInstances)
+    console.log("instanceMap", instanceMap)
+    console.log("assignments", assignments)
 
     // TODO: Реализовать получение пользователей по группам из Keycloak
     // Закомментировано временно, так как сейчас работа ведётся без групповой фильтрации.
