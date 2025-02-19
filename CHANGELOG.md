@@ -1,5 +1,12 @@
 # Semantic Versioning Changelog
 
+## [1.13.4](https://git.sfera.inno.local/SUMD/mrms-backend/compare/v1.13.3...v1.13.4) (2025-02-19)
+
+
+### Bug Fixes
+
+* add console.log ([89cd2f4](https://git.sfera.inno.local/SUMD/mrms-backend/commit/89cd2f4f6d7f4b76125b6ab9a765767bde085e11))
+
 ## [1.13.3](https://git.sfera.inno.local/SUMD/mrms-backend/compare/v1.13.2...v1.13.3) (2025-02-19)
 
 ## [1.13.2](https://git.sfera.inno.local/SUMD/mrms-backend/compare/v1.13.1...v1.13.2) (2025-02-19)
