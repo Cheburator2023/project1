@@ -18,8 +18,6 @@ export abstract class BaseArtefactService implements IArtefactService {
   async getArtefactWithPermissions(user: UserType) {
     const artefacts = await this.getArtefacts();
     const artefactRolesMap = await this.getAllArtefactRoles();
-
-    debugger
   
     const enrichedArtefacts = artefacts.data.map((artefact: ArtefactEntity) => {
       const permissions = this.canEditArtefactBySource(artefact, user, artefactRolesMap);
@@ -743,8 +741,6 @@ export abstract class BaseArtefactService implements IArtefactService {
   
     const isEditableSum = rolesForArtefact.sum.length > 0 && user.groups.some((role) => rolesForArtefact.sum.includes(role));
     const isEditableSumRm = rolesForArtefact.sum_rm.length > 0 && user.groups.some((role) => rolesForArtefact.sum_rm.includes(role));
-
-    debugger
   
     return {
       is_editable_by_role_sum: isEditableSum ? '1' : '0',
