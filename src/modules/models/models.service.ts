@@ -16,8 +16,8 @@ import {
   updateModelAllocation as updateSumRmModelAllocation
 } from './sql/sum-rm'
 
-import { MODEL_SOURCES, LIFE_CYCLE_STAGES_DESCRIPTION, LIFE_CYCLE_STAGES, MODEL_STATUS } from 'src/system/common/constants'
-import { pseudoArtefacts, DEPARTMENT_TO_STREAM_MAPPING, BUSINESS_CUSTOMER_DEPARTMENT_MAPPING } from './constants'
+import { LIFE_CYCLE_STAGES, LIFE_CYCLE_STAGES_DESCRIPTION, MODEL_SOURCES, MODEL_STATUS } from 'src/system/common/constants'
+import { BUSINESS_CUSTOMER_DEPARTMENT_MAPPING, DEPARTMENT_TO_STREAM_MAPPING, pseudoArtefacts } from './constants'
 import { Artefact, ArtefactValue, GroupedResults, Model, ModelRelationsResponse, ModelType } from './interfaces'
 import { CompareModelsDto, ModelsDto, ModelWithRelationsDto } from './dto'
 import { ArtefactFormatting, ArtefactFormattingType } from './rules'
@@ -28,6 +28,7 @@ import { randomUUID } from 'crypto'
 import { sql as parentSumRmModel } from 'src/api/sql/models/sum-rm/parent'
 import { sql as createModel } from 'src/api/sql/models/sum-rm/create'
 import { sql as newArtefacts } from 'src/api/sql/artefacts/new'
+import { ModelEntity } from './entities'
 
 interface UsageEntry {
   confirmation_date: string | null;
@@ -189,6 +190,50 @@ export class ModelsService {
     await this.executeDatabaseUpdates({ artefactsForUpdate }, MODEL_SOURCES.MRM)
 
     return this.getModels({ model_id });
+  }
+
+  async surrogateModelCreate(model_id: string): Promise<ModelEntity | null> {
+    const modelSum: ModelEntity | null = await this.sumModelService.getModelById(model_id)
+
+    if (!modelSum) {
+      return null
+    }
+
+    return await this.mrmDatabaseService.query(
+      `
+      INSERT INTO models_new (
+        root_model_id,
+        model_id,
+        model_name,
+        model_desc,
+        model_version,
+        create_date,
+        update_date,
+        model_creator
+      ) 
+      VALUES (
+        :root_model_id,
+        :model_id,
+        :model_name,
+        :model_desc,
+        :model_version,
+        :create_date,
+        :update_date,
+        :model_creator
+      )
+      RETURNING *;
+      `,
+      {
+        root_model_id: modelSum.root_model_id,
+        model_id: modelSum.model_id,
+        model_name: modelSum.model_name,
+        model_desc: modelSum.model_desc,
+        model_version: modelSum.model_version,
+        create_date: modelSum.create_date,
+        update_date: modelSum.update_date,
+        model_creator: modelSum.model_creator
+      }
+    )
   }
 
   // Фильтрация моделей в зависимости от групп пользователя
@@ -365,6 +410,10 @@ export class ModelsService {
       modelSource = model_source
       const updates = updatesBySource[model_source]
 
+      if (modelSource === MODEL_SOURCES.SUM) {
+        await this.ensureSurrogateModelExists(model_id)
+      }
+
       for (const artefactItem of artefacts) {
         const { artefact_tech_label, artefact_string_value } = artefactItem
 
@@ -505,6 +554,16 @@ export class ModelsService {
       )
 
       return [].concat(...results)
+    }
+  }
+
+  async ensureSurrogateModelExists(model_id) {
+    const modelExistsInSum: ModelEntity | null = await this.sumModelService.getModelById(model_id)
+    if (modelExistsInSum) {
+      const modelExistsInMrm: ModelEntity | null = await this.mrmModelService.getModelById(model_id)
+      if (!modelExistsInMrm) {
+        await this.surrogateModelCreate(model_id)
+      }
     }
   }
 

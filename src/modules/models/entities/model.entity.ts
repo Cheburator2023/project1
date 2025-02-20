@@ -7,4 +7,5 @@ export type ModelEntity = {
   create_date: string;
   update_date: string;
   models_is_active_flg: string;
+  model_creator: string;
 }

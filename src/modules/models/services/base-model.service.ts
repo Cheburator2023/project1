@@ -100,7 +100,7 @@ export abstract class BaseModelService implements IModelService {
     return true
   }
 
-  private async getModelById(model_id: string): Promise<ModelEntity | null> {
+  async getModelById(model_id: string): Promise<ModelEntity | null> {
     const [model] = await this.databaseService.query(
       `
       SELECT * FROM ${ this.modelsTableName } WHERE model_id = :model_id
