@@ -1,5 +1,12 @@
 # Semantic Versioning Changelog
 
+# [1.14.0](https://git.sfera.inno.local/SUMD/mrms-backend/compare/v1.13.5...v1.14.0) (2025-02-21)
+
+
+### Features
+
+* add creation surrogate model ([7c4ef3c](https://git.sfera.inno.local/SUMD/mrms-backend/commit/7c4ef3cfce91855373b38f0b7d71270da604fddf))
+
 ## [1.13.5](https://git.sfera.inno.local/SUMD/mrms-backend/compare/v1.13.4...v1.13.5) (2025-02-19)
 
 
