@@ -132,15 +132,9 @@ export class ModelsService {
     const parent_model_id = parent_model_id_artefact ? parent_model_id_artefact.artefact_string_value : undefined;
     const model_name_artefact = artefacts.find(artefact => artefact.artefact_tech_label === "model_name_validation");
     const model_name = model_name_artefact ? model_name_artefact.artefact_string_value : undefined;
-    const model_desc_artefact = artefacts.find(artefact => artefact.artefact_tech_label === "model_desc");
-    const model_desc = model_desc_artefact ? model_desc_artefact.artefact_string_value : undefined;
 
     if (!model_name) {
       throw new BadRequestException("Bad Request", "model_name is required");
-    }
-
-    if (!model_desc) {
-      throw new BadRequestException("Bad Request", "model_desc is required");
     }
 
     if (parent_model_id) {
@@ -172,7 +166,6 @@ export class ModelsService {
     const createModelQueryParams = {
       model_id,
       model_name,
-      model_desc,
       model_version,
       create_date: new Date(),
       update_date: new Date(),
@@ -184,7 +177,7 @@ export class ModelsService {
     }
 
     const artefactsForUpdate = artefacts
-      .filter(artefact => artefact.artefact_tech_label !== "model_name" && artefact.artefact_tech_label !== "model_desc")
+      .filter(artefact => artefact.artefact_tech_label !== "model_name")
       .map(artefact => ({ ...artefact, model_id }));
 
     await this.executeDatabaseUpdates({ artefactsForUpdate }, MODEL_SOURCES.MRM)
@@ -205,7 +198,6 @@ export class ModelsService {
         root_model_id,
         model_id,
         model_name,
-        model_desc,
         model_version,
         create_date,
         update_date,
@@ -215,7 +207,6 @@ export class ModelsService {
         :root_model_id,
         :model_id,
         :model_name,
-        :model_desc,
         :model_version,
         :create_date,
         :update_date,
@@ -227,7 +218,6 @@ export class ModelsService {
         root_model_id: modelSum.root_model_id,
         model_id: modelSum.model_id,
         model_name: modelSum.model_name,
-        model_desc: modelSum.model_desc,
         model_version: modelSum.model_version,
         create_date: modelSum.create_date,
         update_date: modelSum.update_date,
@@ -309,10 +299,6 @@ export class ModelsService {
 
   private isNameArtefact(label) {
     return label === 'model_name'
-  }
-
-  private isDescriptionArtefact(label) {
-    return label === 'model_desc'
   }
 
   private isAllocationUsageArtefact(label) {
@@ -426,8 +412,6 @@ export class ModelsService {
           if (model_source === MODEL_SOURCES.SUM) {
             updatesBySource[MODEL_SOURCES.MRM].namesForUpdate.push({ model_id, model_name: artefact_string_value })
           }
-        } else if (this.isDescriptionArtefact(artefact_tech_label)) {
-          updatesBySource[MODEL_SOURCES.MRM].descriptionsForUpdate.push({ model_id, model_desc: artefact_string_value })
         } else if (this.isAllocationUsageArtefact(artefact_tech_label)) {
           updateAllocation(model_id, this.getGblId(artefact_tech_label), artefact_string_value, null)
           // updates.modelsAllocationForUpdate.push({
@@ -477,6 +461,7 @@ export class ModelsService {
             case 'validation_result_approve_date':
             case 'auto_validation_result':
             case 'model_changes_info':
+            case 'model_desc':
               updatesBySource[MODEL_SOURCES.MRM].artefactsForUpdate.push({ model_id, ...artefactItem, creator })
               continue
           }
@@ -619,21 +604,11 @@ export class ModelsService {
     }
   }
 
-  async updateModelDesc(data, source) {
-    if (source === MODEL_SOURCES.SUM) {
-      await this.sumModelService.updateModelDesc(data)
-    } else if (source === MODEL_SOURCES.MRM) {
-      await this.mrmModelService.updateModelDesc(data)
-    } else {
-      throw new Error(`Unknown model source: ${ source }`)
-    }
-  }
-
   async updateModelAllocation(data, source) {
     if (source === MODEL_SOURCES.SUM) {
       await this.allocationSumService.update(data)
     } else if (source === MODEL_SOURCES.MRM) {
-      await this.mrmModelService.updateModelDesc(data)
+
     } else {
       throw new Error(`Unknown model source: ${ source }`)
     }
@@ -660,10 +635,6 @@ export class ModelsService {
 
     for (const name of namesForUpdate) {
       await this.updateModelName(name, source)
-    }
-
-    for (const description of descriptionsForUpdate) {
-      await this.updateModelDesc(description, source)
     }
 
     for (const artefact of artefactsForUpdate) {
