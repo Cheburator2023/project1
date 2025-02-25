@@ -10,16 +10,6 @@ export const PSEUDO_ARTEFACTS = [
     values: []
   },
   {
-    artefact_id: 1001,
-    artefact_tech_label: 'model_desc',
-    artefact_label: 'Описание модели',
-    is_edit_flg: '1',
-    artefact_desc: '',
-    artefact_type_id: '1',
-    artefact_type_desc: 'text',
-    values: []
-  },
-  {
     artefact_id: 2119,
     artefact_tech_label: 'create_date',
     artefact_label: 'Дата создания модели',

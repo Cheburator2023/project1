@@ -43,39 +43,6 @@ export abstract class BaseModelService implements IModelService {
     return true
   }
 
-  async updateModelDesc(data: Pick<UpdateModelDto, 'model_id' | 'model_desc'>): Promise<boolean> {
-    const { model_id, model_desc } = data
-
-    const model: ModelEntity | null = await this.getModelById(model_id)
-    if (!model) {
-      return false
-    }
-
-    if (model.model_desc === model_desc) {
-      return false
-    }
-
-    await this.databaseService.query(
-      `
-      UPDATE
-        ${ this.modelsTableName }
-      SET model_desc = :model_desc
-      WHERE model_id = :model_id
-      `,
-      {
-        model_desc,
-        model_id: model.model_id
-      }
-    )
-
-    await this.updateUpdateDate({
-      update_date: new Date(),
-      model_id
-    })
-
-    return true
-  }
-
   async updateUpdateDate(data: Pick<UpdateModelDto, 'model_id' | 'update_date'>): Promise<boolean> {
     const { model_id, update_date = new Date() } = data
 

@@ -2,7 +2,6 @@ const getModel = `
 SELECT
     m.model_id AS system_model_id,
     m.model_name,
-    m.model_desc,
     m.model_version,
     m.create_date,
     m.update_date,
@@ -155,7 +154,8 @@ LEFT JOIN (
         MAX(CASE WHEN artefact_id = 2657 THEN artefact_string_value ELSE NULL END) AS lead_validator_comment_model_delete,
         MAX(CASE WHEN artefact_id = 2658 THEN artefact_string_value ELSE NULL END) AS lead_validator_resolution_model_delete,
         MAX(CASE WHEN artefact_id = 2558 THEN artefact_string_value ELSE NULL END) AS remove_date_validation,
-        MAX(CASE WHEN artefact_id = 2559 THEN artefact_string_value ELSE NULL END) AS model_version_validation
+        MAX(CASE WHEN artefact_id = 2559 THEN artefact_string_value ELSE NULL END) AS model_version_validation,
+        MAX(CASE WHEN artefact_id = 2659 THEN artefact_string_value ELSE NULL END) AS model_desc
     FROM (
         SELECT
             artefact_realizations_new.model_id,
