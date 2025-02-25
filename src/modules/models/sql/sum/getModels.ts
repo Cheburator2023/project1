@@ -6,7 +6,6 @@ SELECT m_.model_id                                                              
        clsf_.group_company,
        clsf_.business_customer_departament,
        m_.model_name,
-       m_.model_desc,
        m_.create_date,
        m_.model_version,
        m_.update_date,
@@ -48,6 +47,7 @@ SELECT m_.model_id                                                              
        dm_.model_epic_12,
        dm_.model_epic_12_date,
        dm_.developing_model_reason,
+       dm_.model_desc,
        st.status                                                                                     AS business_status,
        activeBpmnInstance.bpmn_instance_name                                                         AS model_status,
        -- Используется для подсчета метрик: Динамика моделей по стримам 
@@ -367,7 +367,8 @@ ON m_.model_id = allocation_data.allocation_model_id
                            MAX(CASE WHEN ARTEFACT_ID = 870 THEN ARTEFACT_STRING_VALUE ELSE NULL END) AS model_epic_11_date,
                            MAX(CASE WHEN ARTEFACT_ID = 898 THEN ARTEFACT_STRING_VALUE ELSE NULL END) AS model_epic_12,
                            MAX(CASE WHEN ARTEFACT_ID = 899 THEN ARTEFACT_STRING_VALUE ELSE NULL END) AS model_epic_12_date,
-                           MAX(CASE WHEN ARTEFACT_ID = 69 THEN ARTEFACT_STRING_VALUE ELSE NULL END) AS developing_model_reason
+                           MAX(CASE WHEN ARTEFACT_ID = 69 THEN ARTEFACT_STRING_VALUE ELSE NULL END) AS developing_model_reason,
+                           MAX(CASE WHEN ARTEFACT_ID = 905 THEN ARTEFACT_STRING_VALUE ELSE NULL END) AS model_desc
                     FROM artefact_realizations
                     WHERE effective_to = TO_TIMESTAMP('9999-12-3123:59:59', 'YYYY-MM-DDHH24:MI:SS')
                       AND artefact_id IN (7, 72, 786, 787, 788, 789, 33, 34,
@@ -381,7 +382,7 @@ ON m_.model_id = allocation_data.allocation_model_id
                         )
                     GROUP BY model_id) dm_ ON m_.model_id = dm_.model_id
 WHERE 
-m_.MODEL_DESC != 'AutoML'
+dm_.model_desc != 'AutoML'
 AND (:model_id::varchar IS NULL OR m_.model_id = :model_id)
 AND (m_.temp_block_flag != 1 OR m_.temp_block_flag IS NULL)
 AND (

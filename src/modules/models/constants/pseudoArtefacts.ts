@@ -22,16 +22,6 @@ const pseudoArtefacts: Artefact[] = [
     values: [],
   },
   {
-    artefact_id: 1001,
-    artefact_tech_label: 'model_desc',
-    artefact_label: 'Описание модели',
-    is_edit_flg: '1',
-    artefact_desc: '',
-    artefact_type_id: ArtefactTypeEnum.TEXT,
-    artefact_type_desc: artefactTypeDescMap[ArtefactTypeEnum.TEXT],
-    values: [],
-  },
-  {
     artefact_id: 1002,
     artefact_tech_label: 'model_alias',
     artefact_label: 'Алиас модели',
