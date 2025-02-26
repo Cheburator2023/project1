@@ -1,5 +1,19 @@
 # Semantic Versioning Changelog
 
+# [1.15.0](https://git.sfera.inno.local/SUMD/mrms-backend/compare/v1.14.0...v1.15.0) (2025-02-26)
+
+
+### Bug Fixes
+
+* add artefact id 905 in sum ([c109601](https://git.sfera.inno.local/SUMD/mrms-backend/commit/c109601fd7542600d39d6a5fd2a899195b277ffd))
+* get model history ([2357fe2](https://git.sfera.inno.local/SUMD/mrms-backend/commit/2357fe2d36f062d7b2076cba8f765c1302ec288c))
+* model desc from automl ([783d6e7](https://git.sfera.inno.local/SUMD/mrms-backend/commit/783d6e701b18a181d431116f236c382f627d1314))
+
+
+### Features
+
+* artefact model desc ([86699e7](https://git.sfera.inno.local/SUMD/mrms-backend/commit/86699e71f34a00d0a1ea468a7b509e28e19a50e8))
+
 # [1.14.0](https://git.sfera.inno.local/SUMD/mrms-backend/compare/v1.13.5...v1.14.0) (2025-02-21)
 
 
