@@ -32,16 +32,21 @@ export class ApiService {
 
   async getModelHistory(query: ModelArtefactHistoryDto) {
     const { model_source, model_id, artefact_tech_label } = query;
-    let result;
-    if (model_source === ModelSource.SUM) {
-      result = await this.sumDatabaseService.query(getSumModelHistory, { model_id, artefact_tech_label });
+    let result = await Promise.all([
+      ...await this.sumDatabaseService.query(getSumModelHistory, { model_id, artefact_tech_label }),
+      ...await this.mrmDatabaseService.query(getSumRmModelHistory, { model_id, artefact_tech_label })
+    ])
+  
+    function filterAndSortData(data: any[]) {
+      return data
+        .sort((a, b) => new Date(b.effective_from).getTime() - new Date(a.effective_from).getTime()) // Сортируем от нового к старому
+        .filter((item, index, arr) =>
+          index === 0 ||
+          !arr.slice(0, index).some(prev => prev.artefact_string_value === item.artefact_string_value)
+        ); // Удаляем дубликаты artefact_string_value
     }
-
-    if (model_source === ModelSource.SUM_RM) {
-      result = await this.mrmDatabaseService.query(getSumRmModelHistory, { model_id, artefact_tech_label });
-    }
-
-    const formattedResult = result.map(item => {
+  
+    const formattedResult = filterAndSortData(result).map(item => {
       return {
         ...item,
         artefact_id: Number(item.artefact_id),
@@ -58,9 +63,9 @@ export class ApiService {
         }
       };
     });
-
+  
     return formattedResult;
-  }
+  }  
 
   async createTemplate(templateCreateDto: TemplateCreateDto, user) {
     const templateWithSameName = await this.mrmDatabaseService.query(getTemplateByLowerName, { template_name: templateCreateDto.template_name });
