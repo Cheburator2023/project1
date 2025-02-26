@@ -374,7 +374,7 @@ ON m_.model_id = allocation_data.allocation_model_id
                       AND artefact_id IN (7, 72, 786, 787, 788, 789, 33, 34,
                                           790, 781, 788, 871, 794, 795, 796, 797,
                                           123, 888, 803, 811, 812, 820, 821, 823, 839, 840, 873,
-                                          867, 868, 869, 870, 898, 899, 900, 69)
+                                          867, 868, 869, 870, 898, 899, 900, 69, 905)
                       AND (
                             :filter_date::Date IS NULL
                             OR TO_DATE(CAST(:filter_date AS Varchar(4000)), 'YYYY-MM-DD')
