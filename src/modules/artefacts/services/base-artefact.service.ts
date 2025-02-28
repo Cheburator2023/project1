@@ -1,5 +1,5 @@
 import { Logger } from '@nestjs/common'
-import { ARTEFACT_TYPES_REQUIRING_VALUES, PSEUDO_ARTEFACTS } from '../constants'
+import { ARTEFACT_TYPES_REQUIRING_VALUES, PSEUDO_ARTEFACTS, pseudoArtefactsSourcesRoles } from '../constants'
 import { ArtefactEntity, ArtefactValueEntity, ArtefactRealizationEntity } from '../entities'
 import { UpdateArtefactDto, SingleValueArtefact, MultiDropdownArtefact } from '../dto'
 import { IArtefactService } from '../interfaces'
@@ -32,16 +32,6 @@ export abstract class BaseArtefactService implements IArtefactService {
   }
 
   async getAllArtefactRoles(): Promise<Map<number, { sum: string[], sum_rm: string[] }>> {
-    const pseudoArtefactsRoles = [
-      {
-          artefact_id: 1001,
-          roles: {
-              sum: ['ds_lead', 'business_customer', 'ds', 'mipm'],
-              sum_rm: ['ds_lead', 'business_customer']
-          }
-      }
-    ];
-
     const roles = await this.databaseService.query(`
       SELECT ar.artefact_id, ar.model_source, ARRAY_AGG(r.role_name) AS roles
       FROM artefact_source_roles ar
@@ -59,12 +49,12 @@ export abstract class BaseArtefactService implements IArtefactService {
         artefactRolesMap.get(row.artefact_id)![modelSource] = row.roles;
     }
 
-    for (const pseudoArtefactRole of pseudoArtefactsRoles) {
-      if (!artefactRolesMap.has(pseudoArtefactRole.artefact_id)) {
-          artefactRolesMap.set(pseudoArtefactRole.artefact_id, { sum: [], sum_rm: [] });
+    for (const pseudoArtefactSourcesRole of pseudoArtefactsSourcesRoles) {
+      if (!artefactRolesMap.has(pseudoArtefactSourcesRole.artefact_id)) {
+          artefactRolesMap.set(pseudoArtefactSourcesRole.artefact_id, { sum: [], sum_rm: [] });
       }
-      artefactRolesMap.get(pseudoArtefactRole.artefact_id).sum = pseudoArtefactRole.roles.sum;
-      artefactRolesMap.get(pseudoArtefactRole.artefact_id).sum_rm = pseudoArtefactRole.roles.sum_rm;
+      artefactRolesMap.get(pseudoArtefactSourcesRole.artefact_id).sum = pseudoArtefactSourcesRole.roles.sum;
+      artefactRolesMap.get(pseudoArtefactSourcesRole.artefact_id).sum_rm = pseudoArtefactSourcesRole.roles.sum_rm;
     }
 
     return artefactRolesMap;
