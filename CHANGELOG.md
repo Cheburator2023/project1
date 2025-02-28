@@ -1,5 +1,14 @@
 # Semantic Versioning Changelog
 
+## [1.15.1](https://git.sfera.inno.local/SUMD/mrms-backend/compare/v1.15.0...v1.15.1) (2025-02-28)
+
+
+### Bug Fixes
+
+* can edit allocation ([b850c48](https://git.sfera.inno.local/SUMD/mrms-backend/commit/b850c48de8c65bba3026c7c4d37420b17ab10034))
+* can edit allocation ([072e32f](https://git.sfera.inno.local/SUMD/mrms-backend/commit/072e32fa997fbb69c798505653c7f5909bb0b7db))
+* can edit allocation ([358c838](https://git.sfera.inno.local/SUMD/mrms-backend/commit/358c838604a24925b3d70f336772a0dd1bea4899))
+
 # [1.15.0](https://git.sfera.inno.local/SUMD/mrms-backend/compare/v1.14.0...v1.15.0) (2025-02-26)
 
 
