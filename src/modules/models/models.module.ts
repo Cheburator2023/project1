@@ -22,7 +22,7 @@ import { ModelServiceFactory } from './factories'
     AllocationModule,
     UsageModule
   ],
-  exports: [ModelServiceFactory, ModelsService]
+  exports: [ModelServiceFactory, ModelsService, MrmModelService, SumModelService]
 })
 export class ModelsModule {
 }

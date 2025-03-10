@@ -43,7 +43,7 @@ export abstract class BaseModelService implements IModelService {
     return true
   }
 
-  async updateUpdateDate(data: Pick<UpdateModelDto, 'model_id' | 'update_date'>): Promise<boolean> {
+  async updateUpdateDate(data: Pick<UpdateModelDto, 'model_id'> & Partial<Pick<UpdateModelDto, 'update_date'>>): Promise<boolean> {
     const { model_id, update_date = new Date() } = data
 
     const model: ModelEntity | null = await this.getModelById(model_id)

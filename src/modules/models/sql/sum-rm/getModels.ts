@@ -25,8 +25,112 @@ SELECT
     'sum-rm' AS model_source,
     
     -- Бизнес статус Модели (всегда берем значение из СУМ, для этого явно прописываем business_status как null)
-    null as business_status
+    null as business_status,
+        
+    -- Столбцы для дат подтверждения и флагов использования по кварталам
+    usage_data.usage_confirm_date_q1,
+    usage_data.usage_confirm_date_q2,
+    usage_data.usage_confirm_date_q3,
+    usage_data.usage_confirm_date_q4,
+    usage_data.usage_confirm_flag_q1,
+    usage_data.usage_confirm_flag_q2,
+    usage_data.usage_confirm_flag_q3,
+    usage_data.usage_confirm_flag_q4,
+    
+    -- Столбцы для процентов использования по каждой ГБЛ
+    allocation_data.allocation_kib_usage,
+    allocation_data.allocation_smb_usage,
+    allocation_data.allocation_rb_usage,
+    allocation_data.allocation_kc_usage,
+    allocation_data.allocation_other_usage,
+
+    -- Столбцы для комментариев по каждой ГБЛ
+    allocation_data.allocation_kib_comment,
+    allocation_data.allocation_smb_comment,
+    allocation_data.allocation_rb_comment,
+    allocation_data.allocation_kc_comment,
+    allocation_data.allocation_other_comment
 FROM models_new m
+
+LEFT JOIN (
+    SELECT
+        muh.model_id                                                                                            AS usage_model_id,
+        MAX(CASE WHEN muh.confirmation_quarter = 1 THEN muh.confirmation_date ELSE NULL END) AS usage_confirm_date_q1,
+        MAX(CASE WHEN muh.confirmation_quarter = 2 THEN muh.confirmation_date ELSE NULL END) AS usage_confirm_date_q2,
+        MAX(CASE WHEN muh.confirmation_quarter = 3 THEN muh.confirmation_date ELSE NULL END) AS usage_confirm_date_q3,
+        MAX(CASE WHEN muh.confirmation_quarter = 4 THEN muh.confirmation_date ELSE NULL END) AS usage_confirm_date_q4,
+        COALESCE(
+            CASE
+                WHEN BOOL_OR(muh.confirmation_quarter = 1 AND muh.is_used) THEN 'Да'
+                WHEN BOOL_OR(muh.confirmation_quarter = 1 AND NOT muh.is_used) THEN 'Нет'
+                ELSE NULL
+                END,
+            NULL
+        ) AS usage_confirm_flag_q1,
+        COALESCE(
+        CASE
+            WHEN BOOL_OR(muh.confirmation_quarter = 2 AND muh.is_used) THEN 'Да'
+            WHEN BOOL_OR(muh.confirmation_quarter = 2 AND NOT muh.is_used) THEN 'Нет'
+            ELSE NULL
+            END,
+        NULL
+        ) AS usage_confirm_flag_q2,
+        COALESCE(
+            CASE
+                WHEN BOOL_OR(muh.confirmation_quarter = 3 AND muh.is_used) THEN 'Да'
+                WHEN BOOL_OR(muh.confirmation_quarter = 3 AND NOT muh.is_used) THEN 'Нет'
+                ELSE NULL
+                END,
+            NULL
+        ) AS usage_confirm_flag_q3,
+        COALESCE(
+            CASE
+                WHEN BOOL_OR(muh.confirmation_quarter = 4 AND muh.is_used) THEN 'Да'
+                WHEN BOOL_OR(muh.confirmation_quarter = 4 AND NOT muh.is_used) THEN 'Нет'
+                ELSE NULL
+                END,
+            NULL
+        ) AS usage_confirm_flag_q4
+    FROM models_usage as muh
+    WHERE
+        (muh.confirmation_quarter IN (1,2,3)
+         AND muh.confirmation_year = EXTRACT(YEAR FROM CURRENT_DATE))
+        OR
+        (:use_previous_year_for_q4 = true AND muh.confirmation_quarter = 4
+         AND muh.confirmation_year = EXTRACT(YEAR FROM CURRENT_DATE) - 1)
+        OR
+        (:use_previous_year_for_q4 = false AND muh.confirmation_quarter = 4
+         AND muh.confirmation_year = EXTRACT(YEAR FROM CURRENT_DATE))
+    GROUP BY muh.model_id
+) AS usage_data
+ON m.model_id = usage_data.usage_model_id
+
+LEFT JOIN (
+    SELECT
+        mah.model_id                                                                     AS allocation_model_id,
+        MAX(CASE WHEN mah.gbl_name = 'КИБ' THEN mah.allocation_percent ELSE NULL END)    AS allocation_kib_usage,
+        MAX(CASE WHEN mah.gbl_name = 'СМБ' THEN mah.allocation_percent ELSE NULL END)    AS allocation_smb_usage,
+        MAX(CASE WHEN mah.gbl_name = 'РБ' THEN mah.allocation_percent ELSE NULL END)     AS allocation_rb_usage,
+        MAX(CASE WHEN mah.gbl_name = 'КЦ' THEN mah.allocation_percent ELSE NULL END)     AS allocation_kc_usage,
+        MAX(CASE WHEN mah.gbl_name = 'Другое' THEN mah.allocation_percent ELSE NULL END) AS allocation_other_usage,
+
+        MAX(CASE WHEN mah.gbl_name = 'КИБ' THEN mah.comment ELSE NULL END)               AS allocation_kib_comment,
+        MAX(CASE WHEN mah.gbl_name = 'СМБ' THEN mah.comment ELSE NULL END)               AS allocation_smb_comment,
+        MAX(CASE WHEN mah.gbl_name = 'РБ' THEN mah.comment ELSE NULL END)                AS allocation_rb_comment,
+        MAX(CASE WHEN mah.gbl_name = 'КЦ' THEN mah.comment ELSE NULL END)                AS allocation_kc_comment,
+        MAX(CASE WHEN mah.gbl_name = 'Другое' THEN mah.comment ELSE NULL END)            AS allocation_other_comment
+    FROM (
+        SELECT
+            model_id,
+            gbl_name as gbl_name,
+            allocation_percent,
+            comment
+        FROM models_allocation mah
+        INNER JOIN global_business_lines gbl ON mah.gbl_id = gbl.gbl_id
+    ) AS mah
+    GROUP BY mah.model_id
+) AS allocation_data
+ON m.model_id = allocation_data.allocation_model_id
 
 LEFT JOIN (
     SELECT

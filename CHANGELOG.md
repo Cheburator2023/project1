@@ -1,5 +1,35 @@
 # Semantic Versioning Changelog
 
+## [1.15.1](https://git.sfera.inno.local/SUMD/mrms-backend/compare/v1.15.0...v1.15.1) (2025-02-28)
+
+
+### Bug Fixes
+
+* can edit allocation ([b850c48](https://git.sfera.inno.local/SUMD/mrms-backend/commit/b850c48de8c65bba3026c7c4d37420b17ab10034))
+* can edit allocation ([072e32f](https://git.sfera.inno.local/SUMD/mrms-backend/commit/072e32fa997fbb69c798505653c7f5909bb0b7db))
+* can edit allocation ([358c838](https://git.sfera.inno.local/SUMD/mrms-backend/commit/358c838604a24925b3d70f336772a0dd1bea4899))
+
+# [1.15.0](https://git.sfera.inno.local/SUMD/mrms-backend/compare/v1.14.0...v1.15.0) (2025-02-26)
+
+
+### Bug Fixes
+
+* add artefact id 905 in sum ([c109601](https://git.sfera.inno.local/SUMD/mrms-backend/commit/c109601fd7542600d39d6a5fd2a899195b277ffd))
+* get model history ([2357fe2](https://git.sfera.inno.local/SUMD/mrms-backend/commit/2357fe2d36f062d7b2076cba8f765c1302ec288c))
+* model desc from automl ([783d6e7](https://git.sfera.inno.local/SUMD/mrms-backend/commit/783d6e701b18a181d431116f236c382f627d1314))
+
+
+### Features
+
+* artefact model desc ([86699e7](https://git.sfera.inno.local/SUMD/mrms-backend/commit/86699e71f34a00d0a1ea468a7b509e28e19a50e8))
+
+# [1.14.0](https://git.sfera.inno.local/SUMD/mrms-backend/compare/v1.13.5...v1.14.0) (2025-02-21)
+
+
+### Features
+
+* add creation surrogate model ([7c4ef3c](https://git.sfera.inno.local/SUMD/mrms-backend/commit/7c4ef3cfce91855373b38f0b7d71270da604fddf))
+
 ## [1.13.5](https://git.sfera.inno.local/SUMD/mrms-backend/compare/v1.13.4...v1.13.5) (2025-02-19)
 
 

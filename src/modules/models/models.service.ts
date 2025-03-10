@@ -1,9 +1,8 @@
 import { BadRequestException, Injectable } from '@nestjs/common'
 import { MrmModelService, SumModelService } from './services'
+import { AllocationService } from 'src/modules/allocation/allocation.service'
+import { UsageService } from 'src/modules/usage/usage.service'
 import { ArtefactService } from 'src/modules/artefacts/artefact.services'
-import { AllocationSumService } from 'src/modules/allocation/allocation.sum.service'
-import { UsageSumService } from 'src/modules/usage/usage.sum.service'
-import { UsageSumRmService } from 'src/modules/usage/usage.sum.rm.service'
 import { SumDatabaseService } from 'src/system/sum-database/database.service'
 import { MrmDatabaseService } from 'src/system/mrm-database/database.service'
 
@@ -16,26 +15,19 @@ import {
   updateModelAllocation as updateSumRmModelAllocation
 } from './sql/sum-rm'
 
-import { LIFE_CYCLE_STAGES, LIFE_CYCLE_STAGES_DESCRIPTION, MODEL_SOURCES, MODEL_STATUS } from 'src/system/common/constants'
+import { LIFE_CYCLE_STAGES, LIFE_CYCLE_STAGES_DESCRIPTION, MODEL_SOURCES, MODEL_STATUS, EDIT_WINDOW_MONTHS } from 'src/system/common/constants'
 import { BUSINESS_CUSTOMER_DEPARTMENT_MAPPING, DEPARTMENT_TO_STREAM_MAPPING, pseudoArtefacts } from './constants'
 import { Artefact, ArtefactValue, GroupedResults, Model, ModelRelationsResponse, ModelType } from './interfaces'
 import { CompareModelsDto, ModelsDto, ModelWithRelationsDto } from './dto'
 import { ArtefactFormatting, ArtefactFormattingType } from './rules'
 
-import { formatDateTime, isValidDate, parseDate } from 'src/system/common/utils'
+import { formatDateTime, isValidDate, parseDate, canEditPreviousQuarter } from 'src/system/common/utils'
 import { ModelCreateDto } from 'src/api/dto/index.dto'
 import { randomUUID } from 'crypto'
 import { sql as parentSumRmModel } from 'src/api/sql/models/sum-rm/parent'
 import { sql as createModel } from 'src/api/sql/models/sum-rm/create'
 import { sql as newArtefacts } from 'src/api/sql/artefacts/new'
 import { ModelEntity } from './entities'
-
-interface UsageEntry {
-  confirmation_date: string | null;
-  is_used: string | null;
-}
-
-const usageMap: Record<string, UsageEntry> = {}
 
 interface ArtefactUpdateDto {
   artefact_tech_label: string,
@@ -49,16 +41,14 @@ interface ModelsUpdateDto {
   artefacts: ArtefactUpdateDto[]
 }
 
-
 @Injectable()
 export class ModelsService {
   constructor(
     private readonly sumModelService: SumModelService,
     private readonly mrmModelService: MrmModelService,
     private readonly artefactService: ArtefactService,
-    private readonly allocationSumService: AllocationSumService,
-    private readonly usageSumService: UsageSumService,
-    private readonly usageSumRmService: UsageSumRmService,
+    private readonly allocationService: AllocationService,
+    private readonly usageService: UsageService,
     private readonly sumDatabaseService: SumDatabaseService,
     private readonly mrmDatabaseService: MrmDatabaseService
   ) {
@@ -315,17 +305,12 @@ export class ModelsService {
     ].includes(label)
   }
 
-  private isUsageFlagArtefact(label) {
-    return [
-      'usage_confirm_flag_q1', 'usage_confirm_flag_q2',
-      'usage_confirm_flag_q3', 'usage_confirm_flag_q4'
-    ].includes(label)
-  }
-
-  private isUsageDateArtefact(label) {
+  private isUsageArtefact(label) {
     return [
       'usage_confirm_date_q1', 'usage_confirm_date_q2',
-      'usage_confirm_date_q3', 'usage_confirm_date_q4'
+      'usage_confirm_date_q3', 'usage_confirm_date_q4',
+      'usage_confirm_flag_q1', 'usage_confirm_flag_q2',
+      'usage_confirm_flag_q3', 'usage_confirm_flag_q4'
     ].includes(label)
   }
 
@@ -350,44 +335,6 @@ export class ModelsService {
         modelsUsageForUpdate: []
       }
     }
-
-    const updateAllocation = (model_id: string, gbl_id: string, percent: string | null, comment: string | null): void => {
-      if (!allocationMap[model_id]) {
-        allocationMap[model_id] = {}
-      }
-
-      if (!allocationMap[model_id][gbl_id]) {
-        allocationMap[model_id][gbl_id] = { model_id, gbl_id, percent: null, comment: null }
-      }
-
-      const allocation = allocationMap[model_id][gbl_id]
-      allocation.percent = percent !== null ? percent : allocation.percent
-      allocation.comment = comment !== null ? comment : allocation.comment
-    }
-    const updateUsage = (
-      model_id: string,
-      quarter: string,
-      confirmation_date: string | null,
-      is_used: string | null
-    ): void => {
-      if (!usageMap[model_id]) {
-        usageMap[model_id] = {}
-      }
-
-      if (!usageMap[model_id][quarter]) {
-        usageMap[model_id][quarter] = { confirmation_date: null, is_used: null }
-      }
-
-      const usage = usageMap[model_id][quarter]
-      if (confirmation_date !== null) {
-        usage.confirmation_date = confirmation_date
-      }
-      if (is_used !== null) {
-        usage.is_used = is_used
-      }
-    }
-    const allocationMap: Record<string, Record<string, { model_id: string; gbl_id: string; percent: string | null; comment: string | null }>> = {}
-    const usageMap: Record<string, Record<string, { confirmation_date: string | null; is_used: string | null }>> = {}
     const formattedModelsArtefacts = this.mergeArtefacts(modelsArtefacts)
 
     for (const modelItem of formattedModelsArtefacts) {
@@ -413,35 +360,27 @@ export class ModelsService {
             updatesBySource[MODEL_SOURCES.MRM].namesForUpdate.push({ model_id, model_name: artefact_string_value })
           }
         } else if (this.isAllocationUsageArtefact(artefact_tech_label)) {
-          updateAllocation(model_id, this.getGblId(artefact_tech_label), artefact_string_value, null)
-          // updates.modelsAllocationForUpdate.push({
-          //   model_id,
-          //   gbl_id: this.getGblId(artefact_tech_label),
-          //   percent: artefact_string_value,
-          //   comment: null
-          // })
+          updates.modelsAllocationForUpdate.push({
+            model_id,
+            gbl_id: this.getGblId(artefact_tech_label),
+            percent: artefact_string_value,
+            comment: null,
+            creator
+          })
         } else if (this.isAllocationCommentArtefact(artefact_tech_label)) {
-          updateAllocation(model_id, this.getGblId(artefact_tech_label), null, artefact_string_value)
-          // updates.modelsAllocationForUpdate.push({
-          //   model_id,
-          //   gbl_id: this.getGblId(artefact_tech_label),
-          //   percent: null,
-          //   comment: artefact_string_value
-          // })
-        } else if (this.isUsageFlagArtefact(artefact_tech_label)) {
-          updateUsage(model_id, artefact_tech_label.slice(-1), null, artefact_string_value)
-          // updates.modelsUsageForUpdate.push({
-          //   model_id,
-          //   confirmation_date: null,
-          //   is_used: artefact_string_value
-          // })
-        } else if (this.isUsageDateArtefact(artefact_tech_label)) {
-          updateUsage(model_id, artefact_tech_label.slice(-1), artefact_string_value, null)
-          // updates.modelsUsageForUpdate.push({
-          //   model_id,
-          //   confirmation_date: artefact_string_value,
-          //   is_used: null
-          // })
+          updates.modelsAllocationForUpdate.push({
+            model_id,
+            gbl_id: this.getGblId(artefact_tech_label),
+            percent: null,
+            comment: artefact_string_value,
+            creator
+          })
+        } else if (this.isUsageArtefact(artefact_tech_label)) {
+          updates.modelsUsageForUpdate.push({
+            ...artefactItem,
+            model_id,
+            creator
+          })
         } else {
           switch (artefact_tech_label) {
             case 'model_type':
@@ -473,61 +412,9 @@ export class ModelsService {
       }
     }
 
-    const modelsAllocationForUpdate = Object.entries(allocationMap).reduce((acc, [model_id, allocations]) => {
-      const allocationArray = Object
-        .values(allocations)
-        .filter(allocation => allocation.percent !== '')
-        .map(allocation => ({ ...allocation, model_id }))
-      return acc.concat(allocationArray)
-    }, [] as Array<{ model_id: string; gbl_id: string; percent: string | null; comment: string | null }>)
-    const getQuarterEndDate = (quarter, year = new Date().getFullYear()) => {
-      const currentDate = new Date();
-      const currentQuarter = Math.floor((currentDate.getMonth() + 3) / 3);
-
-      // Проверяем, передан ли текущий квартал и текущий год
-      if (parseInt(quarter) === currentQuarter && year === currentDate.getFullYear()) {
-        return currentDate;
-      }
-
-      // Если передан не текущий квартал, получаем последний день квартала
-      const quarterEndMonths = {
-        1: 2, // Март
-        2: 5, // Июнь
-        3: 8, // Сентябрь
-        4: 11 // Декабрь
-      };
-
-      const month = quarterEndMonths[quarter];
-      const lastDay = new Date(year, month + 1, 0); // 0-й день следующего месяца - последний день текущего
-
-      return lastDay;
-    }
-    const modelsUsageForUpdate = Object.entries(usageMap).reduce((acc, [model_id, usages]) => {
-      const usageArray = Object.entries(usages).map(([quarter, usage]) => ({
-        model_id,
-        confirmation_date: usage.confirmation_date || formatDateTime(getQuarterEndDate(quarter)).split('-').reverse().join('.'),
-        is_used: usage.is_used ? usage.is_used === 'Да' : null
-      }))
-      return acc.concat(usageArray)
-    }, [] as Array<{model_id: string, confirmation_date: string | null, is_used: boolean}>)
-
     await this.executeDatabaseUpdates(updatesBySource[MODEL_SOURCES.SUM], MODEL_SOURCES.SUM)
     await this.executeDatabaseUpdates(updatesBySource[MODEL_SOURCES.MRM], MODEL_SOURCES.MRM)
 
-    if (modelSource === MODEL_SOURCES.MRM) {
-      // Perform database updates
-      await Promise.all([
-        modelsAllocationForUpdate.length && this.mrmDatabaseService.queryAll(updateSumRmModelAllocation, modelsAllocationForUpdate),
-        modelsUsageForUpdate.length && modelsUsageForUpdate.map(async item => await this.usageSumRmService.update(item))
-      ])
-    }
-
-    if (modelSource === MODEL_SOURCES.SUM) {
-      await Promise.all([
-        modelsAllocationForUpdate.length && modelsAllocationForUpdate.map(async item => await this.allocationSumService.update(item)),
-        modelsUsageForUpdate.length && modelsUsageForUpdate.map(async item => await this.usageSumService.update(item))
-      ])
-    }
     await new Promise((resolve, reject) => {
       setTimeout(resolve, 1000)
     })
@@ -605,29 +492,12 @@ export class ModelsService {
   }
 
   async updateModelAllocation(data, source) {
-    if (source === MODEL_SOURCES.SUM) {
-      await this.allocationSumService.update(data)
-    } else if (source === MODEL_SOURCES.MRM) {
-
-    } else {
-      throw new Error(`Unknown model source: ${ source }`)
-    }
-  }
-
-  async updateModelUsage(data, source) {
-    if (source === MODEL_SOURCES.SUM) {
-      await this.usageSumService.update(data)
-    } else if (source === MODEL_SOURCES.MRM) {
-      await this.usageSumRmService.update(data)
-    } else {
-      throw new Error(`Unknown model source: ${ source }`)
-    }
+    return this.allocationService.updateAllocation(data, source)
   }
 
   async executeDatabaseUpdates(updates, source: MODEL_SOURCES) {
     const {
       namesForUpdate = [],
-      descriptionsForUpdate = [],
       modelsAllocationForUpdate = [],
       modelsUsageForUpdate = [],
       artefactsForUpdate = []
@@ -641,13 +511,11 @@ export class ModelsService {
       await this.artefactService.updateArtefact(artefact, source)
     }
 
-    // for (const allocation of modelsAllocationForUpdate) {
-    //   await this.updateModelAllocation(allocation, source)
-    // }
-    //
-    // for (const usage of modelsUsageForUpdate) {
-    //   await this.updateModelUsage(usage, source)
-    // }
+    for (const allocation of modelsAllocationForUpdate) {
+      await this.updateModelAllocation(allocation, source)
+    }
+
+    await this.usageService.updateUsage(modelsUsageForUpdate, source)
   }
 
   private getGblId(label) {
@@ -682,14 +550,15 @@ export class ModelsService {
 
     const sumModels = await this.sumDatabaseService.query(getSumModels, {
       filter_date: filterDate,
-      model_id
+      model_id,
+      use_previous_year_for_q4: canEditPreviousQuarter(EDIT_WINDOW_MONTHS)
     })
     const mrmModels = await this.mrmDatabaseService.query(getSumRmModels(excludeErrorCondition), {
       filter_date: filterDate,
       model_id,
-      exclude_error: excludeError
+      exclude_error: excludeError,
+      use_previous_year_for_q4: canEditPreviousQuarter(EDIT_WINDOW_MONTHS)
     })
-
 
     return this.mergeSumAndMrmModels(sumModels, mrmModels, 'system_model_id')
   }

@@ -115,44 +115,53 @@ ON m_.model_id = assignee_hist_data.model_id
 
 LEFT JOIN (
     SELECT
-        muh.model_id                                                                                            AS usage_model_id,
-        MAX(CASE WHEN EXTRACT(QUARTER FROM muh.confirmation_date) = 1 THEN muh.confirmation_date ELSE NULL END) AS usage_confirm_date_q1,
-        MAX(CASE WHEN EXTRACT(QUARTER FROM muh.confirmation_date) = 2 THEN muh.confirmation_date ELSE NULL END) AS usage_confirm_date_q2,
-        MAX(CASE WHEN EXTRACT(QUARTER FROM muh.confirmation_date) = 3 THEN muh.confirmation_date ELSE NULL END) AS usage_confirm_date_q3,
-        MAX(CASE WHEN EXTRACT(QUARTER FROM muh.confirmation_date) = 4 THEN muh.confirmation_date ELSE NULL END) AS usage_confirm_date_q4,
+        muh.model_id                                                            AS usage_model_id,
+        MAX(CASE WHEN muh.quarter = 1 THEN muh.confirmation_date ELSE NULL END) AS usage_confirm_date_q1,
+        MAX(CASE WHEN muh.quarter = 2 THEN muh.confirmation_date ELSE NULL END) AS usage_confirm_date_q2,
+        MAX(CASE WHEN muh.quarter = 3 THEN muh.confirmation_date ELSE NULL END) AS usage_confirm_date_q3,
+        MAX(CASE WHEN muh.quarter = 4 THEN muh.confirmation_date ELSE NULL END) AS usage_confirm_date_q4,
         COALESCE(
             CASE
-                WHEN BOOL_OR(EXTRACT(QUARTER FROM muh.confirmation_date) = 1 AND muh.confirmed) THEN 'Да'
-                WHEN BOOL_OR(EXTRACT(QUARTER FROM muh.confirmation_date) = 1 AND NOT muh.confirmed) THEN 'Нет'
+                WHEN BOOL_OR(muh.quarter = 1 AND muh.confirmed) THEN 'Да'
+                WHEN BOOL_OR(muh.quarter = 1 AND NOT muh.confirmed) THEN 'Нет'
                 ELSE NULL
                 END,
             NULL
         ) AS usage_confirm_flag_q1,
         COALESCE(
         CASE
-            WHEN BOOL_OR(EXTRACT(QUARTER FROM muh.confirmation_date) = 2 AND muh.confirmed) THEN 'Да'
-            WHEN BOOL_OR(EXTRACT(QUARTER FROM muh.confirmation_date) = 2 AND NOT muh.confirmed) THEN 'Нет'
+            WHEN BOOL_OR(muh.quarter = 2 AND muh.confirmed) THEN 'Да'
+            WHEN BOOL_OR(muh.quarter = 2 AND NOT muh.confirmed) THEN 'Нет'
             ELSE NULL
             END,
         NULL
         ) AS usage_confirm_flag_q2,
         COALESCE(
             CASE
-                WHEN BOOL_OR(EXTRACT(QUARTER FROM muh.confirmation_date) = 3 AND muh.confirmed) THEN 'Да'
-                WHEN BOOL_OR(EXTRACT(QUARTER FROM muh.confirmation_date) = 3 AND NOT muh.confirmed) THEN 'Нет'
+                WHEN BOOL_OR(muh.quarter = 3 AND muh.confirmed) THEN 'Да'
+                WHEN BOOL_OR(muh.quarter = 3 AND NOT muh.confirmed) THEN 'Нет'
                 ELSE NULL
                 END,
             NULL
         ) AS usage_confirm_flag_q3,
         COALESCE(
             CASE
-                WHEN BOOL_OR(EXTRACT(QUARTER FROM muh.confirmation_date) = 4 AND muh.confirmed) THEN 'Да'
-                WHEN BOOL_OR(EXTRACT(QUARTER FROM muh.confirmation_date) = 4 AND NOT muh.confirmed) THEN 'Нет'
+                WHEN BOOL_OR(muh.quarter = 4 AND muh.confirmed) THEN 'Да'
+                WHEN BOOL_OR(muh.quarter = 4 AND NOT muh.confirmed) THEN 'Нет'
                 ELSE NULL
                 END,
             NULL
         ) AS usage_confirm_flag_q4
     FROM model_usage_confirm as muh
+    WHERE
+        (muh.quarter IN (1,2,3)
+         AND muh.confirmation_year = EXTRACT(YEAR FROM CURRENT_DATE))
+        OR
+        (:use_previous_year_for_q4 = true AND muh.quarter = 4
+         AND muh.confirmation_year = EXTRACT(YEAR FROM CURRENT_DATE) - 1)
+        OR
+        (:use_previous_year_for_q4 = false AND muh.quarter = 4
+         AND muh.confirmation_year = EXTRACT(YEAR FROM CURRENT_DATE))
     GROUP BY muh.model_id
 ) AS usage_data
 ON m_.model_id = usage_data.usage_model_id
@@ -183,6 +192,7 @@ LEFT JOIN (
     GROUP BY mah.model_id
 ) AS allocation_data
 ON m_.model_id = allocation_data.allocation_model_id
+
          LEFT JOIN (SELECT ar_.model_id,
                            STRING_AGG((CASE WHEN ar_.artefact_id = 57 THEN av_.artefact_value_id ELSE NULL END)::Varchar, ','
                                       ORDER BY ar_.artefact_value_id)                           AS product_and_scope_id,

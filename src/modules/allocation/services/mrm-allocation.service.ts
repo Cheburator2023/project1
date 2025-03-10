@@ -39,7 +39,7 @@ export class MrmAllocationService extends BaseAllocationService implements IAllo
       }
 
       allocationId = allocationItem.allocation_id
-    }  else {
+    } else {
       // если нет записи, то добавляем
       const allocationItem = await this.updateAllocation(data)
 
@@ -50,8 +50,14 @@ export class MrmAllocationService extends BaseAllocationService implements IAllo
       allocationId = allocationItem.allocation_id
     }
 
-    // обновляем результат
+    // добавляем запись в историю
     const allocationHistItem = await this.insertAllocationHistory(allocationId, data)
+
+    if (!allocationHistItem) {
+      return false
+    }
+
+    return true
   }
 
   async getAllocation(model_id: UpdateAllocationDto['model_id'], gbl_id: UpdateAllocationDto['gbl_id']): Promise<AllocationEntity | null> {
