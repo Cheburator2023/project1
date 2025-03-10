@@ -1,13 +1,24 @@
-import { Module } from '@nestjs/common'
-import { AllocationSumService } from './allocation.sum.service'
-import { AllocationSumRmService } from './allocation.sum.rm.service'
+import { forwardRef, Module } from '@nestjs/common'
 import { SumDatabaseModule } from 'src/system/sum-database/database.module'
 import { MrmDatabaseModule } from 'src/system/mrm-database/database.module'
+import { AllocationService } from './allocation.service'
+import { AllocationServiceFactory } from './factories'
+import { MrmAllocationService, SumAllocationService } from './services'
+import { ModelsModule } from '../models/models.module'
 
 @Module({
-  providers: [AllocationSumService, AllocationSumRmService],
-  imports: [SumDatabaseModule, MrmDatabaseModule],
-  exports: [AllocationSumService, AllocationSumRmService]
+  imports: [
+    forwardRef(() => ModelsModule),
+    SumDatabaseModule,
+    MrmDatabaseModule
+  ],
+  providers: [
+    AllocationServiceFactory,
+    MrmAllocationService,
+    SumAllocationService,
+    AllocationService
+  ],
+  exports: [AllocationService]
 })
 export class AllocationModule {
 }
