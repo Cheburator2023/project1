@@ -112,4 +112,24 @@ const isValidDate = (dateInput: string | Date): boolean => {
   return date !== null;
 };
 
-export { queryConvert, isValidDate, parseDate, formatDateTime };
+const canEditPreviousQuarter = (editWindowMonths: number): boolean => {
+  const now = new Date()
+  const currentMonth = now.getMonth() + 1
+  const currentYear = now.getFullYear()
+
+  let previousQuarter = Math.ceil(currentMonth / 3) - 1
+  let previousQuarterYear = currentYear
+
+  if (previousQuarter === 0) {
+    previousQuarter = 4
+    previousQuarterYear -= 1
+  }
+
+  const quarterEndMonth = previousQuarter * 3
+
+  const editDeadline = new Date(previousQuarterYear, quarterEndMonth - 1 + editWindowMonths + 1, 0, 23, 59, 59)
+
+  return now <= editDeadline
+}
+
+export { queryConvert, isValidDate, parseDate, formatDateTime, canEditPreviousQuarter };
