@@ -1,5 +1,12 @@
 # Semantic Versioning Changelog
 
+# [1.16.0](https://git.sfera.inno.local/SUMD/mrms-backend/compare/v1.15.1...v1.16.0) (2025-03-10)
+
+
+### Features
+
+* allocation q4 ([d8161b8](https://git.sfera.inno.local/SUMD/mrms-backend/commit/d8161b860b94e3337c639b0b6629bb7ffd5a6267))
+
 ## [1.15.1](https://git.sfera.inno.local/SUMD/mrms-backend/compare/v1.15.0...v1.15.1) (2025-02-28)
 
 
