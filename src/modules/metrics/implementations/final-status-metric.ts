@@ -36,11 +36,11 @@ export class FinalStatusMetric<T extends MetricResult> extends IndependentMetric
     const { actualStartDate, actualEndDate } = this.getActualDateRange(startDate, endDate, isDeltaCalculation ? 7 : null)
 
     return models.map((model) => {
-      const decomissDate = model.rs_model_decommiss_date ? new Date(model.rs_model_decommiss_date) : null
+      // const decomissDate = model.rs_model_decommiss_date ? new Date(model.rs_model_decommiss_date) : null
       const releaseDate = model.date_of_introduction_into_operation ? new Date(model.date_of_introduction_into_operation) : null
       const developingEndDate = model.developing_end_date ? new Date(model.developing_end_date) : null
       const pilotEndDate = model.data_completion_of_stage_05a ? new Date(model.data_completion_of_stage_05a) : null
-      const createDate = model.create_date ? new Date(model.create_date) : null
+      // const createDate = model.create_date ? new Date(model.create_date) : null
       const modelStatus = model.model_status
 
       /**
@@ -52,11 +52,11 @@ export class FinalStatusMetric<T extends MetricResult> extends IndependentMetric
        *    ТО модель попадает в категорию "Модели с финальным статусом".
        */
       const modelDates = [
-        decomissDate,
+        // decomissDate,
         releaseDate,
         developingEndDate,
         pilotEndDate,
-        createDate
+        // createDate
       ]
       const relevantDate = modelDates.find(
         (date) => this.isWithinDateRange(date, actualStartDate, actualEndDate)
