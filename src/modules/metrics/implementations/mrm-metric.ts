@@ -34,31 +34,31 @@ export class MrmMetric extends IndependentMetric<MetricResult> {
     const { actualStartDate, actualEndDate } = this.getActualDateRange(startDate, endDate, isDeltaCalculation ? 7 : null)
 
     return models.filter((model) => {
-      const decomissDate = model.rs_model_decommiss_date ? new Date(model.rs_model_decommiss_date) : null
+      // const decomissDate = model.rs_model_decommiss_date ? new Date(model.rs_model_decommiss_date) : null
       const releaseDate = model.date_of_introduction_into_operation ? new Date(model.date_of_introduction_into_operation) : null
       const developingEndDate = model.developing_end_date ? new Date(model.developing_end_date) : null
       const pilotEndDate = model.data_completion_of_stage_05a ? new Date(model.data_completion_of_stage_05a) : null
       const createDate = model.create_date ? new Date(model.create_date) : null
 
       /**
-       * 1. Условие: Если "Дата выведения РС/Модели из эксплуатации" входит в выбранный временной срез,
-       *    ИЛИ "Дата релиза" модели входит в выбранный временной срез,
-       *    ИЛИ "Дата окончания разработки Модели" входит в выбранный временной срез,
-       *    ИЛИ "Дата завершения разработки пилота" модели входит в выбранный временной срез,
-       *    ИЛИ "Дата создания" модели входит в выбранный временной срез,
-       *    ТО модель попадает в категорию "Модели в MRM СУМ".
+       * Условия расчета для категории «Модели в MRM СУМ»:
+       * 
+       * Если хотя бы одна из дат («Дата релиза», «Дата окончания разработки модели», «Дата завершения разработки пилота») не пустая,
+       * ТО проверяем, попадает ли хотя бы одна из этих дат в выбранный временной срез.
+       * 
+       * Иначе проверяем, входит ли «Дата создания» модели в выбранный временной срез.
        */
-      if (
-        this.isWithinDateRange(decomissDate, actualStartDate, actualEndDate) ||
-        this.isWithinDateRange(releaseDate, actualStartDate, actualEndDate) ||
-        this.isWithinDateRange(developingEndDate, actualStartDate, actualEndDate) ||
-        this.isWithinDateRange(pilotEndDate, actualStartDate, actualEndDate) ||
-        this.isWithinDateRange(createDate, actualStartDate, actualEndDate)
-      ) {
-        return true
-      }
+      const hasRelevantDates = releaseDate || developingEndDate || pilotEndDate;
 
-      return false
-    })
+      if (hasRelevantDates) {
+        return (
+          this.isWithinDateRange(releaseDate, actualStartDate, actualEndDate) ||
+          this.isWithinDateRange(developingEndDate, actualStartDate, actualEndDate) ||
+          this.isWithinDateRange(pilotEndDate, actualStartDate, actualEndDate)
+        );
+      } else {
+        return this.isWithinDateRange(createDate, actualStartDate, actualEndDate);
+      }
+    });
   }
 }
