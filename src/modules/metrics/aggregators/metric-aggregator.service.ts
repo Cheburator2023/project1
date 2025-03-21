@@ -14,10 +14,11 @@ export class MetricsAggregator {
   async getMetrics(
     startDate: string | null,
     endDate: string | null,
-    streams: string[]
+    streams: string[],
+    excludeError?: boolean
   ): Promise<Record<MetricsEnum, any>> {
     // Aggregate data
-    const data = await this.dataAggregator.aggregateData(streams)
+    const data = await this.dataAggregator.aggregateData(streams, excludeError);
 
     const results: Record<string, any> = {}
 
