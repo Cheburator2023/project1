@@ -3,15 +3,11 @@ import { MetricResult } from '../interfaces'
 
 export class MrmMetric extends IndependentMetric<MetricResult> {
   calculate() {
-    console.log("Модели ДО фильтрации:", this.models.map(item => item.system_model_id).join('\n'));
-
     const countFilteredModels = this.filterModels(
       this.models,
       this.startDate,
       this.endDate
     )
-
-    console.log("Модели ПОСЛЕ фильтрации:", countFilteredModels.map(item => item.system_model_id).join('\n'));
 
     const deltaFilteredModels = this.filterModels(
       countFilteredModels,
