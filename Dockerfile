@@ -13,7 +13,7 @@ FROM docker.repo-ci.sfera.inno.local/sumd-docker-lib/ubi8-base-mrms-backend:v1.0
 #COPY certs/. /ca-certs/.
 #RUN trust anchor --store /ca-certs/* && \
 #    cp /etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem /certs/ca-bundle.crt
-
+#
 #WORKDIR /app
 #COPY package.json /app
 #
