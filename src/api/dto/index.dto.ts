@@ -12,32 +12,32 @@ import {
   IsUUID,
   IsDateString,
   ValidateIf,
-  ValidateNested
-} from "class-validator";
-import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
-import { Transform, Type } from "class-transformer";
-import { ApiModelPropertyOptional } from "@nestjs/swagger/dist/decorators/api-model-property.decorator";
+  ValidateNested,
+} from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { Transform, Type } from 'class-transformer';
+import { ApiModelPropertyOptional } from '@nestjs/swagger/dist/decorators/api-model-property.decorator';
 
 export enum ModelSource {
-  SUM = "sum",
-  SUM_RM = "sum-rm"
+  SUM = 'sum',
+  SUM_RM = 'sum-rm',
 }
 
 export class ModelsDto {
   @ApiModelPropertyOptional({
-    example: 'YYYY-MM-DD'
+    example: 'YYYY-MM-DD',
   })
   @IsOptional()
   @IsDateString()
-  date: string
+  date: string;
 
   @ApiProperty({
     example: '3009b53c-507d-11ed-9b68-0a5801020704',
-    format: 'uuid'
+    format: 'uuid',
   })
   @IsOptional()
   @IsUUID()
-  model_id: string
+  model_id: string;
 
   @ApiPropertyOptional({
     example: 'true',
@@ -45,44 +45,44 @@ export class ModelsDto {
   })
   @IsOptional()
   @IsBoolean()
-  @Transform(({value}) => value === 'true')
+  @Transform(({ value }) => value === 'true')
   excludeError: boolean;
 }
 
 export class ModelWithRelationsDto {
   @ApiProperty({
     example: '3009b53c-507d-11ed-9b68-0a5801020704',
-    format: 'uuid'
+    format: 'uuid',
   })
   @IsUUID()
-  model_id: string
+  model_id: string;
 }
 
 export class CompareModelsDto {
   @ApiModelPropertyOptional({
-    example: 'YYYY-MM-DD'
+    example: 'YYYY-MM-DD',
   })
   @IsDateString()
-  firstDate: string
+  firstDate: string;
 
   @ApiModelPropertyOptional({
-    example: 'YYYY-MM-DD'
+    example: 'YYYY-MM-DD',
   })
   @IsDateString()
-  secondDate: string
+  secondDate: string;
   @ApiPropertyOptional({
     example: 'true',
     description: "Exclude models with the status 'Ошибка заведения'",
   })
   @IsOptional()
   @IsBoolean()
-  @Transform(({value}) => value === 'true')
+  @Transform(({ value }) => value === 'true')
   excludeError: boolean;
 }
 
 export class ModelCreateDto {
   @ApiProperty({
-    example: "record_id"
+    example: 'record_id',
   })
   @IsNotEmpty()
   @IsString()
@@ -91,7 +91,7 @@ export class ModelCreateDto {
   @ApiProperty({
     type: Number,
     nullable: true,
-    example: null
+    example: null,
   })
   @IsNumber()
   @IsPositive()
@@ -99,7 +99,7 @@ export class ModelCreateDto {
   artefact_value_id: number | null;
 
   @ApiProperty({
-    example: "new value"
+    example: 'new value',
   })
   @IsString()
   artefact_string_value: string;
@@ -107,7 +107,7 @@ export class ModelCreateDto {
 
 class ArtefactDto {
   @ApiProperty({
-    example: "record_id"
+    example: 'record_id',
   })
   @IsNotEmpty()
   @IsString()
@@ -116,7 +116,7 @@ class ArtefactDto {
   @ApiProperty({
     type: Number,
     nullable: true,
-    example: null
+    example: null,
   })
   @IsNumber()
   @IsPositive()
@@ -124,7 +124,7 @@ class ArtefactDto {
   artefact_value_id: number | null;
 
   @ApiProperty({
-    example: "new value"
+    example: 'new value',
   })
   @IsString()
   artefact_string_value: string;
@@ -132,8 +132,8 @@ class ArtefactDto {
 
 export class ModelsUpdateDto {
   @ApiProperty({
-    example: "3009b53c-507d-11ed-9b68-0a5801020704",
-    format: "uuid"
+    example: '3009b53c-507d-11ed-9b68-0a5801020704',
+    format: 'uuid',
   })
   @IsUUID()
   model_id: string;
@@ -142,7 +142,7 @@ export class ModelsUpdateDto {
   model_source: string;
 
   @ApiProperty({
-    type: ArtefactDto
+    type: ArtefactDto,
   })
   @IsArray()
   @ValidateNested({ each: true })
@@ -153,14 +153,14 @@ export class ModelsUpdateDto {
 
 export class ArtefactsUpdateDto {
   @ApiProperty({
-    example: "3009b53c-507d-11ed-9b68-0a5801020704",
-    format: "uuid"
+    example: '3009b53c-507d-11ed-9b68-0a5801020704',
+    format: 'uuid',
   })
   @IsUUID()
   model_id: string;
 
   @ApiProperty({
-    example: "record_id"
+    example: 'record_id',
   })
   @IsNotEmpty()
   @IsString()
@@ -169,7 +169,7 @@ export class ArtefactsUpdateDto {
   @ApiProperty({
     type: Number,
     nullable: true,
-    example: null
+    example: null,
   })
   @IsNumber()
   @IsPositive()
@@ -177,7 +177,7 @@ export class ArtefactsUpdateDto {
   artefact_value_id: number | null;
 
   @ApiProperty({
-    example: "new value"
+    example: 'new value',
   })
   @IsString()
   artefact_string_value: string;
@@ -185,15 +185,15 @@ export class ArtefactsUpdateDto {
 
 export class ModelArtefactHistoryDto {
   @ApiProperty({
-    example: "record_id"
+    example: 'record_id',
   })
   @IsNotEmpty()
   @IsString()
   artefact_tech_label: string;
 
   @ApiProperty({
-    example: "3009b53c-507d-11ed-9b68-0a5801020704",
-    format: "uuid"
+    example: '3009b53c-507d-11ed-9b68-0a5801020704',
+    format: 'uuid',
   })
   @IsUUID()
   model_id: string;
@@ -203,25 +203,25 @@ export class ModelArtefactHistoryDto {
 }
 
 type TemplateValueType = {
-  [key: string]: string[]
-}
+  [key: string]: string[];
+};
 
 export class TemplateCreateDto {
   @ApiProperty({
-    example: "Template Name"
+    example: 'Template Name',
   })
   @IsNotEmpty()
   @IsString()
   template_name: string;
 
   @ApiProperty({
-    example: true
+    example: true,
   })
   @IsBoolean()
   public: boolean;
 
   @ApiProperty({
-    example: { "target": [], "record_id": ["not-null"], "model_desc": [] }
+    example: { target: [], record_id: ['not-null'], model_desc: [] },
   })
   @IsObject()
   template_value: TemplateValueType;
@@ -229,14 +229,14 @@ export class TemplateCreateDto {
 
 export class TemplateUpdateDto {
   @ApiProperty({
-    example: 1
+    example: 1,
   })
   @IsNumber()
   @IsPositive()
   template_id: number;
 
   @ApiModelPropertyOptional({
-    example: "Template Name"
+    example: 'Template Name',
   })
   @IsNotEmpty()
   @IsString()
@@ -244,7 +244,7 @@ export class TemplateUpdateDto {
   template_name: string;
 
   @ApiModelPropertyOptional({
-    example: true
+    example: true,
   })
   @IsBoolean()
   @IsOptional()
@@ -252,7 +252,7 @@ export class TemplateUpdateDto {
   public?: boolean;
 
   @ApiModelPropertyOptional({
-    example: { "target": [], "record_id": ["not-null"], "model_desc": [] }
+    example: { target: [], record_id: ['not-null'], model_desc: [] },
   })
   @IsObject()
   @IsOptional()
@@ -260,23 +260,22 @@ export class TemplateUpdateDto {
 }
 
 type FilterValueType = {
-  [key: string]: string[]
-}
+  [key: string]: string[];
+};
 
 export class FilterDto {
   @ApiProperty({
-    type: "object",
+    type: 'object',
     additionalProperties: {
-      type: "array",
-      items: { type: "string" }
+      type: 'array',
+      items: { type: 'string' },
     },
     example: {
-      "target": [],
-      "record_id": ["not-null"],
-      "model_desc": []
-    }
+      target: [],
+      record_id: ['not-null'],
+      model_desc: [],
+    },
   })
-
   @IsObject()
   filters: FilterValueType;
 
@@ -311,4 +310,13 @@ export class MetricsDto {
   @IsArray()
   @IsString({ each: true })
   stream: string[];
+
+  @ApiPropertyOptional({
+    example: 'true',
+    description: "Exclude models with the status 'Ошибка заведения'",
+  })
+  @IsOptional()
+  @IsBoolean()
+  @Transform(({ value }) => value === 'true')
+  excludeError: boolean = true;
 }
