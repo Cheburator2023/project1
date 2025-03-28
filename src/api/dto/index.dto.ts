@@ -47,6 +47,14 @@ export class ModelsDto {
   @IsBoolean()
   @Transform(({ value }) => value === 'true')
   excludeError: boolean;
+
+  @ApiModelPropertyOptional({
+    example: ['Архив', 'Разработка'],
+  })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  mode: string[];
 }
 
 export class ModelWithRelationsDto {

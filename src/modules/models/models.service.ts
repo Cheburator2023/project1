@@ -15,7 +15,7 @@ import {
   updateModelAllocation as updateSumRmModelAllocation
 } from './sql/sum-rm'
 
-import { LIFE_CYCLE_STAGES, LIFE_CYCLE_STAGES_DESCRIPTION, MODEL_SOURCES, MODEL_STATUS, EDIT_WINDOW_MONTHS } from 'src/system/common/constants'
+import { LIFE_CYCLE_STAGES, LIFE_CYCLE_STAGES_DESCRIPTION, MODEL_SOURCES, MODEL_STATUS, EDIT_WINDOW_MONTHS, MODEL_DISPLAY_MODES } from 'src/system/common/constants'
 import { BUSINESS_CUSTOMER_DEPARTMENT_MAPPING, DEPARTMENT_TO_STREAM_MAPPING, pseudoArtefacts } from './constants'
 import { Artefact, ArtefactValue, GroupedResults, Model, ModelRelationsResponse, ModelType } from './interfaces'
 import { CompareModelsDto, ModelsDto, ModelWithRelationsDto } from './dto'
@@ -55,12 +55,26 @@ export class ModelsService {
   }
 
   async getModels(dto?: ModelsDto, groups?: []): Promise<Model[]> {
-    const { date = null, model_id = null, excludeError = null} = dto || {}
-    const results = await this.fetchAndMergeModels(date, model_id, excludeError)
+    const {
+      date = null,
+      model_id = null,
+      excludeError = null,
+      mode = null
+    } = dto || {};
 
-    const filteredResults = groups ? this.filterModelsByUserGroups(results, groups) : results
+    const isArchiveMode = mode?.includes(MODEL_DISPLAY_MODES.ARCHIVE) ?? false;
 
-    return await this.formatResults(filteredResults)
+    let results = await this.fetchAndMergeModels(date, model_id, excludeError);
+
+    if (!isArchiveMode) {
+      results = results.filter(model => model.models_is_active_flg === '1');
+    }
+
+    const filteredResults = groups?.length
+      ? this.filterModelsByUserGroups(results, groups)
+      : results;
+
+    return this.formatResults(filteredResults);
   }
 
   async getModelsByDates({ firstDate, secondDate, excludeError }: CompareModelsDto, groups?: []): Promise<{ data: { cards: GroupedResults } }> {
@@ -544,10 +558,13 @@ export class ModelsService {
     return dictionary
   }
 
-  private async fetchAndMergeModels(date: string | null, model_id?: string | null, excludeError?: boolean | null): Promise<Model[]> {
+  private async fetchAndMergeModels(
+    date: string | null,
+    model_id?: string | null,
+    excludeError?: boolean | null
+  ): Promise<Model[]> {
     const filterDate = date || null
     const excludeErrorCondition = this.getModelStatusExcludeErrorCondition('m');
-
     const sumModels = await this.sumDatabaseService.query(getSumModels, {
       filter_date: filterDate,
       model_id,
