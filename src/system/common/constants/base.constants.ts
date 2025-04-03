@@ -3,4 +3,5 @@ export enum API_PREFIX {
   VERSION = '/api/rest/v1/'
 }
 
-export const EDIT_WINDOW_MONTHS = 3
+export const QUARTER_EDIT_PERIOD_MONTHS = 3;
+export const QUARTER_EDIT_PERIOD_DAYS = 13;

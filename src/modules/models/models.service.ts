@@ -15,13 +15,13 @@ import {
   updateModelAllocation as updateSumRmModelAllocation
 } from './sql/sum-rm'
 
-import { LIFE_CYCLE_STAGES, LIFE_CYCLE_STAGES_DESCRIPTION, MODEL_SOURCES, MODEL_STATUS, EDIT_WINDOW_MONTHS } from 'src/system/common/constants'
+import { LIFE_CYCLE_STAGES, LIFE_CYCLE_STAGES_DESCRIPTION, MODEL_SOURCES, MODEL_STATUS } from 'src/system/common/constants'
 import { BUSINESS_CUSTOMER_DEPARTMENT_MAPPING, DEPARTMENT_TO_STREAM_MAPPING, pseudoArtefacts } from './constants'
 import { Artefact, ArtefactValue, GroupedResults, Model, ModelRelationsResponse, ModelType } from './interfaces'
 import { CompareModelsDto, ModelsDto, ModelWithRelationsDto } from './dto'
 import { ArtefactFormatting, ArtefactFormattingType } from './rules'
 
-import { formatDateTime, isValidDate, parseDate, canEditPreviousQuarter } from 'src/system/common/utils'
+import { formatDateTime, isValidDate, parseDate, canEditQuarter } from 'src/system/common/utils'
 import { ModelCreateDto } from 'src/api/dto/index.dto'
 import { randomUUID } from 'crypto'
 import { sql as parentSumRmModel } from 'src/api/sql/models/sum-rm/parent'
@@ -551,13 +551,13 @@ export class ModelsService {
     const sumModels = await this.sumDatabaseService.query(getSumModels, {
       filter_date: filterDate,
       model_id,
-      use_previous_year_for_q4: canEditPreviousQuarter(EDIT_WINDOW_MONTHS)
+      use_previous_year_for_q4: canEditQuarter(4, new Date().getFullYear() - 1)
     })
     const mrmModels = await this.mrmDatabaseService.query(getSumRmModels(excludeErrorCondition), {
       filter_date: filterDate,
       model_id,
       exclude_error: excludeError,
-      use_previous_year_for_q4: canEditPreviousQuarter(EDIT_WINDOW_MONTHS)
+      use_previous_year_for_q4: canEditQuarter(4, new Date().getFullYear() - 1)
     })
 
     return this.mergeSumAndMrmModels(sumModels, mrmModels, 'system_model_id')
