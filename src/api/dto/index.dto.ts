@@ -51,6 +51,7 @@ export class ModelsDto {
   @ApiModelPropertyOptional({
     example: ['Архив', 'Разработка'],
   })
+  @Transform(({ value }) => (Array.isArray(value) ? value : [value]))
   @IsOptional()
   @IsArray()
   @IsString({ each: true })
