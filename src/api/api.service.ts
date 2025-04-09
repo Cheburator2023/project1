@@ -144,7 +144,17 @@ export class ApiService {
         public: is_public,
         ...template
       }))
-      .sort((a, b) => Number(b.is_pinned) - Number(a.is_pinned) || Number(b.isOwner) - Number(a.isOwner))
+      .sort((a, b) => {
+        const pinnedDiff = Number(b.is_pinned) - Number(a.is_pinned)
+        if (pinnedDiff !== 0) return pinnedDiff
+
+        if (a.is_pinned && b.is_pinned) {
+          const idDiff = a.template_id - b.template_id
+          if (idDiff !== 0) return idDiff
+        }
+
+        return Number(b.isOwner) - Number(a.isOwner)
+      })
       .map(({ is_pinned, ...template }) => template)
 
     return filteredTemplates
