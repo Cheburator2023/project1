@@ -259,7 +259,11 @@ LEFT JOIN (
         MAX(CASE WHEN artefact_id = 2658 THEN artefact_string_value ELSE NULL END) AS lead_validator_resolution_model_delete,
         MAX(CASE WHEN artefact_id = 2558 THEN artefact_string_value ELSE NULL END) AS remove_date_validation,
         MAX(CASE WHEN artefact_id = 2559 THEN artefact_string_value ELSE NULL END) AS model_version_validation,
-        MAX(CASE WHEN artefact_id = 2659 THEN artefact_string_value ELSE NULL END) AS model_desc
+        MAX(CASE WHEN artefact_id = 2659 THEN artefact_string_value ELSE NULL END) AS model_desc,
+        MAX(CASE WHEN artefact_id = 2660 THEN artefact_string_value ELSE NULL END) AS output_table,
+        MAX(CASE WHEN artefact_id = 2661 THEN artefact_string_value ELSE NULL END) AS allocation_assessment_class,
+        MAX(CASE WHEN artefact_id = 2662 THEN artefact_string_value ELSE NULL END) AS allocation_assessment_parameters
+
     FROM (
         SELECT
             artefact_realizations_new.model_id,
