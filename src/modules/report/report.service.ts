@@ -29,14 +29,14 @@ export class ReportService {
   ) {
   }
 
-  async getReport(filters: { [key: string]: string[] }, groups?: [], excludeError?: boolean): Promise<Buffer> {
-    const reportData: { headers: Preset[], body: Model[] } = await this.generateReportData(filters, groups, excludeError)
+  async getReport(filters: { [key: string]: string[] }, groups?: [], mode?: string[]): Promise<Buffer> {
+    const reportData: { headers: Preset[], body: Model[] } = await this.generateReportData(filters, groups, mode)
     const xlsxBuffer: Buffer = await this.generateExcel(reportData)
 
     return xlsxBuffer
   }
 
-  private async generateReportData(filters: { [key: string]: string[] }, groups?: [], excludeError?: boolean): Promise<{ headers: Preset[], body: Model[] }> {
+  private async generateReportData(filters: { [key: string]: string[] }, groups?: [], mode?: string[]): Promise<{ headers: Preset[], body: Model[] }> {
     if (!Object.keys(filters).length) {
       throw new BadRequestException('Bad Request', 'filter object cannot be empty')
     }
@@ -46,7 +46,7 @@ export class ReportService {
     const headers = this.generateReportHeaders(artefacts)
     const sortedHeaders = this.sortHeadersByFilters(headers, filters)
 
-    const models: Model[] = await this.modelsService.getModels({ excludeError }, groups)
+    const models: Model[] = await this.modelsService.getModels({ mode }, groups)
     const filteredModels = this.filterModels(models, artefacts, filters)
 
     return {

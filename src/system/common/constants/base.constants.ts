@@ -4,7 +4,9 @@ export enum API_PREFIX {
 }
 
 export const MODEL_DISPLAY_MODES = {
-  ARCHIVE: 'Архив'
+  ARCHIVE: 'Архив',
+  CREATION_ERROR: 'Ошибка заведения',
+  PENDING_DELETE: 'Ожидает удаления'
 }
 
 export const QUARTER_EDIT_PERIOD_MONTHS = 3

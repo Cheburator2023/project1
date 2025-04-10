@@ -58,17 +58,36 @@ export class ModelsService {
     const {
       date = null,
       model_id = null,
-      excludeError = null,
       mode = null
     } = dto || {};
 
     const isArchiveMode = mode?.includes(MODEL_DISPLAY_MODES.ARCHIVE) ?? false;
+    const isCreationErrorMode = mode?.includes(MODEL_DISPLAY_MODES.CREATION_ERROR) ?? false;
+    const isPendingDeleteMode = mode?.includes(MODEL_DISPLAY_MODES.PENDING_DELETE) ?? false;
 
-    let results = await this.fetchAndMergeModels(date, model_id, excludeError);
+    let results = await this.fetchAndMergeModels(date, model_id);
 
-    if (!isArchiveMode) {
-      results = results.filter(model => model.models_is_active_flg === '1');
-    }
+    results = results.filter(model => {
+      const isArchive = model.models_is_active_flg === '0'
+      const isCreationError = model.status === MODEL_DISPLAY_MODES.CREATION_ERROR
+      const isPendingDelete = model.status === MODEL_DISPLAY_MODES.PENDING_DELETE
+
+      if (isArchive && isArchiveMode) {
+        return true
+      }
+
+      if (isCreationError && isCreationErrorMode) {
+        return true
+      }
+
+      if (isPendingDelete && isPendingDeleteMode) {
+        return true
+      }
+
+      return model.models_is_active_flg === '1'
+        && model.status !== MODEL_DISPLAY_MODES.CREATION_ERROR
+        && model.status !== MODEL_DISPLAY_MODES.PENDING_DELETE;
+    })
 
     const filteredResults = groups?.length
       ? this.filterModelsByUserGroups(results, groups)
@@ -77,9 +96,9 @@ export class ModelsService {
     return this.formatResults(filteredResults);
   }
 
-  async getModelsByDates({ firstDate, secondDate, excludeError }: CompareModelsDto, groups?: []): Promise<{ data: { cards: GroupedResults } }> {
-    const firstDateResults = await this.fetchAndMergeModels(firstDate, null, excludeError)
-    const secondDateResults = await this.fetchAndMergeModels(secondDate, null, excludeError)
+  async getModelsByDates({ firstDate, secondDate }: CompareModelsDto, groups?: []): Promise<{ data: { cards: GroupedResults } }> {
+    const firstDateResults = await this.fetchAndMergeModels(firstDate, null)
+    const secondDateResults = await this.fetchAndMergeModels(secondDate, null)
 
     const filteredFirstDateResults = groups ? this.filterModelsByUserGroups(firstDateResults, groups) : firstDateResults
     const filteredSecondDateResults = groups ? this.filterModelsByUserGroups(secondDateResults, groups) : secondDateResults
@@ -272,26 +291,6 @@ export class ModelsService {
     }
 
     return models
-  }
-
-  private getModelStatusExcludeErrorCondition(alias: string = 'm'): string {
-    return `
-      CASE
-        WHEN :exclude_error::BOOLEAN = true THEN NOT EXISTS (
-          SELECT 1 
-          FROM artefact_realizations_new ar
-          WHERE ar.model_id = ${alias}.model_id
-            AND ar.artefact_id = 2656
-            AND (
-                ar.artefact_string_value = 'Ошибка заведения'
-                OR ar.artefact_string_value = 'Ожидает удаления'
-            )
-            AND ar.effective_from <= NOW()
-            AND ar.effective_to > NOW()
-        )
-        ELSE true
-      END
-    `;
   }
 
   private isBasicInfoArtefact(label) {
@@ -560,20 +559,17 @@ export class ModelsService {
 
   private async fetchAndMergeModels(
     date: string | null,
-    model_id?: string | null,
-    excludeError?: boolean | null
+    model_id?: string | null
   ): Promise<Model[]> {
     const filterDate = date || null
-    const excludeErrorCondition = this.getModelStatusExcludeErrorCondition('m');
     const sumModels = await this.sumDatabaseService.query(getSumModels, {
       filter_date: filterDate,
       model_id,
       use_previous_year_for_q4: canEditQuarter(4, new Date().getFullYear() - 1)
     })
-    const mrmModels = await this.mrmDatabaseService.query(getSumRmModels(excludeErrorCondition), {
+    const mrmModels = await this.mrmDatabaseService.query(getSumRmModels, {
       filter_date: filterDate,
       model_id,
-      exclude_error: excludeError,
       use_previous_year_for_q4: canEditQuarter(4, new Date().getFullYear() - 1)
     })
 
