@@ -1,5 +1,17 @@
 # Semantic Versioning Changelog
 
+# [1.19.0](https://git.sfera.inno.local/SUMD/mrms-backend/compare/v1.18.1...v1.19.0) (2025-04-10)
+
+
+### Features
+
+* add dto model transform ([5594dc4](https://git.sfera.inno.local/SUMD/mrms-backend/commit/5594dc4c598c1069b6ea88a6960fddde5adc6709))
+* add filter for archived models ([b6a82f4](https://git.sfera.inno.local/SUMD/mrms-backend/commit/b6a82f480dac4f90f0cff60b141a986b362291b2))
+* add sorting for filter templates ([89372bf](https://git.sfera.inno.local/SUMD/mrms-backend/commit/89372bf674ee99ab2ed8f6d4c372f2f2e82c7b6c))
+* improve filter model by mode ([7b18246](https://git.sfera.inno.local/SUMD/mrms-backend/commit/7b18246d62b39ddc0ae6911c2cc0e2a660b2dcf1))
+* improve filter template sorting by pin, id and ownership ([59f8e22](https://git.sfera.inno.local/SUMD/mrms-backend/commit/59f8e228c725b1e7b95dde62a459897875806b15))
+* new attributes ([b1b9f44](https://git.sfera.inno.local/SUMD/mrms-backend/commit/b1b9f442c16b36c4209a8a69a14e168d7d226bb5))
+
 ## [1.18.1](https://git.sfera.inno.local/SUMD/mrms-backend/compare/v1.18.0...v1.18.1) (2025-04-04)
 
 
