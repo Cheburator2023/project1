@@ -1,5 +1,6 @@
 const getModels = `
 SELECT m_.model_id                                                                                           AS system_model_id,
+       m_.models_is_active_flg,
        'sum'                                                                                                 AS model_source,
        m_.model_id                                                                                           AS model_version_id,
        CAST('model' || m_.root_model_id AS Varchar(4000)) || '-v' || CAST(m_.model_version AS Varchar(4000)) AS model_id,

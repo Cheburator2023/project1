@@ -161,15 +161,15 @@ export class ApiController {
 
   @Get('/metrics/')
   async getMetrics(@Query() query: MetricsDto, @Res() response) {
-    const { startDate, endDate, stream, excludeError } = query;
-    const result = await this.metricsAggregator.getMetrics(startDate, endDate, stream, excludeError);
+    const { startDate, endDate, stream } = query;
+    const result = await this.metricsAggregator.getMetrics(startDate, endDate, stream);
     
     return response.status(HttpStatus.OK).json(result);
   }
 
   @Post("report")
-  async getReport(@Body() { filters, excludeError }: FilterDto, @Res() res: Response, @Req() req) {
-    const response = await this.reportService.getReport(filters, req.user?.groups, excludeError);
+  async getReport(@Body() { filters, mode }: FilterDto, @Res() res: Response, @Req() req) {
+    const response = await this.reportService.getReport(filters, req.user?.groups, mode);
 
     res.setHeader("Content-Disposition", "attachment; filename=report.xlsx");
     res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");

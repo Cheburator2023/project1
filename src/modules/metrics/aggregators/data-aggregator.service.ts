@@ -55,8 +55,8 @@ export class DataAggregator {
     this.cache = new NodeCache({ stdTTL: 300 }) // Кэш на 5 минут
   }
 
-  async aggregateData(streams: string[], excludeError?: boolean): Promise<any> {
-    const models = await this.getCachedModels(excludeError)
+  async aggregateData(streams: string[], mode): Promise<any> {
+    const models = await this.getCachedModels(mode)
     const tasks = await this.getCachedTasks(models)
 
     const filteredModels = this.filterByStreams(models, streams, 'ds_stream')
@@ -68,13 +68,13 @@ export class DataAggregator {
     }
   }
 
-  private async getCachedModels(excludeError?: boolean): Promise<any[]> {
-    const cacheKey = `models_${excludeError}`
+  private async getCachedModels(mode): Promise<any[]> {
+    const cacheKey = `models_${mode}`
     const cachedModels = this.cache.get<Model[]>(cacheKey)
 
     if (cachedModels) return cachedModels
 
-    const models = await this.modelsService.getModels({ excludeError })
+    const models = await this.modelsService.getModels({ mode })
     this.cache.set(cacheKey, models)
     return models
   }

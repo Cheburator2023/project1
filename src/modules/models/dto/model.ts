@@ -1,13 +1,13 @@
 interface ModelsDto {
   model_id?: string;
   date?: string | null;
-  excludeError?: boolean;
+  mode?: string[];
 }
 
 interface CompareModelsDto {
   firstDate: string;
   secondDate: string;
-  excludeError?: boolean;
+  mode?: string[];
 }
 
 interface ModelWithRelationsDto {

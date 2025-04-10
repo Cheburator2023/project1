@@ -1,4 +1,4 @@
-const getModels = (excludeErrorCondition: string) => `
+const getModels = `
 SELECT
     m.model_id AS system_model_id,
     m.model_name,
@@ -294,7 +294,6 @@ AND (
     BETWEEN DATE_TRUNC('day', m.create_date)::DATE
     AND DATE_TRUNC('day', NOW())::DATE
 )
-AND (${excludeErrorCondition})
 `;
 
 export { getModels };
