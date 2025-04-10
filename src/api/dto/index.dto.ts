@@ -39,14 +39,14 @@ export class ModelsDto {
   @IsUUID()
   model_id: string;
 
-  @ApiPropertyOptional({
-    example: 'true',
-    description: "Exclude models with the status 'Ошибка заведения'",
+  @ApiModelPropertyOptional({
+    example: ['Архив', 'Разработка'],
   })
+  @Transform(({ value }) => (Array.isArray(value) ? value : [value]))
   @IsOptional()
-  @IsBoolean()
-  @Transform(({ value }) => value === 'true')
-  excludeError: boolean;
+  @IsArray()
+  @IsString({ each: true })
+  mode: string[];
 }
 
 export class ModelWithRelationsDto {
@@ -70,14 +70,15 @@ export class CompareModelsDto {
   })
   @IsDateString()
   secondDate: string;
-  @ApiPropertyOptional({
-    example: 'true',
-    description: "Exclude models with the status 'Ошибка заведения'",
+
+  @ApiModelPropertyOptional({
+    example: ['Архив', 'Разработка'],
   })
+  @Transform(({ value }) => (Array.isArray(value) ? value : [value]))
   @IsOptional()
-  @IsBoolean()
-  @Transform(({ value }) => value === 'true')
-  excludeError: boolean;
+  @IsArray()
+  @IsString({ each: true })
+  mode: string[];
 }
 
 export class ModelCreateDto {
@@ -279,13 +280,14 @@ export class FilterDto {
   @IsObject()
   filters: FilterValueType;
 
-  @ApiPropertyOptional({
-    example: 'true',
-    description: "Exclude models with the status 'Ошибка заведения'",
+  @ApiModelPropertyOptional({
+    example: ['Архив', 'Разработка'],
   })
+  @Transform(({ value }) => (Array.isArray(value) ? value : [value]))
   @IsOptional()
-  @IsBoolean()
-  excludeError: boolean;
+  @IsArray()
+  @IsString({ each: true })
+  mode: string[];
 }
 
 export class MetricsDto {
@@ -310,13 +312,4 @@ export class MetricsDto {
   @IsArray()
   @IsString({ each: true })
   stream: string[];
-
-  @ApiPropertyOptional({
-    example: 'true',
-    description: "Exclude models with the status 'Ошибка заведения'",
-  })
-  @IsOptional()
-  @IsBoolean()
-  @Transform(({ value }) => value === 'true')
-  excludeError: boolean = true;
 }

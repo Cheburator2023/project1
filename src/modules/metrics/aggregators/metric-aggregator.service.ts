@@ -2,6 +2,7 @@ import { IndependentMetricType, DependentMetricType } from '../types/'
 import { DataAggregator } from './data-aggregator.service'
 import { Inject } from '@nestjs/common'
 import { MetricsEnum } from '../enums'
+import { MODEL_DISPLAY_MODES } from 'src/system/common/constants'
 
 export class MetricsAggregator {
   constructor(
@@ -14,11 +15,10 @@ export class MetricsAggregator {
   async getMetrics(
     startDate: string | null,
     endDate: string | null,
-    streams: string[],
-    excludeError?: boolean
+    streams: string[]
   ): Promise<Record<MetricsEnum, any>> {
     // Aggregate data
-    const data = await this.dataAggregator.aggregateData(streams, excludeError);
+    const data = await this.dataAggregator.aggregateData(streams, [MODEL_DISPLAY_MODES.ARCHIVE, MODEL_DISPLAY_MODES.PENDING_DELETE]);
 
     const results: Record<string, any> = {}
 
