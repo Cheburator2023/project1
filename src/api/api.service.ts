@@ -134,20 +134,30 @@ export class ApiService {
   async getTemplates(user) {
     const result = await this.mrmDatabaseService.query(getTemplates, []);
 
-    return result.reduce((filteredTemplates, { user_id, public: is_public, ...template }) => {
-      const isOwner = user_id === user.preferred_username;
+    const filteredTemplates = result
+      .filter(({ user_id, public: is_public }) => {
+        return user_id === user.preferred_username || is_public
+      })
+      .map(({ user_id, public: is_public, ...template }) => ({
+        user_id,
+        isOwner: user_id === user.preferred_username,
+        public: is_public,
+        ...template
+      }))
+      .sort((a, b) => {
+        const pinnedDiff = Number(b.is_pinned) - Number(a.is_pinned)
+        if (pinnedDiff !== 0) return pinnedDiff
 
-      if (isOwner || is_public) {
-        filteredTemplates.push({
-          user_id,
-          isOwner,
-          public: is_public,
-          ...template
-        });
-      }
+        if (a.is_pinned && b.is_pinned) {
+          const idDiff = a.template_id - b.template_id
+          if (idDiff !== 0) return idDiff
+        }
 
-      return filteredTemplates;
-    }, []);
+        return Number(b.isOwner) - Number(a.isOwner)
+      })
+      .map(({ is_pinned, ...template }) => template)
+
+    return filteredTemplates
   }
 
   async getTemplate(id, user) {

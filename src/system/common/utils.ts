@@ -1,3 +1,5 @@
+import { QUARTER_EDIT_PERIOD_MONTHS, QUARTER_EDIT_PERIOD_DAYS } from 'src/system/common/constants'
+
 interface QueryArgs {
   [key: string]: any;
 }
@@ -112,24 +114,67 @@ const isValidDate = (dateInput: string | Date): boolean => {
   return date !== null;
 };
 
-const canEditPreviousQuarter = (editWindowMonths: number): boolean => {
-  const now = new Date()
-  const currentMonth = now.getMonth() + 1
-  const currentYear = now.getFullYear()
+/**
+ * Returns the end date of a given quarter and year.
+ * @param {number} quarter - Quarter number (1-4).
+ * @param {number} year - Full year (e.g., 2023).
+ * @returns {Date}
+ */
+const getEndOfQuarter = (quarter, year) =>
+  new Date(year, quarter * 3, 0, 23, 59, 59, 999);
 
-  let previousQuarter = Math.ceil(currentMonth / 3) - 1
-  let previousQuarterYear = currentYear
+/**
+ * Returns the start date of a given quarter and year.
+ * @param {number} quarter - Quarter number (1-4).
+ * @param {number} year - Full year (e.g., 2023).
+ * @returns {Date}
+ */
+const getStartOfQuarter = (quarter, year) =>
+  new Date(year, (quarter - 1) * 3, 1, 0, 0, 0, 0);
 
-  if (previousQuarter === 0) {
-    previousQuarter = 4
-    previousQuarterYear -= 1
+/**
+ * Adds a specified number of months and days to a given date.
+ * Safely adjusts for month overflows and varying month lengths.
+ *
+ * @param {Date} date - The base date to modify.
+ * @param {number} months - Number of months to add.
+ * @param {number} days - Number of days to add.
+ * @returns {Date} A new Date object with the added time.
+ */
+const addMonthsAndDays = (date, months, days) => {
+  const base = new Date(date.getTime());
+  const targetMonth = base.getMonth() + months;
+  const targetYear = base.getFullYear() + Math.floor(targetMonth / 12);
+  const newMonth = targetMonth % 12;
+  const currentDay = base.getDate();
+  const daysInTargetMonth = new Date(targetYear, newMonth + 1, 0).getDate();
+  const day = Math.min(currentDay, daysInTargetMonth);
+  const shiftedDate = new Date(targetYear, newMonth, day, base.getHours(), base.getMinutes(), base.getSeconds(), base.getMilliseconds());
+  shiftedDate.setTime(shiftedDate.getTime() + days * 24 * 60 * 60 * 1000);
+  return shiftedDate;
+};
+
+/**
+ * Determines whether the specified quarter and year can be edited.
+ * @param {number} quarter - Quarter number (1-4).
+ * @param {number} [year=getNow().getFullYear()] - Year to check.
+ * @returns {boolean}
+ */
+const canEditQuarter = (quarter, year = new Date().getFullYear()) => {
+  if (quarter < 1 || quarter > 4) {
+    throw new Error('Quarter must be between 1 and 4');
   }
 
-  const quarterEndMonth = previousQuarter * 3
+  const now = new Date();
+  const startOfQuarter = getStartOfQuarter(quarter, year);
+  const endOfQuarter = getEndOfQuarter(quarter, year);
 
-  const editDeadline = new Date(previousQuarterYear, quarterEndMonth - 1 + editWindowMonths + 1, 0, 23, 59, 59)
+  if (now < startOfQuarter) return false;
+  if (now <= endOfQuarter) return true;
 
-  return now <= editDeadline
-}
+  const gracePeriodEnd = addMonthsAndDays(endOfQuarter, QUARTER_EDIT_PERIOD_MONTHS, QUARTER_EDIT_PERIOD_DAYS);
 
-export { queryConvert, isValidDate, parseDate, formatDateTime, canEditPreviousQuarter };
+  return now <= gracePeriodEnd;
+};
+
+export { queryConvert, isValidDate, parseDate, formatDateTime, canEditQuarter };

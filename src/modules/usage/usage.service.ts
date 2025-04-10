@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common'
 import { UsageServiceFactory } from './factories'
 import { UpdateUsageDto } from './dto'
-import { canEditPreviousQuarter, EDIT_WINDOW_MONTHS, MODEL_SOURCES } from 'src/system/common'
+import { canEditQuarter, MODEL_SOURCES } from 'src/system/common'
 import { ModelServiceFactory } from 'src/modules/models/factories'
 
 @Injectable()
@@ -37,10 +37,9 @@ export class UsageService {
 
   private determineYear(quarter: number, currentDate: Date): number {
     const currentYear = currentDate.getFullYear()
-    const currentQuarter = Math.ceil((currentDate.getMonth() + 1) / 3)
 
     // Проверяем переход года
-    if (quarter === 4 && currentQuarter === 1 && canEditPreviousQuarter(EDIT_WINDOW_MONTHS)) {
+    if (quarter === 4 && canEditQuarter(4, currentYear - 1)) {
       return currentYear - 1
     }
 

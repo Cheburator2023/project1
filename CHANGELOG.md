@@ -1,5 +1,19 @@
 # Semantic Versioning Changelog
 
+## [1.18.1](https://git.sfera.inno.local/SUMD/mrms-backend/compare/v1.18.0...v1.18.1) (2025-04-04)
+
+
+### Bug Fixes
+
+* editing previous quarter in previous year ([ae2619d](https://git.sfera.inno.local/SUMD/mrms-backend/commit/ae2619de94e4a5842798157eba0890bc8907a158))
+
+# [1.18.0](https://git.sfera.inno.local/SUMD/mrms-backend/compare/v1.17.0...v1.18.0) (2025-03-28)
+
+
+### Features
+
+* **docker:** up version ([47ef1d3](https://git.sfera.inno.local/SUMD/mrms-backend/commit/47ef1d3ab27c73e6f916f735ef24c01d1e1ad4c2))
+
 # [1.17.0](https://git.sfera.inno.local/SUMD/mrms-backend/compare/v1.16.4...v1.17.0) (2025-03-21)
 
 

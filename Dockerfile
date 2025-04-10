@@ -1,5 +1,5 @@
 FROM docker.repo-ci.sfera.inno.local/sumd-docker-lib/ubi8-base-mrms-backend:v1.0.1
-
+#
 #ARG NPM_REGISTRY
 #ARG NPM_EMAIL
 #ARG NPM_AUTH

@@ -7,4 +7,5 @@ export const MODEL_DISPLAY_MODES = {
   ARCHIVE: 'Архив'
 }
 
-export const EDIT_WINDOW_MONTHS = 3
+export const QUARTER_EDIT_PERIOD_MONTHS = 3
+export const QUARTER_EDIT_PERIOD_DAYS = 13
