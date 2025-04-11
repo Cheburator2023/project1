@@ -72,19 +72,20 @@ export class ModelsService {
       const isCreationError = model.status === MODEL_DISPLAY_MODES.CREATION_ERROR
       const isPendingDelete = model.status === MODEL_DISPLAY_MODES.PENDING_DELETE
 
-      if (isArchive && isArchiveMode) {
+      if (model.model_source === MODEL_SOURCES.SUM && isArchive && isArchiveMode) {
         return true
       }
 
-      if (isCreationError && isCreationErrorMode) {
+      if (model.model_source === MODEL_SOURCES.MRM && isCreationError && isCreationErrorMode) {
         return true
       }
 
-      if (isPendingDelete && isPendingDeleteMode) {
+      if (model.model_source === MODEL_SOURCES.MRM && isPendingDelete && isPendingDeleteMode) {
         return true
       }
 
-      return model.models_is_active_flg === '1'
+      const isActive = model.model_source === MODEL_SOURCES.SUM ? model.models_is_active_flg === '1' : true
+      return isActive
         && model.status !== MODEL_DISPLAY_MODES.CREATION_ERROR
         && model.status !== MODEL_DISPLAY_MODES.PENDING_DELETE;
     })
