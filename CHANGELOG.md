@@ -1,5 +1,12 @@
 # Semantic Versioning Changelog
 
+# [1.20.0](https://git.sfera.inno.local/SUMD/mrms-backend/compare/v1.19.0...v1.20.0) (2025-04-11)
+
+
+### Features
+
+* improve filter model by mode ([5222462](https://git.sfera.inno.local/SUMD/mrms-backend/commit/52224620ae7bc135c24b45abbc85d8452112dd47))
+
 # [1.19.0](https://git.sfera.inno.local/SUMD/mrms-backend/compare/v1.18.1...v1.19.0) (2025-04-10)
 
 
