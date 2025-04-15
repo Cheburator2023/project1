@@ -2,6 +2,8 @@ import { IndependentMetric } from '../base'
 import { TasksMetricResult } from '../interfaces'
 
 export class TasksMetric extends IndependentMetric<TasksMetricResult> {
+  private filteredTasks: any[] = [];
+
   calculate() {
     const filteredTasks = this.filterTasks(
       this.tasks,
@@ -10,6 +12,8 @@ export class TasksMetric extends IndependentMetric<TasksMetricResult> {
     )
 
     const { dataSourcesSet, validationSet } = this.groupTasksByRole(filteredTasks)
+
+    this.filteredTasks = [...dataSourcesSet.values(), ...validationSet.values()];
 
     return {
       datasources: dataSourcesSet.size,
@@ -29,6 +33,13 @@ export class TasksMetric extends IndependentMetric<TasksMetricResult> {
     )
   }
 
+  public getFilteredRowData() {
+    return this.filteredTasks.map((task) => ({
+      system_model_id: task.model_id,
+      role: task.role,
+    }));
+  }
+  
   private groupTasksByRole(tasks) {
     const dataSourcesSet = new Map<string, any>()
     const validationSet = new Map<string, any>()

@@ -1,8 +1,9 @@
-import { BadRequestException, Injectable } from '@nestjs/common'
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common'
 import { SumDatabaseService } from 'src/system/sum-database/database.service'
 import { MrmDatabaseService } from 'src/system/mrm-database/database.service'
 import { ModelsService } from 'src/modules/models/models.service'
 import { ExcelService } from 'src/excel/excel.service'
+import { MetricsAggregator } from 'src/modules/metrics/aggregators'
 
 import {
   Model,
@@ -12,6 +13,7 @@ import {
 } from 'src/modules/models/interfaces'
 
 import { isValidDate } from 'src/system/common/utils'
+import { MetricsEnum } from 'src/modules/metrics/enums'
 
 type Preset = {
   key: string,
@@ -25,8 +27,35 @@ export class ReportService {
     private readonly sumDatabaseService: SumDatabaseService,
     private readonly mrmDatabaseService: MrmDatabaseService,
     private readonly modelsService: ModelsService,
+    private readonly metricsAggregator: MetricsAggregator,
     private readonly excelService: ExcelService
   ) {
+  }
+
+  async exportMetricToExcel(
+    metric: MetricsEnum,
+    startDate: string | null,
+    endDate: string | null,
+    streams: string[],
+  ): Promise<Buffer> {
+    const rawData = await this.metricsAggregator.getRawData(
+      metric,
+      startDate,
+      endDate,
+      streams,
+    );
+
+    if (!rawData || rawData.length === 0) {
+      throw new NotFoundException('Нет данных для экспорта');
+    }
+
+    const headers = Object.keys(rawData[0]).map((key) => ({
+      key,
+      title: key,
+      type: typeof rawData[0][key] === 'number' ? 'number' : 'string' as any,
+    }));
+
+    return this.excelService.createExcel({ headers, body: rawData });
   }
 
   async getReport(filters: { [key: string]: string[] }, groups?: [], mode?: string[]): Promise<Buffer> {
