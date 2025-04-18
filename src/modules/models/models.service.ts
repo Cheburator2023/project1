@@ -54,41 +54,47 @@ export class ModelsService {
   ) {
   }
 
-  async getModels(dto?: ModelsDto, groups?: []): Promise<Model[]> {
+  async getModels(
+    dto?: ModelsDto & { ignoreModeFilter?: boolean },
+    groups?: []
+  ): Promise<Model[]> {
     const {
       date = null,
       model_id = null,
-      mode = null
+      mode = null,
+      ignoreModeFilter = false
     } = dto || {};
-
-    const isArchiveMode = mode?.includes(MODEL_DISPLAY_MODES.ARCHIVE) ?? false;
-    const isCreationErrorMode = mode?.includes(MODEL_DISPLAY_MODES.CREATION_ERROR) ?? false;
-    const isPendingDeleteMode = mode?.includes(MODEL_DISPLAY_MODES.PENDING_DELETE) ?? false;
 
     let results = await this.fetchAndMergeModels(date, model_id);
 
-    results = results.filter(model => {
-      const isArchive = model.models_is_active_flg === '0'
-      const isCreationError = model.status === MODEL_DISPLAY_MODES.CREATION_ERROR
-      const isPendingDelete = model.status === MODEL_DISPLAY_MODES.PENDING_DELETE
+    if (!ignoreModeFilter) {
+      const isArchiveMode = mode?.includes(MODEL_DISPLAY_MODES.ARCHIVE) ?? false;
+      const isCreationErrorMode = mode?.includes(MODEL_DISPLAY_MODES.CREATION_ERROR) ?? false;
+      const isPendingDeleteMode = mode?.includes(MODEL_DISPLAY_MODES.PENDING_DELETE) ?? false;
 
-      if (model.model_source === MODEL_SOURCES.SUM && isArchive && isArchiveMode) {
-        return true
-      }
+      results = results.filter(model => {
+        const isArchive = model.models_is_active_flg === '0'
+        const isCreationError = model.status === MODEL_DISPLAY_MODES.CREATION_ERROR
+        const isPendingDelete = model.status === MODEL_DISPLAY_MODES.PENDING_DELETE
 
-      if (model.model_source === MODEL_SOURCES.MRM && isCreationError && isCreationErrorMode) {
-        return true
-      }
+        if (model.model_source === MODEL_SOURCES.SUM && isArchive && isArchiveMode) {
+          return true
+        }
 
-      if (model.model_source === MODEL_SOURCES.MRM && isPendingDelete && isPendingDeleteMode) {
-        return true
-      }
+        if (model.model_source === MODEL_SOURCES.MRM && isCreationError && isCreationErrorMode) {
+          return true
+        }
 
-      const isActive = model.model_source === MODEL_SOURCES.SUM ? model.models_is_active_flg === '1' : true
-      return isActive
-        && model.status !== MODEL_DISPLAY_MODES.CREATION_ERROR
-        && model.status !== MODEL_DISPLAY_MODES.PENDING_DELETE;
-    })
+        if (model.model_source === MODEL_SOURCES.MRM && isPendingDelete && isPendingDeleteMode) {
+          return true
+        }
+
+        const isActive = model.model_source === MODEL_SOURCES.SUM ? model.models_is_active_flg === '1' : true
+        return isActive
+          && model.status !== MODEL_DISPLAY_MODES.CREATION_ERROR
+          && model.status !== MODEL_DISPLAY_MODES.PENDING_DELETE;
+      })
+    }
 
     const filteredResults = groups?.length
       ? this.filterModelsByUserGroups(results, groups)
@@ -206,7 +212,7 @@ export class ModelsService {
 
     await this.executeDatabaseUpdates({ artefactsForUpdate }, MODEL_SOURCES.MRM)
 
-    return this.getModels({ model_id });
+    return this.getModels({ model_id, ignoreModeFilter: true });
   }
 
   async surrogateModelCreate(model_id: string): Promise<ModelEntity | null> {
@@ -436,7 +442,7 @@ export class ModelsService {
     if (modelIds.size) {
       const modelsArray = Array.from(modelIds)
       const results = await Promise.all(
-        modelsArray.map((model_id) => this.getModels({ model_id }) )
+        modelsArray.map((model_id) => this.getModels({ model_id, ignoreModeFilter: true }) )
       )
 
       return [].concat(...results)
