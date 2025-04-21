@@ -1,5 +1,12 @@
 # Semantic Versioning Changelog
 
+## [1.20.1](https://git.sfera.inno.local/SUMD/mrms-backend/compare/v1.20.0...v1.20.1) (2025-04-21)
+
+
+### Bug Fixes
+
+* add ignoreModeFilter for getModels request ([eac0567](https://git.sfera.inno.local/SUMD/mrms-backend/commit/eac0567832102b8e68fde5b6aff9ae17a405e48c))
+
 # [1.20.0](https://git.sfera.inno.local/SUMD/mrms-backend/compare/v1.19.0...v1.20.0) (2025-04-11)
 
 
