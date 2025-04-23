@@ -35,4 +35,30 @@ export class MetricsAggregator {
 
     return results
   }
+
+  async getRawData(
+    metricName: MetricsEnum,
+    startDate: string | null,
+    endDate: string | null,
+    streams: string[]
+  ): Promise<any[]> {
+    const data = await this.dataAggregator.aggregateData(
+      streams,
+      [MODEL_DISPLAY_MODES.ARCHIVE, MODEL_DISPLAY_MODES.PENDING_DELETE]
+    );
+  
+    for (const metric of this.independentMetrics) {
+      if (metric.getMetricName() === metricName) {
+        metric.initialize(data, startDate, endDate);
+        metric.calculate();
+  
+        if (typeof (metric as any).getFilteredRowData === 'function') {
+          return (metric as any).getFilteredRowData();
+        }
+      }
+    }
+  
+    return [];
+  }
+  
 }

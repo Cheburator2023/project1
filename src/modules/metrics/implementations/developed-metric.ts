@@ -2,6 +2,8 @@ import { IndependentMetric } from '../base'
 import { MetricResult } from '../interfaces'
 
 export class DevelopedMetric extends IndependentMetric<MetricResult> {
+  private filteredModels: any[] = [];
+
   calculate() {
     const countFilteredModels = this.filterModels(
       this.models,
@@ -19,10 +21,18 @@ export class DevelopedMetric extends IndependentMetric<MetricResult> {
     const count = countFilteredModels.length
     const delta = count - deltaFilteredModels.length
 
+    this.filteredModels = countFilteredModels;
+
     return {
       count,
       delta
     }
+  }
+
+  public getFilteredRowData() {
+    return this.filteredModels.map((model) => ({
+      system_model_id: model.system_model_id
+    }));
   }
 
   private filterModels(

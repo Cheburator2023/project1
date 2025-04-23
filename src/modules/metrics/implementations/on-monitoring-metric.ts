@@ -2,6 +2,8 @@ import { IndependentMetric } from '../base'
 import { MetricPercentResult } from '../interfaces'
 
 export class OnMonitoringMetric extends IndependentMetric<MetricPercentResult> {
+  private filteredModels: any[] = [];
+
   calculate(): MetricPercentResult {
     const currentFilteredModels = this.filterModels(
       this.models,
@@ -22,10 +24,18 @@ export class OnMonitoringMetric extends IndependentMetric<MetricPercentResult> {
       previousFilteredModels.length
     )
 
+    this.filteredModels = currentFilteredModels;
+
     return {
       count,
       deltaPercent
     }
+  }
+
+  public getFilteredRowData() {
+    return this.filteredModels.map((model) => ({
+      system_model_id: model.system_model_id,
+    }));
   }
 
   private filterModels(
