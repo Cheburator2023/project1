@@ -12,6 +12,7 @@ VALUES (nextval('models_seq'),
         :model_version,
         :create_date,
         :update_date)
+RETURNING *;
 `;
 
 export { sql };
