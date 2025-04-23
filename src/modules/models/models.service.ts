@@ -21,7 +21,7 @@ import { Artefact, ArtefactValue, GroupedResults, Model, ModelRelationsResponse,
 import { CompareModelsDto, ModelsDto, ModelWithRelationsDto } from './dto'
 import { ArtefactFormatting, ArtefactFormattingType } from './rules'
 
-import { formatDateTime, isValidDate, parseDate, canEditQuarter } from 'src/system/common/utils'
+import { formatDateTime, isValidDate, parseDate, canEditQuarter, generateModelAlias } from 'src/system/common/utils'
 import { ModelCreateDto } from 'src/api/dto/index.dto'
 import { randomUUID } from 'crypto'
 import { sql as parentSumRmModel } from 'src/api/sql/models/sum-rm/parent'
@@ -200,15 +200,20 @@ export class ModelsService {
       create_date: new Date(),
       update_date: new Date(),
     };
-    await this.mrmDatabaseService.query(createModel, createModelQueryParams);
+    const [ newModel ]: ModelEntity[] = await this.mrmDatabaseService.query(createModel, createModelQueryParams);
 
     if (addParentArtefactsQueryParams) {
       await this.mrmDatabaseService.queryAll(newArtefacts, addParentArtefactsQueryParams);
     }
 
-    const artefactsForUpdate = artefacts
-      .filter(artefact => artefact.artefact_tech_label !== "model_name")
-      .map(artefact => ({ ...artefact, model_id }));
+    const artefactsForUpdate = [
+      {
+        artefact_tech_label: 'model_id',
+        artefact_string_value: generateModelAlias(newModel.root_model_id, newModel.model_version),
+        artefact_value_id: null
+      },
+      ...artefacts.filter(artefact => artefact.artefact_tech_label !== 'model_name')
+    ].map(artefact => ({ ...artefact, model_id }))
 
     await this.executeDatabaseUpdates({ artefactsForUpdate }, MODEL_SOURCES.MRM)
 
