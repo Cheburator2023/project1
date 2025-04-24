@@ -21,7 +21,7 @@ import { Artefact, ArtefactValue, GroupedResults, Model, ModelRelationsResponse,
 import { CompareModelsDto, ModelsDto, ModelWithRelationsDto } from './dto'
 import { ArtefactFormatting, ArtefactFormattingType } from './rules'
 
-import { formatDateTime, isValidDate, parseDate, canEditQuarter } from 'src/system/common/utils'
+import { formatDateTime, isValidDate, parseDate, canEditQuarter, generateModelAlias } from 'src/system/common/utils'
 import { ModelCreateDto } from 'src/api/dto/index.dto'
 import { randomUUID } from 'crypto'
 import { sql as parentSumRmModel } from 'src/api/sql/models/sum-rm/parent'
@@ -200,15 +200,20 @@ export class ModelsService {
       create_date: new Date(),
       update_date: new Date(),
     };
-    await this.mrmDatabaseService.query(createModel, createModelQueryParams);
+    const [ newModel ]: ModelEntity[] = await this.mrmDatabaseService.query(createModel, createModelQueryParams);
 
     if (addParentArtefactsQueryParams) {
       await this.mrmDatabaseService.queryAll(newArtefacts, addParentArtefactsQueryParams);
     }
 
-    const artefactsForUpdate = artefacts
-      .filter(artefact => artefact.artefact_tech_label !== "model_name")
-      .map(artefact => ({ ...artefact, model_id }));
+    const artefactsForUpdate = [
+      {
+        artefact_tech_label: 'system_model_id',
+        artefact_string_value: model_id,
+        artefact_value_id: null
+      },
+      ...artefacts.filter(artefact => artefact.artefact_tech_label !== 'model_name')
+    ].map(artefact => ({ ...artefact, model_id }))
 
     await this.executeDatabaseUpdates({ artefactsForUpdate }, MODEL_SOURCES.MRM)
 
@@ -222,7 +227,7 @@ export class ModelsService {
       return null
     }
 
-    return await this.mrmDatabaseService.query(
+    const [newModel] = await this.mrmDatabaseService.query(
       `
       INSERT INTO models_new (
         root_model_id,
@@ -254,6 +259,8 @@ export class ModelsService {
         model_creator: modelSum.model_creator
       }
     )
+
+    return newModel
   }
 
   // Фильтрация моделей в зависимости от групп пользователя
@@ -364,7 +371,17 @@ export class ModelsService {
       const updates = updatesBySource[model_source]
 
       if (modelSource === MODEL_SOURCES.SUM) {
-        await this.ensureSurrogateModelExists(model_id)
+        const newModel: ModelEntity | null = await this.ensureSurrogateModelExists(model_id)
+
+        if (newModel) {
+          updatesBySource[MODEL_SOURCES.MRM].artefactsForUpdate.push({
+            model_id,
+            artefact_tech_label: 'model_alias',
+            artefact_string_value: generateModelAlias(newModel.root_model_id, newModel.model_version),
+            artefact_value_id: null,
+            creator
+          })
+        }
       }
 
       for (const artefactItem of artefacts) {
@@ -449,12 +466,12 @@ export class ModelsService {
     }
   }
 
-  async ensureSurrogateModelExists(model_id) {
+  async ensureSurrogateModelExists(model_id): Promise<ModelEntity | null> {
     const modelExistsInSum: ModelEntity | null = await this.sumModelService.getModelById(model_id)
     if (modelExistsInSum) {
       const modelExistsInMrm: ModelEntity | null = await this.mrmModelService.getModelById(model_id)
       if (!modelExistsInMrm) {
-        await this.surrogateModelCreate(model_id)
+        return await this.surrogateModelCreate(model_id)
       }
     }
   }
@@ -527,8 +544,8 @@ export class ModelsService {
       await this.updateModelName(name, source)
     }
 
-    for (const artefact of artefactsForUpdate) {
-      await this.artefactService.updateArtefact(artefact, source)
+    if (artefactsForUpdate.length) {
+      await this.artefactService.updateArtefact(artefactsForUpdate, source)
     }
 
     for (const allocation of modelsAllocationForUpdate) {

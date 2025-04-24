@@ -177,4 +177,14 @@ const canEditQuarter = (quarter, year = new Date().getFullYear()) => {
   return now <= gracePeriodEnd;
 };
 
-export { queryConvert, isValidDate, parseDate, formatDateTime, canEditQuarter };
+const generateModelAlias = (
+  rootModelId: string | number | null,
+  modelVersion: string | number | null
+): string => {
+  if (rootModelId == null || modelVersion == null) {
+    throw new Error('rootModelId and modelVersion are required')
+  }
+  return `model${ rootModelId }-v${ modelVersion }`
+};
+
+export { queryConvert, isValidDate, parseDate, formatDateTime, canEditQuarter, generateModelAlias };
