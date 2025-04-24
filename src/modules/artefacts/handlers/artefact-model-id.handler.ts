@@ -1,7 +1,8 @@
 import { Injectable } from '@nestjs/common'
 import { IArtefactHandler, IArtefactService } from '../interfaces'
 import { UpdateArtefactDto } from '../dto'
-import { ArtefactEntity, ArtefactRealizationEntity } from '../entities'
+import { ArtefactEntity } from '../entities'
+import { ArtefactExecutionContextService } from '../services'
 
 /**
  * Handler for processing artefacts related to "Model Identifier".
@@ -10,6 +11,9 @@ import { ArtefactEntity, ArtefactRealizationEntity } from '../entities'
 @Injectable()
 export class ArtefactModelIdHandler implements IArtefactHandler {
   private artefactService: IArtefactService
+
+  constructor(private readonly artefactExecutionContextService: ArtefactExecutionContextService) {
+  }
 
   /**
    * Configurable list of artefact labels that can be edited programmatically.
@@ -33,7 +37,9 @@ export class ArtefactModelIdHandler implements IArtefactHandler {
   private readonly priorityAttributes = [
     'regulatory_code_model_pvr',
     'model_id_from_model_owner',
-    'identifier_model_algorithm_for_rwa'
+    'identifier_model_algorithm_for_rwa',
+    'model_alias',
+    'system_model_id'
   ]
 
   /**
@@ -61,10 +67,12 @@ export class ArtefactModelIdHandler implements IArtefactHandler {
   async handle(artefactData: UpdateArtefactDto): Promise<boolean> {
     this.artefactService.canEditArtefact = this.canEditArtefact.bind(this)
 
-    // Perform the artefact update via the main service
-    const result = await this.artefactService.updateArtefact(artefactData)
-    if (!result) {
-      return result
+    if (artefactData.artefact_tech_label !== 'model_alias' && artefactData.artefact_tech_label !== 'system_model_id') {
+      // Perform the artefact update via the main service
+      const result = await this.artefactService.updateArtefact(artefactData)
+      if (!result) {
+        return result
+      }
     }
 
     // Retrieve the artefact for "Model Identifier/ID"
@@ -73,47 +81,80 @@ export class ArtefactModelIdHandler implements IArtefactHandler {
       return false
     }
 
-    // Find the first non-empty value from the priority attributes
-    let resolvedValue: string | null = null
+    const artefactsBatch = this.artefactExecutionContextService.getBatch()
+    const { currentModelIdValue, priorityValues } = await this.getExistingArtefactValuesForModel(artefactData.model_id)
+    const combinedArtefacts = this.combineArtefacts(artefactsBatch, priorityValues)
+    const preferredValue = this.resolvePreferredValue(combinedArtefacts)
+    const needUpdate = preferredValue !== currentModelIdValue
+
+    if (needUpdate) {
+      return await this.artefactService.updateArtefact({
+        model_id: artefactData.model_id,
+        artefact_tech_label: 'model_id',
+        artefact_string_value: preferredValue,
+        artefact_value_id: null,
+        creator: artefactData.creator
+      })
+    }
+
+    return true
+  }
+
+  private async getExistingArtefactValuesForModel(modelId: string): Promise<{
+    currentModelIdValue: string | null;
+    priorityValues: { artefact_tech_label: string; value: string | null }[];
+  }> {
+    const results: { artefact_tech_label: string; value: string | null }[] = []
+    const modelIdArtefact = await this.artefactService.getArtefactByTechLabel('model_id')
+    const modelIdRealization = await this.artefactService.getLatestArtefactRealization(modelId, modelIdArtefact.artefact_id)
+    const currentModelIdValue = modelIdRealization?.artefact_string_value ?? null
+
     for (const techLabel of this.priorityAttributes) {
-      const value = await this.getAttributeValue(artefactData.model_id, techLabel)
-      if (value) {
-        resolvedValue = value
-        break
+      const artefact: ArtefactEntity | null = await this.artefactService.getArtefactByTechLabel(techLabel)
+      if (artefact) {
+        const realization = await this.artefactService.getLatestArtefactRealization(modelId, artefact.artefact_id)
+        results.push({
+          artefact_tech_label: artefact.artefact_tech_label,
+          value: realization?.artefact_string_value ?? null
+        })
       }
     }
 
-    // If no value is found, set to resolvedValue system id
-    if (!resolvedValue) {
-      resolvedValue = artefactData.model_id
+    return {
+      currentModelIdValue,
+      priorityValues: results
     }
-
-    return await this.artefactService.updateArtefact({
-      model_id: artefactData.model_id,
-      artefact_tech_label: 'model_id',
-      artefact_string_value: resolvedValue,
-      artefact_value_id: null,
-      creator: artefactData.creator
-    })
   }
 
-  /**
-   * Retrieves the value of the specified attribute for a given model.
-   * @param modelId The ID of the model.
-   * @param techLabel The technical label of the attribute to retrieve.
-   * @returns The value of the attribute or null if not found.
-   */
-  private async getAttributeValue(modelId: string, techLabel: string): Promise<string | null> {
-    const artefact: ArtefactEntity | null = await this.artefactService.getArtefactByTechLabel(techLabel)
-    if (!artefact) {
-      return null
+  private combineArtefacts(
+    batchArtefacts,
+    existingArtefacts: { artefact_tech_label: string; value: string | null }[]
+  ): { artefact_tech_label: string; value: string | null }[] {
+    const combinedMap = new Map<string, string | null>()
+
+    // Сначала добавляем то, что есть в БД
+    for (const artefact of existingArtefacts) {
+      combinedMap.set(artefact.artefact_tech_label, artefact.value)
     }
 
-    const latestRealization: ArtefactRealizationEntity | null = await this.artefactService.getLatestArtefactRealization(
-      modelId,
-      artefact.artefact_id
-    )
+    // Перезаписываем значениями из batch (batch имеет приоритет)
+    for (const artefact of batchArtefacts) {
+      combinedMap.set(artefact.artefact_tech_label, artefact.artefact_string_value)
+    }
 
-    return latestRealization?.artefact_string_value || null
+    return Array.from(combinedMap.entries()).map(([artefact_tech_label, value]) => ({
+      artefact_tech_label,
+      value
+    }))
+  }
+
+  private resolvePreferredValue(artefacts: { artefact_tech_label: string; value: string | null }[]): string | null {
+    for (const attr of this.priorityAttributes) {
+      const artefact = artefacts.find(a => a.artefact_tech_label === attr && a.value !== null)
+      if (artefact) {
+        return artefact.value
+      }
+    }
+    return null
   }
 }
