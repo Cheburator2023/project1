@@ -1,5 +1,15 @@
 # Semantic Versioning Changelog
 
+## [1.20.2](https://git.sfera.inno.local/SUMD/mrms-backend/compare/v1.20.1...v1.20.2) (2025-04-24)
+
+
+### Bug Fixes
+
+* add check artefactsForUpdate length ([353efe6](https://git.sfera.inno.local/SUMD/mrms-backend/commit/353efe60cc5555f48509acd8a4cb251baa8c7cf8))
+* set model_id for artefact when creating a model ([0e8dec4](https://git.sfera.inno.local/SUMD/mrms-backend/commit/0e8dec405c0e4048dbfe55ac647e4fa60f65f265))
+* update model_id for artefact when creating a model ([17a1bbf](https://git.sfera.inno.local/SUMD/mrms-backend/commit/17a1bbffe5ffcbef2af74de5d597f1cd0686da59))
+* update model_id for artefact when creating a model ([df2bd66](https://git.sfera.inno.local/SUMD/mrms-backend/commit/df2bd6637ab28b8c84470f2095bb2ad68a5828bb))
+
 ## [1.20.1](https://git.sfera.inno.local/SUMD/mrms-backend/compare/v1.20.0...v1.20.1) (2025-04-21)
 
 
