@@ -544,7 +544,9 @@ export class ModelsService {
       await this.updateModelName(name, source)
     }
 
-    await this.artefactService.updateArtefact(artefactsForUpdate, source)
+    if (artefactsForUpdate.length) {
+      await this.artefactService.updateArtefact(artefactsForUpdate, source)
+    }
 
     for (const allocation of modelsAllocationForUpdate) {
       await this.updateModelAllocation(allocation, source)
