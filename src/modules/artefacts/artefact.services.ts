@@ -2,24 +2,35 @@ import { Injectable } from '@nestjs/common'
 import { ArtefactServiceFactory } from './factories'
 import { UpdateArtefactDto } from './dto'
 import { MODEL_SOURCES } from 'src/system/common'
-import { UpdateDateAfterExecution } from 'src/system/common/decorators/update-date-after-execution'
 import { ModelServiceFactory } from 'src/modules/models/factories'
 import { UserType } from 'src/decorators'
 import { EnrichedArtefact } from './entities'
+import { ArtefactExecutionContextService } from './services'
 
 @Injectable()
 export class ArtefactService {
   constructor(
     private readonly artefactServiceFactory: ArtefactServiceFactory,
+    private readonly artefactExecutionContextService: ArtefactExecutionContextService,
     private readonly modelsServiceFactory: ModelServiceFactory
   ) {
-    Reflect.defineMetadata('modelsServiceFactory', modelsServiceFactory, this)
   }
 
-  @UpdateDateAfterExecution()
-  async updateArtefact(data: UpdateArtefactDto, source: MODEL_SOURCES): Promise<boolean> {
+  async updateArtefact(artefacts: UpdateArtefactDto[], source: MODEL_SOURCES): Promise<boolean> {
     const artefactService = this.artefactServiceFactory.getService(source)
-    return await artefactService.handleUpdateArtefact(data)
+
+    await this.artefactExecutionContextService.runWithContext(
+      { artefactsBatch: artefacts, modelSource: source },
+      async () => {
+        for (const artefact of artefacts) {
+          await artefactService.handleUpdateArtefact(artefact)
+        }
+      })
+
+    const modelsService = this.modelsServiceFactory.getService(source)
+    await modelsService.updateUpdateDate({ model_id: artefacts[0].model_id })
+
+    return true
   }
 
   async getMaxArtefactUpdateDate(model_id: string, source: MODEL_SOURCES): Promise<any> {
