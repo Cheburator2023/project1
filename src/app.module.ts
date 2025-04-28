@@ -22,7 +22,8 @@ import { KeycloakModule } from 'src/system/keycloak/keycloak.module'
 @Module({
   imports: [
     ConfigModule.forRoot({
-      isGlobal: true
+      isGlobal: true,
+      envFilePath: [`.env.${process.env.NODE_ENV}`, '.env']
     }),
     KeycloakConnectModule.registerAsync({
       useExisting: KeycloakConfigService,
