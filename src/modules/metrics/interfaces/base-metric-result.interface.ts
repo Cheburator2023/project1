@@ -1,3 +1,5 @@
+import { USER_ROLES } from "src/system/common"
+
 // Базовый тип для всех результатов
 export interface BaseMetricResult {
 }
@@ -19,10 +21,9 @@ export interface PilotsMetricResult extends BaseMetricResult {
   stage05B: number
 }
 
-export interface TasksMetricResult extends BaseMetricResult {
-  datasources: number
-  validation: number
-}
+export type TasksMetricResult = {
+  [key in USER_ROLES]?: number;
+};
 
 export interface RegistryCoverageResult extends BaseMetricResult {
   countPercent: number

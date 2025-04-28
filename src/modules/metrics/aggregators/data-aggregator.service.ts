@@ -16,6 +16,7 @@ type Model = {
 };
 
 type Task = {
+  task_id?: string;
   processInstanceId: string;
   role: string;
   model_id?: string;
@@ -24,21 +25,6 @@ type Task = {
   ds_stream?: string;
   update_date?: string;
 };
-
-const user_roles = [
-  "de",
-  "de_lead",
-  "ds",
-  "ds_lead",
-  "mipm",
-  "mipm_lead",
-  "modelops",
-  "modelops_lead",
-  "validator",
-  "validator_lead",
-  "business_customer",
-];
-
 
 @Injectable()
 export class DataAggregator {
@@ -50,7 +36,7 @@ export class DataAggregator {
     private readonly artefactService: ArtefactService,
     private readonly assignmentService: AssignmentService,
     private readonly bpmnService: BpmnService,
-    private readonly keycloakService: KeycloakService
+    // private readonly keycloakService: KeycloakService
   ) {
     this.cache = new NodeCache({ stdTTL: 300 }) // Кэш на 5 минут
   }
@@ -60,11 +46,11 @@ export class DataAggregator {
     const tasks = await this.getCachedTasks(models)
 
     const filteredModels = this.filterByStreams(models, streams, 'ds_stream')
-    const filteredTasks = this.filterByStreamsTasks(tasks, streams, 'ds_stream')
+    // const filteredTasks = this.filterByStreamsTasks(tasks, streams, 'ds_stream')
 
     return {
       models: filteredModels,
-      tasks: filteredTasks
+      tasks: tasks
     }
   }
 
@@ -91,7 +77,8 @@ export class DataAggregator {
   }
 
   private usersActiveTasks = async (models) => {
-    const userTasksPromises = user_roles.map((userRole) => this.camundaService.tasks([userRole]))
+    const userRoles = Object.values(USER_ROLES);
+    const userTasksPromises = userRoles.map((userRole) => this.camundaService.tasks([userRole]))
 
     const userTasks = this.formatUserTasks(await Promise.all(userTasksPromises))
     const taskMap = new Map(userTasks.map(task => [task.processInstanceId + task.role, task]))
@@ -102,7 +89,7 @@ export class DataAggregator {
 
     const assignments = await this.assignmentService.getAssignmentsWithRolesByModelId(
       Array.from(instanceMap.keys()),
-      5
+      0
     );
 
     // TODO: Реализовать получение пользователей по группам из Keycloak
@@ -145,21 +132,7 @@ export class DataAggregator {
     return userGroupsMap;
   }
   */
-
-  private formatUserTasks = (userTasks) =>
-    userTasks.reduce((allTasks, groupTask, index) => {
-      const formattedGroupTasks = groupTask.map(
-        ({ name, processInstanceId }) => ({
-          name,
-          processInstanceId,
-          role: Object.values(USER_ROLES)[index],
-        })
-      );
   
-      return [...allTasks, ...formattedGroupTasks];
-    }, []);
-    
-
   private enrichTasksWithAssignments(
     assignments: any[],
     taskMap: any,
@@ -200,9 +173,10 @@ export class DataAggregator {
         model_id: assigneeHistItem.model_id,
         effective_from: assigneeHistItem.update_date,
         bpmn_key: model?.bpmn_key || null,
-        ds_stream: model?.ds_stream || null
+        user_name: assigneeHistItem.assignee_name,
+        ds_stream: model?.ds_stream || null,
       })
-      
+
       return acc
     }, [])
   }
@@ -218,6 +192,20 @@ export class DataAggregator {
       })
     )
   }
+
+  private formatUserTasks = (userTasks) =>
+    userTasks.reduce((allTasks, groupTask, index) => {      
+      const formattedGroupTasks = groupTask.map(
+        ({ taskDefinitionKey, name, processInstanceId }) => ({
+          task_id: taskDefinitionKey,
+          name,
+          processInstanceId,
+          role: Object.values(USER_ROLES)[index],
+        })
+      );
+  
+      return [...allTasks, ...formattedGroupTasks];
+  }, []);
 
   private filterByStreams<T extends Record<string, any>>(
     items: T[],
