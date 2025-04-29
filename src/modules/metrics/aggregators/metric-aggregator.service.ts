@@ -17,7 +17,6 @@ export class MetricsAggregator {
     endDate: string | null,
     streams: string[]
   ): Promise<Record<MetricsEnum, any>> {
-    // Aggregate data
     const data = await this.dataAggregator.aggregateData(streams, [MODEL_DISPLAY_MODES.ARCHIVE, MODEL_DISPLAY_MODES.PENDING_DELETE]);
 
     const results: Record<string, any> = {}
@@ -41,24 +40,29 @@ export class MetricsAggregator {
     startDate: string | null,
     endDate: string | null,
     streams: string[]
-  ): Promise<any[]> {
-    const data = await this.dataAggregator.aggregateData(
-      streams,
-      [MODEL_DISPLAY_MODES.ARCHIVE, MODEL_DISPLAY_MODES.PENDING_DELETE]
-    );
+  ): Promise<{ system_model_id: string }[]> {
+    const data = await this.dataAggregator.aggregateData(streams, [MODEL_DISPLAY_MODES.ARCHIVE, MODEL_DISPLAY_MODES.PENDING_DELETE]);
+  
+    const results: Record<string, any> = {};
   
     for (const metric of this.independentMetrics) {
-      if (metric.getMetricName() === metricName) {
-        metric.initialize(data, startDate, endDate);
-        metric.calculate();
+      metric.initialize(data, startDate, endDate);
+      results[metric.getMetricName()] = metric.calculate();
+    }
   
-        if (typeof (metric as any).getFilteredRowData === 'function') {
-          return (metric as any).getFilteredRowData();
-        }
-      }
+    for (const metric of this.dependentMetrics) {
+      const dependencies = { ...results };
+      metric.initialize(data, startDate, endDate, dependencies);
+      results[metric.getMetricName()] = metric.calculate();
+    }
+  
+    const allMetrics = [...this.independentMetrics, ...this.dependentMetrics];
+    const foundMetric = allMetrics.find(metric => metric.getMetricName() === metricName);
+  
+    if (foundMetric && typeof (foundMetric as any).getFilteredRowData === 'function') {
+      return (foundMetric as any).getFilteredRowData();
     }
   
     return [];
-  }
-  
+  }  
 }

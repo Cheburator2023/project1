@@ -31,7 +31,8 @@ export class DevelopedMetric extends IndependentMetric<MetricResult> {
 
   public getFilteredRowData() {
     return this.filteredModels.map((model) => ({
-      system_model_id: model.system_model_id
+      system_model_id: model.system_model_id,
+      ds_stream: model.ds_stream
     }));
   }
 

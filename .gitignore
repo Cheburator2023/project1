@@ -4,8 +4,8 @@
 /.npmrc
 /certs
 
-# Env
-*.env.*
+# # Env
+# *.env.*
 
 # Logs
 logs
