@@ -1,5 +1,14 @@
 # Semantic Versioning Changelog
 
+# [1.21.0](https://git.sfera.inno.local/SUMD/mrms-backend/compare/v1.20.2...v1.21.0) (2025-04-29)
+
+
+### Features
+
+* export excel row data metrics aggregator ([5d5d008](https://git.sfera.inno.local/SUMD/mrms-backend/commit/5d5d008fe7b94c9faa392b77ef2cbcd4cd2b4dec))
+* tasks dashbaords ([deffaac](https://git.sfera.inno.local/SUMD/mrms-backend/commit/deffaac1877008846cfad5838f35fe26ed63de6d))
+* tasks dashbaords ([47da101](https://git.sfera.inno.local/SUMD/mrms-backend/commit/47da1010667bcb2bd8135795c3a8020d1dc4b058))
+
 ## [1.20.2](https://git.sfera.inno.local/SUMD/mrms-backend/compare/v1.20.1...v1.20.2) (2025-04-24)
 
 
