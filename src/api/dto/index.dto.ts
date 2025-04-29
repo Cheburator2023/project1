@@ -17,6 +17,7 @@ import {
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform, Type } from 'class-transformer';
 import { ApiModelPropertyOptional } from '@nestjs/swagger/dist/decorators/api-model-property.decorator';
+import { MetricsEnum } from 'src/modules/metrics/enums';
 
 export enum ModelSource {
   SUM = 'sum',
@@ -312,4 +313,9 @@ export class MetricsDto {
   @IsArray()
   @IsString({ each: true })
   stream: string[];
+
+  @ApiModelPropertyOptional({ example: MetricsEnum.DevelopedModelsMetric })
+  @IsOptional()
+  @IsEnum(MetricsEnum)
+  metric: MetricsEnum;
 }
