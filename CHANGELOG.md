@@ -1,5 +1,24 @@
 # Semantic Versioning Changelog
 
+# [1.21.0](https://git.sfera.inno.local/SUMD/mrms-backend/compare/v1.20.2...v1.21.0) (2025-04-29)
+
+
+### Features
+
+* export excel row data metrics aggregator ([5d5d008](https://git.sfera.inno.local/SUMD/mrms-backend/commit/5d5d008fe7b94c9faa392b77ef2cbcd4cd2b4dec))
+* tasks dashbaords ([deffaac](https://git.sfera.inno.local/SUMD/mrms-backend/commit/deffaac1877008846cfad5838f35fe26ed63de6d))
+* tasks dashbaords ([47da101](https://git.sfera.inno.local/SUMD/mrms-backend/commit/47da1010667bcb2bd8135795c3a8020d1dc4b058))
+
+## [1.20.2](https://git.sfera.inno.local/SUMD/mrms-backend/compare/v1.20.1...v1.20.2) (2025-04-24)
+
+
+### Bug Fixes
+
+* add check artefactsForUpdate length ([353efe6](https://git.sfera.inno.local/SUMD/mrms-backend/commit/353efe60cc5555f48509acd8a4cb251baa8c7cf8))
+* set model_id for artefact when creating a model ([0e8dec4](https://git.sfera.inno.local/SUMD/mrms-backend/commit/0e8dec405c0e4048dbfe55ac647e4fa60f65f265))
+* update model_id for artefact when creating a model ([17a1bbf](https://git.sfera.inno.local/SUMD/mrms-backend/commit/17a1bbffe5ffcbef2af74de5d597f1cd0686da59))
+* update model_id for artefact when creating a model ([df2bd66](https://git.sfera.inno.local/SUMD/mrms-backend/commit/df2bd6637ab28b8c84470f2095bb2ad68a5828bb))
+
 ## [1.20.1](https://git.sfera.inno.local/SUMD/mrms-backend/compare/v1.20.0...v1.20.1) (2025-04-21)
 
 
