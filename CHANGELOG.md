@@ -1,5 +1,12 @@
 # Semantic Versioning Changelog
 
+# [1.22.0](https://git.sfera.inno.local/SUMD/mrms-backend/compare/v1.21.0...v1.22.0) (2025-05-13)
+
+
+### Features
+
+* add SSL connection for data bases ([fab7b1f](https://git.sfera.inno.local/SUMD/mrms-backend/commit/fab7b1fe3bc04cd7d5283fd902e6278d0ce4874c))
+
 # [1.21.0](https://git.sfera.inno.local/SUMD/mrms-backend/compare/v1.20.2...v1.21.0) (2025-04-29)
 
 
