@@ -11,6 +11,9 @@ export class SumDatabaseService {
     // Описание типа данных numeric в PostgreSQL
     const NUMERIC_OID = 1700;
 
+    // Check for SSL connection
+    const enableSSL = process.env.SSL_ENABLED === 'true';
+
     // Устанавливаем кастомный парсер для типа numeric
     types.setTypeParser(NUMERIC_OID, (val) => parseFloat(val));
 
@@ -19,8 +22,13 @@ export class SumDatabaseService {
       host: process.env.SUM_PG_HOST,
       database: process.env.SUM_PG_SCHEMA,
       password: process.env.SUM_PG_PASSWORD,
-      port: process.env.SUM_PG_PORT
-    })
+      port: process.env.SUM_PG_PORT,
+      ssl: enableSSL
+        ? {
+            rejectUnauthorized: false,
+          }
+        : false,
+    });
   }
 
   async query(sql: string, params: any = {}): Promise<any> {
@@ -31,14 +39,12 @@ export class SumDatabaseService {
 
       return result.rows;
     } catch (error) {
-      this.logger.error(`Error executing SQL query: ${error}`)
-      throw error
+      this.logger.error(`Error executing SQL query: ${error}`);
+      throw error;
     }
   }
 
   async queryAll(sql: string, params: Object[] = [{}]): Promise<any> {
-    return Promise.all(
-      params.map(arg => this.query(sql, arg))
-    )
+    return Promise.all(params.map((arg) => this.query(sql, arg)));
   }
 }
