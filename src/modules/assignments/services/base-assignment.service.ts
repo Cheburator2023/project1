@@ -11,10 +11,13 @@ export abstract class BaseAssignmentService implements IAssignmentService {
     modelIds?: string[],
     daysOfDelay: number = 0
   ): Promise<AssignmentsWithRolesEntity[]> {
-    const dateOfDelay = new Date(Date.now() - daysOfDelay * 24 * 60 * 60 * 1000)
-      .toISOString()
-      .slice(0, 19)
-      .replace('T', ' ');
+    const dateOfDelay = daysOfDelay > 0
+      ? new Date(Date.now() - daysOfDelay * 24 * 60 * 60 * 1000)
+          .toISOString()
+          .slice(0, 19)
+          .replace('T', ' ')
+      : null;
+
   
     const query = `
       SELECT 
@@ -25,7 +28,7 @@ export abstract class BaseAssignmentService implements IAssignmentService {
         TO_CHAR(M_UPD_DATE.UPDATE_DATE, 'DD.MM.YYYY HH24:MI:SS') AS UPDATE_DATE,
         COALESCE(M.MODEL_STAGE, STATUS.BPMN_KEY_DESC) AS STATUS,
         AH.FUNCTIONAL_ROLE,
-        STRING_AGG(AH.ASSIGNEE_NAME, ', ') AS ASSIGNEE_NAME
+        AH.ASSIGNEE_NAME
       FROM ASSIGNEE_HIST AH
         LEFT JOIN MODELS M ON AH.MODEL_ID = M.MODEL_ID
         LEFT JOIN (
@@ -46,11 +49,20 @@ export abstract class BaseAssignmentService implements IAssignmentService {
           WHERE rn = 1
         ) STATUS ON STATUS.MODEL_ID = M.MODEL_ID
       WHERE AH.MODEL_ID = ANY(:modelIds::text[])
-        AND TO_TIMESTAMP(cast(M_UPD_DATE.UPDATE_DATE as TEXT), 'YYYY-MM-DD HH24:MI:SS') <= TO_DATE(:dateOfDelay, 'YYYY-MM-DD HH24:MI:SS')
-        AND BPMN_KEY_DESC IN ('main', 'initialization', 'data', 'data_search', 'data_pilot', 'data_build', 'model',
-                              'model_validation', 'integration', 'integration_datamart', 'integration_env_conf',
-                              'integration_test', 'integration_user', 'integration_prod', 'cancel')
-      GROUP BY M.MODEL_ID, M.ROOT_MODEL_ID, M.MODEL_VERSION, AH.FUNCTIONAL_ROLE, M.MODEL_NAME, STATUS.BPMN_KEY_DESC, M_UPD_DATE.UPDATE_DATE
+        AND (
+        :dateOfDelay::text IS NULL OR 
+        TO_TIMESTAMP(CAST(M_UPD_DATE.UPDATE_DATE AS TEXT), 'YYYY-MM-DD HH24:MI:SS') 
+            <= TO_DATE(:dateOfDelay::text, 'YYYY-MM-DD HH24:MI:SS')
+        )
+        AND BPMN_KEY_DESC IN (
+          'main', 'initialization', 'data', 'data_search', 'data_pilot', 'data_build', 'model',
+          'model_validation', 'integration', 'integration_datamart', 'integration_env_conf',
+          'integration_test', 'integration_user', 'integration_prod', 'monitoring', 
+          'monitoring_auto_correct', 'validation', 'removal', 'cancel', 'rollback_version', 
+          'rollback', 'jira', 'cancel', 'fast_model_process', 'model_pilot', 'fullvalidation_datamart', 
+          'inegration_model', 'test_preprod_transfer_prod', 'fullvalidation', 'model_state_transition'
+        )
+      GROUP BY M.MODEL_ID, M.ROOT_MODEL_ID, M.MODEL_VERSION, AH.FUNCTIONAL_ROLE, AH.ASSIGNEE_NAME, M.MODEL_NAME, STATUS.BPMN_KEY_DESC, M_UPD_DATE.UPDATE_DATE
       ORDER BY M_UPD_DATE.UPDATE_DATE DESC
     `;
   

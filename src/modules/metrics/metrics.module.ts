@@ -1,10 +1,7 @@
 import { Module } from '@nestjs/common'
-import { KeycloakModule } from 'src/system/keycloak/keycloak.module'
-import { CamundaModule } from 'src/system/camunda/camunda.module'
 import { ModelsModule } from 'src/modules/models/models.module'
+import { TasksModule } from 'src/modules/tasks/tasks.module'
 import { ArtefactModule } from 'src/modules/artefacts/artefact.module'
-import { AssignmentModule } from 'src/modules/assignments/assignment.module'
-import { BpmnModule } from 'src/modules/bpmn/bpmn.module'
 import { DataAggregator, MetricsAggregator } from './aggregators'
 import {
   DevelopedMetric,
@@ -54,12 +51,9 @@ import { MetricsEnum } from './enums'
     }
   ],
   imports: [
-    CamundaModule,
-    BpmnModule,
     ModelsModule,
     ArtefactModule,
-    AssignmentModule,
-    KeycloakModule
+    TasksModule
   ],
   exports: [MetricsAggregator]
 })
