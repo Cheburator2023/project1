@@ -11,7 +11,7 @@ export class TasksMetric extends IndependentMetric<TasksMetricResult> {
     task_id: string;
     effective_from: string;
     update_date: string;
-    user_name: string;
+    assignee: string;
   }> = [];
 
   private readonly ROLES: (keyof TasksMetricResult)[] = [
@@ -51,22 +51,26 @@ export class TasksMetric extends IndependentMetric<TasksMetricResult> {
     );
   }
 
-  private groupTasksByRole(tasks: any[]): Record<string, any[]> {
-    const groupedTasks: Record<string, any[]> = {};
-    this.ROLES.forEach(role => {
-      groupedTasks[role] = [];
-    });
+  private groupTasksByRole(tasks: any[]): Record<USER_ROLES, any[]> {
+    const groupedTasks = Object.fromEntries(
+      this.ROLES.map(role => [role, []])
+    ) as Record<USER_ROLES, any[]>;
 
-    tasks.forEach((task) => {
-      const { role } = task;
+    for (const task of tasks) {
+      const roles = (typeof task.role === 'string' ? task.role.split(',') : [])
+        .map(r => r.trim())
+        .filter((r): r is USER_ROLES => this.ROLES.includes(r as USER_ROLES));
 
-      if (this.ROLES.includes(role) && this.shouldIncludeTask(task)) {
-        groupedTasks[role].push(task);
+      for (const role of roles) {
+        if (this.shouldIncludeTask({ ...task, role })) {
+          groupedTasks[role].push({ ...task, role });
+        }
       }
-    });
+    }
 
     return groupedTasks;
   }
+
 
   private flattenGroupedTasks(tasksByRole: Record<string, any[]>): any[] {
     return Object.values(tasksByRole).flat();
@@ -99,9 +103,8 @@ export class TasksMetric extends IndependentMetric<TasksMetricResult> {
       ds_stream: task.ds_stream,
       name: task.name,
       task_id: task.task_id,
-      effective_from: task.effective_from,
-      update_date: task.update_date,
-      user_name: task.user_name,
+      update_date: new Date(task.update_date).toISOString().replace('T', ' ').substring(0, 19),
+      assignee: task.assignee,
     }));
   }
 }
