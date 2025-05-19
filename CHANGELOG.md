@@ -1,5 +1,12 @@
 # Semantic Versioning Changelog
 
+# [1.23.0](https://git.sfera.inno.local/SUMD/mrms-backend/compare/v1.22.0...v1.23.0) (2025-05-19)
+
+
+### Features
+
+* получение активных задач пользователей ([9b721bc](https://git.sfera.inno.local/SUMD/mrms-backend/commit/9b721bc878f5ae5b3cd9c86be74525caf11dfe5d))
+
 # [1.22.0](https://git.sfera.inno.local/SUMD/mrms-backend/compare/v1.21.0...v1.22.0) (2025-05-13)
 
 
