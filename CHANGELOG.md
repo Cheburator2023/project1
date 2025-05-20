@@ -1,5 +1,12 @@
 # Semantic Versioning Changelog
 
+## [1.23.1](https://git.sfera.inno.local/SUMD/mrms-backend/compare/v1.23.0...v1.23.1) (2025-05-20)
+
+
+### Bug Fixes
+
+* исправлена логика формирования на основе bmpn_inctance_id ([15513de](https://git.sfera.inno.local/SUMD/mrms-backend/commit/15513dea5cfea2c544f2e49a98b9989e5313026d))
+
 # [1.23.0](https://git.sfera.inno.local/SUMD/mrms-backend/compare/v1.22.0...v1.23.0) (2025-05-19)
 
 
