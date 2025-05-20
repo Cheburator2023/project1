@@ -29,10 +29,14 @@ export class UsersTasksService {
 
     const bpmnInstances = await this.bpmnService.getInstances(userTasks.map((task) => task.processInstanceId))
 
-    const instanceMap = new Map(bpmnInstances.map(instance => [instance.model_id, instance]))
+    const instanceMap = new Map(bpmnInstances.map(instance => [instance.bpmn_instance_id, instance]));
+
+    const modelIds = Array.from(
+      new Set(Array.from(instanceMap.values()).map(i => i.model_id))
+    );
 
     const assignments = await this.assignmentService.getAssignmentsWithRolesByModelId(
-      Array.from(instanceMap.keys()),
+      modelIds,
       0
     );
 
@@ -86,14 +90,14 @@ export class UsersTasksService {
     const ROLE_TO_LEAD_ROLE = this.mapRolesToLeads();
 
     const aggregated = assignments.reduce<Record<string, any>>((acc, item) => {
-      const instance = instanceMap.get(item.model_id);
+      const instance = instanceMap.get(item.bpmn_instance_id);
       if (!instance) return acc;
 
       const taskKey = instance.bpmn_instance_id + item.functional_role;
       const task = taskMap.get(taskKey);
       if (!task) return acc;
 
-      const key = item.model_id;
+      const key = item.bpmn_instance_id;
       if (!acc[key]) {
         const model = models.find((model) => model.system_model_id === item.model_id);
 
