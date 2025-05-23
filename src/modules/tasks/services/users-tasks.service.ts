@@ -5,8 +5,7 @@ import { BpmnService } from 'src/modules/bpmn/bpmn.service';
 import { AssignmentService } from 'src/modules/assignments/assignment.service';
 import { ArtefactService } from 'src/modules/artefacts/artefact.services';
 import { USER_ROLES, MODEL_SOURCES } from 'src/system/common/constants';
-import { AggregatedTask, Assignment, Model, Task } from '../interfaces';
-// import { DEPARTMENT_TO_STREAM_MAPPING } from 'src/modules/models/constants'
+import { Assignment, Model, RawCamundaTask, Task } from '../interfaces';
 
 @Injectable()
 export class UsersTasksService {
@@ -15,108 +14,75 @@ export class UsersTasksService {
     private readonly bpmnService: BpmnService,
     private readonly assignmentService: AssignmentService,
     private readonly artefactService: ArtefactService,
-    // private readonly keycloakService: KeycloakService
   ) {}
 
   public async getUsersActiveTasks(models: Model[]): Promise<Task[]> {
-    const userRoles = Object.values(USER_ROLES) as USER_ROLES[];
-    const userTasksPromises = userRoles.map((userRole) => this.camundaService.tasks([userRole]))
-
-    const userTasks = this.formatUserTasks(await Promise.all(userTasksPromises))
-    const taskMap: Map<string, Task> = new Map(
-      userTasks.map((task) => [task.processInstanceId + task.role, task])
-    );
+    const userTasksRaw = await this.getUserTasks();
+    const userTasks = this.filterPreferLeadTasks(userTasksRaw);
 
     const bpmnInstances = await this.bpmnService.getInstances(userTasks.map((task) => task.processInstanceId))
 
-    const instanceMap = new Map(bpmnInstances.map(instance => [instance.model_id, instance]))
+    const instanceMap = new Map(
+      bpmnInstances.map(instance => [instance.bpmn_instance_id, instance])
+    );
 
-    const assignments = await this.assignmentService.getAssignmentsWithRolesByModelId(
-      Array.from(instanceMap.keys()),
+    const modelIds = Array.from(
+      new Set(Array.from(instanceMap.values()).map(instance => instance.model_id))
+    );
+
+    const assigneeHist = await this.assignmentService.getAssignmentsWithRolesByModelId(
+      modelIds,
       0
     );
 
-    // TODO: Реализовать получение пользователей по группам из Keycloak
-    // Закомментировано временно, так как сейчас работа ведётся без групповой фильтрации.
-    // Позже нужно вернуть этот код, если появится необходимость учитывать группы пользователей.
-    /*
-    const allGroups = await this.keycloakService.getSubGroupsByGroupsName([
-      'departament',
-      'departament_business_customer',
-    ]);
-  
-    const users = await this.getUsersInGroups(allGroups);
-    */
+    const modelMap = new Map(models.map(model => [model.system_model_id, model]));
 
-    const enrichedTasks = this.enrichTasksWithAssignments(assignments, taskMap, instanceMap, models, 
-      // users
-    )
+    const filteredUserTasks = userTasks.filter(task => {
+      const instance = instanceMap.get(task.processInstanceId);
+      return instance && modelMap.has(instance.model_id);
+    });
+
+    const enrichedTasks = this.enrichTasks(filteredUserTasks, instanceMap, assigneeHist, modelMap);
 
     return this.updateTasksWithArtefacts(enrichedTasks)
   }
 
-  // TODO: Реализовать получение пользователей по группам из Keycloak
-  // Закомментировано временно, так как сейчас работа ведётся без групповой фильтрации.
-  // Позже нужно вернуть этот код, если появится необходимость учитывать группы пользователей.
-  /*
-  private async getUsersInGroups(groups: any[]): Promise<Record<string, string[]>> {
-    const userGroupsMap: Record<string, string[]> = {};
-  
-    for (const group of groups) {
-      const users = await this.keycloakService.getUsersInGroup(group.id);
-      users.forEach((user) => {
-        const username = user.username;
-        if (!userGroupsMap[username]) {
-          userGroupsMap[username] = [];
-        }
-        userGroupsMap[username].push(group.name);
-      });
-    }
-  
-    return userGroupsMap;
-  }
-  */
-
-  private enrichTasksWithAssignments(
-    assignments: any[],
-    taskMap: Map<string, Task>,
-    instanceMap: Map<string, any>,
-    models: Model[]
+  /**
+   * Обогащает задачи информацией о модели и роли исполнителя.
+   * Использует карту инстансов и карту моделей, чтобы дополнить задачу
+   * сведениями о model_id, ключе процесса (bpmn_key) и стриме (ds_stream).
+   * Также вычисляет корректную роль исполнителя на основе истории назначений.
+   * 
+   * @param {Task[]} userTasks - Список задач пользователей из Camunda.
+   * @param {Map<string, any>} instanceMap - Карта BPMN-инстансов: processInstanceId → BPMN instance.
+   * @param {any[]} assigneeHist - История назначений с полями model_id, assignee_name, functional_role.
+   * @param {Map<string, Model>} modelMap - Карта моделей: model_id → метаданные модели.
+   * @returns {Task[]} Список обогащённых задач.
+   */
+  private enrichTasks(
+    userTasks: Task[],
+    instanceMap: Map<string, { model_id: string }>,
+    assigneeHist: Assignment[],
+    modelMap: Map<string, Model>
   ): Task[] {
-    const ROLE_TO_LEAD_ROLE = this.mapRolesToLeads();
+    return userTasks.map(task => {
+      const instance = instanceMap.get(task.processInstanceId);
+      if (!instance) return null;
 
-    const aggregated = assignments.reduce<Record<string, any>>((acc, item) => {
-      const instance = instanceMap.get(item.model_id);
-      if (!instance) return acc;
+      const modelId = instance.model_id;
+      const model = modelMap.get(modelId);
 
-      const taskKey = instance.bpmn_instance_id + item.functional_role;
-      const task = taskMap.get(taskKey);
-      if (!task) return acc;
-
-      const key = item.model_id;
-      if (!acc[key]) {
-        const model = models.find((model) => model.system_model_id === item.model_id);
-
-        acc[key] = {
-          ...this.initializeTaskItem(item),
-          DS_STREAM: model?.ds_stream || null,
-          BPMN_KEY: model?.bpmn_key || null,
-        };
-      }
-
-      acc[key].TASK_NAMES.add(task.name);
-      acc[key].TASK_IDS.add(task.task_id || '');
-      acc[key].USER_NAMES.add(item.assignee_name);
-      acc[key].ASSIGNEES.add(task.assignee || '');
-
-      this.setRole(acc[key], task, item, ROLE_TO_LEAD_ROLE);
-
-      return acc;
-    }, {});
-
-    return Object.values(aggregated).map(this.formatTaskResult);
+      return {
+        task_id: task.task_id,
+        name: task.name,
+        assignee: task.assignee,
+        role: this.getEffectiveFunctionalRole(task, assigneeHist, instanceMap),
+        model_id: modelId,
+        bpmn_key: model?.bpmn_key,
+        ds_stream: model?.ds_stream,
+      };
+    }).filter(Boolean);
   }
-
 
   private async updateTasksWithArtefacts(tasks: Task[]): Promise<Task[]> {
     return Promise.all(
@@ -130,9 +96,9 @@ export class UsersTasksService {
     )
   }
 
-  private formatUserTasks = (userTasks) =>
-    userTasks.reduce((allTasks, groupTask, index) => {      
-      const formattedGroupTasks = groupTask.map(
+  private formatUserTasks = (userTasks: RawCamundaTask[][]): Task[] =>
+    userTasks.reduce((allTasks: Task[], groupTask: RawCamundaTask[], index: number) => {
+      const formattedGroupTasks: Task[] = groupTask.map(
         ({ taskDefinitionKey, name, processInstanceId, assignee }) => ({
           task_id: taskDefinitionKey,
           name,
@@ -141,61 +107,80 @@ export class UsersTasksService {
           role: Object.values(USER_ROLES)[index],
         })
       );
-  
-      return [...allTasks, ...formattedGroupTasks];
-  }, []);
 
-  private mapRolesToLeads(): Record<string, USER_ROLES> {
-    const allRoles = Object.values(USER_ROLES);
-    return allRoles.reduce((map, role) => {
-      if (!String(role).includes('_lead')) {
-        const leadRole = `${role}_lead`;
-        if (allRoles.includes(leadRole as USER_ROLES)) {
-          map[role] = leadRole as USER_ROLES;
+      return [...allTasks, ...formattedGroupTasks];
+    }, []);
+
+  /**
+   * Получает задачи всех пользователей на основе ролей.
+   * @returns {Array} Сформатированный массив задач пользователей.
+   */
+  async getUserTasks(): Promise<Task[]> {
+    const userRoles = Object.values(USER_ROLES) as USER_ROLES[];
+    const userTasksPromises: Promise<RawCamundaTask[]>[] = userRoles.map((userRole) =>
+      this.camundaService.tasks([userRole])
+    );
+
+    const userTasksResults = await Promise.all(userTasksPromises);
+    const formattedTasks = this.formatUserTasks(userTasksResults);
+
+    return formattedTasks;
+  }
+
+  /**
+   * Возвращает функциональную роль на основе совпадения assignee в истории.
+   * Если не найдено — возвращает исходную роль из задачи.
+   *
+   * @param {Object} task - Задача Camunda (с processInstanceId, assignee, role).
+   * @param {Array} assigneeHist - Массив строк с MODEL_ID, ASSIGNEE_NAME, FUNCTIONAL_ROLE.
+   * @param {Map<string, Object>} instanceMap - Map по processInstanceId → BPMN instance (с MODEL_ID).
+   * @returns {string} - Роль задачи
+   */
+  private getEffectiveFunctionalRole(
+    task: Task,
+    assigneeHist: Assignment[],
+    instanceMap: Map<string, { model_id: string }>
+  ): string {
+      const instance = instanceMap.get(task.processInstanceId);
+      if (!instance || !task.assignee) return task.role;
+
+      const modelId = instance.model_id;
+
+      const match = assigneeHist.find(row =>
+        row.model_id === modelId &&
+        row.assignee_name?.split(', ').includes(task.assignee)
+      );
+
+      return match?.functional_role || task.role;
+    }
+
+  /**
+   * Фильтрует задачи, оставляя одну на комбинацию processInstanceId + name,
+   * с приоритетом роли *_lead.
+   * 
+   * @param {Array} tasks - Список задач
+   * @returns {Array} Отфильтрованный список задач
+   */
+  private filterPreferLeadTasks(tasks: Task[]): Task[] {
+    const taskMap = new Map<string, Task>();
+
+    for (const task of tasks) {
+      const key = `${task.processInstanceId}::${task.name}`;
+      const isLead = task.role.endsWith('_lead');
+
+      if (!taskMap.has(key)) {
+        taskMap.set(key, task);
+      } else {
+        const existing = taskMap.get(key)!;
+        const existingIsLead = existing.role.endsWith('_lead');
+
+        // если текущий — не lead, а новый — lead — заменяем
+        if (isLead && !existingIsLead) {
+          taskMap.set(key, task);
         }
       }
-      return map;
-    }, {} as Record<string, USER_ROLES>);
-  }
-
-  private initializeTaskItem(item: Assignment): AggregatedTask {
-    return {
-      MODEL_ID: item.model_id,
-      MODEL_NAME: item.model_name,
-      MODEL_ALIAS: `model${item.root_model_id}-v${item.model_version}`,
-      UPDATE_DATE: item.update_date,
-      STATUS: item.status,
-      TASK_NAMES: new Set<string>(),
-      TASK_IDS: new Set<string>(),
-      USER_NAMES: new Set<string>(),
-      ASSIGNEES: new Set<string>(),
-      STREAMS: new Set<string>(),
-      ROLES: new Set<string>(),
-      ROLE: '',
-      DS_STREAM: null,
-      BPMN_KEY: null,
-    };
-  }
-
-  private setRole(taskItem: AggregatedTask, task: Task, item: Assignment, roleToLead: Record<string, string>) {
-    if (task.assignee && item.assignee_name.split(', ').includes(task.assignee)) {
-      taskItem.ROLE = item.functional_role;
-    } else {
-      const role = task.role.includes('_lead') ? task.role : roleToLead[task.role];
-      if (role) taskItem.ROLES.add(role);
     }
-  }
 
-  private formatTaskResult(item: AggregatedTask): Task {
-    return {
-      model_id: item.MODEL_ID,
-      task_id: Array.from(item.TASK_IDS).join(', '),
-      role: item.ROLE || Array.from(item.ROLES).join(', '),
-      bpmn_key: item.BPMN_KEY,
-      ds_stream: item.DS_STREAM,
-      update_date: item.UPDATE_DATE,
-      assignee: Array.from(item.ASSIGNEES).join(', '),
-      name: Array.from(item.TASK_NAMES).join(', '),
-    };
+    return Array.from(taskMap.values());
   }
 }
