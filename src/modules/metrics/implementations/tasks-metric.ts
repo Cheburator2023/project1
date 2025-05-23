@@ -2,17 +2,20 @@ import { USER_ROLES } from 'src/system/common';
 import { IndependentMetric } from '../base';
 import { TasksMetricResult } from '../interfaces';
 
+interface TaskMetricItem {
+  model_id: string;
+  role: string;
+  ds_stream: string;
+  name: string;
+  task_id: string;
+  effective_from: string;
+  update_date: string;
+  assignee: string;
+}
+
+
 export class TasksMetric extends IndependentMetric<TasksMetricResult> {
-  private filteredTasks: Array<{
-    model_id: string;
-    role: string;
-    ds_stream: string;
-    name: string;
-    task_id: string;
-    effective_from: string;
-    update_date: string;
-    assignee: string;
-  }> = [];
+  private filteredTasks: TaskMetricItem[] = [];
 
   private readonly ROLES: (keyof TasksMetricResult)[] = [
     USER_ROLES.DS,
@@ -32,14 +35,14 @@ export class TasksMetric extends IndependentMetric<TasksMetricResult> {
   ];
 
   calculate(): TasksMetricResult {
-    const filtered = this.filterTasks(this.tasks, this.startDate, this.endDate);
+    const filtered = this.filterTasks(this.tasks as TaskMetricItem[], this.startDate, this.endDate);
     const grouped = this.groupTasksByRole(filtered);
 
     this.filteredTasks = this.flattenGroupedTasks(grouped);
     return this.buildResultFromGroupedTasks(grouped);
   }
 
-  private filterTasks(tasks: any[], startDate: string | null, endDate: string | null): any[] {
+  private filterTasks(tasks: TaskMetricItem[], startDate: string | null, endDate: string | null): TaskMetricItem[] {
     const { actualStartDate, actualEndDate } = this.getActualDateRange(startDate, endDate);
 
     return tasks.filter((task) =>
@@ -51,10 +54,10 @@ export class TasksMetric extends IndependentMetric<TasksMetricResult> {
     );
   }
 
-  private groupTasksByRole(tasks: any[]): Record<USER_ROLES, any[]> {
+  private groupTasksByRole(tasks: TaskMetricItem[]): Record<USER_ROLES, TaskMetricItem[]> {
     const groupedTasks = Object.fromEntries(
       this.ROLES.map(role => [role, []])
-    ) as Record<USER_ROLES, any[]>;
+    ) as Record<USER_ROLES, TaskMetricItem[]>;
 
     for (const task of tasks) {
       const roles = (typeof task.role === 'string' ? task.role.split(',') : [])
@@ -71,12 +74,11 @@ export class TasksMetric extends IndependentMetric<TasksMetricResult> {
     return groupedTasks;
   }
 
-
-  private flattenGroupedTasks(tasksByRole: Record<string, any[]>): any[] {
+  private flattenGroupedTasks(tasksByRole: Record<USER_ROLES, TaskMetricItem[]>): TaskMetricItem[] {
     return Object.values(tasksByRole).flat();
   }
 
-  private buildResultFromGroupedTasks(groupedTasks: Record<string, any[]>): TasksMetricResult {
+  private buildResultFromGroupedTasks(groupedTasks: Record<USER_ROLES, TaskMetricItem[]>): TasksMetricResult {
     const metricsResult: Partial<TasksMetricResult> = {};
 
     this.ROLES.forEach(role => {
@@ -86,7 +88,7 @@ export class TasksMetric extends IndependentMetric<TasksMetricResult> {
     return metricsResult as TasksMetricResult;
   }
 
-  private shouldIncludeTask(task: any): boolean {
+  private shouldIncludeTask(task: TaskMetricItem): boolean {
     const { role, task_id } = task;
 
     if (role === USER_ROLES.VALIDATOR || role === USER_ROLES.VALIDATOR_LEAD) {
