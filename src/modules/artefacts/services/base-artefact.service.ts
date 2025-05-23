@@ -395,13 +395,15 @@ export abstract class BaseArtefactService implements IArtefactService {
   async getMaxArtefactUpdateDate(model_id: string): Promise<any> {
     return await this.databaseService.query(
       `
-      SELECT MAX(EFFECTIVE_FROM) AS update_date FROM artefact_realizations
+      SELECT TO_CHAR(
+        MAX(EFFECTIVE_FROM) AT TIME ZONE 'UTC' AT TIME ZONE 'Europe/Moscow',
+        'YYYY-MM-DD HH24:MI:SS'
+      ) AS update_date
+      FROM artefact_realizations
       WHERE model_id = :model_id
       `,
-      {
-        model_id
-      }
-    )
+      { model_id }
+    );
   }
 
   canEditArtefact(artefact: ArtefactEntity): boolean {
