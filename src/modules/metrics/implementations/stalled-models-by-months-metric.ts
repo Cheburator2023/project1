@@ -1,47 +1,24 @@
+import { USER_ROLES } from 'src/system/common';
 import { IndependentMetric } from '../base'
 import { StalledModelsByMonthMetricResult } from '../interfaces'
 
 export class StalledModelsByMonthsMetric extends IndependentMetric<StalledModelsByMonthMetricResult> {
-  /**
-   * Overrides the base getActualDateRange method.
-   * If startDate and endDate are not provided, defaults to the beginning of the current year
-   * and the current date. Optionally shifts the end date by a specified number of working days.
-   *
-   * @param {string | null} startDate - The start date of the time slice.
-   * @param {string | null} endDate - The end date of the time slice.
-   * @param {number | null} daysToShift - Number of working days to shift the end date. Default is null (no shift).
-   * @returns {{ actualStartDate: Date; actualEndDate: Date }} The actual start and end dates for filtering.
-   */
-  // getActualDateRange(
-  //   startDate: string | null,
-  //   endDate: string | null,
-  //   daysToShift: number | null = null
-  // ): { actualStartDate: Date; actualEndDate: Date } {
-  //   let actualStartDate: Date
-  //   let actualEndDate: Date
+  private readonly VALIDATION_TASK_IDS = [
+    'requirements_first_valid_datamart',
+    'validation_parameters_approving',
+  ];
 
-  //   if (!startDate && !endDate) {
-  //     const now = new Date()
-  //     const year = now.getFullYear()
+  private readonly delayDays: number = 5;
 
-  //     // Default to the start of the current year
-  //     actualStartDate = new Date(year, 0, 1) // January 1st
-  //     // Default to the current date
-  //     actualEndDate = now
-  //   } else {
-  //     // Call the base method to get actual start and end dates
-  //     const baseDates = super.getActualDateRange(startDate, endDate, daysToShift)
-  //     actualStartDate = baseDates.actualStartDate
-  //     actualEndDate = baseDates.actualEndDate
-  //   }
+  private shouldIncludeTask(task: { role: string; task_id: string }): boolean {
+    const { role, task_id } = task;
 
-  //   // Apply shift to end date if daysToShift is provided
-  //   if (daysToShift !== null) {
-  //     actualEndDate = this.subtractWorkingDays(actualEndDate, daysToShift)
-  //   }
+    if (role === USER_ROLES.VALIDATOR || role === USER_ROLES.VALIDATOR_LEAD) {
+      return this.VALIDATION_TASK_IDS.includes(task_id);
+    }
 
-  //   return { actualStartDate, actualEndDate }
-  // }
+    return true;
+  }
 
   calculate() {
     const filteredTasks = this.filterTasks(
@@ -53,7 +30,7 @@ export class StalledModelsByMonthsMetric extends IndependentMetric<StalledModels
     const { actualStartDate, actualEndDate } = this.getActualDateRange(
       this.startDate,
       this.endDate
-    )
+    );
 
     // Initialize result with 0 counts for all months of the year
     const months: StalledModelsByMonthMetricResult = Array.from({ length: 12 }, (_, index) => (0)) as StalledModelsByMonthMetricResult
@@ -73,14 +50,52 @@ export class StalledModelsByMonthsMetric extends IndependentMetric<StalledModels
   }
 
   private filterTasks(tasks, startDate: string | null, endDate: string | null) {
-    const { actualStartDate, actualEndDate } = this.getActualDateRange(startDate, endDate)
+    const { actualStartDate, actualEndDate } = this.getActualDateRange(startDate, endDate);
 
-    return tasks.filter((task) =>
-      this.isWithinDateRange(
-        task.update_date ? new Date(task.update_date) : null,
-        actualStartDate,
-        actualEndDate
-      )
-    )
+    const delayThreshold = new Date();
+    delayThreshold.setDate(delayThreshold.getDate() - this.delayDays);
+    delayThreshold.setHours(23, 59, 59, 999);
+
+    return tasks.filter((task) => {
+      const date = task.update_date ? new Date(task.update_date) : null;
+
+      return (
+        this.isWithinDateRange(date, actualStartDate, actualEndDate) &&
+        (this.delayDays === 0 || date <= delayThreshold) &&
+        this.shouldIncludeTask(task)
+      );
+    });
+  }
+
+  public getFilteredRowData() {
+    const { actualStartDate, actualEndDate } = this.getActualDateRange(
+      this.startDate,
+      this.endDate
+    );
+
+    const filteredTasks = this.filterTasks(this.tasks, this.startDate, this.endDate);
+
+    return filteredTasks
+      .filter((task) => {
+        const date = new Date(task.update_date);
+        return date >= actualStartDate && date <= actualEndDate;
+      })
+      .map((task) => {
+        const updateDate = new Date(task.update_date);
+        const month = updateDate.getMonth();
+        const monthName = updateDate.toLocaleString('ru-RU', { month: 'long' });
+
+        return {
+          system_model_id: task.model_id,
+          role: task.role,
+          ds_stream: task.ds_stream,
+          name: task.name,
+          task_id: task.task_id,
+          update_date: updateDate.toISOString().replace('T', ' ').substring(0, 19),
+          assignee: task.assignee,
+          month: `${month + 1}`.padStart(2, '0'),
+          month_name: monthName,
+        };
+      });
   }
 }
