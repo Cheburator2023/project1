@@ -1,5 +1,12 @@
 # Semantic Versioning Changelog
 
+## [1.25.1](https://git.sfera.inno.local/SUMD/mrms-backend/compare/v1.25.0...v1.25.1) (2025-05-30)
+
+
+### Bug Fixes
+
+* фикс end date - 5 дней ([2b55436](https://git.sfera.inno.local/SUMD/mrms-backend/commit/2b55436a8e84c6f72e8f968e080045a6fe9ee1a3))
+
 # [1.25.0](https://git.sfera.inno.local/SUMD/mrms-backend/compare/v1.24.0...v1.25.0) (2025-05-29)
 
 
