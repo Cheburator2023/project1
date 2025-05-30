@@ -1,6 +1,6 @@
 import { USER_ROLES } from 'src/system/common';
-import { IndependentMetric } from '../base'
-import { StalledModelsByMonthMetricResult } from '../interfaces'
+import { IndependentMetric } from '../base';
+import { StalledModelsByMonthMetricResult } from '../interfaces';
 
 export class StalledModelsByMonthsMetric extends IndependentMetric<StalledModelsByMonthMetricResult> {
   private readonly VALIDATION_TASK_IDS = [
@@ -20,82 +20,75 @@ export class StalledModelsByMonthsMetric extends IndependentMetric<StalledModels
     return true;
   }
 
-  calculate() {
-    const filteredTasks = this.filterTasks(
-      this.tasks,
-      this.startDate,
-      this.endDate
-    )
+  protected getActualDateRange(
+    startDate: string | null,
+    endDate: string | null
+  ): { actualStartDate: Date; actualEndDate: Date } {
+    const actualStartDate = startDate ? new Date(startDate) : new Date(1970, 0, 1);
+    let actualEndDate = endDate ? new Date(endDate) : new Date();
 
-    const { actualStartDate, actualEndDate } = this.getActualDateRange(
-      this.startDate,
-      this.endDate
-    );
+    if (this.delayDays > 0) {
+      actualEndDate.setDate(actualEndDate.getDate() - this.delayDays);
+    }
 
-    // Initialize result with 0 counts for all months of the year
-    const months: StalledModelsByMonthMetricResult = Array.from({ length: 12 }, (_, index) => (0)) as StalledModelsByMonthMetricResult
+    actualEndDate.setHours(23, 59, 59, 999);
 
-    // Populate the months array with counts of models per month
-    filteredTasks.forEach(({ update_date }) => {
-      const date = new Date(update_date)
-      const modelMonth = date.getMonth()
-
-      // Check if the date is within the specified range
-      if (date >= actualStartDate && date <= actualEndDate) {
-        months[modelMonth]++
-      }
-    })
-
-    return months
+    return { actualStartDate, actualEndDate };
   }
 
   private filterTasks(tasks, startDate: string | null, endDate: string | null) {
     const { actualStartDate, actualEndDate } = this.getActualDateRange(startDate, endDate);
-
-    const delayThreshold = new Date();
-    delayThreshold.setDate(delayThreshold.getDate() - this.delayDays);
-    delayThreshold.setHours(23, 59, 59, 999);
 
     return tasks.filter((task) => {
       const date = task.update_date ? new Date(task.update_date) : null;
 
       return (
         this.isWithinDateRange(date, actualStartDate, actualEndDate) &&
-        (this.delayDays === 0 || date <= delayThreshold) &&
         this.shouldIncludeTask(task)
       );
     });
   }
 
+  calculate(): StalledModelsByMonthMetricResult {
+    const filteredTasks = this.filterTasks(this.tasks, this.startDate, this.endDate);
+
+    const { actualStartDate, actualEndDate } = this.getActualDateRange(this.startDate, this.endDate);
+
+    const months: StalledModelsByMonthMetricResult = Array.from({ length: 12 }, () => 0);
+
+    filteredTasks.forEach(({ update_date }) => {
+      const date = new Date(update_date);
+      const modelMonth = date.getMonth();
+
+      if (date >= actualStartDate && date <= actualEndDate) {
+        months[modelMonth]++;
+      }
+    });
+
+    return months;
+  }
+
   public getFilteredRowData() {
-    const { actualStartDate, actualEndDate } = this.getActualDateRange(
-      this.startDate,
-      this.endDate
-    );
+    const { actualStartDate, actualEndDate } = this.getActualDateRange(this.startDate, this.endDate);
 
     const filteredTasks = this.filterTasks(this.tasks, this.startDate, this.endDate);
 
-    return filteredTasks
-      .filter((task) => {
-        const date = new Date(task.update_date);
-        return date >= actualStartDate && date <= actualEndDate;
-      })
-      .map((task) => {
-        const updateDate = new Date(task.update_date);
-        const month = updateDate.getMonth();
-        const monthName = updateDate.toLocaleString('ru-RU', { month: 'long' });
+    return filteredTasks.map((task) => {
+      const updateDate = new Date(task.update_date);
+      const month = updateDate.getMonth();
+      const monthName = updateDate.toLocaleString('ru-RU', { month: 'long' });
 
-        return {
-          system_model_id: task.model_id,
-          role: task.role,
-          ds_stream: task.ds_stream,
-          name: task.name,
-          task_id: task.task_id,
-          update_date: updateDate.toISOString().replace('T', ' ').substring(0, 19),
-          assignee: task.assignee,
-          month: `${month + 1}`.padStart(2, '0'),
-          month_name: monthName,
-        };
-      });
+      return {
+        system_model_id: task.model_id,
+        role: task.role,
+        ds_stream: task.ds_stream,
+        name: task.name,
+        task_id: task.task_id,
+        update_date: updateDate.toISOString().replace('T', ' ').substring(0, 19),
+        assignee: task.assignee,
+        month: `${month + 1}`.padStart(2, '0'),
+        month_name: monthName,
+      };
+    });
   }
 }

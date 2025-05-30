@@ -1,5 +1,12 @@
 # Semantic Versioning Changelog
 
+# [1.25.0](https://git.sfera.inno.local/SUMD/mrms-backend/compare/v1.24.0...v1.25.0) (2025-05-29)
+
+
+### Features
+
+* кол-во моделей которые не продвигаются больше 5 дней ([2690e86](https://git.sfera.inno.local/SUMD/mrms-backend/commit/2690e86921a4f11cf308d4fcf48664360f541e34))
+
 # [1.24.0](https://git.sfera.inno.local/SUMD/mrms-backend/compare/v1.23.1...v1.24.0) (2025-05-26)
 
 
