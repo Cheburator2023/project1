@@ -274,7 +274,8 @@ LEFT JOIN (
                 ORDER BY artefact_realizations_new.effective_from DESC
             ) AS rn
         FROM artefact_realizations_new
-        WHERE (
+        WHERE artefact_realizations_new.effective_to = TO_TIMESTAMP('9999-12-3123:59:59', 'YYYY-MM-DDHH24:MI:SS')
+        AND (
             :filter_date::DATE IS NULL
             OR TO_DATE(CAST(:filter_date AS VARCHAR(4000)), 'YYYY-MM-DD')
                 BETWEEN DATE_TRUNC('day', artefact_realizations_new.effective_from)::DATE
