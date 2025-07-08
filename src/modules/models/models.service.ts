@@ -153,7 +153,7 @@ export class ModelsService {
     }
   }
 
-  async modelCreate(artefacts: ModelCreateDto[]) {
+  async modelCreate(artefacts: ModelCreateDto[], user) {
     const model_id = randomUUID();
     let model_version = "1";
     let addParentArtefactsQueryParams;
@@ -199,6 +199,7 @@ export class ModelsService {
       model_version,
       create_date: new Date(),
       update_date: new Date(),
+      model_creator: user.username,
     };
     const [ newModel ]: ModelEntity[] = await this.mrmDatabaseService.query(createModel, createModelQueryParams);
 
