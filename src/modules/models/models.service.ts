@@ -190,7 +190,7 @@ export class ModelsService {
         .query("SELECT * FROM artefact_realizations_new WHERE model_id = :parent_model_id  AND effective_to = TO_TIMESTAMP('9999-12-3123:59:59','YYYY-MM-DDHH24:MI:SS')", { parent_model_id });
 
       addParentArtefactsQueryParams = parentArtefacts
-        .map(({ artefact_id, artefact_string_value, artefact_value_id }) => ({ artefact_id, artefact_string_value, artefact_value_id, model_id }));
+        .map(({ artefact_id, artefact_string_value, artefact_value_id }) => ({ artefact_id, artefact_string_value, artefact_value_id, model_id, creator: user.username }));
     }
 
     const createModelQueryParams = {
@@ -214,7 +214,7 @@ export class ModelsService {
         artefact_value_id: null
       },
       ...artefacts.filter(artefact => artefact.artefact_tech_label !== 'model_name')
-    ].map(artefact => ({ ...artefact, model_id }))
+    ].map(artefact => ({ ...artefact, model_id, creator: user.username }))
 
     await this.executeDatabaseUpdates({ artefactsForUpdate }, MODEL_SOURCES.MRM)
 
