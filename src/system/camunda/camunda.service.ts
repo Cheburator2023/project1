@@ -84,7 +84,11 @@ export class CamundaService implements ICamundaService {
   }
 
   async tasks(groups: string[] = ['mipm']): Promise<CamundaTask[]> {
-    const queryParams = querystring.stringify({ candidateGroups: groups.join(','), includeAssignedTasks: true });
+    const queryParams = querystring.stringify({ 
+      candidateGroups: groups.join(','), 
+      includeAssignedTasks: true,
+      active: true 
+    });
 
     try {
       return await this.makeRequest<CamundaTask[]>('get', `task?${queryParams}`);
