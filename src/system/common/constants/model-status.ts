@@ -4,5 +4,7 @@ export enum MODEL_STATUS {
     IMPLEMENTED_OUTSIDE_PIM = 'Разработана, внедрена вне ПИМ',
     REMOVED_FROM_OPERATION = 'Вывод модели из эксплуатации',
     VALIDATED_OUTSIDE_PIM = 'Внедрена вне ПИМ',
-    VALIDATED_IN_PIM = 'Внедрена в ПИМ'
+    VALIDATED_IN_PIM = 'Внедрена в ПИМ',
+    CREATION_ERROR = 'Ошибка заведения',
+    ARCHIVE = 'Архив',
 }

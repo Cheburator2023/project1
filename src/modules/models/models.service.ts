@@ -664,10 +664,29 @@ export class ModelsService {
           }
 
 
-          if (artefactTechLabel === 'model_status' && Object.values(LIFE_CYCLE_STAGES).includes(value)) {
+          if (artefactTechLabel === 'model_status' &&
+            (
+              Object.values(LIFE_CYCLE_STAGES).includes(value) ||
+              model.camunda_model_stage?.includes(MODEL_STATUS.REMOVED_FROM_OPERATION) ||
+              model.camunda_model_status?.includes(MODEL_STATUS.ARCHIVE)
+            )
+          ) {
             const businessStatus = model.business_status
             const bpmnInstanceName = value
-            model[techLabel] = ModelsService.formatModelStatus(businessStatus, bpmnInstanceName)
+
+            const modelStage = ModelsService.formatModelStatus(
+              businessStatus,
+              bpmnInstanceName,
+              model.camunda_model_stage,
+              model.camunda_model_status,
+            )
+            const modelStatus = ModelsService.formatModelBusinessStatus(
+              model.camunda_model_stage,
+              model.camunda_model_status || model.business_status
+            )
+
+            model['model_status'] = modelStage
+            model['business_status'] = modelStatus
           }
         }
       })
@@ -751,10 +770,32 @@ export class ModelsService {
     return businessStatus;
   };
 
-  private static formatModelStatus(status, bpmn_instance_name) {
+  private static formatModelStatus(
+    status,
+    bpmn_instance_name,
+    camunda_model_stage: string | null,
+    camunda_model_status: string | null
+  ) {
     if (bpmn_instance_name === null) return null
 
     const lastActiveStatus = ModelsService.getLastActiveStatus(status)
+
+    const stageIncludesRemoval = camunda_model_stage
+      ?.split(';')
+      .map(s => s.trim())
+      .includes(LIFE_CYCLE_STAGES_DESCRIPTION[LIFE_CYCLE_STAGES.REMOVAL])
+
+    if (
+      camunda_model_status?.includes(MODEL_STATUS.ARCHIVE) ||
+      stageIncludesRemoval
+    ) {
+      if (lastActiveStatus === MODEL_STATUS.DEVELOPED_NOT_IMPLEMENTED) {
+        return LIFE_CYCLE_STAGES_DESCRIPTION[LIFE_CYCLE_STAGES.DEVELOPED_NOT_IMPLEMENTED]
+      } else {
+        return LIFE_CYCLE_STAGES_DESCRIPTION[LIFE_CYCLE_STAGES.REMOVAL]
+      }
+    }
+
     let currentBusinessStatus = LIFE_CYCLE_STAGES_DESCRIPTION?.[bpmn_instance_name.trim()]
 
     currentBusinessStatus = ModelsService.determineLifecycleStage(currentBusinessStatus, lastActiveStatus)
@@ -767,6 +808,21 @@ export class ModelsService {
       default:
         return currentBusinessStatus
     }
+  }
+
+  private static formatModelBusinessStatus(
+    stage: string | null,
+    status: string | null
+  ) {
+    if (!stage) return status
+
+    const stageList = stage.split(';').map(s => s.trim())
+
+    if (stageList.includes(MODEL_STATUS.REMOVED_FROM_OPERATION)) {
+      return MODEL_STATUS.ARCHIVE
+    }
+
+    return status
   }
 
   private groupResultsByModelIdAndSource(
