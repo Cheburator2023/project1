@@ -2,7 +2,10 @@ import { IndependentMetric } from '../base';
 import { DistributionByLifecycleStageModelsMetricResult } from '../interfaces';
 
 export class DistributionByLifecycleStageMetric extends IndependentMetric<DistributionByLifecycleStageModelsMetricResult> {
+  private filteredModels: any[] = [];
+
   calculate(): DistributionByLifecycleStageModelsMetricResult {
+    this.filteredModels = [];
     const filteredModels = this.filterModels(
       this.models,
       this.startDate,
@@ -45,6 +48,8 @@ export class DistributionByLifecycleStageMetric extends IndependentMetric<Distri
         }
       }
 
+      this.filteredModels.push({ ...model, calculated_status: status });
+
       if (lifecycleStages.has(status)) {
         lifecycleStages.set(status, lifecycleStages.get(status)! + 1);
       } else {
@@ -54,6 +59,13 @@ export class DistributionByLifecycleStageMetric extends IndependentMetric<Distri
 
     // Convert the Map to an array of [status, count] pairs
     return Array.from(lifecycleStages.entries()) as DistributionByLifecycleStageModelsMetricResult;
+  }
+
+  public getFilteredRowData() {
+    return this.filteredModels.map((model) => ({
+      system_model_id: model.system_model_id,
+      status: model.calculated_status,
+    }));
   }
 
   private filterModels(
