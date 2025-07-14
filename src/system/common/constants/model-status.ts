@@ -7,5 +7,6 @@ export enum MODEL_STATUS {
     VALIDATED_IN_PIM = 'Внедрена в ПИМ',
     CREATION_ERROR = 'Ошибка заведения',
     ARCHIVE = 'Архив',
-    INEFFECTIVE_FOR_BUSINESS = 'Модель не эффективна в бизнес-процессе'
+    INEFFECTIVE_FOR_BUSINESS = 'Модель не эффективна в бизнес-процессе',
+    PENDING_DELETE = 'Ожидает удаления',
 }
