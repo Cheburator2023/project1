@@ -1,3 +1,7 @@
+import {
+  LIFE_CYCLE_STAGES,
+  LIFE_CYCLE_STAGES_DESCRIPTION,
+} from 'src/system/common/constants';
 import { IndependentMetric } from '../base'
 import { MetricResult } from '../interfaces'
 
@@ -51,12 +55,53 @@ export class ImplementedMetric extends IndependentMetric<MetricResult> {
        *    ТО модель попадает в категорию "Внедренные модели".
        */
       if (
-        this.isWithinDateRange(releaseDate, actualStartDate, actualEndDate)
+        this.isWithinDateRange(releaseDate, actualStartDate, actualEndDate) &&
+        (this.checkImplementedStatuses(model) ||
+          this.checkRemovedStatuses(model))
       ) {
-        return true
+        return true;
       }
 
-      return false
-    })
+      return false;
+    });
+  }
+
+  private checkImplementedStatuses(model) {
+    /**
+     * ((Этап ЖЦМ равен значению «Внедрена») И (Статус модели равен одному из значений: «Модель была
+     * внедрена в ПИМ (старая модель)» или «Модель внедряется в ПИМ» или «Разработана, внедрена в ПИМ»
+     * или «Внедрена в ПИМ»))
+     */
+    return (
+      model.model_status ===
+        LIFE_CYCLE_STAGES_DESCRIPTION[LIFE_CYCLE_STAGES.VALIDATION] &&
+      [
+        'Модель была внедрена в ПИМ (старая модель)',
+        'Модель внедряется в ПИМ',
+        'Разработана, внедрена в ПИМ',
+        'Внедрена в ПИМ',
+      ].includes(model.business_status)
+    );
+  }
+
+  private checkRemovedStatuses(model) {
+    /**
+     * ((Этап ЖЦМ равен значению «Вывод модели из эксплуатации») И (Статус
+     * модели равен одному из значений: «Модель была внедрена в ПИМ (старая модель)» или «Модель
+     * внедряется в ПИМ» или «Разработана, внедрена в ПИМ» или «Внедрена в ПИМ» или «Вывод модели из
+     * эксплуатации» или «Архив»))
+     */
+    return (
+      model.model_status ===
+        LIFE_CYCLE_STAGES_DESCRIPTION[LIFE_CYCLE_STAGES.REMOVAL] &&
+      [
+        'Модель была внедрена в ПИМ (старая модель)',
+        'Модель внедряется в ПИМ',
+        'Разработана, внедрена в ПИМ',
+        'Внедрена в ПИМ',
+        'Вывод модели из эксплуатации',
+        'Архив',
+      ].includes(model.business_status)
+    );
   }
 }
