@@ -778,7 +778,7 @@ export class ModelsService {
   ) {
     if (bpmn_instance_name === null) return null
 
-    const lastActiveStatus = ModelsService.getLastActiveStatus(status)
+    const lastActiveStatus = ModelsService.getLastActiveStatus(status || camunda_model_status)
 
     const stageIncludesRemoval = camunda_model_stage
       ?.split(';')
@@ -789,7 +789,10 @@ export class ModelsService {
       camunda_model_status?.includes(MODEL_STATUS.ARCHIVE) ||
       stageIncludesRemoval
     ) {
-      if (lastActiveStatus === MODEL_STATUS.DEVELOPED_NOT_IMPLEMENTED) {
+      if (
+        lastActiveStatus === MODEL_STATUS.DEVELOPED_NOT_IMPLEMENTED ||
+        lastActiveStatus === MODEL_STATUS.INEFFECTIVE_FOR_BUSINESS
+      ) {
         return LIFE_CYCLE_STAGES_DESCRIPTION[LIFE_CYCLE_STAGES.DEVELOPED_NOT_IMPLEMENTED]
       } else {
         return LIFE_CYCLE_STAGES_DESCRIPTION[LIFE_CYCLE_STAGES.REMOVAL]
@@ -805,6 +808,8 @@ export class ModelsService {
         return lastActiveStatus
       case MODEL_STATUS.REMOVED_FROM_OPERATION:
         return lastActiveStatus
+      case MODEL_STATUS.CREATION_ERROR:
+        return null
       default:
         return currentBusinessStatus
     }
