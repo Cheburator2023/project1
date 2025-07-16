@@ -25,27 +25,33 @@ export class DistributionByLifecycleStageMetric extends IndependentMetric<Distri
         return;
       }
 
-      if (status == 'Внедрена') {
-        if (
-          [
-            'Модель была внедрена в ПИМ (старая модель)',
-            'Модель внедряется в ПИМ',
-            'Разработана, внедрена в ПИМ',
-            'Внедрена в ПИМ',
-          ].includes(model.business_status)
-        ) {
-          status = 'Внедрена в ПИМ';
-        }
+      const business_status_array = model.business_status
+        ? model.business_status.split(';')
+        : [];
 
-        if (
-          [
-            'Модель внедряется вне ПИМ',
-            'Разработана, внедрена вне ПИМ',
-            'Внедрена вне ПИМ',
-          ].includes(model.business_status)
-        ) {
-          status = 'Внедрена вне ПИМ';
-        }
+      if (status == 'Внедрена') {
+        business_status_array.forEach((statusItem) => {
+          if (
+            [
+              'Модель была внедрена в ПИМ (старая модель)',
+              'Модель внедряется в ПИМ',
+              'Разработана, внедрена в ПИМ',
+              'Внедрена в ПИМ',
+            ].includes(statusItem)
+          ) {
+            status = 'Внедрена в ПИМ';
+          }
+
+          if (
+            [
+              'Модель внедряется вне ПИМ',
+              'Разработана, внедрена вне ПИМ',
+              'Внедрена вне ПИМ',
+            ].includes(statusItem)
+          ) {
+            status = 'Внедрена вне ПИМ';
+          }
+        });
       }
 
       this.filteredModels.push({ ...model, calculated_status: status });
@@ -64,7 +70,9 @@ export class DistributionByLifecycleStageMetric extends IndependentMetric<Distri
   public getFilteredRowData() {
     return this.filteredModels.map((model) => ({
       system_model_id: model.system_model_id,
-      status: model.calculated_status,
+      status: model.business_status,
+      stage: model.model_status,
+      normalized_stage: model.calculated_status,
     }));
   }
 
