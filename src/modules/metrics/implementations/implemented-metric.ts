@@ -35,7 +35,9 @@ export class ImplementedMetric extends IndependentMetric<MetricResult> {
 
   public getFilteredRowData() {
     return this.filteredModels.map((model) => ({
-      system_model_id: model.system_model_id
+      system_model_id: model.system_model_id,
+      status: model.business_status,
+      stage: model.model_status,
     }));
   }
 
@@ -56,6 +58,7 @@ export class ImplementedMetric extends IndependentMetric<MetricResult> {
        */
       if (
         this.isWithinDateRange(releaseDate, actualStartDate, actualEndDate) &&
+        this.checkNotOutsidePim(model) &&
         (this.checkImplementedStatuses(model) ||
           this.checkRemovedStatuses(model))
       ) {
@@ -66,22 +69,54 @@ export class ImplementedMetric extends IndependentMetric<MetricResult> {
     });
   }
 
+  private checkNotOutsidePim(model) {
+    /**
+     * Исключаем модели со статусом "вне ПИМ":
+     * «Модель внедряется вне ПИМ» ИЛИ «Разработана, внедрена вне ПИМ» ИЛИ «Внедрена вне ПИМ»
+     */
+    let result = false;
+    const business_status_array = model.business_status
+      ? model.business_status.split(';')
+      : [];
+    business_status_array.forEach((statusItem) => {
+      result =
+        result ||
+        [
+          'Модель внедряется вне ПИМ',
+          'Разработана, внедрена вне ПИМ',
+          'Внедрена вне ПИМ',
+        ].includes(statusItem);
+    });
+
+    return !result;
+  }
+
   private checkImplementedStatuses(model) {
     /**
      * ((Этап ЖЦМ равен значению «Внедрена») И (Статус модели равен одному из значений: «Модель была
      * внедрена в ПИМ (старая модель)» или «Модель внедряется в ПИМ» или «Разработана, внедрена в ПИМ»
      * или «Внедрена в ПИМ»))
      */
-    return (
-      model.model_status ===
-        LIFE_CYCLE_STAGES_DESCRIPTION[LIFE_CYCLE_STAGES.VALIDATION] &&
-      [
-        'Модель была внедрена в ПИМ (старая модель)',
-        'Модель внедряется в ПИМ',
-        'Разработана, внедрена в ПИМ',
-        'Внедрена в ПИМ',
-      ].includes(model.business_status)
-    );
+    if (model.model_status !== LIFE_CYCLE_STAGES_DESCRIPTION[LIFE_CYCLE_STAGES.VALIDATION]) {
+      return false;
+    }
+
+    let result = false;
+    const business_status_array = model.business_status
+      ? model.business_status.split(';')
+      : [];
+    business_status_array.forEach((statusItem) => {
+      result =
+        result ||
+        [
+          'Модель была внедрена в ПИМ (старая модель)',
+          'Модель внедряется в ПИМ',
+          'Разработана, внедрена в ПИМ',
+          'Внедрена в ПИМ',
+        ].includes(statusItem);
+    });
+
+    return result;
   }
 
   private checkRemovedStatuses(model) {
@@ -91,17 +126,27 @@ export class ImplementedMetric extends IndependentMetric<MetricResult> {
      * внедряется в ПИМ» или «Разработана, внедрена в ПИМ» или «Внедрена в ПИМ» или «Вывод модели из
      * эксплуатации» или «Архив»))
      */
-    return (
-      model.model_status ===
-        LIFE_CYCLE_STAGES_DESCRIPTION[LIFE_CYCLE_STAGES.REMOVAL] &&
-      [
-        'Модель была внедрена в ПИМ (старая модель)',
-        'Модель внедряется в ПИМ',
-        'Разработана, внедрена в ПИМ',
-        'Внедрена в ПИМ',
-        'Вывод модели из эксплуатации',
-        'Архив',
-      ].includes(model.business_status)
-    );
+    if (model.model_status !== LIFE_CYCLE_STAGES_DESCRIPTION[LIFE_CYCLE_STAGES.REMOVAL]) {
+      return false;
+    }
+
+    let result = false;
+    const business_status_array = model.business_status
+      ? model.business_status.split(';')
+      : [];
+    business_status_array.forEach((statusItem) => {
+      result =
+        result ||
+        [
+          'Модель была внедрена в ПИМ (старая модель)',
+          'Модель внедряется в ПИМ',
+          'Разработана, внедрена в ПИМ',
+          'Внедрена в ПИМ',
+          'Вывод модели из эксплуатации',
+          'Архив',
+        ].includes(statusItem);
+    });
+
+    return result;
   }
 }
