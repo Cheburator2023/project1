@@ -56,51 +56,34 @@ export class ModelsService {
 
   async getModels(
     dto?: ModelsDto & { ignoreModeFilter?: boolean },
-    groups?: []
+    groups?: string[]
   ): Promise<Model[]> {
     const {
       date = null,
       model_id = null,
       mode = null,
       ignoreModeFilter = false
-    } = dto || {};
+    } = dto || {}
 
-    let results = await this.fetchAndMergeModels(date, model_id);
+    // 1. Получение и объединение моделей из СУМ и МРМ
+    const rawResults = await this.fetchAndMergeModels(date, model_id)
 
-    if (!ignoreModeFilter) {
-      const isArchiveMode = mode?.includes(MODEL_DISPLAY_MODES.ARCHIVE) ?? false;
-      const isCreationErrorMode = mode?.includes(MODEL_DISPLAY_MODES.CREATION_ERROR) ?? false;
-      const isPendingDeleteMode = mode?.includes(MODEL_DISPLAY_MODES.PENDING_DELETE) ?? false;
+    // 2. Форматируем копии моделей
+    const resultsWithFormatting = await this.formatResults(
+      rawResults.map(model => ({ ...model }))
+    )
 
-      results = results.filter(model => {
-        const isArchive = model.models_is_active_flg === '0'
-        const isCreationError = model.status === MODEL_DISPLAY_MODES.CREATION_ERROR
-        const isPendingDelete = model.status === MODEL_DISPLAY_MODES.PENDING_DELETE
+    // 3. Фильтрация по режиму эксплуатации (если не отключена)
+    const filteredByMode = ignoreModeFilter
+      ? resultsWithFormatting
+      : this.filterModelsByDisplayMode(resultsWithFormatting, mode)
 
-        if (model.model_source === MODEL_SOURCES.SUM && isArchive && isArchiveMode) {
-          return true
-        }
+    // 4. Фильтрация по группам пользователя
+    const filteredByGroups = groups?.length
+      ? this.filterModelsByUserGroups(filteredByMode, groups)
+      : filteredByMode
 
-        if (model.model_source === MODEL_SOURCES.MRM && isCreationError && isCreationErrorMode) {
-          return true
-        }
-
-        if (model.model_source === MODEL_SOURCES.MRM && isPendingDelete && isPendingDeleteMode) {
-          return true
-        }
-
-        const isActive = model.model_source === MODEL_SOURCES.SUM ? model.models_is_active_flg === '1' : true
-        return isActive
-          && model.status !== MODEL_DISPLAY_MODES.CREATION_ERROR
-          && model.status !== MODEL_DISPLAY_MODES.PENDING_DELETE;
-      })
-    }
-
-    const filteredResults = groups?.length
-      ? this.filterModelsByUserGroups(results, groups)
-      : results;
-
-    return this.formatResults(filteredResults);
+    return filteredByGroups
   }
 
   async getModelsByDates({ firstDate, secondDate }: CompareModelsDto, groups?: []): Promise<{ data: { cards: GroupedResults } }> {
@@ -262,6 +245,40 @@ export class ModelsService {
     )
 
     return newModel
+  }
+
+  private filterModelsByDisplayMode(models: Model[], mode: string[] | null): Model[] {
+    // Определяем активные режимы эксплуатации (Архив, Ошибка заведения, Ожидает удаления)
+    const activeModes = new Set(mode ?? [])
+    const isArchiveMode = activeModes.has(MODEL_DISPLAY_MODES.ARCHIVE);
+    const isCreationErrorMode = activeModes.has(MODEL_DISPLAY_MODES.CREATION_ERROR);
+    const isPendingDeleteMode = activeModes.has(MODEL_DISPLAY_MODES.PENDING_DELETE);
+
+    return models.filter(model => {
+      const { model_source, models_is_active_flg, business_status } = model
+
+      // Вычисляем статус модели
+      const isArchive = models_is_active_flg === '0' || business_status === MODEL_STATUS.ARCHIVE
+      const isCreationError = business_status === MODEL_STATUS.CREATION_ERROR
+      const isPendingDelete = business_status === MODEL_STATUS.PENDING_DELETE
+
+      // 1. Показываем архивные модели из SUM, если включен режим Архив
+      if (model_source === MODEL_SOURCES.SUM && isArchive && isArchiveMode) return true
+
+      // 2. Показываем модели с ошибкой заведения и ожидающие удаления из MRM, если соответствующие режимы включены
+      if (model_source === MODEL_SOURCES.MRM) {
+        if (isCreationError && isCreationErrorMode) return true
+        if (isPendingDelete && isPendingDeleteMode) return true
+      }
+
+      // 3. По-умолчанию: показываем, если модели активны и не находятся в статусах ошибка заведения и ожидает удаления
+      const isActive = model_source === MODEL_SOURCES.SUM
+        ? !isArchive
+        : true // для моделей MRM активность не проверяется
+      const isValidStatus = !isCreationError && !isPendingDelete
+
+      return isActive && isValidStatus
+    })
   }
 
   // Фильтрация моделей в зависимости от групп пользователя
@@ -664,10 +681,29 @@ export class ModelsService {
           }
 
 
-          if (artefactTechLabel === 'model_status' && Object.values(LIFE_CYCLE_STAGES).includes(value)) {
+          if (artefactTechLabel === 'model_status' &&
+            (
+              Object.values(LIFE_CYCLE_STAGES).includes(value) ||
+              model.camunda_model_stage?.includes(MODEL_STATUS.REMOVED_FROM_OPERATION) ||
+              model.camunda_model_status?.includes(MODEL_STATUS.ARCHIVE)
+            )
+          ) {
             const businessStatus = model.business_status
             const bpmnInstanceName = value
-            model[techLabel] = ModelsService.formatModelStatus(businessStatus, bpmnInstanceName)
+
+            const modelStage = ModelsService.formatModelStatus(
+              businessStatus,
+              bpmnInstanceName,
+              model.camunda_model_stage,
+              model.camunda_model_status,
+            )
+            const modelStatus = ModelsService.formatModelBusinessStatus(
+              model.camunda_model_stage,
+              model.camunda_model_status || model.business_status
+            )
+
+            model['model_status'] = modelStage
+            model['business_status'] = modelStatus
           }
         }
       })
@@ -751,10 +787,35 @@ export class ModelsService {
     return businessStatus;
   };
 
-  private static formatModelStatus(status, bpmn_instance_name) {
+  private static formatModelStatus(
+    status,
+    bpmn_instance_name,
+    camunda_model_stage: string | null,
+    camunda_model_status: string | null
+  ) {
     if (bpmn_instance_name === null) return null
 
-    const lastActiveStatus = ModelsService.getLastActiveStatus(status)
+    const lastActiveStatus = ModelsService.getLastActiveStatus(status || camunda_model_status)
+
+    const stageIncludesRemoval = camunda_model_stage
+      ?.split(';')
+      .map(s => s.trim())
+      .includes(LIFE_CYCLE_STAGES_DESCRIPTION[LIFE_CYCLE_STAGES.REMOVAL])
+
+    if (
+      camunda_model_status?.includes(MODEL_STATUS.ARCHIVE) ||
+      stageIncludesRemoval
+    ) {
+      if (
+        lastActiveStatus === MODEL_STATUS.DEVELOPED_NOT_IMPLEMENTED ||
+        lastActiveStatus === MODEL_STATUS.INEFFECTIVE_FOR_BUSINESS
+      ) {
+        return LIFE_CYCLE_STAGES_DESCRIPTION[LIFE_CYCLE_STAGES.DEVELOPED_NOT_IMPLEMENTED]
+      } else {
+        return LIFE_CYCLE_STAGES_DESCRIPTION[LIFE_CYCLE_STAGES.REMOVAL]
+      }
+    }
+
     let currentBusinessStatus = LIFE_CYCLE_STAGES_DESCRIPTION?.[bpmn_instance_name.trim()]
 
     currentBusinessStatus = ModelsService.determineLifecycleStage(currentBusinessStatus, lastActiveStatus)
@@ -764,9 +825,26 @@ export class ModelsService {
         return lastActiveStatus
       case MODEL_STATUS.REMOVED_FROM_OPERATION:
         return lastActiveStatus
+      case MODEL_STATUS.CREATION_ERROR:
+        return null
       default:
         return currentBusinessStatus
     }
+  }
+
+  private static formatModelBusinessStatus(
+    stage: string | null,
+    status: string | null
+  ) {
+    if (!stage) return status
+
+    const stageList = stage.split(';').map(s => s.trim())
+
+    if (stageList.includes(MODEL_STATUS.REMOVED_FROM_OPERATION)) {
+      return MODEL_STATUS.ARCHIVE
+    }
+
+    return status
   }
 
   private groupResultsByModelIdAndSource(

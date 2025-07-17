@@ -49,8 +49,10 @@ SELECT m_.model_id                                                              
        dm_.model_epic_12_date,
        dm_.developing_model_reason,
        dm_.model_desc,
-       st.status                                                                                             AS business_status,
+       m_.model_status                                                                               AS camunda_model_status,
+       m_.model_stage                                                                                AS camunda_model_stage,
        activeBpmnInstance.bpmn_instance_name                                                                 AS model_status,
+       st.status                                                                                             AS business_status,
        -- Используется для подсчета метрик: Динамика моделей по стримам 
        activeBpmnInstance.bpmn_instance_name                                                                 AS bpmn_key,
        NULL                                                                                                  AS model_status_assignee,
@@ -83,7 +85,35 @@ SELECT m_.model_id                                                              
        assignee_hist_data.business_customer                                                                  AS business_customer,
 
        -- Столбец assignment_contractor
-       tasks_operations_logs_data.user_name                                                                  AS assignment_contractor
+       tasks_operations_logs_data.user_name                                                                  AS assignment_contractor,
+       -- История этапов (отфильтровано и отсортировано)
+        (
+          SELECT JSON_AGG(
+                   JSON_BUILD_OBJECT(
+                     'id', s.id,
+                     'stage_name', s.stage,
+                     'effective_from', to_char(s.effective_from, 'YYYY-MM-DD"T"HH24:MI:SS'),
+                     'effective_to', to_char(s.effective_to, 'YYYY-MM-DD"T"HH24:MI:SS')
+                   )
+                   ORDER BY s.effective_from DESC
+                 )
+          FROM model_stage s
+          WHERE s.model_id = m_.model_id
+        ) AS stage_history,
+       -- История статусов (отфильтровано и отсортировано)
+        (
+        SELECT JSON_AGG(
+                 JSON_BUILD_OBJECT(
+                   'id', st.id,
+                   'status_name', st.status,
+                   'effective_from', to_char(st.effective_from, 'YYYY-MM-DD"T"HH24:MI:SS'),
+                   'effective_to', to_char(st.effective_to, 'YYYY-MM-DD"T"HH24:MI:SS')
+                 )
+                 ORDER BY st.effective_from DESC
+               )
+          FROM model_status st
+          WHERE st.model_id = m_.model_id
+        ) AS status_history
 FROM models m_
 
          LEFT JOIN (
