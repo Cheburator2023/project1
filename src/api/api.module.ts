@@ -5,6 +5,7 @@ import { MetricsModule } from 'src/modules/metrics/metrics.module'
 import { SumDatabaseModule } from 'src/system/sum-database/database.module'
 import { MrmDatabaseModule } from 'src/system/mrm-database/database.module'
 import { ArtefactModule } from 'src/modules/artefacts/artefact.module'
+import { BiDatamartModule } from 'src/modules/bi-datamart/bi-datamart.module'
 import { ApiController } from './api.controller'
 import { ApiService } from './api.service'
 
@@ -17,7 +18,8 @@ import { ApiService } from './api.service'
     ModelsModule,
     ReportModule,
     MetricsModule,
-    ArtefactModule
+    ArtefactModule,
+    BiDatamartModule
   ]
 })
 export class ApiModule {

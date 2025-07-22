@@ -23,6 +23,7 @@ import { ArtefactService } from 'src/modules/artefacts/artefact.services';
 import { User } from 'src/decorators';
 import { MetricsAggregator } from 'src/modules/metrics/aggregators';
 import { ReportService } from 'src/modules/report/report.service';
+import { BiDatamartService } from 'src/modules/bi-datamart/bi-datamart.service';
 import {
   ModelsDto,
   ModelWithRelationsDto,
@@ -44,6 +45,7 @@ export class ApiController {
     private readonly metricsAggregator: MetricsAggregator,
     private readonly reportService: ReportService,
     private readonly artefactService: ArtefactService,
+    private readonly biDatamartService: BiDatamartService,
   ) {}
 
   @Get('/model/relations/')
@@ -268,5 +270,26 @@ export class ApiController {
       'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
     );
     res.send(response);
+  }
+
+  // === BI Datamart API ===
+
+  @Get('bi-datamart/stats')
+  async getBiDatamartStats() {
+    const stats = await this.biDatamartService.getDatamartStats()
+
+    return {
+      success: true,
+      data: stats
+    }
+  }
+
+  @Post('bi-datamart/sync')
+  async syncBiDatamart() {
+    const result = await this.biDatamartService.syncAllModelsToDatamart()
+    return {
+      success: result.success,
+      data: result
+    }
   }
 }
