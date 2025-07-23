@@ -1,5 +1,12 @@
 # Semantic Versioning Changelog
 
+## [1.26.1](https://git.sfera.inno.local/SUMD/mrms-backend/compare/v1.26.0...v1.26.1) (2025-07-23)
+
+
+### Bug Fixes
+
+* final-status-by-month-metric ([4dcf095](https://git.sfera.inno.local/SUMD/mrms-backend/commit/4dcf095c4a953efa747f0f219d8c0085a5e5eb25))
+
 ## [1.25.1](https://git.sfera.inno.local/SUMD/mrms-backend/compare/v1.25.0...v1.25.1) (2025-05-30)
 
 
