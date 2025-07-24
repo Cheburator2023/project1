@@ -37,12 +37,14 @@ export class ReportService {
     startDate: string | null,
     endDate: string | null,
     streams: string[],
+    useDatamart: boolean = false,
   ): Promise<Buffer> {
     const rawData = await this.metricsAggregator.getRawData(
       metric,
       startDate,
       endDate,
       streams,
+      useDatamart,
     );
 
     if (!rawData || rawData.length === 0) {

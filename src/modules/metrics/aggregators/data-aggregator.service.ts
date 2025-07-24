@@ -1,6 +1,8 @@
 import { Injectable } from '@nestjs/common'
 import * as NodeCache from 'node-cache'
 import { ModelsService } from 'src/modules/models/models.service'
+import { BiDatamartService } from 'src/modules/bi-datamart/bi-datamart.service'
+import { MrmDatabaseService } from 'src/system/mrm-database/database.service'
 import { Model, Task } from 'src/modules/tasks/interfaces'
 import { UsersTasksService } from 'src/modules/tasks/services/users-tasks.service'
 
@@ -10,13 +12,15 @@ export class DataAggregator {
 
   constructor(
     private readonly modelsService: ModelsService,
+    private readonly biDatamartService: BiDatamartService,
+    private readonly mrmDatabaseService: MrmDatabaseService,
     private readonly usersTasksService: UsersTasksService
   ) {
     this.cache = new NodeCache({ stdTTL: 300 }) // Кэш на 5 минут
   }
 
-  async aggregateData(streams: string[], mode): Promise<any> {
-    const models = await this.getCachedModels(mode)
+  async aggregateData(streams: string[], mode, useDatamart: boolean = false): Promise<any> {
+    const models = await this.getCachedModels(mode, useDatamart)
     const tasks = await this.getCachedTasks(models)
 
     const filteredModels = this.filterByStreams(models, streams, 'ds_stream')
@@ -28,15 +32,58 @@ export class DataAggregator {
     }
   }
 
-  private async getCachedModels(mode): Promise<any[]> {
-    const cacheKey = `models_${mode}`
+  private async getCachedModels(mode, useDatamart: boolean = false): Promise<any[]> {
+    const cacheKey = useDatamart ? `models_datamart_${mode}` : `models_${mode}`
     const cachedModels = this.cache.get<Model[]>(cacheKey)
 
     if (cachedModels) return cachedModels
 
-    const models = await this.modelsService.getModels({ mode })
+    const models = useDatamart 
+      ? await this.getModelsFromDatamart(mode)
+      : await this.modelsService.getModels({ mode })
+    
     this.cache.set(cacheKey, models)
     return models
+  }
+
+  /**
+   * Получение моделей из BI витрины
+   */
+  private async getModelsFromDatamart(mode): Promise<any[]> {
+    try {
+      // Запрос к витрине с учётом mode фильтров
+      const query = `
+        SELECT 
+          system_model_id,
+          model_data,
+          created_at,
+          updated_at
+        FROM models_bi_datamart 
+        ORDER BY system_model_id
+      `
+      
+      const rows = await this.mrmDatabaseService.query(query, {})
+      
+      // Преобразуем данные из витрины в нужный формат
+      const models = rows.map(row => {
+        const modelData = typeof row.model_data === 'string' 
+          ? JSON.parse(row.model_data) 
+          : row.model_data
+        
+        return {
+          ...modelData,
+          // Добавляем метаданные из витрины
+          _datamart_created_at: row.created_at,
+          _datamart_updated_at: row.updated_at
+        }
+      })
+
+      return models
+      
+    } catch (error) {
+      // Fallback на обычный сервис
+      return await this.modelsService.getModels({ mode })
+    }
   }
 
   private async getCachedTasks(models: Model[]): Promise<Task[]> {

@@ -209,11 +209,12 @@ export class ApiController {
 
   @Get('/metrics/')
   async getMetrics(@Query() query: MetricsDto, @Res() response) {
-    const { startDate, endDate, stream } = query;
+    const { startDate, endDate, stream, useDatamart } = query;
     const result = await this.metricsAggregator.getMetrics(
       startDate,
       endDate,
       stream,
+      useDatamart || false,
     );
 
     return response.status(HttpStatus.OK).json(result);
@@ -221,7 +222,7 @@ export class ApiController {
 
   @Get('/metrics/export')
   async exportMetricsToExcel(@Query() query: MetricsDto, @Res() res: Response) {
-    const { metric, startDate, endDate, stream } = query;
+    const { metric, startDate, endDate, stream, useDatamart } = query;
 
     if (!metric) {
       return res.status(HttpStatus.BAD_REQUEST).json({
@@ -235,6 +236,7 @@ export class ApiController {
         startDate || null,
         endDate || null,
         stream || [],
+        useDatamart || false,
       );
 
       res.setHeader('Content-Disposition', `attachment; filename=${metric}.xlsx`);
