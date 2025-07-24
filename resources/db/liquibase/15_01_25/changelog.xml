@@ -5,5 +5,6 @@
         xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.1.xsd">
  
     <include file="15_01_25_01_create_models_bi_datamart.sql" relativeToChangelogFile="true"/>
+    <include file="15_01_25_02_create_tasks_bi_datamart.sql" relativeToChangelogFile="true"/>
 
 </databaseChangeLog> 

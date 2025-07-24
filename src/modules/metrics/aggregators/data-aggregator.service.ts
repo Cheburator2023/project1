@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common'
 import * as NodeCache from 'node-cache'
 import { ModelsService } from 'src/modules/models/models.service'
 import { BiDatamartService } from 'src/modules/bi-datamart/bi-datamart.service'
+import { TasksDatamartService } from 'src/modules/bi-datamart/tasks-datamart.service'
 import { MrmDatabaseService } from 'src/system/mrm-database/database.service'
 import { Model, Task } from 'src/modules/tasks/interfaces'
 import { UsersTasksService } from 'src/modules/tasks/services/users-tasks.service'
@@ -13,6 +14,7 @@ export class DataAggregator {
   constructor(
     private readonly modelsService: ModelsService,
     private readonly biDatamartService: BiDatamartService,
+    private readonly tasksDatamartService: TasksDatamartService,
     private readonly mrmDatabaseService: MrmDatabaseService,
     private readonly usersTasksService: UsersTasksService
   ) {
@@ -21,7 +23,7 @@ export class DataAggregator {
 
   async aggregateData(streams: string[], mode, useDatamart: boolean = false): Promise<any> {
     const models = await this.getCachedModels(mode, useDatamart)
-    const tasks = await this.getCachedTasks(models)
+    const tasks = await this.getCachedTasks(models, useDatamart)
 
     const filteredModels = this.filterByStreams(models, streams, 'ds_stream')
     const filteredTasks = this.filterByStreamsTasks(tasks, streams, 'ds_stream')
@@ -86,15 +88,31 @@ export class DataAggregator {
     }
   }
 
-  private async getCachedTasks(models: Model[]): Promise<Task[]> {
-    const cacheKey = 'tasks'
+  private async getCachedTasks(models: Model[], useDatamart: boolean = false): Promise<Task[]> {
+    const cacheKey = useDatamart ? 'tasks_datamart' : 'tasks'
     const cachedTasks = this.cache.get<Task[]>(cacheKey)
 
     if (cachedTasks) return cachedTasks
 
-    const tasks = await this.usersTasksService.getUsersActiveTasks(models);
+    const tasks = useDatamart
+      ? await this.getTasksFromDatamart()
+      : await this.usersTasksService.getUsersActiveTasks(models);
+    
     this.cache.set(cacheKey, tasks)
     return tasks
+  }
+
+  /**
+   * Получение задач из BI витрины
+   */
+  private async getTasksFromDatamart(): Promise<Task[]> {
+    try {
+      return await this.tasksDatamartService.getTasksFromDatamart()
+    } catch (error) {
+      // Fallback на обычный сервис
+      const models = await this.modelsService.getModels({ ignoreModeFilter: true })
+      return await this.usersTasksService.getUsersActiveTasks(models as any)
+    }
   }
 
   private filterByStreams<T extends Record<string, any>>(
