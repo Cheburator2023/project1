@@ -14,7 +14,6 @@ import { MetricsEnum } from '../enums'
  */
 export class FinalStatusByMonthsMetric extends IndependentMetric<FinalStatusByMonthModelsMetricResult> {
   private finalStatusMetric: IFinalStatusMetric<BaseMetricResult>
-  private filteredModelsWithDates: { model: any, date: Date }[] = [];
 
   /**
    * Переопределяет базовый метод getActualDateRange
@@ -86,15 +85,6 @@ export class FinalStatusByMonthsMetric extends IndependentMetric<FinalStatusByMo
     if (!this.startDate && !this.endDate) {
       const currentYear = new Date().getFullYear()
       
-      // Для выгрузки: получаем ВСЕ модели от начала времени до конца текущего года
-      this.filteredModelsWithDates = this.finalStatusMetric.filterModels(
-        this.models,
-        null, // Без ограничения по начальной дате - берем все модели
-        `${currentYear}-12-31`, // До конца текущего года
-        false,
-        true
-      )
-      
       // Шаг 1: Получаем накопительный итог (все модели до начала текущего года)
       const cumulativeModels = this.finalStatusMetric.filterModels(
         this.models,
@@ -139,57 +129,28 @@ export class FinalStatusByMonthsMetric extends IndependentMetric<FinalStatusByMo
       }
     } else {
       // Логика для случая, когда временной диапазон ВЫБРАН
-      // Получаем отфильтрованные модели с датами для экспорта
-      this.filteredModelsWithDates = this.finalStatusMetric.filterModels(
+      // Используем стандартную логику фильтрации по выбранному диапазону
+      const filteredModelsWithDates = this.finalStatusMetric.filterModels(
         this.models,
         this.startDate,
         this.endDate,
         false,
         true
-      ).filter(({ date }) => {
-        // Фильтруем модели по актуальному диапазону дат
-        return date >= actualStartDate && date <= actualEndDate
-      })
+      )
 
       // Распределяем модели по месяцам в рамках выбранного диапазона
-      this.filteredModelsWithDates.forEach(({ date }) => {
+      filteredModelsWithDates.forEach(({ date }) => {
         const modelMonth = date.getMonth()
-        months[modelMonth]++
+        // Проверяем, что дата модели попадает в выбранный диапазон
+        const isInRange =
+          date >= actualStartDate &&
+          date <= actualEndDate
+        if (isInRange) {
+          months[modelMonth]++
+        }
       })
     }
 
     return months
-  }
-
-  /**
-   * Возвращает детализированные данные для экспорта в Excel
-   * Каждая строка содержит информацию о модели и месяце её попадания в категорию
-   * 
-   * @returns массив объектов с данными о моделях для экспорта
-   */
-  public getFilteredRowData() {
-    // Используем уже отфильтрованные данные из calculate()
-    return this.filteredModelsWithDates
-      .map(({ model, date }) => {
-        const month = date.getMonth() + 1 // Месяц от 1 до 12
-        const monthName = date.toLocaleString('ru-RU', { month: 'long' })
-        
-        return {
-          system_model_id: model.system_model_id,
-          ds_stream: model.ds_stream,
-          model_status: model.model_status,
-          relevant_date: date.toISOString().replace('T', ' ').substring(0, 19),
-          month: `${month}`.padStart(2, '0'),
-          month_name: monthName,
-          year: date.getFullYear()
-        }
-      })
-      .sort((a, b) => {
-        // Сортируем по году, затем по месяцу
-        if (a.year !== b.year) {
-          return a.year - b.year
-        }
-        return parseInt(a.month) - parseInt(b.month)
-      })
   }
 }

@@ -62,16 +62,6 @@ const pseudoArtefacts: Artefact[] = [
     artefact_type_desc: artefactTypeDescMap[ArtefactTypeEnum.TEXT],
     values: [],
   },
-  {
-    artefact_id: 2122,
-    artefact_tech_label: 'business_status',
-    artefact_label: 'Статус',
-    is_edit_flg: '0',
-    artefact_desc: '',
-    artefact_type_id: ArtefactTypeEnum.TEXT,
-    artefact_type_desc: artefactTypeDescMap[ArtefactTypeEnum.TEXT],
-    values: [],
-  },
 
   // @TODO: Группа: Аллокация применения (указывается в %, максимально 100 по всем 5 полям)
 
