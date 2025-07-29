@@ -28,7 +28,6 @@ export enum LIFE_CYCLE_STAGES {
   TEST_PREPROD_TRANSFER_PROD = 'test_preprod_transfer_prod',
   FULLVALIDATION = 'fullvalidation',
   CANCEL = 'cancel',
-  MODEL_STATE_TRANSITION = 'model_state_transition',
 }
 
 export const LIFE_CYCLE_STAGES_DESCRIPTION: Record<LIFE_CYCLE_STAGES, string> = {
@@ -60,6 +59,5 @@ export const LIFE_CYCLE_STAGES_DESCRIPTION: Record<LIFE_CYCLE_STAGES, string> = 
   [LIFE_CYCLE_STAGES.INTEGRATION_MODEL]: 'Продуктивизация модели',
   [LIFE_CYCLE_STAGES.TEST_PREPROD_TRANSFER_PROD]: 'Тестирование на препрод и перенос на прод контур',
   [LIFE_CYCLE_STAGES.FULLVALIDATION]: 'Полная валидация',
-  [LIFE_CYCLE_STAGES.CANCEL]: 'Отмена разработки модели',
-  [LIFE_CYCLE_STAGES.MODEL_STATE_TRANSITION]: 'Транзит состояния модели',
+  [LIFE_CYCLE_STAGES.CANCEL]: 'Отмена разработки модели'
 }
