@@ -1,5 +1,14 @@
 # Semantic Versioning Changelog
 
+## [1.26.3](https://git.sfera.inno.local/SUMD/mrms-backend/compare/v1.26.2...v1.26.3) (2025-07-29)
+
+
+### Reverts
+
+* Revert "chore(release): 1.26.1 [skip ci]" ([39e92f0](https://git.sfera.inno.local/SUMD/mrms-backend/commit/39e92f0ab8f57786f0effb34dfbacd79a5326887))
+* Revert "fix: исправил логику дублирования модели в динамике моделей с фин статусом" ([6235149](https://git.sfera.inno.local/SUMD/mrms-backend/commit/6235149f0a9184fbcdb1507e3cb727d589589b43))
+* Revert "chore(release): 1.26.2 [skip ci]" ([55c8253](https://git.sfera.inno.local/SUMD/mrms-backend/commit/55c8253815e05f128c79f9d36c7cf04924122aab))
+
 ## [1.25.1](https://git.sfera.inno.local/SUMD/mrms-backend/compare/v1.25.0...v1.25.1) (2025-05-30)
 
 
