@@ -15,7 +15,6 @@ import { MetricsEnum } from '../enums'
 export class FinalStatusByMonthsMetric extends IndependentMetric<FinalStatusByMonthModelsMetricResult> {
   private finalStatusMetric: IFinalStatusMetric<BaseMetricResult>
   private filteredModelsWithDates: { model: any, date: Date }[] = [];
-  private filteredModelsByMonth: { [month: number]: { model: any, date: Date }[] } = {};
 
   /**
    * Переопределяет базовый метод getActualDateRange
@@ -85,48 +84,59 @@ export class FinalStatusByMonthsMetric extends IndependentMetric<FinalStatusByMo
 
     // Логика для случая, когда временной диапазон НЕ выбран
     if (!this.startDate && !this.endDate) {
-      const currentYear = new Date().getFullYear();
-      // 1. Модели до января текущего года (накопительный итог)
+      const currentYear = new Date().getFullYear()
+      
+      // Для выгрузки: получаем ВСЕ модели от начала времени до конца текущего года
+      this.filteredModelsWithDates = this.finalStatusMetric.filterModels(
+        this.models,
+        null, // Без ограничения по начальной дате - берем все модели
+        `${currentYear}-12-31`, // До конца текущего года
+        false,
+        true
+      )
+      
+      // Шаг 1: Получаем накопительный итог (все модели до начала текущего года)
       const cumulativeModels = this.finalStatusMetric.filterModels(
         this.models,
-        null,
-        `${currentYear}-01-01`,
+        null, // Без ограничения по начальной дате - берем все модели
+        `${currentYear}-01-01`, // Ограничиваем до начала текущего года
         false,
         true
-      );
-      // 2. Модели за январь текущего года
-      const janStart = new Date(currentYear, 0, 1);
-      const janEnd = new Date(currentYear, 0, 31);
-      const januaryModels = this.finalStatusMetric.filterModels(
-        this.models,
-        janStart.toISOString().split('T')[0],
-        janEnd.toISOString().split('T')[0],
-        false,
-        true
-      );
-      // Для каждого месяца формируем массив моделей, попавших в итог этого месяца
-      this.filteredModelsByMonth = {};
-      // Январь: накопительный итог + январь
-      this.filteredModelsByMonth[0] = [...cumulativeModels, ...januaryModels];
-      months[0] = this.filteredModelsByMonth[0].length;
-      // Для остальных месяцев
-      let prevModels = [...this.filteredModelsByMonth[0]];
-      for (let month = 1; month < 12; month++) {
-        const monthStartDate = new Date(currentYear, month, 1);
-        const monthEndDate = new Date(currentYear, month + 1, 0);
+      )
+
+      // Подсчитываем количество моделей в накопительном итоге
+      let cumulativeCount = 0
+      cumulativeModels.forEach(({ date }) => {
+        // Включаем все модели до текущего года в накопительный итог
+        cumulativeCount++
+      })
+
+      // Шаг 2: Для каждого месяца добавляем модели за этот месяц к накопительному итогу
+      for (let month = 0; month < 12; month++) {
+        // Определяем границы текущего месяца
+        const monthStartDate = new Date(currentYear, month, 1) // Первый день месяца
+        const monthEndDate = new Date(currentYear, month + 1, 0) // Последний день месяца
+
+        // Получаем модели за конкретный месяц текущего года
         const monthModels = this.finalStatusMetric.filterModels(
           this.models,
-          monthStartDate.toISOString().split('T')[0],
+          monthStartDate.toISOString().split('T')[0], // Форматируем дату в YYYY-MM-DD
           monthEndDate.toISOString().split('T')[0],
           false,
           true
-        );
-        prevModels = [...prevModels, ...monthModels];
-        this.filteredModelsByMonth[month] = [...prevModels];
-        months[month] = this.filteredModelsByMonth[month].length;
+        )
+
+        // Добавляем модели за этот месяц к накопительному счетчику
+        monthModels.forEach(({ date }) => {
+          // Проверяем, что модель действительно относится к текущему месяцу
+          if (date.getMonth() === month) {
+            cumulativeCount++
+          }
+        })
+
+        // Устанавливаем накопительный итог для текущего месяца
+        months[month] = cumulativeCount
       }
-      // По умолчанию выгрузка будет за январь (или последний рассчитанный месяц)
-      this.filteredModelsWithDates = this.filteredModelsByMonth[0];
     } else {
       // Логика для случая, когда временной диапазон ВЫБРАН
       // Получаем отфильтрованные модели с датами для экспорта
@@ -152,26 +162,18 @@ export class FinalStatusByMonthsMetric extends IndependentMetric<FinalStatusByMo
   }
 
   /**
-   * Возвращает детализированные данные для экспорта в Excel за всё время (накопительный итог по всем месяцам)
+   * Возвращает детализированные данные для экспорта в Excel
+   * Каждая строка содержит информацию о модели и месяце её попадания в категорию
+   * 
+   * @returns массив объектов с данными о моделях для экспорта
    */
   public getFilteredRowData() {
-    // Собираем уникальные модели из всех месяцев
-    const allModelsMap = new Map<string, { model: any, date: Date }>();
-    for (let month = 0; month < 12; month++) {
-      const data = this.filteredModelsByMonth[month] || [];
-      data.forEach(({ model, date }) => {
-        // Ключ — уникальный идентификатор модели (например, system_model_id + дата)
-        const key = `${model.system_model_id}_${date.toISOString()}`;
-        if (!allModelsMap.has(key)) {
-          allModelsMap.set(key, { model, date });
-        }
-      });
-    }
-    const allModels = Array.from(allModelsMap.values());
-    return allModels
+    // Используем уже отфильтрованные данные из calculate()
+    return this.filteredModelsWithDates
       .map(({ model, date }) => {
-        const month = date.getMonth() + 1;
-        const monthName = date.toLocaleString('ru-RU', { month: 'long' });
+        const month = date.getMonth() + 1 // Месяц от 1 до 12
+        const monthName = date.toLocaleString('ru-RU', { month: 'long' })
+        
         return {
           system_model_id: model.system_model_id,
           ds_stream: model.ds_stream,
@@ -183,8 +185,11 @@ export class FinalStatusByMonthsMetric extends IndependentMetric<FinalStatusByMo
         }
       })
       .sort((a, b) => {
-        if (a.year !== b.year) return a.year - b.year;
-        return parseInt(a.month) - parseInt(b.month);
-      });
+        // Сортируем по году, затем по месяцу
+        if (a.year !== b.year) {
+          return a.year - b.year
+        }
+        return parseInt(a.month) - parseInt(b.month)
+      })
   }
 }
