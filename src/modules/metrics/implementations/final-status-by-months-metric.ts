@@ -11,43 +11,11 @@ import { MetricsEnum } from '../enums'
  * - Январь показывает: накопительный итог за все предыдущие годы + модели за текущий январь
  * - Остальные месяцы показывают: накопительный итог до этого месяца включительно
  * - При выбранном временном диапазоне используется стандартная логика фильтрации
- * - ВАЖНО: Модели с датами в текущем году исключаются из накопительного итога для избежания двойного подсчёта
  */
 export class FinalStatusByMonthsMetric extends IndependentMetric<FinalStatusByMonthModelsMetricResult> {
   private finalStatusMetric: IFinalStatusMetric<BaseMetricResult>
   private filteredModelsWithDates: { model: any, date: Date }[] = [];
   private filteredModelsByMonth: { [month: number]: { model: any, date: Date }[] } = {};
-
-  /**
-   * Определяет модели, у которых есть финальные даты в указанном году
-   * Эти модели должны учитываться только в соответствующих месяцах текущего года,
-   * а не в накопительном итоге, чтобы избежать двойного подсчёта
-   * 
-   * @param models - массив моделей для анализа
-   * @param year - год для проверки (обычно текущий год)
-   * @returns Set с system_model_id моделей, имеющих даты в указанном году
-   */
-  private getModelsWithCurrentYearDates(models: any[], year: number): Set<string> {
-    const currentYearStart = new Date(year, 0, 1);
-    const currentYearEnd = new Date(year, 11, 31);
-    const modelsWithCurrentYearDates = new Set<string>();
-    
-    models.forEach(model => {
-      // Проверяем все возможные финальные даты модели
-      const modelDates = [
-        model.date_of_introduction_into_operation,
-        model.developing_end_date,
-        model.data_completion_of_stage_05a
-      ].filter(Boolean).map(date => new Date(date));
-      
-      // Если хотя бы одна дата попадает в текущий год
-      if (modelDates.some(date => date >= currentYearStart && date <= currentYearEnd)) {
-        modelsWithCurrentYearDates.add(model.system_model_id);
-      }
-    });
-    
-    return modelsWithCurrentYearDates;
-  }
 
   /**
    * Переопределяет базовый метод getActualDateRange
@@ -90,8 +58,7 @@ export class FinalStatusByMonthsMetric extends IndependentMetric<FinalStatusByMo
    * Алгоритм работы:
    * 1. Инициализация базовой метрики для получения моделей с финальным статусом
    * 2. Если временной диапазон не выбран:
-   *    - Определяем модели с датами в текущем году (исключаем из накопительного итога)
-   *    - Вычисляем накопительный итог за все предыдущие годы (без моделей текущего года)
+   *    - Вычисляем накопительный итог за все предыдущие годы
    *    - Для каждого месяца добавляем модели за этот месяц к накопительному итогу
    * 3. Если временной диапазон выбран:
    *    - Используем стандартную логику фильтрации по выбранному диапазону
@@ -119,25 +86,14 @@ export class FinalStatusByMonthsMetric extends IndependentMetric<FinalStatusByMo
     // Логика для случая, когда временной диапазон НЕ выбран
     if (!this.startDate && !this.endDate) {
       const currentYear = new Date().getFullYear();
-      
-      // Определяем модели, у которых есть финальные даты в текущем году
-      // Эти модели НЕ должны попадать в накопительный итог
-      const modelsWithCurrentYearDates = this.getModelsWithCurrentYearDates(this.models, currentYear);
-      
       // 1. Модели до января текущего года (накопительный итог)
-      // ИСКЛЮЧАЕМ модели, у которых есть даты в текущем году
-      const modelsForCumulative = this.models.filter(model => 
-        !modelsWithCurrentYearDates.has(model.system_model_id)
-      );
-      
       const cumulativeModels = this.finalStatusMetric.filterModels(
-        modelsForCumulative,
+        this.models,
         null,
         `${currentYear}-01-01`,
         false,
         true
       );
-      
       // 2. Модели за январь текущего года
       const janStart = new Date(currentYear, 0, 1);
       const janEnd = new Date(currentYear, 0, 31);
@@ -148,13 +104,11 @@ export class FinalStatusByMonthsMetric extends IndependentMetric<FinalStatusByMo
         false,
         true
       );
-      
       // Для каждого месяца формируем массив моделей, попавших в итог этого месяца
       this.filteredModelsByMonth = {};
       // Январь: накопительный итог + январь
       this.filteredModelsByMonth[0] = [...cumulativeModels, ...januaryModels];
       months[0] = this.filteredModelsByMonth[0].length;
-      
       // Для остальных месяцев
       let prevModels = [...this.filteredModelsByMonth[0]];
       for (let month = 1; month < 12; month++) {
