@@ -23,9 +23,6 @@ SELECT m.model_id AS system_model_id,
        -- Источник модели
        'sum-rm'   AS model_source,
 
-       -- Бизнес статус Модели (всегда берем значение из СУМ, для этого явно прописываем business_status как null)
-       NULL       AS business_status,
-
        -- Столбцы для дат подтверждения и флагов использования по кварталам
        usage_data.usage_confirm_date_q1,
        usage_data.usage_confirm_date_q2,
@@ -247,7 +244,7 @@ FROM models_new m
            MAX(CASE WHEN artefact_id = 2109 THEN artefact_string_value ELSE NULL END) AS business_model_risk_subtype,
            MAX(CASE WHEN artefact_id = 2110 THEN artefact_string_value ELSE NULL END) AS rating_model,
            MAX(CASE WHEN artefact_id = 2655 THEN artefact_string_value ELSE NULL END) AS reason_model_delete,
-           MAX(CASE WHEN artefact_id = 2656 THEN artefact_string_value ELSE NULL END) AS status,
+           MAX(CASE WHEN artefact_id = 2656 THEN artefact_string_value ELSE NULL END) AS business_status,
            MAX(CASE WHEN artefact_id = 2657 THEN artefact_string_value ELSE NULL END) AS lead_validator_comment_model_delete,
            MAX(CASE WHEN artefact_id = 2658 THEN artefact_string_value ELSE NULL END) AS lead_validator_resolution_model_delete,
            MAX(CASE WHEN artefact_id = 2558 THEN artefact_string_value ELSE NULL END) AS remove_date_validation,
