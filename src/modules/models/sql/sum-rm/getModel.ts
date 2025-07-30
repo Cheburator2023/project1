@@ -221,7 +221,7 @@ LEFT JOIN (
         MAX(CASE WHEN artefact_id = 2078 THEN artefact_string_value ELSE NULL END) AS model_epic_05,
         MAX(CASE WHEN artefact_id = 2079 THEN artefact_string_value ELSE NULL END) AS model_epic_05a,
         MAX(CASE WHEN artefact_id = 2080 THEN artefact_string_value ELSE NULL END) AS data_completion_of_stage_05a,
-        MAX(CASE WHEN artefact_id = 2081 THEN artefact_string_value ELSE NULL END) AS solution_to_implement_model,
+        MAX(CASE WHEN artefact_id = 2081 THEN artefact_string_value ELSE NULL END) AS model_development_results_approving_flg,
         MAX(CASE WHEN artefact_id = 2082 THEN artefact_string_value ELSE NULL END) AS model_epic_07,
         MAX(CASE WHEN artefact_id = 2083 THEN artefact_string_value ELSE NULL END) AS model_epic_07_date,
         MAX(CASE WHEN artefact_id = 2084 THEN artefact_string_value ELSE NULL END) AS customer_model_id,
@@ -271,7 +271,8 @@ LEFT JOIN (
                 ORDER BY artefact_realizations_new.effective_from DESC
             ) AS rn
         FROM artefact_realizations_new
-        WHERE (
+        WHERE artefact_realizations_new.effective_to = TO_TIMESTAMP('9999-12-3123:59:59', 'YYYY-MM-DDHH24:MI:SS')
+        AND (
             :filter_date::DATE IS NULL
             OR TO_DATE(CAST(:filter_date AS VARCHAR(4000)), 'YYYY-MM-DD')
                 BETWEEN DATE_TRUNC('day', artefact_realizations_new.effective_from)::DATE

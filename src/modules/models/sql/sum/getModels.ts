@@ -29,7 +29,7 @@ SELECT m_.model_id                                                              
        dm_.model_risk_type,
        m_.model_id                                                                                           AS uuid,
        dm_.DS_DEPARTMENT                                                                                     AS ds_stream,
-       dm_.solution_to_implement_model,
+       dm_.model_development_results_approving_flg,
        dm_.rs_model_decommiss_date,
        dm_.rfd,
        dm_.model_epic_04,
@@ -393,6 +393,7 @@ FROM models m_
                            MAX(CASE WHEN ARTEFACT_ID = 820 THEN ARTEFACT_STRING_VALUE ELSE NULL END) AS model_epic_05a,
                            MAX(CASE WHEN ARTEFACT_ID = 821 THEN ARTEFACT_STRING_VALUE ELSE NULL END) AS data_completion_of_stage_05a,
                            MAX(CASE WHEN ARTEFACT_ID = 823 THEN ARTEFACT_STRING_VALUE ELSE NULL END) AS model_epic_05,
+                           MAX(CASE WHEN artefact_id = 827 THEN artefact_string_value ELSE NULL END) AS model_development_results_approving_flg,
                            MAX(CASE WHEN ARTEFACT_ID = 839 THEN ARTEFACT_STRING_VALUE ELSE NULL END) AS model_epic_07,
                            MAX(CASE WHEN ARTEFACT_ID = 840 THEN ARTEFACT_STRING_VALUE ELSE NULL END) AS model_epic_07_date,
                            MAX(CASE WHEN ARTEFACT_ID = 873 THEN ARTEFACT_STRING_VALUE ELSE NULL END) AS customer_model_id,
@@ -406,15 +407,15 @@ FROM models m_
                            MAX(CASE WHEN ARTEFACT_ID = 905 THEN ARTEFACT_STRING_VALUE ELSE NULL END) AS model_desc
                     FROM artefact_realizations
                     WHERE effective_to = TO_TIMESTAMP('9999-12-3123:59:59', 'YYYY-MM-DDHH24:MI:SS')
-                      AND artefact_id IN (7, 72, 786, 787, 788, 789, 33, 34,
-                                          790, 781, 788, 871, 794, 795, 796, 797,
-                                          123, 888, 803, 811, 812, 820, 821, 823, 839, 840, 873,
-                                          867, 868, 869, 870, 898, 899, 900, 69, 905)
-                      AND (
-                            :filter_date::Date IS NULL
-                            OR TO_DATE(CAST(:filter_date AS Varchar(4000)), 'YYYY-MM-DD')
-                                BETWEEN DATE_TRUNC('day', effective_from)::Date AND DATE_TRUNC('day', effective_to)::Date
-                        )
+                    AND artefact_id IN (7, 72, 786, 787, 788, 789, 33, 34,
+                                        790, 781, 788, 871, 794, 795, 796, 797,
+                                        123, 888, 803, 811, 812, 820, 821, 823, 827, 839, 840, 873,
+                                        867, 868, 869, 870, 898, 899, 900, 69, 905)
+                    AND (
+                          :filter_date::Date IS NULL
+                          OR TO_DATE(CAST(:filter_date AS Varchar(4000)), 'YYYY-MM-DD')
+                              BETWEEN DATE_TRUNC('day', effective_from)::Date AND DATE_TRUNC('day', effective_to)::Date
+                      )
                     GROUP BY model_id) dm_ ON m_.model_id = dm_.model_id
 WHERE dm_.model_desc IS DISTINCT FROM 'AutoML'
   AND (:model_id::Varchar IS NULL OR m_.model_id = :model_id)
