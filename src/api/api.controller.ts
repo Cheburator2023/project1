@@ -87,9 +87,8 @@ export class ApiController {
     @Body(new ParseArrayPipe({ items: ModelCreateDto, whitelist: true }))
     artefacts: ModelCreateDto[],
     @Res() response,
-    @User() user,
   ) {
-    const result = await this.modelsService.modelCreate(artefacts, user);
+    const result = await this.modelsService.modelCreate(artefacts);
 
     return response.status(HttpStatus.CREATED).json(result[0]);
   }
