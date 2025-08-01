@@ -80,6 +80,62 @@ export abstract class MetricBase<T extends BaseMetricResult> implements IMetric<
   }
 
   /**
+   * Method to get correct date ranges for delta calculation according to requirements:
+   * - Without time slice: [models with date = today] - [models with date = (today - 7 working days)]
+   * - With time slice: [models with date = endDate] - [models with date = (endDate - 7 working days)]
+   *
+   * @param {string | null} startDate - The start date of the time slice.
+   * @param {string | null} endDate - The end date of the time slice.
+   * @returns {{ currentRange: { actualStartDate: Date, actualEndDate: Date }, deltaRange: { actualStartDate: Date, actualEndDate: Date } }}
+   */
+  protected getCorrectDateRangeForDelta(
+    startDate: string | null,
+    endDate: string | null
+  ): {
+    currentRange: { actualStartDate: Date, actualEndDate: Date },
+    deltaRange: { actualStartDate: Date, actualEndDate: Date }
+  } {
+    let currentDate: Date;
+    let deltaDate: Date;
+
+    if (endDate) {
+      // With time slice: use provided endDate and endDate minus 7 days
+      currentDate = new Date(endDate);
+      deltaDate = new Date(endDate);
+      deltaDate.setDate(deltaDate.getDate() - 7);
+    } else {
+      // Without time slice: use current date and current date minus 7 days
+      const now = new Date();
+      // Создаем дату для сегодняшнего дня в локальном времени
+      currentDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      // Создаем дату для 7 дней назад в локальном времени
+      deltaDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 7);
+    }
+
+    // Set time to start and end of day for exact date matching
+    const currentStartOfDay = new Date(currentDate);
+    currentStartOfDay.setHours(0, 0, 0, 0);
+    const currentEndOfDay = new Date(currentDate);
+    currentEndOfDay.setHours(23, 59, 59, 999);
+
+    const deltaStartOfDay = new Date(deltaDate);
+    deltaStartOfDay.setHours(0, 0, 0, 0);
+    const deltaEndOfDay = new Date(deltaDate);
+    deltaEndOfDay.setHours(23, 59, 59, 999);
+
+    return {
+      currentRange: {
+        actualStartDate: currentStartOfDay,  // Start of current day  
+        actualEndDate: currentEndOfDay       // End of current day
+      },
+      deltaRange: {
+        actualStartDate: deltaStartOfDay,    // Start of delta day (endDate-7)
+        actualEndDate: deltaEndOfDay         // End of delta day (endDate-7)
+      }
+    };
+  }
+
+  /**
    * Checks if a given date is within the specified date range.
    *
    * @param {Date | null} date - The date to check.

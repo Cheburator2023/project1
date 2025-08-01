@@ -318,4 +318,12 @@ export class MetricsDto {
   @IsOptional()
   @IsEnum(MetricsEnum)
   metric: MetricsEnum;
+
+  @ApiModelPropertyOptional({
+    example: 'current',
+    description: 'Тип данных для экспорта: current или delta',
+  })
+  @IsOptional()
+  @IsString()
+  dataType?: string;
 }

@@ -11,18 +11,10 @@ export class OnMonitoringMetric extends IndependentMetric<MetricPercentResult> {
       this.endDate
     )
 
-    const previousFilteredModels = this.filterModels(
-      currentFilteredModels,
-      this.startDate,
-      this.endDate,
-      true
-    )
-
     const count = currentFilteredModels.length
-    const deltaPercent = this.calculatePercentageDelta(
-      currentFilteredModels.length,
-      previousFilteredModels.length
-    )
+    
+    // Новая delta логика по точным датам
+    const deltaPercent = this.calculateDeltaPercentByExactDates()
 
     this.filteredModels = currentFilteredModels;
 
@@ -36,6 +28,83 @@ export class OnMonitoringMetric extends IndependentMetric<MetricPercentResult> {
     return this.filteredModels.map((model) => ({
       system_model_id: model.system_model_id,
     }));
+  }
+
+  public getFilteredDeltaRowData() {
+    const { currentRange, deltaRange } = this.getCorrectDateRangeForDelta(this.startDate, this.endDate);
+    
+    // Модели за текущую дату
+    const currentDayModels = this.filterModelsByExactDate(
+      this.models,
+      currentRange.actualStartDate,
+      currentRange.actualEndDate
+    );
+    
+    // Модели за delta дату
+    const deltaDayModels = this.filterModelsByExactDate(
+      this.models,
+      deltaRange.actualStartDate,
+      deltaRange.actualEndDate
+    );
+
+    const result = [];
+    
+    // Модели за текущую дату
+    result.push(...currentDayModels.map((model) => ({
+      system_model_id: model.system_model_id,
+      period: 'current'
+    })));
+    
+    // Модели за delta дату
+    result.push(...deltaDayModels.map((model) => ({
+      system_model_id: model.system_model_id,
+      period: 'delta'
+    })));
+
+    return result;
+  }
+
+  // Новый метод для расчета deltaPercent по точным датам
+  private calculateDeltaPercentByExactDates(): number {
+    const { currentRange, deltaRange } = this.getCorrectDateRangeForDelta(this.startDate, this.endDate);
+    
+    // Модели точно на текущую дату (или endDate)
+    const currentDayModels = this.filterModelsByExactDate(
+      this.models,
+      currentRange.actualStartDate,
+      currentRange.actualEndDate
+    );
+    
+    // Модели точно на дату-7 дней
+    const deltaDayModels = this.filterModelsByExactDate(
+      this.models,
+      deltaRange.actualStartDate,
+      deltaRange.actualEndDate
+    );
+
+    return this.calculatePercentageDelta(
+      currentDayModels.length,
+      deltaDayModels.length
+    );
+  }
+
+  // Отдельный метод для фильтрации по точным датам (только для delta)
+  private filterModelsByExactDate(
+    models,
+    exactStartDate: Date,
+    exactEndDate: Date
+  ) {
+    return models.filter((model) => {
+      const modelEpic12 = model.model_epic_12_date ? new Date(model.model_epic_12_date) : null
+
+      if (
+        this.isWithinDateRange(modelEpic12, exactStartDate, exactEndDate)
+      ) {
+        return true
+      }
+
+      return false
+    })
   }
 
   private filterModels(

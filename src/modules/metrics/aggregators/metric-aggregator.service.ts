@@ -39,7 +39,8 @@ export class MetricsAggregator {
     metricName: MetricsEnum,
     startDate: string | null,
     endDate: string | null,
-    streams: string[]
+    streams: string[],
+    dataType?: string
   ): Promise<{ system_model_id: string }[]> {
     const data = await this.dataAggregator.aggregateData(streams, [MODEL_DISPLAY_MODES.ARCHIVE, MODEL_DISPLAY_MODES.PENDING_DELETE]);
   
@@ -54,13 +55,18 @@ export class MetricsAggregator {
       const dependencies = { ...results };
       metric.initialize(data, startDate, endDate, dependencies);
       results[metric.getMetricName()] = metric.calculate();
-    }
+    } 
   
     const allMetrics = [...this.independentMetrics, ...this.dependentMetrics];
     const foundMetric = allMetrics.find(metric => metric.getMetricName() === metricName);
   
-    if (foundMetric && typeof (foundMetric as any).getFilteredRowData === 'function') {
-      return (foundMetric as any).getFilteredRowData();
+    if (foundMetric) {
+      if (dataType === 'delta' && typeof (foundMetric as any).getFilteredDeltaRowData === 'function') {
+        return (foundMetric as any).getFilteredDeltaRowData();
+      }
+      if (typeof (foundMetric as any).getFilteredRowData === 'function') {
+        return (foundMetric as any).getFilteredRowData();
+      }
     }
   
     return [];
