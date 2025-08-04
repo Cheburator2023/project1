@@ -1,13 +1,18 @@
 # Semantic Versioning Changelog
 
-## [1.26.3](https://git.sfera.inno.local/SUMD/mrms-backend/compare/v1.26.2...v1.26.3) (2025-07-29)
+## [1.26.2](https://git.sfera.inno.local/SUMD/mrms-backend/compare/v1.26.1...v1.26.2) (2025-07-28)
 
 
-### Reverts
+### Bug Fixes
 
-* Revert "chore(release): 1.26.1 [skip ci]" ([39e92f0](https://git.sfera.inno.local/SUMD/mrms-backend/commit/39e92f0ab8f57786f0effb34dfbacd79a5326887))
-* Revert "fix: исправил логику дублирования модели в динамике моделей с фин статусом" ([6235149](https://git.sfera.inno.local/SUMD/mrms-backend/commit/6235149f0a9184fbcdb1507e3cb727d589589b43))
-* Revert "chore(release): 1.26.2 [skip ci]" ([55c8253](https://git.sfera.inno.local/SUMD/mrms-backend/commit/55c8253815e05f128c79f9d36c7cf04924122aab))
+* исправил логику дублирования модели в динамике моделей с фин статусом ([75bdab1](https://git.sfera.inno.local/SUMD/mrms-backend/commit/75bdab14a0932edf09753377c6ad913b4ba50533))
+
+## [1.26.1](https://git.sfera.inno.local/SUMD/mrms-backend/compare/v1.26.0...v1.26.1) (2025-07-23)
+
+
+### Bug Fixes
+
+* final-status-by-month-metric ([4dcf095](https://git.sfera.inno.local/SUMD/mrms-backend/commit/4dcf095c4a953efa747f0f219d8c0085a5e5eb25))
 
 ## [1.25.1](https://git.sfera.inno.local/SUMD/mrms-backend/compare/v1.25.0...v1.25.1) (2025-05-30)
 

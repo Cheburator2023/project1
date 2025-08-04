@@ -37,16 +37,40 @@ export class ReportService {
     startDate: string | null,
     endDate: string | null,
     streams: string[],
+    dataType?: string,
   ): Promise<Buffer> {
     const rawData = await this.metricsAggregator.getRawData(
       metric,
       startDate,
       endDate,
       streams,
+      dataType,
     );
 
+    // Для delta данных пустой результат - это нормально
     if (!rawData || rawData.length === 0) {
-      throw new NotFoundException('Нет данных для экспорта');
+      if (dataType === 'delta') {
+        // Для delta возвращаем пустой Excel файл с динамическими заголовками
+        // Получаем заголовки из первой строки данных или используем базовые
+        const headers = rawData && rawData.length > 0 
+          ? Object.keys(rawData[0]).map((key) => ({
+              key,
+              title: key,
+              type: typeof rawData[0][key] === 'number' ? 'number' : 'string' as any,
+            }))
+          : [
+              { key: 'system_model_id', title: 'system_model_id', type: 'string' },
+              { key: 'ds_stream', title: 'ds_stream', type: 'string' },
+              { key: 'period', title: 'period', type: 'string' }
+            ];
+        
+        return this.excelService.createExcel({ 
+          headers, 
+          body: [] 
+        });
+      } else {
+        throw new NotFoundException('Нет данных для экспорта');
+      }
     }
 
     const headers = Object.keys(rawData[0]).map((key) => ({

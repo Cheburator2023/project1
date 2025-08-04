@@ -55,6 +55,10 @@ export class DataAggregator {
     values: string[],
     key: keyof T
   ): T[] {
+    // Добавляем проверку на undefined
+    if (!values || values.length === 0) {
+      return items; // Возвращаем все элементы, если фильтр не задан
+    }
 
     return items.filter((item) => values.includes(item[key]))
   }
@@ -64,6 +68,11 @@ export class DataAggregator {
     values: string[],
     key: keyof T
   ): T[] {
+    // Добавляем проверку на undefined
+    if (!values || values.length === 0) {
+      return items; // Возвращаем все элементы, если фильтр не задан
+    }
+    
     return items.filter((item) => {
       const streams = item[key]?.split(',').map((stream) => stream.trim());
       return streams?.some((stream) => values.includes(stream));

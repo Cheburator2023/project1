@@ -207,19 +207,27 @@ export class ApiController {
 
   @Get('/metrics/')
   async getMetrics(@Query() query: MetricsDto, @Res() response) {
-    const { startDate, endDate, stream } = query;
-    const result = await this.metricsAggregator.getMetrics(
-      startDate,
-      endDate,
-      stream,
-    );
+    try {
+      const { startDate, endDate, stream } = query;
+      const result = await this.metricsAggregator.getMetrics(
+        startDate,
+        endDate,
+        stream,
+      );
 
-    return response.status(HttpStatus.OK).json(result);
+      return response.status(HttpStatus.OK).json(result);
+    } catch (error) {
+      console.error('Error in getMetrics:', error);
+      return response.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
+        message: 'Internal server error',
+        error: error.message
+      });
+    }
   }
 
   @Get('/metrics/export')
   async exportMetricsToExcel(@Query() query: MetricsDto, @Res() res: Response) {
-    const { metric, startDate, endDate, stream } = query;
+    const { metric, startDate, endDate, stream, dataType } = query;
 
     if (!metric) {
       return res.status(HttpStatus.BAD_REQUEST).json({
@@ -233,6 +241,7 @@ export class ApiController {
         startDate || null,
         endDate || null,
         stream || [],
+        dataType || 'current',
       );
 
       res.setHeader('Content-Disposition', `attachment; filename=${metric}.xlsx`);

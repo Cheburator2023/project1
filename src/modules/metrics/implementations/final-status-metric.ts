@@ -2,6 +2,8 @@ import { IndependentMetric } from '../base'
 import { IFinalStatusMetric, MetricResult } from '../interfaces'
 
 export class FinalStatusMetric<T extends MetricResult> extends IndependentMetric<T> implements IFinalStatusMetric<T> {
+  private filteredModels: any[] = [];
+
   calculate() {
     const countFilteredModels = this.filterModels(
       this.models,
@@ -18,10 +20,61 @@ export class FinalStatusMetric<T extends MetricResult> extends IndependentMetric
 
     const count = countFilteredModels.length
     const delta = count - deltaFilteredModels.length
+
+    this.filteredModels = countFilteredModels;
+
     return {
       count,
       delta
     } as T
+  }
+
+  public getFilteredRowData() {
+    return this.filteredModels.map((model) => ({
+      system_model_id: model.system_model_id,
+      ds_stream: model.ds_stream,
+      model_status: model.model_status
+    }));
+  }
+
+  public getFilteredDeltaRowData() {
+    const { currentRange, deltaRange } = this.getCorrectDateRangeForDelta(this.startDate, this.endDate);
+    
+    // Модели за текущую дату
+    const currentDayModels = this.filterModels(
+      this.filteredModels,
+      this.startDate,
+      this.endDate,
+      false
+    );
+    
+    // Модели за delta дату
+    const deltaDayModels = this.filterModels(
+      this.filteredModels,
+      this.startDate,
+      this.endDate,
+      true
+    );
+
+    const result = [];
+    
+    // Модели за текущую дату
+    result.push(...currentDayModels.map((model) => ({
+      system_model_id: model.system_model_id,
+      ds_stream: model.ds_stream,
+      model_status: model.model_status,
+      period: 'current'
+    })));
+    
+    // Модели за delta дату
+    result.push(...deltaDayModels.map((model) => ({
+      system_model_id: model.system_model_id,
+      ds_stream: model.ds_stream,
+      model_status: model.model_status,
+      period: 'delta'
+    })));
+
+    return result;
   }
 
   filterModels<T extends boolean>(
