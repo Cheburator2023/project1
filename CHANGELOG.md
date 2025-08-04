@@ -1,5 +1,12 @@
 # Semantic Versioning Changelog
 
+# [1.27.0](https://git.sfera.inno.local/SUMD/mrms-backend/compare/v1.26.3...v1.27.0) (2025-08-04)
+
+
+### Features
+
+* новая логика прироста + выгрзука ([f9a2388](https://git.sfera.inno.local/SUMD/mrms-backend/commit/f9a2388e7bf5bb06e1ffc2bcc380332da87a5067))
+
 ## [1.26.2](https://git.sfera.inno.local/SUMD/mrms-backend/compare/v1.26.1...v1.26.2) (2025-07-28)
 
 
