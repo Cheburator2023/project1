@@ -1,5 +1,12 @@
 # Semantic Versioning Changelog
 
+# [1.28.0](https://git.sfera.inno.local/SUMD/mrms-backend/compare/v1.27.0...v1.28.0) (2025-08-05)
+
+
+### Features
+
+* дашборды и доработка определения статусов ([95062bf](https://git.sfera.inno.local/SUMD/mrms-backend/commit/95062bf8eb31977eec5a3e8a21c44a9eaa6bf0a9))
+
 # [1.27.0](https://git.sfera.inno.local/SUMD/mrms-backend/compare/v1.26.3...v1.27.0) (2025-08-04)
 
 
