@@ -680,30 +680,31 @@ export class ModelsService {
             }
           }
 
-
-          if (artefactTechLabel === 'model_status' &&
-            (
+          if (artefactTechLabel === 'model_status') {
+            if (
               Object.values(LIFE_CYCLE_STAGES).includes(value) ||
               model.camunda_model_stage?.includes(MODEL_STATUS.REMOVED_FROM_OPERATION) ||
               model.camunda_model_status?.includes(MODEL_STATUS.ARCHIVE)
-            )
-          ) {
-            const businessStatus = model.business_status
-            const bpmnInstanceName = value
+            ) {
+              const businessStatus = model.business_status;
+              const bpmnInstanceName = value;
 
-            const modelStage = ModelsService.formatModelStatus(
-              businessStatus,
-              bpmnInstanceName,
-              model.camunda_model_stage,
-              model.camunda_model_status,
-            )
+              const modelStage = ModelsService.formatModelStatus(
+                businessStatus,
+                bpmnInstanceName,
+                model.camunda_model_stage,
+                model.camunda_model_status,
+              );
+              
+              model['model_status'] = modelStage;
+            }
+
+            model['business_status_uncut'] = model.business_status;
             const modelStatus = ModelsService.formatModelBusinessStatus(
               model.camunda_model_stage,
               model.camunda_model_status || model.business_status
-            )
-
-            model['model_status'] = modelStage
-            model['business_status'] = modelStatus
+            );
+            model['business_status'] = modelStatus;
           }
         }
       })
@@ -795,6 +796,10 @@ export class ModelsService {
   ) {
     if (bpmn_instance_name === null) return null
 
+    if (bpmn_instance_name === LIFE_CYCLE_STAGES.MODEL_STATE_TRANSITION && (camunda_model_status || camunda_model_stage)) {
+      return camunda_model_stage;
+    }
+
     const lastActiveStatus = ModelsService.getLastActiveStatus(status || camunda_model_status)
 
     const stageIncludesRemoval = camunda_model_stage
@@ -836,15 +841,17 @@ export class ModelsService {
     stage: string | null,
     status: string | null
   ) {
-    if (!stage) return status
+    const lastActiveStatus = ModelsService.getLastActiveStatus(status || '');
+
+    if (!stage) return lastActiveStatus
 
     const stageList = stage.split(';').map(s => s.trim())
 
-    if (stageList.includes(MODEL_STATUS.REMOVED_FROM_OPERATION)) {
-      return MODEL_STATUS.ARCHIVE
-    }
+    // if (stageList.includes(MODEL_STATUS.REMOVED_FROM_OPERATION)) {
+    //   return MODEL_STATUS.ARCHIVE
+    // }
 
-    return status
+    return lastActiveStatus
   }
 
   private groupResultsByModelIdAndSource(

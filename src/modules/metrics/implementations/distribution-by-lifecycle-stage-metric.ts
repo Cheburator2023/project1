@@ -3,9 +3,12 @@ import { DistributionByLifecycleStageModelsMetricResult } from '../interfaces';
 
 export class DistributionByLifecycleStageMetric extends IndependentMetric<DistributionByLifecycleStageModelsMetricResult> {
   private filteredModels: any[] = [];
+  private lifecycleStages: Map<string, number>;
 
   calculate(): DistributionByLifecycleStageModelsMetricResult {
     this.filteredModels = [];
+    // Use a Map to dynamically count occurrences of each model_status
+    this.lifecycleStages = new Map<string, number>();
     const filteredModels = this.filterModels(
       this.models,
       this.startDate,
@@ -14,57 +17,57 @@ export class DistributionByLifecycleStageMetric extends IndependentMetric<Distri
 
     const { actualStartDate, actualEndDate } = this.getActualDateRange(this.startDate, this.endDate);
 
-    // Use a Map to dynamically count occurrences of each model_status
-    const lifecycleStages = new Map<string, number>();
-
     // Iterate through all models to count model_status occurrences
     filteredModels.forEach((model) => {
-      let status = model.model_status;
+      const stage = model.model_status;
+      const status = model.model_business_status;
 
-      if (!status) {
+      if (!stage) {
         return;
       }
 
-      const business_status_array = model.business_status
-        ? model.business_status.split(';')
-        : [];
+      const modelStageArray = stage.split(';');
 
-      if (status == 'Внедрена') {
-        business_status_array.forEach((statusItem) => {
-          if (
-            [
-              'Модель была внедрена в ПИМ (старая модель)',
-              'Модель внедряется в ПИМ',
-              'Разработана, внедрена в ПИМ',
-              'Внедрена в ПИМ',
-            ].includes(statusItem)
-          ) {
-            status = 'Внедрена в ПИМ';
-          }
-
-          if (
-            [
-              'Модель внедряется вне ПИМ',
-              'Разработана, внедрена вне ПИМ',
-              'Внедрена вне ПИМ',
-            ].includes(statusItem)
-          ) {
-            status = 'Внедрена вне ПИМ';
-          }
-        });
-      }
-
-      this.filteredModels.push({ ...model, calculated_status: status });
-
-      if (lifecycleStages.has(status)) {
-        lifecycleStages.set(status, lifecycleStages.get(status)! + 1);
-      } else {
-        lifecycleStages.set(status, 1);
-      }
+      modelStageArray.forEach((stage) => {
+        this.countStage(model, stage, status);
+      });
     });
 
     // Convert the Map to an array of [status, count] pairs
-    return Array.from(lifecycleStages.entries()) as DistributionByLifecycleStageModelsMetricResult;
+    return Array.from(this.lifecycleStages.entries()) as DistributionByLifecycleStageModelsMetricResult;
+  }
+
+  private countStage(model, stage, status) {
+    if (stage == 'Внедрена') {
+      if (
+        [
+          'Модель была внедрена в ПИМ (старая модель)',
+          'Модель внедряется в ПИМ',
+          'Разработана, внедрена в ПИМ',
+          'Внедрена в ПИМ',
+        ].includes(status)
+      ) {
+        stage = 'Внедрена в ПИМ';
+      }
+
+      if (
+        [
+          'Модель внедряется вне ПИМ',
+          'Разработана, внедрена вне ПИМ',
+          'Внедрена вне ПИМ',
+        ].includes(status)
+      ) {
+        stage = 'Внедрена вне ПИМ';
+      }
+    }
+
+    this.filteredModels.push({ ...model, calculated_status: stage });
+
+    if (this.lifecycleStages.has(stage)) {
+      this.lifecycleStages.set(stage, this.lifecycleStages.get(stage)! + 1);
+    } else {
+      this.lifecycleStages.set(stage, 1);
+    }
   }
 
   public getFilteredRowData() {

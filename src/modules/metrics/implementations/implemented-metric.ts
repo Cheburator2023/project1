@@ -76,6 +76,7 @@ export class ImplementedMetric extends IndependentMetric<MetricResult> {
       system_model_id: model.system_model_id,
       status: model.business_status,
       stage: model.model_status,
+      status_uncut: model.business_status_uncut,
     }));
   }
 
@@ -151,8 +152,8 @@ export class ImplementedMetric extends IndependentMetric<MetricResult> {
      * «Модель внедряется вне ПИМ» ИЛИ «Разработана, внедрена вне ПИМ» ИЛИ «Внедрена вне ПИМ»
      */
     let result = false;
-    const business_status_array = model.business_status
-      ? model.business_status.split(';')
+    const business_status_array = model.business_status_uncut
+      ? model.business_status_uncut.split(';')
       : [];
     business_status_array.forEach((statusItem) => {
       result =
