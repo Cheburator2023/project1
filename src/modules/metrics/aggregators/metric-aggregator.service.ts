@@ -17,7 +17,7 @@ export class MetricsAggregator {
     endDate: string | null,
     streams: string[]
   ): Promise<Record<MetricsEnum, any>> {
-    const data = await this.dataAggregator.aggregateData(streams, [MODEL_DISPLAY_MODES.ARCHIVE, MODEL_DISPLAY_MODES.PENDING_DELETE]);
+    const data = await this.dataAggregator.aggregateData(streams, [MODEL_DISPLAY_MODES.ARCHIVE, MODEL_DISPLAY_MODES.PENDING_DELETE, MODEL_DISPLAY_MODES.CREATION_ERROR]);
 
     const results: Record<string, any> = {}
 
@@ -42,7 +42,7 @@ export class MetricsAggregator {
     streams: string[],
     dataType?: string
   ): Promise<{ system_model_id: string }[]> {
-    const data = await this.dataAggregator.aggregateData(streams, [MODEL_DISPLAY_MODES.ARCHIVE, MODEL_DISPLAY_MODES.PENDING_DELETE]);
+    const data = await this.dataAggregator.aggregateData(streams, [MODEL_DISPLAY_MODES.ARCHIVE, MODEL_DISPLAY_MODES.PENDING_DELETE, MODEL_DISPLAY_MODES.CREATION_ERROR]);
   
     const results: Record<string, any> = {};
   

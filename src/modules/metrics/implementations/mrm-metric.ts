@@ -84,7 +84,7 @@ export class MrmMetric extends IndependentMetric<MetricResult> {
       deltaRange.actualEndDate
     );
     
-    const result = Math.max(0, currentDayModels.length - deltaDayModels.length);
+    const result = currentDayModels.length - deltaDayModels.length;
 
     return result;
   }
