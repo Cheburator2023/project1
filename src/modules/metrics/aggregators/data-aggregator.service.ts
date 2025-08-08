@@ -14,7 +14,7 @@ export class DataAggregator {
     private readonly modelsService: ModelsService,
     private readonly usersTasksService: UsersTasksService
   ) {
-    this.cache = new NodeCache({ stdTTL: 300 }) // Кэш на 5 минут
+    this.cache = new NodeCache({ stdTTL: 0 }) // Кэш отключен (0 секунд)
   }
 
   async aggregateData(streams: string[]): Promise<any> {
