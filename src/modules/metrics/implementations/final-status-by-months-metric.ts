@@ -119,58 +119,72 @@ export class FinalStatusByMonthsMetric extends IndependentMetric<FinalStatusByMo
     // Логика для случая, когда временной диапазон НЕ выбран
     if (!this.startDate && !this.endDate) {
       const currentYear = new Date().getFullYear();
-      
-      // Определяем модели, у которых есть финальные даты в текущем году
-      // Эти модели НЕ должны попадать в накопительный итог
-      const modelsWithCurrentYearDates = this.getModelsWithCurrentYearDates(this.models, currentYear);
-      
-      // 1. Модели до января текущего года (накопительный итог)
-      // ИСКЛЮЧАЕМ модели, у которых есть даты в текущем году
-      const modelsForCumulative = this.models.filter(model => 
-        !modelsWithCurrentYearDates.has(model.system_model_id)
+      const currentYearStartStr = `${currentYear}-01-01`;
+      const currentYearEndStr = `${currentYear}-12-31`;
+
+      // 1) Берем МОДЕЛИ ТЕКУЩЕГО ГОДА один раз на весь год
+      //    Внутри filterModels приоритет дат уже задан: release > developing_end > pilot_end
+      //    Поэтому при диапазоне на год каждая модель появится не более одного раза с приоритетной датой
+      const currentYearModels = this.finalStatusMetric.filterModels(
+        this.models,
+        currentYearStartStr,
+        currentYearEndStr,
+        false,
+        true
+      ) as { model: any; date: Date }[];
+
+      const currentYearIds = new Set(
+        currentYearModels.map(({ model }) => model.system_model_id)
       );
-      
+
+      // 2) Накопительный итог ДО текущего года (исключаем модели, которые уже имеют даты в текущем году)
+      const modelsForCumulative = this.models.filter(
+        (m) => !currentYearIds.has(m.system_model_id)
+      );
+
       const cumulativeModels = this.finalStatusMetric.filterModels(
         modelsForCumulative,
         null,
-        `${currentYear}-01-01`,
+        currentYearStartStr,
         false,
         true
-      );
-      
-      // 2. Модели за январь текущего года
-      const janStart = new Date(currentYear, 0, 1);
-      const janEnd = new Date(currentYear, 0, 31);
-      const januaryModels = this.finalStatusMetric.filterModels(
-        this.models,
-        janStart.toISOString().split('T')[0],
-        janEnd.toISOString().split('T')[0],
-        false,
-        true
-      );
-      
-      // Для каждого месяца формируем массив моделей, попавших в итог этого месяца
+      ) as { model: any; date: Date }[];
+
+      // 3) Распределение по месяцам без дублей: одна модель попадает только один раз
       this.filteredModelsByMonth = {};
-      // Январь: накопительный итог + январь
-      this.filteredModelsByMonth[0] = [...cumulativeModels, ...januaryModels];
-      months[0] = this.filteredModelsByMonth[0].length;
-      
-      // Для остальных месяцев
-      let prevModels = [...this.filteredModelsByMonth[0]];
+
+      const addUnique = (
+        acc: { model: any; date: Date }[],
+        ids: Set<string>,
+        items: { model: any; date: Date }[]
+      ) => {
+        for (const item of items) {
+          const id = item.model.system_model_id;
+          if (!ids.has(id)) {
+            ids.add(id);
+            acc.push(item);
+          }
+        }
+        return acc;
+      };
+
+      // Январь: накопительный итог + модели января текущего года (уже уникальные по модели)
+      const januaryModels = currentYearModels.filter(({ date }) => date.getMonth() === 0);
+      let prevModels: { model: any; date: Date }[] = [];
+      const seenIds = new Set<string>();
+      prevModels = addUnique(prevModels, seenIds, cumulativeModels);
+      prevModels = addUnique(prevModels, seenIds, januaryModels);
+      this.filteredModelsByMonth[0] = [...prevModels];
+      months[0] = seenIds.size;
+
+      // Остальные месяцы: добавляем только новые модели месяца, без повторений
       for (let month = 1; month < 12; month++) {
-        const monthStartDate = new Date(currentYear, month, 1);
-        const monthEndDate = new Date(currentYear, month + 1, 0);
-        const monthModels = this.finalStatusMetric.filterModels(
-          this.models,
-          monthStartDate.toISOString().split('T')[0],
-          monthEndDate.toISOString().split('T')[0],
-          false,
-          true
-        );
-        prevModels = [...prevModels, ...monthModels];
+        const monthEntries = currentYearModels.filter(({ date }) => date.getMonth() === month);
+        prevModels = addUnique(prevModels, seenIds, monthEntries);
         this.filteredModelsByMonth[month] = [...prevModels];
-        months[month] = this.filteredModelsByMonth[month].length;
+        months[month] = seenIds.size;
       }
+
       // По умолчанию выгрузка будет за январь (или последний рассчитанный месяц)
       this.filteredModelsWithDates = this.filteredModelsByMonth[0];
     } else {
