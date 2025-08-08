@@ -26,7 +26,8 @@ export class MrmMetric extends IndependentMetric<MetricResult> {
 
   public getFilteredRowData() {
     return this.filteredModels.map((model) => ({
-      system_model_id: model.system_model_id
+      system_model_id: model.system_model_id,
+      business_status: model.business_status
     }));
   }
 
