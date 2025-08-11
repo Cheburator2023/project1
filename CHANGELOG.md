@@ -1,5 +1,22 @@
 # Semantic Versioning Changelog
 
+# [1.29.0](https://git.sfera.inno.local/sumd/mrms-backend/compare/v1.28.0...v1.29.0) (2025-08-11)
+
+
+### Bug Fixes
+
+* добавил отрицательные значения для delt, исправил логику delt для виджетов модели на мониторинге и кол-во моделей, выведенных из эксп., добавил фильтрацию для метрик на ошибку заведения ([e855de7](https://git.sfera.inno.local/sumd/mrms-backend/commit/e855de73139d7b21475bc64c8ca2430fee7bfe0b))
+* отключил кеш ([90473c2](https://git.sfera.inno.local/sumd/mrms-backend/commit/90473c220038387147bed7eb94e9381bb18698d5))
+* пофиксл баг по виджету динамика моделей с фин статусом ([10abc6e](https://git.sfera.inno.local/sumd/mrms-backend/commit/10abc6ef713aaef8f7509d1b79e4cb54e42a04e2))
+* сделана новая логика фильтрации метрки на ошибку заведения и ожидает удаления ([01cb373](https://git.sfera.inno.local/sumd/mrms-backend/commit/01cb3733ae4963eb2113f62e0ee5e5ce5ac887c8))
+
+
+### Features
+
+* правки по виджету распределение и транзит состояния ([26c239b](https://git.sfera.inno.local/sumd/mrms-backend/commit/26c239bbb07a57829ec5da168e4f0b6e13fa0b8c))
+* приросты в виджете модели с финальным статусом ([e081aec](https://git.sfera.inno.local/sumd/mrms-backend/commit/e081aecbe53a56e36e68dda79e902856b6330212))
+* приросты в виджете модели с финальным статусом ([40a9837](https://git.sfera.inno.local/sumd/mrms-backend/commit/40a983713662d549f0f42a1062c708c6026b8a11))
+
 # [1.28.0](https://git.sfera.inno.local/SUMD/mrms-backend/compare/v1.27.0...v1.28.0) (2025-08-05)
 
 
