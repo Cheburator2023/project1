@@ -1,5 +1,6 @@
 export * from './getModel'
-export * from './getModels'
+export { getModels } from './getModels'
+export { getArtefactTimestamps } from './getArtefactTimestamps'
 export * from './getArtefacts'
 export * from './getModelsByTypeAndParentId'
 export * from './updateModelAllocation'
