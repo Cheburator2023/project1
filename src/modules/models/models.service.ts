@@ -51,8 +51,7 @@ export class ModelsService {
     private readonly usageService: UsageService,
     private readonly sumDatabaseService: SumDatabaseService,
     private readonly mrmDatabaseService: MrmDatabaseService
-  ) {
-  }
+  ) {}
 
   async getModels(
     dto?: ModelsDto & { ignoreModeFilter?: boolean },
@@ -615,41 +614,16 @@ export class ModelsService {
       use_previous_year_for_q4: canEditQuarter(4, new Date().getFullYear() - 1)
     })
 
-    return this.mergeSumAndMrmModels(sumModels, mrmModels, 'system_model_id')
+    return await this.mergeSumAndMrmModels(sumModels, mrmModels, 'system_model_id', filterDate)
   }
 
-  private mergeSumAndMrmModels(sumModels: Model[], mrmModels: Model[], prop: string): Model[] {
-    const combineModels = mrmModels.map((mrmModel) => {
-      const matchingSumModel = sumModels.find(
-        (sumModel) => sumModel[prop] === mrmModel[prop]
-      )
+  private async mergeSumAndMrmModels(sumModels: Model[], mrmModels: Model[], prop: string, filterDate: string | null): Promise<Model[]> {
+    // Delegate merging to dedicated service to keep this file lean
+    const { ModelMergeService } = await import('./services/model-merge.service')
 
-      if (matchingSumModel) {
-        return this.mergeAttributes(matchingSumModel, mrmModel)
-      }
+    const merger = new ModelMergeService(this.sumDatabaseService, this.mrmDatabaseService)
 
-      return mrmModel
-    })
-
-    const uniqueSumModels = sumModels.filter(
-      (sumModel) => !mrmModels.some(
-        (mrmModel) => mrmModel[prop] === sumModel[prop]
-      )
-    )
-
-    return [...combineModels, ...uniqueSumModels]
-  }
-
-  private mergeAttributes(sumModels: Model, mrmModels: Model): Model {
-    const mergedModel = { ...mrmModels }
-
-    for (const key in sumModels) {
-      if (mrmModels[key] === null || mrmModels[key] === undefined || key === 'model_source') {
-        mergedModel[key] = sumModels[key]
-      }
-    }
-
-    return mergedModel
+    return await merger.mergeModels(sumModels, mrmModels, filterDate)
   }
 
   private async formatResults(models: Model[]): Promise<Model[]> {
