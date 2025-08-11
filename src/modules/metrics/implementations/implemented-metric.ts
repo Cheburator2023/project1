@@ -46,7 +46,7 @@ export class ImplementedMetric extends IndependentMetric<MetricResult> {
       deltaRange.actualEndDate
     );
 
-    return Math.max(0, currentDayModels.length - deltaDayModels.length);
+    return currentDayModels.length - deltaDayModels.length;
   }
 
   // Отдельный метод для фильтрации по точным датам (только для delta)

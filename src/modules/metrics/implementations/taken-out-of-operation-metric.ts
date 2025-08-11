@@ -1,10 +1,10 @@
 import { IndependentMetric } from '../base'
-import { MetricPercentResult } from '../interfaces'
+import { MetricResult } from '../interfaces'
 
-export class TakenOutOfOperationMetric extends IndependentMetric<MetricPercentResult> {
+export class TakenOutOfOperationMetric extends IndependentMetric<MetricResult> {
   private filteredModels: any[] = [];
 
-  calculate(): MetricPercentResult {
+  calculate(): MetricResult {
     const currentFilteredModels = this.filterModels(
       this.models,
       this.startDate,
@@ -13,14 +13,13 @@ export class TakenOutOfOperationMetric extends IndependentMetric<MetricPercentRe
 
     const count = currentFilteredModels.length
     
-    // Новая delta логика по точным датам
-    const deltaPercent = this.calculateDeltaPercentByExactDates()
+    const delta = this.calculateDeltaByExactDates()
 
     this.filteredModels = currentFilteredModels;
 
     return {
       count,
-      deltaPercent
+      delta
     }
   }
 
@@ -64,8 +63,7 @@ export class TakenOutOfOperationMetric extends IndependentMetric<MetricPercentRe
     return result;
   }
 
-  // Новый метод для расчета deltaPercent по точным датам
-  private calculateDeltaPercentByExactDates(): number {
+  private calculateDeltaByExactDates(): number {
     const { currentRange, deltaRange } = this.getCorrectDateRangeForDelta(this.startDate, this.endDate);
     
     // Модели точно на текущую дату (или endDate)
@@ -82,10 +80,7 @@ export class TakenOutOfOperationMetric extends IndependentMetric<MetricPercentRe
       deltaRange.actualEndDate
     );
 
-    return this.calculatePercentageDelta(
-      currentDayModels.length,
-      deltaDayModels.length
-    );
+    return currentDayModels.length - deltaDayModels.length;
   }
 
   // Отдельный метод для фильтрации по точным датам (только для delta)

@@ -15,12 +15,10 @@ export class DistributionByLifecycleStageMetric extends IndependentMetric<Distri
       this.endDate,
     );
 
-    const { actualStartDate, actualEndDate } = this.getActualDateRange(this.startDate, this.endDate);
-
     // Iterate through all models to count model_status occurrences
     filteredModels.forEach((model) => {
       const stage = model.model_status;
-      const status = model.model_business_status;
+      const status = model.business_status;
 
       if (!stage) {
         return;
@@ -28,8 +26,8 @@ export class DistributionByLifecycleStageMetric extends IndependentMetric<Distri
 
       const modelStageArray = stage.split(';');
 
-      modelStageArray.forEach((stage) => {
-        this.countStage(model, stage, status);
+      modelStageArray.forEach((stageItem) => {
+        this.countStage(model, stageItem, status);
       });
     });
 

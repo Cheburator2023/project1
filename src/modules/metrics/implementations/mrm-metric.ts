@@ -26,7 +26,8 @@ export class MrmMetric extends IndependentMetric<MetricResult> {
 
   public getFilteredRowData() {
     return this.filteredModels.map((model) => ({
-      system_model_id: model.system_model_id
+      system_model_id: model.system_model_id,
+      business_status: model.business_status
     }));
   }
 
@@ -84,7 +85,7 @@ export class MrmMetric extends IndependentMetric<MetricResult> {
       deltaRange.actualEndDate
     );
     
-    const result = Math.max(0, currentDayModels.length - deltaDayModels.length);
+    const result = currentDayModels.length - deltaDayModels.length;
 
     return result;
   }

@@ -796,10 +796,6 @@ export class ModelsService {
   ) {
     if (bpmn_instance_name === null) return null
 
-    if (bpmn_instance_name === LIFE_CYCLE_STAGES.MODEL_STATE_TRANSITION && (camunda_model_status || camunda_model_stage)) {
-      return camunda_model_stage;
-    }
-
     const lastActiveStatus = ModelsService.getLastActiveStatus(status || camunda_model_status)
 
     const stageIncludesRemoval = camunda_model_stage
@@ -824,6 +820,11 @@ export class ModelsService {
     let currentBusinessStatus = LIFE_CYCLE_STAGES_DESCRIPTION?.[bpmn_instance_name.trim()]
 
     currentBusinessStatus = ModelsService.determineLifecycleStage(currentBusinessStatus, lastActiveStatus)
+
+    // фикс "транзита состояния модели"
+    if (bpmn_instance_name === LIFE_CYCLE_STAGES.MODEL_STATE_TRANSITION && (camunda_model_status || camunda_model_stage)) {
+      currentBusinessStatus = camunda_model_stage;
+    } 
 
     switch (lastActiveStatus) {
       case MODEL_STATUS.DEVELOPED_NOT_IMPLEMENTED:
