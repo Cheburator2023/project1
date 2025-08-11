@@ -198,6 +198,11 @@ export class ModelsService {
       ...artefacts.filter(artefact => artefact.artefact_tech_label !== 'model_name')
     ].map(artefact => ({ ...artefact, model_id, creator: user.username }))
 
+    const { ModelDefaultsService } = await import('./services/model-defaults.service')
+    const defaultsService = new ModelDefaultsService()
+    const defaults = await defaultsService.applyDefaultsOnCreate(model_id, artefacts)
+    artefactsForUpdate.push(...(defaults as unknown as typeof artefactsForUpdate))
+
     await this.executeDatabaseUpdates({ artefactsForUpdate }, MODEL_SOURCES.MRM)
 
     return this.getModels({ model_id, ignoreModeFilter: true });
