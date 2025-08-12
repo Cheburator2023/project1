@@ -1,5 +1,4 @@
 import { Injectable } from '@nestjs/common'
-import * as NodeCache from 'node-cache'
 import { ModelsService } from 'src/modules/models/models.service'
 import { Model as AppModel } from 'src/modules/models/interfaces'
 import { Task } from 'src/modules/tasks/interfaces'
@@ -8,21 +7,17 @@ import { MODEL_STATUS } from 'src/system/common/constants'
 
 @Injectable()
 export class DataAggregator {
-  private readonly cache: NodeCache
-
   constructor(
     private readonly modelsService: ModelsService,
     private readonly usersTasksService: UsersTasksService
-  ) {
-    this.cache = new NodeCache({ stdTTL: 0 }) // Кэш отключен (0 секунд)
-  }
+  ) {}
 
   async aggregateData(streams: string[]): Promise<any> {
-    const models = await this.getCachedModels()
+    const models = await this.getModels()
 
     const modelsWithoutInvalidStatuses = this.filterModelsForMetrics(models)
 
-    const tasks = await this.getCachedTasks(modelsWithoutInvalidStatuses)
+    const tasks = await this.getTasks(modelsWithoutInvalidStatuses)
 
     const filteredModels = this.filterByStreams(modelsWithoutInvalidStatuses, streams, 'ds_stream')
     const filteredTasks = this.filterByStreamsTasks(tasks, streams, 'ds_stream')
@@ -33,26 +28,12 @@ export class DataAggregator {
     }
   }
 
-  private async getCachedModels(): Promise<AppModel[]> {
-    const cacheKey = 'models_metrics'
-    const cachedModels = this.cache.get<AppModel[]>(cacheKey)
-
-    if (cachedModels) return cachedModels
-
-    const models = await this.modelsService.getModels({ ignoreModeFilter: true })
-    this.cache.set(cacheKey, models)
-    return models
+  private async getModels(): Promise<AppModel[]> {
+    return await this.modelsService.getModels({ ignoreModeFilter: true })
   }
 
-  private async getCachedTasks(models: any[]): Promise<Task[]> {
-    const cacheKey = 'tasks'
-    const cachedTasks = this.cache.get<Task[]>(cacheKey)
-
-    if (cachedTasks) return cachedTasks
-
-    const tasks = await this.usersTasksService.getUsersActiveTasks(models);
-    this.cache.set(cacheKey, tasks)
-    return tasks
+  private async getTasks(models: any[]): Promise<Task[]> {
+    return await this.usersTasksService.getUsersActiveTasks(models);
   }
 
   private filterByStreams<T extends Record<string, any>>(
