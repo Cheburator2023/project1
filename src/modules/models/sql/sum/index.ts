@@ -1,5 +1,5 @@
 export { getModels } from './getModels'
-export { getArtefactTimestamps } from './getArtefactTimestamps'
+export { getLatestArtefactsForModels } from './getLatestArtefactsForModels'
 export * from './updateModelName'
 export * from './updateModelUpdateDate'
 export * from './updateArtefact'
