@@ -623,12 +623,14 @@ export class ModelsService {
   }
 
   private async mergeSumAndMrmModels(sumModels: Model[], mrmModels: Model[], prop: string, filterDate: string | null): Promise<Model[]> {
-    // Delegate merging to dedicated service to keep this file lean
+    // Prefetch maps via dedicated service and merge via merge service (DI preferred; dynamic import used here)
+    const { ModelMergePrefetchService } = await import('./services/model-merge-prefetch.service')
     const { ModelMergeService } = await import('./services/model-merge.service')
+    const prefetch = new ModelMergePrefetchService(this.sumDatabaseService, this.mrmDatabaseService)
+    const { sumMap, mrmMap } = await prefetch.buildMergeMaps(sumModels, mrmModels, filterDate)
 
-    const merger = new ModelMergeService(this.sumDatabaseService, this.mrmDatabaseService)
-
-    return await merger.mergeModels(sumModels, mrmModels, filterDate)
+    const merger = new ModelMergeService()
+    return await merger.mergeModels(sumModels, mrmModels, filterDate, { sumMap, mrmMap })
   }
 
   private async formatResults(models: Model[]): Promise<Model[]> {

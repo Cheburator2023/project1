@@ -9,6 +9,7 @@ import { MrmDatabaseModule } from 'src/system/mrm-database/database.module'
 import { ModelServiceFactory } from './factories'
 import { ModelMergeService } from './services/model-merge.service'
 import { ModelDefaultsService } from './services/model-defaults.service'
+import { ModelMergePrefetchService } from './services/model-merge-prefetch.service'
 
 @Module({
   providers: [
@@ -17,7 +18,8 @@ import { ModelDefaultsService } from './services/model-defaults.service'
     SumModelService,
     MrmModelService,
     ModelMergeService,
-    ModelDefaultsService
+    ModelDefaultsService,
+    ModelMergePrefetchService
   ],
   imports: [
     SumDatabaseModule,
@@ -26,7 +28,7 @@ import { ModelDefaultsService } from './services/model-defaults.service'
     AllocationModule,
     UsageModule
   ],
-  exports: [ModelServiceFactory, ModelsService, MrmModelService, SumModelService, ModelMergeService, ModelDefaultsService]
+  exports: [ModelServiceFactory, ModelsService, MrmModelService, SumModelService, ModelMergeService, ModelDefaultsService, ModelMergePrefetchService]
 })
 export class ModelsModule {
 }
