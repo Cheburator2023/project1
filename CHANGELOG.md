@@ -1,5 +1,12 @@
 # Semantic Versioning Changelog
 
+## [1.29.1](https://git.sfera.inno.local/sumd/mrms-backend/compare/v1.29.0...v1.29.1) (2025-08-12)
+
+
+### Bug Fixes
+
+* удалил кеш ([9229724](https://git.sfera.inno.local/sumd/mrms-backend/commit/92297241a3925cd60cbde9fe9e7d369ebe814499))
+
 # [1.29.0](https://git.sfera.inno.local/sumd/mrms-backend/compare/v1.28.0...v1.29.0) (2025-08-11)
 
 
