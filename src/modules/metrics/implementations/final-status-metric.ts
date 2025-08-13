@@ -12,20 +12,16 @@ export class FinalStatusMetric<T extends MetricResult>
     this.filteredModels = [];
     this.deltaFilteredModels = [];
 
-    const countFilteredModels = this.filterModels(
+    this.filteredModels = this.filterModels(
       this.models,
       this.startDate,
       this.endDate,
     );
 
-    const deltaFilteredModels = this.filterModels(
-      this.models,
-      this.startDate,
-      this.endDate,
-      true,
-    );
+    // delta
+    this.filterModels(this.models, this.startDate, this.endDate, true);
 
-    const count = countFilteredModels.length;
+    const count = this.filteredModels.length;
     const delta =
       this.deltaFilteredModels.filter((model) => model.period === 'current').length -
       this.deltaFilteredModels.filter((model) => model.period === 'delta').length;
@@ -179,8 +175,6 @@ export class FinalStatusMetric<T extends MetricResult>
         }
 
         if (relevantDate && hasFinalStatus) {
-          this.filteredModels.push({ ...model, relevantDate });
-
           return returnDate ? { model, date: relevantDate } : model;
         }
 
