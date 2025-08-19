@@ -392,10 +392,15 @@ export class ModelsService {
       modelSource = model_source
       const updates = updatesBySource[model_source]
 
-      if (modelSource === MODEL_SOURCES.SUM) {
+      // Trust the initial model_source value from the request
+      // If model_source is 'sum', it means this model originally came from SUM
+      const isOriginalSumModel = model_source === MODEL_SOURCES.SUM
+
+      if (isOriginalSumModel) {
         const newModel: ModelEntity | null = await this.ensureSurrogateModelExists(model_id)
 
         if (newModel) {
+          // Always ensure model_alias is updated for SUM models, regardless of current source
           updatesBySource[MODEL_SOURCES.MRM].artefactsForUpdate.push({
             model_id,
             artefact_tech_label: 'model_alias',
@@ -415,7 +420,7 @@ export class ModelsService {
 
         if (this.isNameArtefact(artefact_tech_label)) {
           updates.namesForUpdate.push({ model_id, model_name: artefact_string_value })
-          if (model_source === MODEL_SOURCES.SUM) {
+          if (isOriginalSumModel) {
             updatesBySource[MODEL_SOURCES.MRM].namesForUpdate.push({ model_id, model_name: artefact_string_value })
           }
         } else if (this.isAllocationUsageArtefact(artefact_tech_label)) {
@@ -464,7 +469,7 @@ export class ModelsService {
               continue
           }
           updates.artefactsForUpdate.push({ model_id, ...artefactItem, creator })
-          if (model_source === MODEL_SOURCES.SUM) {
+          if (isOriginalSumModel) {
             updatesBySource[MODEL_SOURCES.MRM].artefactsForUpdate.push({ model_id, ...artefactItem, creator })
           }
         }
