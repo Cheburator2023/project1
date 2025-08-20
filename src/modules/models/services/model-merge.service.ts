@@ -56,6 +56,13 @@ export class ModelMergeService {
   ): Promise<Model> {
     const merged: Model = { ...mrmModel }
 
+    // Preserve SUM attributes when MRM doesn't have them or for specific fields
+    for (const key in sumModel) {
+      if (mrmModel[key] === null || mrmModel[key] === undefined || key === 'model_source') {
+        merged[key] = sumModel[key]
+      }
+    }
+
     if (TIMESTAMP_PRIORITY_ARTEFACTS.length > 0) {
       const sumMap = options?.sumMap || {}
       const mrmMap = options?.mrmMap || {}

@@ -442,9 +442,11 @@ export class ModelsService {
             case 'auto_validation_result':
             case 'model_changes_info':
             case 'model_desc':
+            case 'rfd':
               updatesBySource[MODEL_SOURCES.MRM].artefactsForUpdate.push({ model_id, ...artefactItem, creator })
               continue
           }
+          
           updates.artefactsForUpdate.push({ model_id, ...artefactItem, creator })
           if (model_source === MODEL_SOURCES.SUM) {
             updatesBySource[MODEL_SOURCES.MRM].artefactsForUpdate.push({ model_id, ...artefactItem, creator })
