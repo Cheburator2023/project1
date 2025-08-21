@@ -51,8 +51,7 @@ export class ModelsService {
     private readonly usageService: UsageService,
     private readonly sumDatabaseService: SumDatabaseService,
     private readonly mrmDatabaseService: MrmDatabaseService
-  ) {
-  }
+  ) {}
 
   async getModels(
     dto?: ModelsDto & { ignoreModeFilter?: boolean },
@@ -198,6 +197,11 @@ export class ModelsService {
       },
       ...artefacts.filter(artefact => artefact.artefact_tech_label !== 'model_name')
     ].map(artefact => ({ ...artefact, model_id, creator: user.username }))
+
+    const { ModelDefaultsService } = await import('./services/model-defaults.service')
+    const defaultsService = new ModelDefaultsService()
+    const defaults = await defaultsService.applyDefaultsOnCreate(model_id, artefacts)
+    artefactsForUpdate.push(...(defaults as unknown as typeof artefactsForUpdate))
 
     await this.executeDatabaseUpdates({ artefactsForUpdate }, MODEL_SOURCES.MRM)
 
@@ -388,10 +392,15 @@ export class ModelsService {
       modelSource = model_source
       const updates = updatesBySource[model_source]
 
-      if (modelSource === MODEL_SOURCES.SUM) {
+      // Trust the initial model_source value from the request
+      // If model_source is 'sum', it means this model originally came from SUM
+      const isOriginalSumModel = model_source === MODEL_SOURCES.SUM
+
+      if (isOriginalSumModel) {
         const newModel: ModelEntity | null = await this.ensureSurrogateModelExists(model_id)
 
         if (newModel) {
+          // Always ensure model_alias is updated for SUM models, regardless of current source
           updatesBySource[MODEL_SOURCES.MRM].artefactsForUpdate.push({
             model_id,
             artefact_tech_label: 'model_alias',
@@ -411,7 +420,7 @@ export class ModelsService {
 
         if (this.isNameArtefact(artefact_tech_label)) {
           updates.namesForUpdate.push({ model_id, model_name: artefact_string_value })
-          if (model_source === MODEL_SOURCES.SUM) {
+          if (isOriginalSumModel) {
             updatesBySource[MODEL_SOURCES.MRM].namesForUpdate.push({ model_id, model_name: artefact_string_value })
           }
         } else if (this.isAllocationUsageArtefact(artefact_tech_label)) {
@@ -456,11 +465,13 @@ export class ModelsService {
             case 'auto_validation_result':
             case 'model_changes_info':
             case 'model_desc':
+            case 'rfd':
               updatesBySource[MODEL_SOURCES.MRM].artefactsForUpdate.push({ model_id, ...artefactItem, creator })
               continue
           }
+          
           updates.artefactsForUpdate.push({ model_id, ...artefactItem, creator })
-          if (model_source === MODEL_SOURCES.SUM) {
+          if (isOriginalSumModel) {
             updatesBySource[MODEL_SOURCES.MRM].artefactsForUpdate.push({ model_id, ...artefactItem, creator })
           }
         }
@@ -615,41 +626,18 @@ export class ModelsService {
       use_previous_year_for_q4: canEditQuarter(4, new Date().getFullYear() - 1)
     })
 
-    return this.mergeSumAndMrmModels(sumModels, mrmModels, 'system_model_id')
+    return await this.mergeSumAndMrmModels(sumModels, mrmModels, 'system_model_id', filterDate)
   }
 
-  private mergeSumAndMrmModels(sumModels: Model[], mrmModels: Model[], prop: string): Model[] {
-    const combineModels = mrmModels.map((mrmModel) => {
-      const matchingSumModel = sumModels.find(
-        (sumModel) => sumModel[prop] === mrmModel[prop]
-      )
+  private async mergeSumAndMrmModels(sumModels: Model[], mrmModels: Model[], prop: string, filterDate: string | null): Promise<Model[]> {
+    // Prefetch maps via dedicated service and merge via merge service (DI preferred; dynamic import used here)
+    const { ModelMergePrefetchService } = await import('./services/model-merge-prefetch.service')
+    const { ModelMergeService } = await import('./services/model-merge.service')
+    const prefetch = new ModelMergePrefetchService(this.sumDatabaseService, this.mrmDatabaseService)
+    const { sumMap, mrmMap } = await prefetch.buildMergeMaps(sumModels, mrmModels, filterDate)
 
-      if (matchingSumModel) {
-        return this.mergeAttributes(matchingSumModel, mrmModel)
-      }
-
-      return mrmModel
-    })
-
-    const uniqueSumModels = sumModels.filter(
-      (sumModel) => !mrmModels.some(
-        (mrmModel) => mrmModel[prop] === sumModel[prop]
-      )
-    )
-
-    return [...combineModels, ...uniqueSumModels]
-  }
-
-  private mergeAttributes(sumModels: Model, mrmModels: Model): Model {
-    const mergedModel = { ...mrmModels }
-
-    for (const key in sumModels) {
-      if (mrmModels[key] === null || mrmModels[key] === undefined || key === 'model_source') {
-        mergedModel[key] = sumModels[key]
-      }
-    }
-
-    return mergedModel
+    const merger = new ModelMergeService()
+    return await merger.mergeModels(sumModels, mrmModels, filterDate, { sumMap, mrmMap })
   }
 
   private async formatResults(models: Model[]): Promise<Model[]> {
