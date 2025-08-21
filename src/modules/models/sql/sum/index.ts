@@ -1,4 +1,5 @@
-export * from './getModels'
+export { getModels } from './getModels'
+export { getLatestArtefactsForModels } from './getLatestArtefactsForModels'
 export * from './updateModelName'
 export * from './updateModelUpdateDate'
 export * from './updateArtefact'

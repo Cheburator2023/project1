@@ -1,5 +1,53 @@
 # Semantic Versioning Changelog
 
+# [1.30.0](https://git.sfera.inno.local/sumd/mrms-backend/compare/v1.29.1...v1.30.0) (2025-08-21)
+
+
+### Features
+
+* add ModelMergeService for artefacts merging logic ([9f27d65](https://git.sfera.inno.local/sumd/mrms-backend/commit/9f27d656e3d950237e554d332a7c9a4059a6ba36))
+* add service and controller for managing artefact realizations ([ad5bb59](https://git.sfera.inno.local/sumd/mrms-backend/commit/ad5bb59c44e334147af394d647fa219a264cf5a3))
+* implement ModelMergePrefetchService for optimized artefact merging ([cc7d4d6](https://git.sfera.inno.local/sumd/mrms-backend/commit/cc7d4d686e96905a58f6225c78009959065c350b))
+* introduce service for default artefact values on model creation ([bde4312](https://git.sfera.inno.local/sumd/mrms-backend/commit/bde4312989a3e12f5a5677dc391a05143f246c5a))
+
+## [1.29.1](https://git.sfera.inno.local/sumd/mrms-backend/compare/v1.29.0...v1.29.1) (2025-08-12)
+
+
+### Bug Fixes
+
+* удалил кеш ([9229724](https://git.sfera.inno.local/sumd/mrms-backend/commit/92297241a3925cd60cbde9fe9e7d369ebe814499))
+
+# [1.29.0](https://git.sfera.inno.local/sumd/mrms-backend/compare/v1.28.0...v1.29.0) (2025-08-11)
+
+
+### Bug Fixes
+
+* добавил отрицательные значения для delt, исправил логику delt для виджетов модели на мониторинге и кол-во моделей, выведенных из эксп., добавил фильтрацию для метрик на ошибку заведения ([e855de7](https://git.sfera.inno.local/sumd/mrms-backend/commit/e855de73139d7b21475bc64c8ca2430fee7bfe0b))
+* отключил кеш ([90473c2](https://git.sfera.inno.local/sumd/mrms-backend/commit/90473c220038387147bed7eb94e9381bb18698d5))
+* пофиксл баг по виджету динамика моделей с фин статусом ([10abc6e](https://git.sfera.inno.local/sumd/mrms-backend/commit/10abc6ef713aaef8f7509d1b79e4cb54e42a04e2))
+* сделана новая логика фильтрации метрки на ошибку заведения и ожидает удаления ([01cb373](https://git.sfera.inno.local/sumd/mrms-backend/commit/01cb3733ae4963eb2113f62e0ee5e5ce5ac887c8))
+
+
+### Features
+
+* правки по виджету распределение и транзит состояния ([26c239b](https://git.sfera.inno.local/sumd/mrms-backend/commit/26c239bbb07a57829ec5da168e4f0b6e13fa0b8c))
+* приросты в виджете модели с финальным статусом ([e081aec](https://git.sfera.inno.local/sumd/mrms-backend/commit/e081aecbe53a56e36e68dda79e902856b6330212))
+* приросты в виджете модели с финальным статусом ([40a9837](https://git.sfera.inno.local/sumd/mrms-backend/commit/40a983713662d549f0f42a1062c708c6026b8a11))
+
+# [1.28.0](https://git.sfera.inno.local/SUMD/mrms-backend/compare/v1.27.0...v1.28.0) (2025-08-05)
+
+
+### Features
+
+* дашборды и доработка определения статусов ([95062bf](https://git.sfera.inno.local/SUMD/mrms-backend/commit/95062bf8eb31977eec5a3e8a21c44a9eaa6bf0a9))
+
+# [1.27.0](https://git.sfera.inno.local/SUMD/mrms-backend/compare/v1.26.3...v1.27.0) (2025-08-04)
+
+
+### Features
+
+* новая логика прироста + выгрзука ([f9a2388](https://git.sfera.inno.local/SUMD/mrms-backend/commit/f9a2388e7bf5bb06e1ffc2bcc380332da87a5067))
+
 ## [1.26.2](https://git.sfera.inno.local/SUMD/mrms-backend/compare/v1.26.1...v1.26.2) (2025-07-28)
 
 
