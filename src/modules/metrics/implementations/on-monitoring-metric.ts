@@ -32,15 +32,15 @@ export class OnMonitoringMetric extends IndependentMetric<MetricResult> {
   public getFilteredDeltaRowData() {
     const { currentRange, deltaRange } = this.getCorrectDateRangeForDelta(this.startDate, this.endDate);
     
-    // Модели за текущую дату
-    const currentDayModels = this.filterModelsByExactDate(
+    // Модели в текущем диапазоне (от startDate до endDate)
+    const currentRangeModels = this.filterModelsByDateRange(
       this.models,
       currentRange.actualStartDate,
       currentRange.actualEndDate
     );
     
-    // Модели за delta дату
-    const deltaDayModels = this.filterModelsByExactDate(
+    // Модели в delta диапазоне (от startDate до endDate - 7 дней)
+    const deltaRangeModels = this.filterModelsByDateRange(
       this.models,
       deltaRange.actualStartDate,
       deltaRange.actualEndDate
@@ -48,14 +48,14 @@ export class OnMonitoringMetric extends IndependentMetric<MetricResult> {
 
     const result = [];
     
-    // Модели за текущую дату
-    result.push(...currentDayModels.map((model) => ({
+    // Модели в текущем диапазоне
+    result.push(...currentRangeModels.map((model) => ({
       system_model_id: model.system_model_id,
       period: 'current'
     })));
     
-    // Модели за delta дату
-    result.push(...deltaDayModels.map((model) => ({
+    // Модели в delta диапазоне
+    result.push(...deltaRangeModels.map((model) => ({
       system_model_id: model.system_model_id,
       period: 'delta'
     })));
@@ -63,37 +63,43 @@ export class OnMonitoringMetric extends IndependentMetric<MetricResult> {
     return result;
   }
 
+  // Новый метод для расчета delta по временным диапазонам
   private calculateDeltaByExactDates(): number {
     const { currentRange, deltaRange } = this.getCorrectDateRangeForDelta(this.startDate, this.endDate);
     
-    // Модели точно на текущую дату (или endDate)
-    const currentDayModels = this.filterModelsByExactDate(
+    // Модели в текущем диапазоне (от startDate до endDate)
+    const currentRangeModels = this.filterModelsByDateRange(
       this.models,
       currentRange.actualStartDate,
       currentRange.actualEndDate
     );
     
-    // Модели точно на дату-7 дней
-    const deltaDayModels = this.filterModelsByExactDate(
+    // Модели в delta диапазоне (от startDate до endDate - 7 дней)
+    const deltaRangeModels = this.filterModelsByDateRange(
       this.models,
       deltaRange.actualStartDate,
       deltaRange.actualEndDate
     );
 
-    return currentDayModels.length - deltaDayModels.length;
+    return currentRangeModels.length - deltaRangeModels.length;
   }
 
-  // Отдельный метод для фильтрации по точным датам (только для delta)
-  private filterModelsByExactDate(
+  // Отдельный метод для фильтрации по временным диапазонам (для delta)
+  private filterModelsByDateRange(
     models,
-    exactStartDate: Date,
-    exactEndDate: Date
+    startDate: Date,
+    endDate: Date
   ) {
     return models.filter((model) => {
       const modelEpic12 = model.model_epic_12_date ? new Date(model.model_epic_12_date) : null
 
+      /**
+       * Условие: Если "Дата Epic 12" модели входит в выбранный временной срез,
+       * ТО модель попадает в категорию "На мониторинге".
+       * Дата Epic 12 должна попадать в диапазон [startDate, endDate]
+       */
       if (
-        this.isWithinDateRange(modelEpic12, exactStartDate, exactEndDate)
+        this.isWithinDateRange(modelEpic12, startDate, endDate)
       ) {
         return true
       }
@@ -102,13 +108,15 @@ export class OnMonitoringMetric extends IndependentMetric<MetricResult> {
     })
   }
 
+
+
   private filterModels(
     models,
     startDate: string | null,
     endDate: string | null,
     isDeltaCalculation: boolean = false
   ) {
-    const { actualStartDate, actualEndDate } = this.getActualDateRange(startDate, endDate, isDeltaCalculation ? 7 : null)
+    const { actualStartDate, actualEndDate } = this.getActualDateRange(startDate, endDate, null)
 
     return models.filter((model) => {
       const modelEpic12 = model.model_epic_12_date ? new Date(model.model_epic_12_date) : null

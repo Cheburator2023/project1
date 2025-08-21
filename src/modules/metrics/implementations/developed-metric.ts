@@ -34,15 +34,15 @@ export class DevelopedMetric extends IndependentMetric<MetricResult> {
   public getFilteredDeltaRowData() {
     const { currentRange, deltaRange } = this.getCorrectDateRangeForDelta(this.startDate, this.endDate);
     
-    // Модели за текущую дату
-    const currentDayModels = this.filterModelsByExactDate(
+    // Модели в текущем диапазоне (от startDate до endDate)
+    const currentRangeModels = this.filterModelsByDateRange(
       this.models,
       currentRange.actualStartDate,
       currentRange.actualEndDate
     );
     
-    // Модели за delta дату
-    const deltaDayModels = this.filterModelsByExactDate(
+    // Модели в delta диапазоне (от startDate до endDate - 7 дней)
+    const deltaRangeModels = this.filterModelsByDateRange(
       this.models,
       deltaRange.actualStartDate,
       deltaRange.actualEndDate
@@ -50,15 +50,15 @@ export class DevelopedMetric extends IndependentMetric<MetricResult> {
 
     const result = [];
     
-    // Модели за текущую дату
-    result.push(...currentDayModels.map((model) => ({
+    // Модели в текущем диапазоне
+    result.push(...currentRangeModels.map((model) => ({
       system_model_id: model.system_model_id,
       ds_stream: model.ds_stream,
       period: 'current'
     })));
     
-    // Модели за delta дату
-    result.push(...deltaDayModels.map((model) => ({
+    // Модели в delta диапазоне
+    result.push(...deltaRangeModels.map((model) => ({
       system_model_id: model.system_model_id,
       ds_stream: model.ds_stream,
       period: 'delta'
@@ -67,32 +67,32 @@ export class DevelopedMetric extends IndependentMetric<MetricResult> {
     return result;
   }
 
-  // Новый метод для расчета delta по точным датам
+  // Новый метод для расчета delta по временным диапазонам
   private calculateDeltaByExactDates(): number {
     const { currentRange, deltaRange } = this.getCorrectDateRangeForDelta(this.startDate, this.endDate);
     
-    // Модели точно на текущую дату (или endDate)
-    const currentDayModels = this.filterModelsByExactDate(
+    // Модели в текущем диапазоне (от startDate до endDate)
+    const currentRangeModels = this.filterModelsByDateRange(
       this.models,
       currentRange.actualStartDate,
       currentRange.actualEndDate
     );
     
-    // Модели точно на дату-7 дней
-    const deltaDayModels = this.filterModelsByExactDate(
+    // Модели в delta диапазоне (от startDate до endDate - 7 дней)
+    const deltaRangeModels = this.filterModelsByDateRange(
       this.models,
       deltaRange.actualStartDate,
       deltaRange.actualEndDate
     );
 
-    return currentDayModels.length - deltaDayModels.length;
+    return currentRangeModels.length - deltaRangeModels.length;
   }
 
-  // Отдельный метод для фильтрации по точным датам (только для delta)
-  private filterModelsByExactDate(
+  // Отдельный метод для фильтрации по временным диапазонам (для delta)
+  private filterModelsByDateRange(
     models,
-    exactStartDate: Date,
-    exactEndDate: Date
+    startDate: Date,
+    endDate: Date
   ) {
     return models.filter((model) => {
       const releaseDate = model.date_of_introduction_into_operation ? new Date(model.date_of_introduction_into_operation) : null
@@ -102,10 +102,11 @@ export class DevelopedMetric extends IndependentMetric<MetricResult> {
       /**
        * 1. Условие: модель с завершенной стадией разработки,
        *    НО при этом еще НЕ внедренная.
+       *    Дата окончания разработки должна попадать в диапазон [startDate, endDate]
        */
       if (
-        this.isOutsideDateRange(releaseDate, exactStartDate, exactEndDate) &&
-        this.isWithinDateRange(developingEndDate, exactStartDate, exactEndDate)
+        this.isOutsideDateRange(releaseDate, startDate, endDate) &&
+        this.isWithinDateRange(developingEndDate, startDate, endDate)
       ) {
         return true
       }
@@ -113,11 +114,12 @@ export class DevelopedMetric extends IndependentMetric<MetricResult> {
       /**
        * 2. Условие: модель с завершенной стадией пилота (05A),
        *    НО при этом НЕ завершена стадия разработки (04) И НЕ внедрена.
+       *    Дата завершения пилота должна попадать в диапазон [startDate, endDate]
        */
       if (
-        this.isOutsideDateRange(releaseDate, exactStartDate, exactEndDate) &&
-        this.isOutsideDateRange(developingEndDate, exactStartDate, exactEndDate) &&
-        this.isWithinDateRange(pilotEndDate, exactStartDate, exactEndDate)
+        this.isOutsideDateRange(releaseDate, startDate, endDate) &&
+        this.isOutsideDateRange(developingEndDate, startDate, endDate) &&
+        this.isWithinDateRange(pilotEndDate, startDate, endDate)
       ) {
         return true
       }
@@ -126,13 +128,15 @@ export class DevelopedMetric extends IndependentMetric<MetricResult> {
     })
   }
 
+
+
   private filterModels(
     models,
     startDate: string | null,
     endDate: string | null,
     isDeltaCalculation: boolean = false
   ) {
-    const { actualStartDate, actualEndDate } = this.getActualDateRange(startDate, endDate, isDeltaCalculation ? 7 : null)
+    const { actualStartDate, actualEndDate } = this.getActualDateRange(startDate, endDate, null)
 
     return models.filter((model) => {
       const releaseDate = model.date_of_introduction_into_operation ? new Date(model.date_of_introduction_into_operation) : null
