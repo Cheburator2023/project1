@@ -1,5 +1,15 @@
 # Semantic Versioning Changelog
 
+# [1.30.0](https://git.sfera.inno.local/sumd/mrms-backend/compare/v1.29.1...v1.30.0) (2025-08-21)
+
+
+### Features
+
+* add ModelMergeService for artefacts merging logic ([9f27d65](https://git.sfera.inno.local/sumd/mrms-backend/commit/9f27d656e3d950237e554d332a7c9a4059a6ba36))
+* add service and controller for managing artefact realizations ([ad5bb59](https://git.sfera.inno.local/sumd/mrms-backend/commit/ad5bb59c44e334147af394d647fa219a264cf5a3))
+* implement ModelMergePrefetchService for optimized artefact merging ([cc7d4d6](https://git.sfera.inno.local/sumd/mrms-backend/commit/cc7d4d686e96905a58f6225c78009959065c350b))
+* introduce service for default artefact values on model creation ([bde4312](https://git.sfera.inno.local/sumd/mrms-backend/commit/bde4312989a3e12f5a5677dc391a05143f246c5a))
+
 ## [1.29.1](https://git.sfera.inno.local/sumd/mrms-backend/compare/v1.29.0...v1.29.1) (2025-08-12)
 
 
