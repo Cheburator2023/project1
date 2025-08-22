@@ -1,34 +1,89 @@
-import { Injectable } from '@nestjs/common'
+import { Injectable, Logger } from '@nestjs/common'
 import { MrmDatabaseService } from 'src/system/mrm-database/database.service'
 
 @Injectable()
 export class ArtefactRealizationsService {
+  private readonly logger = new Logger(ArtefactRealizationsService.name)
+
   constructor(private readonly db: MrmDatabaseService) {}
 
-  async getByKey({ model_id, artefact_id, as_of }: { model_id: string; artefact_id: string; as_of?: string }) {
-    // For active records, we don't need as_of parameter - we always return current active records
-    const rows = await this.db.query(
-      `
-      SELECT r.model_id,
-             r.artefact_id::varchar,
-             r.artefact_value_id::varchar,
-             r.artefact_string_value,
-             r.artefact_original_value,
-             r.artefact_custom_type,
-             r.creator,
-             to_char(r.effective_from, 'YYYY-MM-DD"T"HH24:MI:SS"Z"') as effective_from,
-             to_char(r.effective_to, 'YYYY-MM-DD"T"HH24:MI:SS"Z"') as effective_to,
-             (r.effective_to = to_timestamp('9999-12-31 23:59:59','YYYY-MM-DD HH24:MI:SS')) as is_active
-      FROM artefact_realizations_new r
-      WHERE r.model_id = :model_id
-        AND r.artefact_id = :artefact_id::numeric
-        AND r.effective_to = to_timestamp('9999-12-31 23:59:59','YYYY-MM-DD HH24:MI:SS')
-      ORDER BY r.effective_from DESC, r.artefact_value_id DESC
-      LIMIT 1
-      `,
-      { model_id, artefact_id }
-    )
-    return rows[0] || null
+  async getByKey({ 
+    model_id, 
+    artefact_id, 
+    as_of, 
+    include_history = false 
+  }: { 
+    model_id: string; 
+    artefact_id: string; 
+    as_of?: string;
+    include_history?: boolean;
+  }) {
+    try {
+      if (include_history) {
+        // Return all historical records when include_history=true
+        const rows = await this.db.query(
+          `
+          SELECT r.model_id,
+                 r.artefact_id::varchar,
+                 r.artefact_value_id::varchar,
+                 r.artefact_string_value,
+                 r.artefact_original_value,
+                 r.artefact_custom_type,
+                 r.creator,
+                 to_char(r.effective_from, 'YYYY-MM-DD"T"HH24:MI:SS"Z"') as effective_from,
+                 to_char(r.effective_to, 'YYYY-MM-DD"T"HH24:MI:SS"Z"') as effective_to,
+                 (r.effective_to = to_timestamp('9999-12-31 23:59:59','YYYY-MM-DD HH24:MI:SS')) as is_active
+          FROM artefact_realizations_new r
+          WHERE r.model_id = :model_id
+            AND r.artefact_id = :artefact_id::numeric
+          ORDER BY r.effective_from DESC, r.artefact_value_id DESC
+          `,
+          { model_id, artefact_id }
+        )
+        
+        // Always return an object with history array, even if empty
+        return {
+          history: rows || []
+        }
+      } else {
+        // Default behavior - return only the active record (backward compatibility)
+        const rows = await this.db.query(
+          `
+          SELECT r.model_id,
+                 r.artefact_id::varchar,
+                 r.artefact_value_id::varchar,
+                 r.artefact_string_value,
+                 r.artefact_original_value,
+                 r.artefact_custom_type,
+                 r.creator,
+                 to_char(r.effective_from, 'YYYY-MM-DD"T"HH24:MI:SS"Z"') as effective_from,
+                 to_char(r.effective_to, 'YYYY-MM-DD"T"HH24:MI:SS"Z"') as effective_to,
+                 (r.effective_to = to_timestamp('9999-12-31 23:59:59','YYYY-MM-DD HH24:MI:SS')) as is_active
+          FROM artefact_realizations_new r
+          WHERE r.model_id = :model_id
+            AND r.artefact_id = :artefact_id::numeric
+            AND r.effective_to = to_timestamp('9999-12-31 23:59:59','YYYY-MM-DD HH24:MI:SS')
+          ORDER BY r.effective_from DESC, r.artefact_value_id DESC
+          LIMIT 1
+          `,
+          { model_id, artefact_id }
+        )
+        
+        return rows?.[0] || null
+      }
+    } catch (error) {
+      this.logger.error(`Error in getByKey for model_id: ${model_id}, artefact_id: ${artefact_id}`, error)
+      
+      // For history requests, return empty history array instead of throwing
+      if (include_history) {
+        return {
+          history: []
+        }
+      }
+      
+      // For default requests, re-throw the error
+      throw error
+    }
   }
 
   async query({
