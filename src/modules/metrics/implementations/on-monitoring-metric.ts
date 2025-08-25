@@ -51,13 +51,15 @@ export class OnMonitoringMetric extends IndependentMetric<MetricResult> {
     // Модели в текущем диапазоне
     result.push(...currentRangeModels.map((model) => ({
       system_model_id: model.system_model_id,
-      period: 'current'
+      period: 'current',
+      model_epic_12_date: model.model_epic_12_date
     })));
     
     // Модели в delta диапазоне
     result.push(...deltaRangeModels.map((model) => ({
       system_model_id: model.system_model_id,
-      period: 'delta'
+      period: 'past',
+      model_epic_12_date: model.model_epic_12_date
     })));
 
     return result;

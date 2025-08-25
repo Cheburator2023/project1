@@ -120,7 +120,8 @@ export class ImplementedMetric extends IndependentMetric<MetricResult> {
       system_model_id: model.system_model_id,
       status: model.business_status,
       stage: model.model_status,
-      period: 'delta'
+      period: 'past',
+      date_of_introduction_into_operation: model.date_of_introduction_into_operation
     })));
 
     return result;

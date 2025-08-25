@@ -61,7 +61,11 @@ export class MrmMetric extends IndependentMetric<MetricResult> {
     result.push(...deltaRangeModels.map((model) => ({
       system_model_id: model.system_model_id,
       ds_stream: model.ds_stream,
-      period: 'delta'
+      period: 'past',
+      date_of_introduction_into_operation: model.date_of_introduction_into_operation,
+      developing_end_date: model.developing_end_date,
+      data_completion_of_stage_05a: model.data_completion_of_stage_05a,
+      create_date: model.create_date
     })));
 
     return result;

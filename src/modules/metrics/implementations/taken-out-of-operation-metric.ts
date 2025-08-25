@@ -51,13 +51,15 @@ export class TakenOutOfOperationMetric extends IndependentMetric<MetricResult> {
     // Модели в текущем диапазоне
     result.push(...currentRangeModels.map((model) => ({
       system_model_id: model.system_model_id,
-      period: 'current'
+      period: 'current',
+      rs_model_decommiss_date: model.rs_model_decommiss_date
     })));
     
     // Модели в delta диапазоне
     result.push(...deltaRangeModels.map((model) => ({
       system_model_id: model.system_model_id,
-      period: 'delta'
+      period: 'past',
+      rs_model_decommiss_date: model.rs_model_decommiss_date
     })));
 
     return result;
