@@ -21,7 +21,8 @@ export const MERGE_STRATEGIES = {
  * This is specific to the models module and how it merges artefact data
  */
 export const TIMESTAMP_PRIORITY_ARTEFACTS = [
-  'rfd'  // RFD artefact uses timestamp priority
+  'rfd',
+  'developing_model_reason', 
 ] as const;
 
 /**
