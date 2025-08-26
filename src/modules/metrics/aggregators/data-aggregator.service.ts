@@ -1,25 +1,25 @@
 import { Injectable } from '@nestjs/common'
-import * as NodeCache from 'node-cache'
 import { ModelsService } from 'src/modules/models/models.service'
-import { Model, Task } from 'src/modules/tasks/interfaces'
+import { Model as AppModel } from 'src/modules/models/interfaces'
+import { Task } from 'src/modules/tasks/interfaces'
 import { UsersTasksService } from 'src/modules/tasks/services/users-tasks.service'
+import { MODEL_STATUS } from 'src/system/common/constants'
 
 @Injectable()
 export class DataAggregator {
-  private readonly cache: NodeCache
-
   constructor(
     private readonly modelsService: ModelsService,
     private readonly usersTasksService: UsersTasksService
-  ) {
-    this.cache = new NodeCache({ stdTTL: 300 }) // Кэш на 5 минут
-  }
+  ) {}
 
-  async aggregateData(streams: string[], mode): Promise<any> {
-    const models = await this.getCachedModels(mode)
-    const tasks = await this.getCachedTasks(models)
+  async aggregateData(streams: string[]): Promise<any> {
+    const models = await this.getModels()
 
-    const filteredModels = this.filterByStreams(models, streams, 'ds_stream')
+    const modelsWithoutInvalidStatuses = this.filterModelsForMetrics(models)
+
+    const tasks = await this.getTasks(modelsWithoutInvalidStatuses)
+
+    const filteredModels = this.filterByStreams(modelsWithoutInvalidStatuses, streams, 'ds_stream')
     const filteredTasks = this.filterByStreamsTasks(tasks, streams, 'ds_stream')
 
     return {
@@ -28,26 +28,12 @@ export class DataAggregator {
     }
   }
 
-  private async getCachedModels(mode): Promise<any[]> {
-    const cacheKey = `models_${mode}`
-    const cachedModels = this.cache.get<Model[]>(cacheKey)
-
-    if (cachedModels) return cachedModels
-
-    const models = await this.modelsService.getModels({ mode })
-    this.cache.set(cacheKey, models)
-    return models
+  private async getModels(): Promise<AppModel[]> {
+    return await this.modelsService.getModels({ ignoreModeFilter: true })
   }
 
-  private async getCachedTasks(models: Model[]): Promise<Task[]> {
-    const cacheKey = 'tasks'
-    const cachedTasks = this.cache.get<Task[]>(cacheKey)
-
-    if (cachedTasks) return cachedTasks
-
-    const tasks = await this.usersTasksService.getUsersActiveTasks(models);
-    this.cache.set(cacheKey, tasks)
-    return tasks
+  private async getTasks(models: any[]): Promise<Task[]> {
+    return await this.usersTasksService.getUsersActiveTasks(models);
   }
 
   private filterByStreams<T extends Record<string, any>>(
@@ -55,6 +41,10 @@ export class DataAggregator {
     values: string[],
     key: keyof T
   ): T[] {
+    // Добавляем проверку на undefined
+    if (!values || values.length === 0) {
+      return items; // Возвращаем все элементы, если фильтр не задан
+    }
 
     return items.filter((item) => values.includes(item[key]))
   }
@@ -64,10 +54,22 @@ export class DataAggregator {
     values: string[],
     key: keyof T
   ): T[] {
+    // Добавляем проверку на undefined
+    if (!values || values.length === 0) {
+      return items; // Возвращаем все элементы, если фильтр не задан
+    }
+    
     return items.filter((item) => {
       const streams = item[key]?.split(',').map((stream) => stream.trim());
       return streams?.some((stream) => values.includes(stream));
     });
+  }
+
+  private filterModelsForMetrics(models: AppModel[]): AppModel[] {
+    return models.filter((model) => 
+      model.business_status !== MODEL_STATUS.CREATION_ERROR &&
+      model.business_status !== MODEL_STATUS.PENDING_DELETE
+    )
   }
 }
 

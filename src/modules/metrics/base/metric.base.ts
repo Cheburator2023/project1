@@ -80,6 +80,82 @@ export abstract class MetricBase<T extends BaseMetricResult> implements IMetric<
   }
 
   /**
+   * Method to get correct date ranges for delta calculation according to requirements:
+   * - Without time slice: [models with date from start of time to today] - [models with date from start of time to (today - 7 days)]
+   * - With time slice: [models with date from startDate to endDate] - [models with date from startDate to (endDate - 7 days)]
+   *
+   * @param {string | null} startDate - The start date of the time slice.
+   * @param {string | null} endDate - The end date of the time slice.
+   * @returns {{ currentRange: { actualStartDate: Date, actualEndDate: Date }, deltaRange: { actualStartDate: Date, actualEndDate: Date } }}
+   */
+  protected getCorrectDateRangeForDelta(
+    startDate: string | null,
+    endDate: string | null
+  ): {
+    currentRange: { actualStartDate: Date, actualEndDate: Date },
+    deltaRange: { actualStartDate: Date, actualEndDate: Date }
+  } {
+    if (endDate) {
+      // With time slice: 
+      // Текущий диапазон: от startDate до endDate
+      // Delta диапазон: от startDate до (endDate - 7 дней)
+      const startDateForRange = startDate ? new Date(startDate) : new Date(1970, 0, 1);
+      const endDateForRange = new Date(endDate);
+      const deltaEndDate = new Date(endDate);
+      deltaEndDate.setDate(deltaEndDate.getDate() - 7);
+
+      // Устанавливаем время для полного дня
+      const startOfDay = new Date(startDateForRange);
+      startOfDay.setHours(0, 0, 0, 0);
+      
+      const endOfDay = new Date(endDateForRange);
+      endOfDay.setHours(23, 59, 59, 999);
+      
+      const deltaEndOfDay = new Date(deltaEndDate);
+      deltaEndOfDay.setHours(23, 59, 59, 999);
+
+      return {
+        currentRange: {
+          actualStartDate: startOfDay,      // startDate 00:00:00
+          actualEndDate: endOfDay           // endDate 23:59:59
+        },
+        deltaRange: {
+          actualStartDate: startOfDay,      // startDate 00:00:00
+          actualEndDate: deltaEndOfDay      // (endDate - 7 дней) 23:59:59
+        }
+      };
+    } else {
+      // Without time slice: 
+      // Текущий диапазон: от начала времён до сегодня
+      // Delta диапазон: от начала времён до (сегодня - 7 дней)
+      const now = new Date();
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const sevenDaysAgo = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 7);
+
+      // Устанавливаем время для полного дня
+      const startOfTime = new Date(1970, 0, 1);
+      startOfTime.setHours(0, 0, 0, 0);
+      
+      const endOfToday = new Date(today);
+      endOfToday.setHours(23, 59, 59, 999);
+      
+      const endOfSevenDaysAgo = new Date(sevenDaysAgo);
+      endOfSevenDaysAgo.setHours(23, 59, 59, 999);
+
+      return {
+        currentRange: {
+          actualStartDate: startOfTime,        // 01.01.1970 00:00:00
+          actualEndDate: endOfToday            // Сегодня 23:59:59
+        },
+        deltaRange: {
+          actualStartDate: startOfTime,        // 01.01.1970 00:00:00
+          actualEndDate: endOfSevenDaysAgo     // (Сегодня - 7 дней) 23:59:59
+        }
+      };
+    }
+  }
+
+  /**
    * Checks if a given date is within the specified date range.
    *
    * @param {Date | null} date - The date to check.
