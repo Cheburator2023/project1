@@ -24,7 +24,7 @@ export class FinalStatusMetric<T extends MetricResult>
     const count = this.filteredModels.length;
     const delta =
       this.deltaFilteredModels.filter((model) => model.period === 'current').length -
-      this.deltaFilteredModels.filter((model) => model.period === 'delta').length;
+      this.deltaFilteredModels.filter((model) => model.period === 'past').length;
 
     return {
       count,
@@ -71,31 +71,52 @@ export class FinalStatusMetric<T extends MetricResult>
         // Если у модели по новой логике в истории изменения статуса содержится одно из значений:
         // 'Внедрена вне ПИМ', 'Разработана, не внедрена', 'Внедрена в ПИМ',
         // и дата изменения effective_from попадает во временной срез
-        if (isDeltaCalculation && model.status_history) {
-          // выбираем только финальные статусы и сортируем от самого раннего к самому позднему
+        // При этом, если у модели есть только одна запись в истории статусов, и статус = "Архив", то расчёт производим по старой логике (по артефактам)
+        if (
+          isDeltaCalculation &&
+          model.status_history &&
+          !(
+            model.status_history.length === 1 &&
+            model.status_history[0].status_name === 'Архив'
+          )
+        ) {
+          // выбираем только финальные статусы и сортируем от самого позднему к самому раннему
           const finalStatuses = model.status_history
             .filter((historyItem) => {
               return [
                 'Внедрена вне ПИМ',
                 'Разработана, не внедрена',
                 'Внедрена в ПИМ',
-                'Архив',
               ].includes(historyItem.status_name);
             })
             .sort(
               (a, b) =>
-                new Date(a.effective_from).getTime() -
-                new Date(b.effective_from).getTime(),
+                new Date(b.effective_from).getTime() -
+                new Date(a.effective_from).getTime(),
             );
-          if (finalStatuses.length) {
-            // берём только самый ранний финальный статус
-            const firstFinalStatus = finalStatuses[0];
-            const effectiveFrom = new Date(firstFinalStatus.effective_from);
+
+          // Аналогично - сатус "Архив" для моделей, которые сразу переходят в него, минуя другие финальные статусы
+          const archiveStatuses = model.status_history
+            .filter((historyItem) => {
+              return 'Архив' === historyItem.status_name;
+            })
+            .sort(
+              (a, b) =>
+                new Date(b.effective_from).getTime() -
+                new Date(a.effective_from).getTime(),
+            );
+
+          if (finalStatuses.length || archiveStatuses.lenght) {
+            // берём только самый последний финальный статус
+            const lastFinalStatus = finalStatuses.length
+              ? finalStatuses[0]
+              : archiveStatuses[0];
+            const effectiveFrom = new Date(lastFinalStatus.effective_from);
 
             if (
               this.isWithinDateRange(
                 effectiveFrom,
-                currentRange.actualStartDate,
+                actualStartDate,
                 currentRange.actualEndDate,
               )
             ) {
@@ -104,17 +125,19 @@ export class FinalStatusMetric<T extends MetricResult>
                 historyStatusDate: effectiveFrom,
                 period: 'current',
               });
-            } else if (
+            }
+
+            if (
               this.isWithinDateRange(
                 effectiveFrom,
-                deltaRange.actualStartDate,
+                actualStartDate,
                 deltaRange.actualEndDate,
               )
             ) {
               this.deltaFilteredModels.push({
                 ...model,
                 historyStatusDate: effectiveFrom,
-                period: 'delta',
+                period: 'past',
               });
             }
             return returnDate ? { model, date: effectiveFrom } : model;
@@ -154,10 +177,10 @@ export class FinalStatusMetric<T extends MetricResult>
           this.isWithinDateRange(date, actualStartDate, actualEndDate),
         );
         const relevantCurrentDate = modelDates.find((date) =>
-          this.isWithinDateRange(date, currentRange.actualStartDate, currentRange.actualEndDate),
+          this.isWithinDateRange(date, actualStartDate, currentRange.actualEndDate),
         );
         const relevantDeltaDate = modelDates.find((date) =>
-          this.isWithinDateRange(date, deltaRange.actualStartDate, deltaRange.actualEndDate),
+          this.isWithinDateRange(date, actualStartDate, deltaRange.actualEndDate),
         );
 
         /**
@@ -169,8 +192,9 @@ export class FinalStatusMetric<T extends MetricResult>
         if (isDeltaCalculation && hasFinalStatus) {
           if (relevantCurrentDate) {
             this.deltaFilteredModels.push({ ...model, relevantDate: relevantCurrentDate, period: 'current' });
-          } else if (relevantDeltaDate) {
-            this.deltaFilteredModels.push({ ...model, relevantDate: relevantDeltaDate, period: 'delta' });
+          }
+          if (relevantDeltaDate) {
+            this.deltaFilteredModels.push({ ...model, relevantDate: relevantDeltaDate, period: 'past' });
           }
         }
 
