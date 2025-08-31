@@ -37,14 +37,16 @@ export class ReportService {
     startDate: string | null,
     endDate: string | null,
     streams: string[],
-    dataType?: string,
+    useDatamart: boolean,
+    dataType?: string
   ): Promise<Buffer> {
     const rawData = await this.metricsAggregator.getRawData(
       metric,
       startDate,
       endDate,
       streams,
-      dataType,
+      useDatamart,
+      dataType
     );
 
     // Для delta данных пустой результат - это нормально

@@ -14,9 +14,10 @@ export class MetricsAggregator {
   async getMetrics(
     startDate: string | null,
     endDate: string | null,
-    streams: string[]
+    streams: string[],
+    useDatamart: boolean
   ): Promise<Record<MetricsEnum, any>> {
-    const data = await this.dataAggregator.aggregateData(streams);
+    const data = await this.dataAggregator.aggregateData(streams, useDatamart);
 
     const results: Record<string, any> = {}
 
@@ -39,9 +40,10 @@ export class MetricsAggregator {
     startDate: string | null,
     endDate: string | null,
     streams: string[],
+    useDatamart: boolean,
     dataType?: string
   ): Promise<{ system_model_id: string }[]> {
-    const data = await this.dataAggregator.aggregateData(streams);
+    const data = await this.dataAggregator.aggregateData(streams, useDatamart);
   
     const results: Record<string, any> = {};
   

@@ -23,6 +23,8 @@ import { ArtefactService } from 'src/modules/artefacts/artefact.services';
 import { User } from 'src/decorators';
 import { MetricsAggregator } from 'src/modules/metrics/aggregators';
 import { ReportService } from 'src/modules/report/report.service';
+import { BiDatamartService } from 'src/modules/bi-datamart/bi-datamart.service';
+import { TasksDatamartService } from 'src/modules/bi-datamart/tasks-datamart.service';
 import {
   ModelsDto,
   ModelWithRelationsDto,
@@ -44,6 +46,8 @@ export class ApiController {
     private readonly metricsAggregator: MetricsAggregator,
     private readonly reportService: ReportService,
     private readonly artefactService: ArtefactService,
+    private readonly biDatamartService: BiDatamartService,
+    private readonly tasksDatamartService: TasksDatamartService,
   ) {}
 
   @Get('/model/relations/')
@@ -208,16 +212,22 @@ export class ApiController {
   @Get('/metrics/')
   async getMetrics(@Query() query: MetricsDto, @Res() response) {
     try {
-      const { startDate, endDate, stream } = query;
+      const { startDate, endDate, stream, useDatamart } = query;
       const result = await this.metricsAggregator.getMetrics(
         startDate,
         endDate,
         stream,
+        useDatamart || false, 
       );
 
-      return response.status(HttpStatus.OK).json(result);
+      return response.status(HttpStatus.OK).json({
+        ...result,
+        source: useDatamart ? 'datamart' : 'live',
+        message: useDatamart 
+          ? 'Метрики получены из BI витрин' 
+          : 'Метрики получены из живых данных (без витрин)'
+      });
     } catch (error) {
-      console.error('Error in getMetrics:', error);
       return response.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
         message: 'Internal server error',
         error: error.message
@@ -227,7 +237,7 @@ export class ApiController {
 
   @Get('/metrics/export')
   async exportMetricsToExcel(@Query() query: MetricsDto, @Res() res: Response) {
-    const { metric, startDate, endDate, stream, dataType } = query;
+    const { metric, startDate, endDate, stream, dataType, useDatamart } = query;
 
     if (!metric) {
       return res.status(HttpStatus.BAD_REQUEST).json({
@@ -241,10 +251,13 @@ export class ApiController {
         startDate || null,
         endDate || null,
         stream || [],
+        useDatamart || false,
         dataType || 'current',
       );
 
-      res.setHeader('Content-Disposition', `attachment; filename=${metric}.xlsx`);
+      const filename = useDatamart ? `${metric}_datamart.xlsx` : `${metric}_live.xlsx`;
+      
+      res.setHeader('Content-Disposition', `attachment; filename=${filename}`);
       res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
       return res.send(excelBuffer);
     } catch (error) {
@@ -277,5 +290,27 @@ export class ApiController {
       'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
     );
     res.send(response);
+  }
+
+  // === BI Datamart API ===
+
+  @Post('bi-datamart/sync/models')
+  async syncModelsDatamart() {
+    const result = await this.biDatamartService.syncAllModelsToDatamart()
+    return {
+      success: result.success,
+      data: result,
+      message: 'Синхронизация витрины моделей завершена'
+    }
+  }
+
+  @Post('bi-datamart/sync/tasks')
+  async syncTasksDatamart() {
+    const result = await this.tasksDatamartService.syncAllTasksToDatamart()
+    return {
+      success: result.success,
+      data: result,
+      message: 'Синхронизация витрины задач завершена'
+    }
   }
 }
