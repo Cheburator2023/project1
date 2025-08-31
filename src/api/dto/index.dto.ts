@@ -319,6 +319,15 @@ export class MetricsDto {
   @IsEnum(MetricsEnum)
   metric: MetricsEnum;
 
+  @ApiModelPropertyOptional({ 
+    example: true,
+    description: 'Использовать BI витрину вместо обычного источника данных'
+  })
+  @IsOptional()
+  @IsBoolean()
+  @Transform(({ value }) => value === 'true' || value === true)
+  useDatamart: boolean = true;
+  
   @ApiModelPropertyOptional({
     example: 'current',
     description: 'Тип данных для экспорта: current или delta',

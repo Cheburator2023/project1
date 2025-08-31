@@ -2,6 +2,8 @@ import { Module } from '@nestjs/common'
 import { ModelsModule } from 'src/modules/models/models.module'
 import { TasksModule } from 'src/modules/tasks/tasks.module'
 import { ArtefactModule } from 'src/modules/artefacts/artefact.module'
+import { BiDatamartModule } from 'src/modules/bi-datamart/bi-datamart.module'
+import { MrmDatabaseModule } from 'src/system/mrm-database/database.module'
 import { DataAggregator, MetricsAggregator } from './aggregators'
 import {
   DevelopedMetric,
@@ -53,7 +55,9 @@ import { MetricsEnum } from './enums'
   imports: [
     ModelsModule,
     ArtefactModule,
-    TasksModule
+    TasksModule,
+    BiDatamartModule,
+    MrmDatabaseModule
   ],
   exports: [MetricsAggregator]
 })
