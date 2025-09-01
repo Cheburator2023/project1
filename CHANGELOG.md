@@ -1,5 +1,20 @@
 # Semantic Versioning Changelog
 
+# [1.31.0](https://git.sfera.inno.local/sumd/mrms-backend/compare/v1.30.0...v1.31.0) (2025-09-01)
+
+
+### Bug Fixes
+
+* исправил добавленные даты в выгрузку delt ([a14a4e4](https://git.sfera.inno.local/sumd/mrms-backend/commit/a14a4e4e3bbe7a4ce26b0ed15e8f401e169a5ddf))
+
+
+### Features
+
+* добавлены атрибты в выгрузку delt и переименование на past ([9d61134](https://git.sfera.inno.local/sumd/mrms-backend/commit/9d611348fa57de59fe210e730fb1b9c2a3291125))
+* исправлена логика расчета delt-ы ([6f8ba90](https://git.sfera.inno.local/sumd/mrms-backend/commit/6f8ba902ded4277a6e3a61d3c92ddf524c9470b3))
+* исправление выгрузки метрики моделей с финальным статусом ([2e079f2](https://git.sfera.inno.local/sumd/mrms-backend/commit/2e079f2a13c426124746791c10981eeed6b88c83))
+* логика прироста для моделей с финальным статусом ([e70fa5e](https://git.sfera.inno.local/sumd/mrms-backend/commit/e70fa5e71c068123f6f0517a13722dc3e5a36425))
+
 # [1.30.0](https://git.sfera.inno.local/sumd/mrms-backend/compare/v1.29.1...v1.30.0) (2025-08-21)
 
 
