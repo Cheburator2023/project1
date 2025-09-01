@@ -28,38 +28,46 @@ export class ImplementedMetric extends IndependentMetric<MetricResult> {
     }
   }
 
-  // Новый метод для расчета delta по точным датам
+  // Новый метод для расчета delta по временным диапазонам
   private calculateDeltaByExactDates(): number {
     const { currentRange, deltaRange } = this.getCorrectDateRangeForDelta(this.startDate, this.endDate);
     
-    // Модели точно на текущую дату (или endDate)
-    const currentDayModels = this.filterModelsByExactDate(
+    // Модели в текущем диапазоне (от startDate до endDate)
+    const currentRangeModels = this.filterModelsByDateRange(
       this.models,
       currentRange.actualStartDate,
       currentRange.actualEndDate
     );
     
-    // Модели точно на дату-7 дней
-    const deltaDayModels = this.filterModelsByExactDate(
+    // Модели в delta диапазоне (от startDate до endDate - 7 дней)
+    const deltaRangeModels = this.filterModelsByDateRange(
       this.models,
       deltaRange.actualStartDate,
       deltaRange.actualEndDate
     );
 
-    return currentDayModels.length - deltaDayModels.length;
+    const result = currentRangeModels.length - deltaRangeModels.length;
+
+    return result;
   }
 
-  // Отдельный метод для фильтрации по точным датам (только для delta)
-  private filterModelsByExactDate(
+  // Отдельный метод для фильтрации по временным диапазонам (для delta)
+  private filterModelsByDateRange(
     models,
-    exactStartDate: Date,
-    exactEndDate: Date
+    startDate: Date,
+    endDate: Date
   ) {
     return models.filter((model) => {
       const releaseDate = model.date_of_introduction_into_operation ? new Date(model.date_of_introduction_into_operation) : null
 
+      /**
+       * Условие: Если "Дата релиза" модели входит в выбранный временной срез,
+       * И модель соответствует критериям внедрения,
+       * ТО модель попадает в категорию "Внедренные модели".
+       * Дата релиза должна попадать в диапазон [startDate, endDate]
+       */
       if (
-        this.isWithinDateRange(releaseDate, exactStartDate, exactEndDate) &&
+        this.isWithinDateRange(releaseDate, startDate, endDate) &&
         this.checkNotOutsidePim(model) &&
         (this.checkImplementedStatuses(model) ||
           this.checkRemovedStatuses(model))
@@ -83,15 +91,15 @@ export class ImplementedMetric extends IndependentMetric<MetricResult> {
   public getFilteredDeltaRowData() {
     const { currentRange, deltaRange } = this.getCorrectDateRangeForDelta(this.startDate, this.endDate);
     
-    // Модели за текущую дату
-    const currentDayModels = this.filterModelsByExactDate(
+    // Модели в текущем диапазоне (от startDate до endDate)
+    const currentRangeModels = this.filterModelsByDateRange(
       this.models,
       currentRange.actualStartDate,
       currentRange.actualEndDate
     );
     
-    // Модели за delta дату
-    const deltaDayModels = this.filterModelsByExactDate(
+    // Модели в delta диапазоне (от startDate до endDate - 7 дней)
+    const deltaRangeModels = this.filterModelsByDateRange(
       this.models,
       deltaRange.actualStartDate,
       deltaRange.actualEndDate
@@ -99,20 +107,22 @@ export class ImplementedMetric extends IndependentMetric<MetricResult> {
 
     const result = [];
     
-    // Модели за текущую дату
-    result.push(...currentDayModels.map((model) => ({
+    // Модели в текущем диапазоне
+    result.push(...currentRangeModels.map((model) => ({
       system_model_id: model.system_model_id,
       status: model.business_status,
       stage: model.model_status,
+      date_of_introduction_into_operation: model.date_of_introduction_into_operation,
       period: 'current'
     })));
     
-    // Модели за delta дату
-    result.push(...deltaDayModels.map((model) => ({
+    // Модели в delta диапазоне
+    result.push(...deltaRangeModels.map((model) => ({
       system_model_id: model.system_model_id,
       status: model.business_status,
       stage: model.model_status,
-      period: 'delta'
+      date_of_introduction_into_operation: model.date_of_introduction_into_operation,
+      period: 'past',
     })));
 
     return result;
@@ -124,7 +134,7 @@ export class ImplementedMetric extends IndependentMetric<MetricResult> {
     endDate: string | null,
     isDeltaCalculation: boolean = false
   ) {
-    const { actualStartDate, actualEndDate } = this.getActualDateRange(startDate, endDate, isDeltaCalculation ? 7 : null)
+    const { actualStartDate, actualEndDate } = this.getActualDateRange(startDate, endDate, null)
 
     return models.filter((model) => {
       const releaseDate = model.date_of_introduction_into_operation ? new Date(model.date_of_introduction_into_operation) : null
