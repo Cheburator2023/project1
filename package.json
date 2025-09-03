@@ -8,6 +8,7 @@
   "scripts": {
     "build": "nest build",
     "start": "nest start",
+    "dev:god": "NODE_ENV=development NO_ROLES=true nest start --watch",
     "start:sumcore": "NODE_ENV=sumcore npm run start",
     "start:sumd": "NODE_ENV=sumd npm run start",
     "start:dev": "nest start --watch",

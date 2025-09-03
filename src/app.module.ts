@@ -1,5 +1,5 @@
 import { Module, OnModuleInit } from '@nestjs/common'
-import { APP_GUARD } from '@nestjs/core'
+import { APP_GUARD, Reflector } from '@nestjs/core'
 import { ConfigModule } from '@nestjs/config'
 import {
   AuthGuard,
@@ -19,6 +19,10 @@ import { DebounceService } from 'src/debounce/debounce.service'
 import { EmitEventDependencies } from 'src/system/common'
 import { KeycloakModule } from 'src/system/keycloak/keycloak.module'
 import { BiDatamartModule } from 'src/modules/bi-datamart/bi-datamart.module'
+import { TemplateMigrationService } from 'src/migrations/migrate-templates'
+import { MigrationModule } from 'src/modules/migration.module'
+
+import { GodModeGuard } from 'src/system/guards/god-mode.guard'
 
 @Module({
   imports: [
@@ -36,29 +40,60 @@ import { BiDatamartModule } from 'src/modules/bi-datamart/bi-datamart.module'
     BpmnModule,
     ApiModule,
     KeycloakModule,
-    BiDatamartModule
+    BiDatamartModule,
+    MigrationModule
   ],
   controllers: [],
   providers: [
     DebounceService,
+    TemplateMigrationService,
     {
-      provide: APP_GUARD,
+      provide: 'DELEGATE_GUARD_AUTH',
       useClass: AuthGuard
     },
     {
       provide: APP_GUARD,
+      useFactory: (reflector: Reflector, delegateGuard: AuthGuard) =>
+        new GodModeGuard(reflector, delegateGuard),
+      inject: [Reflector, 'DELEGATE_GUARD_AUTH']
+    },
+    {
+      provide: 'DELEGATE_GUARD_RESOURCE',
       useClass: ResourceGuard
     },
     {
       provide: APP_GUARD,
+      useFactory: (reflector: Reflector, delegateGuard: ResourceGuard) =>
+        new GodModeGuard(reflector, delegateGuard),
+      inject: [Reflector, 'DELEGATE_GUARD_RESOURCE']
+    },
+    {
+      provide: 'DELEGATE_GUARD_ROLE',
       useClass: RoleGuard
+    },
+    {
+      provide: APP_GUARD,
+      useFactory: (reflector: Reflector, delegateGuard: RoleGuard) =>
+        new GodModeGuard(reflector, delegateGuard),
+      inject: [Reflector, 'DELEGATE_GUARD_ROLE']
     }
   ]
 })
 export class AppModule implements OnModuleInit {
-  constructor(private readonly debounceService: DebounceService) {}
+  constructor(
+    private readonly debounceService: DebounceService,
+    private readonly migrationService: TemplateMigrationService
+  ) {}
 
-  onModuleInit(): any {
+  async onModuleInit(): Promise<void> {
     EmitEventDependencies.initialize(this.debounceService)
+
+    // try {
+    //   console.log('Запуск миграции шаблонов...')
+    //   await this.migrationService.migrateTemplates()
+    //   console.log('Миграция шаблонов завершена успешно')
+    // } catch (error) {
+    //   console.error('Ошибка при миграции шаблонов:', error.message)
+    // }
   }
 }

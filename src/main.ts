@@ -24,25 +24,18 @@ async function bootstrap() {
   )
 
   const config = new DocumentBuilder()
-    .setTitle('API Example')
+    .setTitle('SUM RM API')
     .setVersion('1.0')
     .build()
   const document = SwaggerModule.createDocument(app, config)
-  SwaggerModule.setup('swagger', app, document)
 
-  const kcConfig = {
-    'confidential-port': 0,
-    realm: process.env.KEYCLOAK_REALMS,
-    'auth-server-url': `${process.env.KEYCLOAK_URL}`,
-    'ssl-required': 'none',
-    resource: process.env.KEYCLOAK_CLIENT,
-    'bearer-only': true
-  }
+  SwaggerModule.setup('api', app, document)
 
-  const memoryStore = new session.MemoryStore()
-  const keycloak = new KeycloakConnect({ store: memoryStore }, kcConfig)
+  app.getHttpAdapter().get('/api-json', (_req, res) => {
+    res.setHeader('Content-Type', 'application/json')
+    res.send(document)
+  })
 
-  app.use(keycloak.middleware())
   await app.listen(3000)
 }
 

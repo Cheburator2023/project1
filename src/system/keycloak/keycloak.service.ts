@@ -13,6 +13,7 @@ export class KeycloakService {
 
   async getToken(): Promise<string> {
     const url = `${this.keycloakHost}realms/${this.realms}/protocol/openid-connect/token`
+
     const data = new URLSearchParams({
       grant_type: 'password',
       client_id: this.keycloakClient,
@@ -44,6 +45,11 @@ export class KeycloakService {
 
   async getSubGroupsByGroupsName(groupNames: string[]): Promise<any[]> {
     const token = await this.getToken()
+    console.log(
+      '🐸 Pepe said >> KeycloakService >> getSubGroupsByGroupsName >> token:',
+      token
+    )
+
     const url = `${this.keycloakHost}admin/realms/${this.realms}/groups`
 
     const response = await this.httpService

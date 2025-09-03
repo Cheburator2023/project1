@@ -21,6 +21,26 @@ import {
 
 import { sortOrder } from './constants'
 
+interface LegacyTemplateValue {
+  [key: string]: string[]
+}
+
+interface FilterModel {
+  [key: string]: {
+    filterType: string
+    values?: string[]
+    dateFrom?: string
+    dateTo?: string
+  }
+}
+
+interface NewTemplateValue {
+  filterModel: FilterModel
+  sortState: any[]
+  columnState: any[]
+  selectedIds: string[]
+}
+
 @Injectable({ scope: Scope.REQUEST })
 export class ApiService {
   constructor(
@@ -102,7 +122,7 @@ export class ApiService {
     }
 
     const result = await this.mrmDatabaseService.query(addTemplate, {
-      user_id: user.preferred_username,
+      user_id: user?.preferred_username,
       template_name: templateCreateDto.template_name,
       public: templateCreateDto.public,
       template_value: templateValue
@@ -110,7 +130,7 @@ export class ApiService {
 
     const formattedResult = result.map((item) => {
       return {
-        isOwner: item.user_id === user.preferred_username,
+        isOwner: item.user_id === user?.preferred_username,
         ...item
       }
     })
@@ -128,7 +148,7 @@ export class ApiService {
       throw new Error('Шаблон не найден')
     }
 
-    if (targetTemplate.user_id !== user.preferred_username) {
+    if (targetTemplate.user_id !== user?.preferred_username) {
       throw new Error('У вас нет прав на редактирование шаблона')
     }
 
@@ -185,19 +205,107 @@ export class ApiService {
     }
   }
 
+  private isLegacyTemplateValue(value: any): value is LegacyTemplateValue {
+    if (!value || typeof value !== 'object') return false
+    return Object.values(value).every((v) => Array.isArray(v))
+  }
+
+  private async convertLegacyToNewFormat(
+    legacyValue: LegacyTemplateValue
+  ): Promise<NewTemplateValue> {
+    const filterModel: FilterModel = {}
+
+    for (const [key, values] of Object.entries(legacyValue)) {
+      if (Array.isArray(values)) {
+        let processedValues = values.filter((v) => v !== 'empty')
+
+        if (values.includes('not-null')) {
+          try {
+            const allValues = await this.getAllValuesForColumn(key)
+            processedValues = processedValues.filter((v) => v !== 'not-null')
+            processedValues = [...new Set([...processedValues, ...allValues])]
+          } catch (error) {
+            console.warn(
+              `Не удалось получить значения для колонки ${key}:`,
+              error
+            )
+            processedValues = processedValues.filter((v) => v !== 'not-null')
+          }
+        }
+
+        filterModel[key] = {
+          filterType: 'set',
+          values: processedValues
+        }
+      }
+    }
+
+    return {
+      filterModel,
+      sortState: [],
+      columnState: [],
+      selectedIds: []
+    }
+  }
+
+  private async getAllValuesForColumn(columnName: string): Promise<string[]> {
+    try {
+      const query = `
+        SELECT DISTINCT ar_.artefact_string_value
+        FROM artefact_realizations_new ar_
+        INNER JOIN artefacts a_ ON ar_.artefact_id = a_.artefact_id
+        WHERE a_.artefact_tech_label = $1
+        AND ar_.artefact_string_value IS NOT NULL
+        AND ar_.artefact_string_value != ''
+        ORDER BY ar_.artefact_string_value
+      `
+
+      const result = await this.sumDatabaseService.query(query, [columnName])
+      return result.map((row) => row.artefact_string_value)
+    } catch (error) {
+      console.error(
+        `Ошибка при получении значений для колонки ${columnName}:`,
+        error
+      )
+      return []
+    }
+  }
+
   async getTemplates(user) {
     const result = await this.mrmDatabaseService.query(getTemplates, [])
 
-    const filteredTemplates = result
-      .filter(({ user_id, public: is_public }) => {
-        return user_id === user.preferred_username || is_public
-      })
-      .map(({ user_id, public: is_public, ...template }) => ({
-        user_id,
-        isOwner: user_id === user.preferred_username,
-        public: is_public,
-        ...template
-      }))
+    const templatesWithProcessedValues = await Promise.all(
+      result
+        .filter(({ user_id, public: is_public }) => {
+          return user_id === user?.preferred_username || is_public
+        })
+        .map(
+          async ({
+            user_id,
+            public: is_public,
+            template_value,
+            ...template
+          }) => {
+            let processedTemplateValue = template_value
+
+            if (this.isLegacyTemplateValue(template_value)) {
+              processedTemplateValue = await this.convertLegacyToNewFormat(
+                template_value
+              )
+            }
+
+            return {
+              user_id,
+              isOwner: user_id === user?.preferred_username,
+              public: is_public,
+              template_value: processedTemplateValue,
+              ...template
+            }
+          }
+        )
+    )
+
+    const filteredTemplates = templatesWithProcessedValues
       .sort((a, b) => {
         const pinnedDiff = Number(b.is_pinned) - Number(a.is_pinned)
         if (pinnedDiff !== 0) return pinnedDiff
@@ -221,14 +329,23 @@ export class ApiService {
 
     const filteredTemplate = result.find(
       ({ user_id, public: is_public }) =>
-        user_id === user.preferred_username || is_public
+        user_id === user?.preferred_username || is_public
     )
 
     if (filteredTemplate) {
+      let processedTemplateValue = filteredTemplate.template_value
+
+      if (this.isLegacyTemplateValue(filteredTemplate.template_value)) {
+        processedTemplateValue = this.convertLegacyToNewFormat(
+          filteredTemplate.template_value
+        )
+      }
+
       return [
         {
-          isOwner: filteredTemplate.user_id === user.preferred_username,
-          ...filteredTemplate
+          isOwner: filteredTemplate.user_id === user?.preferred_username,
+          ...filteredTemplate,
+          template_value: processedTemplateValue
         }
       ]
     } else {
