@@ -5,11 +5,8 @@ import { NestFactory } from '@nestjs/core'
 import { ValidationPipe } from '@nestjs/common'
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger'
 import { API_PREFIX } from 'src/system/common/constants'
-import * as KeycloakConnect from 'keycloak-connect'
 
 import { AppModule } from './app.module'
-
-const session = require('express-session')
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule)
