@@ -13,10 +13,12 @@ export class ArtefactService {
     private readonly artefactServiceFactory: ArtefactServiceFactory,
     private readonly artefactExecutionContextService: ArtefactExecutionContextService,
     private readonly modelsServiceFactory: ModelServiceFactory
-  ) {
-  }
+  ) {}
 
-  async updateArtefact(artefacts: UpdateArtefactDto[], source: MODEL_SOURCES): Promise<boolean> {
+  async updateArtefact(
+    artefacts: UpdateArtefactDto[],
+    source: MODEL_SOURCES
+  ): Promise<boolean> {
     const artefactService = this.artefactServiceFactory.getService(source)
 
     await this.artefactExecutionContextService.runWithContext(
@@ -25,7 +27,8 @@ export class ArtefactService {
         for (const artefact of artefacts) {
           await artefactService.handleUpdateArtefact(artefact)
         }
-      })
+      }
+    )
 
     const modelsService = this.modelsServiceFactory.getService(source)
     await modelsService.updateUpdateDate({ model_id: artefacts[0].model_id })
@@ -33,12 +36,18 @@ export class ArtefactService {
     return true
   }
 
-  async getMaxArtefactUpdateDate(model_id: string, source: MODEL_SOURCES): Promise<any> {
+  async getMaxArtefactUpdateDate(
+    model_id: string,
+    source: MODEL_SOURCES
+  ): Promise<any> {
     const artefactService = this.artefactServiceFactory.getService(source)
     return await artefactService.getMaxArtefactUpdateDate(model_id)
   }
 
-  async getArtefacts(source: MODEL_SOURCES, user: UserType): Promise<{ data: EnrichedArtefact[] }> {
+  async getArtefacts(
+    source: MODEL_SOURCES,
+    user: UserType
+  ): Promise<{ data: EnrichedArtefact[] }> {
     const artefactService = this.artefactServiceFactory.getService(source)
     return await artefactService.getArtefactWithPermissions(user)
   }

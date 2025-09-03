@@ -4,12 +4,13 @@ import { BaseAssignmentService } from './base-assignment.service'
 import { IAssignmentService } from '../interfaces'
 
 @Injectable()
-export class SumAssignmentService extends BaseAssignmentService implements IAssignmentService {
+export class SumAssignmentService
+  extends BaseAssignmentService
+  implements IAssignmentService
+{
   protected logger = new Logger(SumAssignmentService.name)
 
-  constructor(
-    databaseService: SumDatabaseService
-  ) {
+  constructor(databaseService: SumDatabaseService) {
     super(databaseService)
   }
 }

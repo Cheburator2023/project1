@@ -22,5 +22,4 @@ import { ApiService } from './api.service'
     BiDatamartModule
   ]
 })
-export class ApiModule {
-}
+export class ApiModule {}

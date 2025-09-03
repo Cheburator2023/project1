@@ -25,7 +25,7 @@ export function UpdateDateAfterExecution() {
       }
 
       // Extract modelId from the method arguments.
-      const modelId = args.find(arg => arg?.model_id)
+      const modelId = args.find((arg) => arg?.model_id)
       const source = args[1] // Assume the source is the second argument.
 
       if (!modelId || !source) {
@@ -40,13 +40,15 @@ export function UpdateDateAfterExecution() {
       )
 
       if (!modelsServiceFactory) {
-        console.error('UpdateDateAfterExecution: ModelsServiceFactory is not defined in metadata.')
+        console.error(
+          'UpdateDateAfterExecution: ModelsServiceFactory is not defined in metadata.'
+        )
         return result
       }
 
       // Get the debounce service instance.
       const debounceService = EmitEventDependencies.getDebounceService()
-      const key = `update-date-${ modelId }` // Unique debounce key for the modelId.
+      const key = `update-date-${modelId}` // Unique debounce key for the modelId.
 
       // Use debounce to avoid multiple rapid updates for the same model ID.
       debounceService.debounce(

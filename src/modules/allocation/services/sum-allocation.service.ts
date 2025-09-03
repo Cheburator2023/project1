@@ -6,13 +6,14 @@ import { SUM_TABLES } from '../constants'
 import { UpdateAllocationDto } from '../dto'
 
 @Injectable()
-export class SumAllocationService extends BaseAllocationService implements IAllocationService {
+export class SumAllocationService
+  extends BaseAllocationService
+  implements IAllocationService
+{
   protected modelsTableName = SUM_TABLES.MODELS
   protected logger = new Logger(SumAllocationService.name)
 
-  constructor(
-    databaseService: SumDatabaseService
-  ) {
+  constructor(databaseService: SumDatabaseService) {
     super(databaseService)
   }
 
@@ -50,11 +51,15 @@ export class SumAllocationService extends BaseAllocationService implements IAllo
     }
 
     // обновляем результат
-    const allocationHistItem = await this.insertAllocationHistory(allocationId, {
-      field: percent !== null ? 'percentage' : comment !== null ? 'comment' : null,
-      value: percent !== null ? percent : comment !== null ? comment : null,
-      creator
-    })
+    const allocationHistItem = await this.insertAllocationHistory(
+      allocationId,
+      {
+        field:
+          percent !== null ? 'percentage' : comment !== null ? 'comment' : null,
+        value: percent !== null ? percent : comment !== null ? comment : null,
+        creator
+      }
+    )
 
     if (!allocationHistItem) {
       return false
@@ -63,7 +68,10 @@ export class SumAllocationService extends BaseAllocationService implements IAllo
     return true
   }
 
-  async getAllocation(model_id: UpdateAllocationDto['model_id'], gbl_id: UpdateAllocationDto['gbl_id']): Promise<any> {
+  async getAllocation(
+    model_id: UpdateAllocationDto['model_id'],
+    gbl_id: UpdateAllocationDto['gbl_id']
+  ): Promise<any> {
     const [allocation] = await this.databaseService.query(
       `
       SELECT * FROM model_allocation_usage WHERE model_id = :model_id AND allocation_id = :allocation_id;

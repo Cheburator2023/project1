@@ -6,10 +6,11 @@ import { MetricsEnum } from '../enums'
 export class MetricsAggregator {
   constructor(
     private readonly dataAggregator: DataAggregator,
-    @Inject('INDEPENDENT_METRICS') private readonly independentMetrics: IndependentMetricType[],
-    @Inject('DEPENDENT_METRICS') private readonly dependentMetrics: DependentMetricType[]
-  ) {
-  }
+    @Inject('INDEPENDENT_METRICS')
+    private readonly independentMetrics: IndependentMetricType[],
+    @Inject('DEPENDENT_METRICS')
+    private readonly dependentMetrics: DependentMetricType[]
+  ) {}
 
   async getMetrics(
     startDate: string | null,
@@ -17,7 +18,7 @@ export class MetricsAggregator {
     streams: string[],
     useDatamart: boolean
   ): Promise<Record<MetricsEnum, any>> {
-    const data = await this.dataAggregator.aggregateData(streams, useDatamart);
+    const data = await this.dataAggregator.aggregateData(streams, useDatamart)
 
     const results: Record<string, any> = {}
 
@@ -43,33 +44,38 @@ export class MetricsAggregator {
     useDatamart: boolean,
     dataType?: string
   ): Promise<{ system_model_id: string }[]> {
-    const data = await this.dataAggregator.aggregateData(streams, useDatamart);
-  
-    const results: Record<string, any> = {};
-  
+    const data = await this.dataAggregator.aggregateData(streams, useDatamart)
+
+    const results: Record<string, any> = {}
+
     for (const metric of this.independentMetrics) {
-      metric.initialize(data, startDate, endDate);
-      results[metric.getMetricName()] = metric.calculate();
+      metric.initialize(data, startDate, endDate)
+      results[metric.getMetricName()] = metric.calculate()
     }
-  
+
     for (const metric of this.dependentMetrics) {
-      const dependencies = { ...results };
-      metric.initialize(data, startDate, endDate, dependencies);
-      results[metric.getMetricName()] = metric.calculate();
-    } 
-  
-    const allMetrics = [...this.independentMetrics, ...this.dependentMetrics];
-    const foundMetric = allMetrics.find(metric => metric.getMetricName() === metricName);
-  
+      const dependencies = { ...results }
+      metric.initialize(data, startDate, endDate, dependencies)
+      results[metric.getMetricName()] = metric.calculate()
+    }
+
+    const allMetrics = [...this.independentMetrics, ...this.dependentMetrics]
+    const foundMetric = allMetrics.find(
+      (metric) => metric.getMetricName() === metricName
+    )
+
     if (foundMetric) {
-      if (dataType === 'delta' && typeof (foundMetric as any).getFilteredDeltaRowData === 'function') {
-        return (foundMetric as any).getFilteredDeltaRowData();
+      if (
+        dataType === 'delta' &&
+        typeof (foundMetric as any).getFilteredDeltaRowData === 'function'
+      ) {
+        return (foundMetric as any).getFilteredDeltaRowData()
       }
       if (typeof (foundMetric as any).getFilteredRowData === 'function') {
-        return (foundMetric as any).getFilteredRowData();
+        return (foundMetric as any).getFilteredRowData()
       }
     }
-  
-    return [];
-  }  
+
+    return []
+  }
 }

@@ -1,4 +1,8 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common'
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException
+} from '@nestjs/common'
 import { SumDatabaseService } from 'src/system/sum-database/database.service'
 import { MrmDatabaseService } from 'src/system/mrm-database/database.service'
 import { ModelsService } from 'src/modules/models/models.service'
@@ -16,10 +20,10 @@ import { isValidDate } from 'src/system/common/utils'
 import { MetricsEnum } from 'src/modules/metrics/enums'
 
 type Preset = {
-  key: string,
-  title: string,
+  key: string
+  title: string
   type: string
-};
+}
 
 @Injectable()
 export class ReportService {
@@ -29,8 +33,7 @@ export class ReportService {
     private readonly modelsService: ModelsService,
     private readonly metricsAggregator: MetricsAggregator,
     private readonly excelService: ExcelService
-  ) {
-  }
+  ) {}
 
   async exportMetricToExcel(
     metric: MetricsEnum,
@@ -47,53 +50,73 @@ export class ReportService {
       streams,
       useDatamart,
       dataType
-    );
+    )
 
     // Для delta данных пустой результат - это нормально
     if (!rawData || rawData.length === 0) {
       if (dataType === 'delta') {
         // Для delta возвращаем пустой Excel файл с динамическими заголовками
         // Получаем заголовки из первой строки данных или используем базовые
-        const headers = rawData && rawData.length > 0 
-          ? Object.keys(rawData[0]).map((key) => ({
-              key,
-              title: key,
-              type: typeof rawData[0][key] === 'number' ? 'number' : 'string' as any,
-            }))
-          : [
-              { key: 'system_model_id', title: 'system_model_id', type: 'string' },
-              { key: 'ds_stream', title: 'ds_stream', type: 'string' },
-              { key: 'period', title: 'period', type: 'string' }
-            ];
-        
-        return this.excelService.createExcel({ 
-          headers, 
-          body: [] 
-        });
+        const headers =
+          rawData && rawData.length > 0
+            ? Object.keys(rawData[0]).map((key) => ({
+                key,
+                title: key,
+                type:
+                  typeof rawData[0][key] === 'number'
+                    ? 'number'
+                    : ('string' as any)
+              }))
+            : [
+                {
+                  key: 'system_model_id',
+                  title: 'system_model_id',
+                  type: 'string'
+                },
+                { key: 'ds_stream', title: 'ds_stream', type: 'string' },
+                { key: 'period', title: 'period', type: 'string' }
+              ]
+
+        return this.excelService.createExcel({
+          headers,
+          body: []
+        })
       } else {
-        throw new NotFoundException('Нет данных для экспорта');
+        throw new NotFoundException('Нет данных для экспорта')
       }
     }
 
     const headers = Object.keys(rawData[0]).map((key) => ({
       key,
       title: key,
-      type: typeof rawData[0][key] === 'number' ? 'number' : 'string' as any,
-    }));
+      type: typeof rawData[0][key] === 'number' ? 'number' : ('string' as any)
+    }))
 
-    return this.excelService.createExcel({ headers, body: rawData });
+    return this.excelService.createExcel({ headers, body: rawData })
   }
 
-  async getReport(filters: { [key: string]: string[] }, groups?: [], mode?: string[]): Promise<Buffer> {
-    const reportData: { headers: Preset[], body: Model[] } = await this.generateReportData(filters, groups, mode)
+  async getReport(
+    filters: { [key: string]: string[] },
+    groups?: [],
+    mode?: string[]
+  ): Promise<Buffer> {
+    const reportData: { headers: Preset[]; body: Model[] } =
+      await this.generateReportData(filters, groups, mode)
     const xlsxBuffer: Buffer = await this.generateExcel(reportData)
 
     return xlsxBuffer
   }
 
-  private async generateReportData(filters: { [key: string]: string[] }, groups?: [], mode?: string[]): Promise<{ headers: Preset[], body: Model[] }> {
+  private async generateReportData(
+    filters: { [key: string]: string[] },
+    groups?: [],
+    mode?: string[]
+  ): Promise<{ headers: Preset[]; body: Model[] }> {
     if (!Object.keys(filters).length) {
-      throw new BadRequestException('Bad Request', 'filter object cannot be empty')
+      throw new BadRequestException(
+        'Bad Request',
+        'filter object cannot be empty'
+      )
     }
 
     const artefacts: Artefact[] = await this.modelsService.getArtefactLabels()
@@ -110,11 +133,15 @@ export class ReportService {
     }
   }
 
-  private filterModels(models: Model[], artefacts: Artefact[], filters: { [key: string]: string[] }): any[] {
+  private filterModels(
+    models: Model[],
+    artefacts: Artefact[],
+    filters: { [key: string]: string[] }
+  ): any[] {
     const artefactsMap = this.mapArtefactsByKey(artefacts)
 
-    return models.filter(model => {
-      return Object.keys(filters).every(filterKey => {
+    return models.filter((model) => {
+      return Object.keys(filters).every((filterKey) => {
         const filterValues = filters[filterKey]
         const artefactValue = model[filterKey]
         const artefact = artefactsMap[filterKey]
@@ -127,12 +154,20 @@ export class ReportService {
           return false
         }
 
-        return this.applyFilter(artefactValue, filterValues, artefact.artefact_type_id)
+        return this.applyFilter(
+          artefactValue,
+          filterValues,
+          artefact.artefact_type_id
+        )
       })
     })
   }
 
-  private applyFilter(artefactValue, filterValues, artefactType: ArtefactTypeId): boolean {
+  private applyFilter(
+    artefactValue,
+    filterValues,
+    artefactType: ArtefactTypeId
+  ): boolean {
     // @TODO: Нужно будет убрать проверку filterValues.length === 1 и фильтровать только по not-null
     if (filterValues.includes('not-null') && filterValues.length === 1) {
       return ReportService.filterByNotNull(artefactValue)
@@ -189,18 +224,24 @@ export class ReportService {
   }
 
   private static filterByNotNull(artefactValue): boolean {
-    return artefactValue !== null &&
+    return (
+      artefactValue !== null &&
       artefactValue !== undefined &&
       artefactValue !== ''
+    )
   }
 
   private static filterByEmpty(artefactValue): boolean {
-    return artefactValue === null ||
+    return (
+      artefactValue === null ||
       artefactValue === undefined ||
       artefactValue === ''
+    )
   }
 
-  private mapArtefactsByKey(artefacts: Artefact[]): { [key: string]: Artefact } {
+  private mapArtefactsByKey(artefacts: Artefact[]): {
+    [key: string]: Artefact
+  } {
     return artefacts.reduce((acc, artefact) => {
       acc[artefact.artefact_tech_label] = artefact
       return acc
@@ -212,9 +253,8 @@ export class ReportService {
   }
 
   private sortHeadersByFilters(headers, filters) {
-    return Object
-      .keys(filters)
-      .map(filterKey => headers.find(header => header.key === filterKey))
+    return Object.keys(filters)
+      .map((filterKey) => headers.find((header) => header.key === filterKey))
       .filter(Boolean)
   }
 

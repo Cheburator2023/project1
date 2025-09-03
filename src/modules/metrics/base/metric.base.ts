@@ -3,14 +3,15 @@ import { MetricsEnum } from '../enums'
 import { FINAL_STATUSES } from '../constants'
 
 // Базовый класс для метрики
-export abstract class MetricBase<T extends BaseMetricResult> implements IMetric<T> {
+export abstract class MetricBase<T extends BaseMetricResult>
+  implements IMetric<T>
+{
   protected models: any[] = []
   protected tasks: any[] = []
   protected startDate: string | null = null
   protected endDate: string | null = null
 
-  constructor(protected metricName: MetricsEnum) {
-  }
+  constructor(protected metricName: MetricsEnum) {}
 
   initialize(...args: any[]): void {
     throw new Error('Method not implemented.')
@@ -30,10 +31,12 @@ export abstract class MetricBase<T extends BaseMetricResult> implements IMetric<
     endDate: string | null,
     daysToShift: number | null = null
   ): {
-    actualStartDate: Date,
+    actualStartDate: Date
     actualEndDate: Date
   } {
-    let actualStartDate = startDate ? new Date(startDate) : new Date(1970, 0, 1)
+    const actualStartDate = startDate
+      ? new Date(startDate)
+      : new Date(1970, 0, 1)
     let actualEndDate = endDate ? new Date(endDate) : new Date(2970, 0, 1)
 
     if (daysToShift !== null) {
@@ -59,7 +62,8 @@ export abstract class MetricBase<T extends BaseMetricResult> implements IMetric<
 
       // Check if the new date is a weekday (Monday to Friday)
       const dayOfWeek = newDate.getDay()
-      if (dayOfWeek !== 0 && dayOfWeek !== 6) { // 0 = Sunday, 6 = Saturday
+      if (dayOfWeek !== 0 && dayOfWeek !== 6) {
+        // 0 = Sunday, 6 = Saturday
         days--
       }
     }
@@ -92,66 +96,72 @@ export abstract class MetricBase<T extends BaseMetricResult> implements IMetric<
     startDate: string | null,
     endDate: string | null
   ): {
-    currentRange: { actualStartDate: Date, actualEndDate: Date },
-    deltaRange: { actualStartDate: Date, actualEndDate: Date }
+    currentRange: { actualStartDate: Date; actualEndDate: Date }
+    deltaRange: { actualStartDate: Date; actualEndDate: Date }
   } {
     if (endDate) {
-      // With time slice: 
+      // With time slice:
       // Текущий диапазон: от startDate до endDate
       // Delta диапазон: от startDate до (endDate - 7 дней)
-      const startDateForRange = startDate ? new Date(startDate) : new Date(1970, 0, 1);
-      const endDateForRange = new Date(endDate);
-      const deltaEndDate = new Date(endDate);
-      deltaEndDate.setDate(deltaEndDate.getDate() - 7);
+      const startDateForRange = startDate
+        ? new Date(startDate)
+        : new Date(1970, 0, 1)
+      const endDateForRange = new Date(endDate)
+      const deltaEndDate = new Date(endDate)
+      deltaEndDate.setDate(deltaEndDate.getDate() - 7)
 
       // Устанавливаем время для полного дня
-      const startOfDay = new Date(startDateForRange);
-      startOfDay.setHours(0, 0, 0, 0);
-      
-      const endOfDay = new Date(endDateForRange);
-      endOfDay.setHours(23, 59, 59, 999);
-      
-      const deltaEndOfDay = new Date(deltaEndDate);
-      deltaEndOfDay.setHours(23, 59, 59, 999);
+      const startOfDay = new Date(startDateForRange)
+      startOfDay.setHours(0, 0, 0, 0)
+
+      const endOfDay = new Date(endDateForRange)
+      endOfDay.setHours(23, 59, 59, 999)
+
+      const deltaEndOfDay = new Date(deltaEndDate)
+      deltaEndOfDay.setHours(23, 59, 59, 999)
 
       return {
         currentRange: {
-          actualStartDate: startOfDay,      // startDate 00:00:00
-          actualEndDate: endOfDay           // endDate 23:59:59
+          actualStartDate: startOfDay, // startDate 00:00:00
+          actualEndDate: endOfDay // endDate 23:59:59
         },
         deltaRange: {
-          actualStartDate: startOfDay,      // startDate 00:00:00
-          actualEndDate: deltaEndOfDay      // (endDate - 7 дней) 23:59:59
+          actualStartDate: startOfDay, // startDate 00:00:00
+          actualEndDate: deltaEndOfDay // (endDate - 7 дней) 23:59:59
         }
-      };
+      }
     } else {
-      // Without time slice: 
+      // Without time slice:
       // Текущий диапазон: от начала времён до сегодня
       // Delta диапазон: от начала времён до (сегодня - 7 дней)
-      const now = new Date();
-      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-      const sevenDaysAgo = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 7);
+      const now = new Date()
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+      const sevenDaysAgo = new Date(
+        now.getFullYear(),
+        now.getMonth(),
+        now.getDate() - 7
+      )
 
       // Устанавливаем время для полного дня
-      const startOfTime = new Date(1970, 0, 1);
-      startOfTime.setHours(0, 0, 0, 0);
-      
-      const endOfToday = new Date(today);
-      endOfToday.setHours(23, 59, 59, 999);
-      
-      const endOfSevenDaysAgo = new Date(sevenDaysAgo);
-      endOfSevenDaysAgo.setHours(23, 59, 59, 999);
+      const startOfTime = new Date(1970, 0, 1)
+      startOfTime.setHours(0, 0, 0, 0)
+
+      const endOfToday = new Date(today)
+      endOfToday.setHours(23, 59, 59, 999)
+
+      const endOfSevenDaysAgo = new Date(sevenDaysAgo)
+      endOfSevenDaysAgo.setHours(23, 59, 59, 999)
 
       return {
         currentRange: {
-          actualStartDate: startOfTime,        // 01.01.1970 00:00:00
-          actualEndDate: endOfToday            // Сегодня 23:59:59
+          actualStartDate: startOfTime, // 01.01.1970 00:00:00
+          actualEndDate: endOfToday // Сегодня 23:59:59
         },
         deltaRange: {
-          actualStartDate: startOfTime,        // 01.01.1970 00:00:00
-          actualEndDate: endOfSevenDaysAgo     // (Сегодня - 7 дней) 23:59:59
+          actualStartDate: startOfTime, // 01.01.1970 00:00:00
+          actualEndDate: endOfSevenDaysAgo // (Сегодня - 7 дней) 23:59:59
         }
-      };
+      }
     }
   }
 
@@ -163,7 +173,11 @@ export abstract class MetricBase<T extends BaseMetricResult> implements IMetric<
    * @param {Date} endDate - The end date of the range.
    * @returns {boolean} True if the date is within the range, false otherwise.
    */
-  protected isWithinDateRange(date: Date | null, startDate: Date, endDate: Date): boolean {
+  protected isWithinDateRange(
+    date: Date | null,
+    startDate: Date,
+    endDate: Date
+  ): boolean {
     return date && date >= startDate && date <= endDate
   }
 
@@ -175,7 +189,11 @@ export abstract class MetricBase<T extends BaseMetricResult> implements IMetric<
    * @param {Date} endDate - The end date of the range.
    * @returns {boolean} True if the date is outside the range, false otherwise.
    */
-  protected isOutsideDateRange(date: Date | null, startDate: Date, endDate: Date): boolean {
+  protected isOutsideDateRange(
+    date: Date | null,
+    startDate: Date,
+    endDate: Date
+  ): boolean {
     return !date || date < startDate || date > endDate
   }
 
@@ -207,10 +225,7 @@ export abstract class MetricBase<T extends BaseMetricResult> implements IMetric<
    * @param total The total (e.g., the total number of models)
    * @returns The percentage ratio
    */
-  protected calculatePercentageCount(
-    part: number,
-    total: number
-  ): number {
+  protected calculatePercentageCount(part: number, total: number): number {
     if (total === 0) {
       return 0
     }
@@ -224,5 +239,5 @@ export abstract class MetricBase<T extends BaseMetricResult> implements IMetric<
     return this.metricName
   }
 
-  abstract calculate(): T;
+  abstract calculate(): T
 }

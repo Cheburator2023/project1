@@ -1,8 +1,18 @@
-import { BaseMetricResult, IDependentMetric, MetricDependencyMap } from '../interfaces'
+import {
+  BaseMetricResult,
+  IDependentMetric,
+  MetricDependencyMap
+} from '../interfaces'
 import { MetricBase } from './metric.base'
 
 // Класс для зависимых метрик
-export abstract class DependentMetric<T extends BaseMetricResult, D extends Partial<MetricDependencyMap>> extends MetricBase<T> implements IDependentMetric<T, D> {
+export abstract class DependentMetric<
+    T extends BaseMetricResult,
+    D extends Partial<MetricDependencyMap>
+  >
+  extends MetricBase<T>
+  implements IDependentMetric<T, D>
+{
   protected dependencies!: { [K in keyof D]: D[K] }
 
   initialize(

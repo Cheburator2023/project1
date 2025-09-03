@@ -1,4 +1,4 @@
-import { Artefact, ArtefactTypeEnum, artefactTypeDescMap } from '../interfaces';
+import { Artefact, ArtefactTypeEnum, artefactTypeDescMap } from '../interfaces'
 
 const pseudoArtefacts: Artefact[] = [
   {
@@ -9,7 +9,7 @@ const pseudoArtefacts: Artefact[] = [
     artefact_desc: '',
     artefact_type_id: ArtefactTypeEnum.TEXT,
     artefact_type_desc: artefactTypeDescMap[ArtefactTypeEnum.TEXT],
-    values: [],
+    values: []
   },
   {
     artefact_id: 1000,
@@ -19,7 +19,7 @@ const pseudoArtefacts: Artefact[] = [
     artefact_desc: '',
     artefact_type_id: ArtefactTypeEnum.TEXT,
     artefact_type_desc: artefactTypeDescMap[ArtefactTypeEnum.TEXT],
-    values: [],
+    values: []
   },
   {
     artefact_id: 1002,
@@ -29,7 +29,7 @@ const pseudoArtefacts: Artefact[] = [
     artefact_desc: '',
     artefact_type_id: ArtefactTypeEnum.TEXT,
     artefact_type_desc: artefactTypeDescMap[ArtefactTypeEnum.TEXT],
-    values: [],
+    values: []
   },
   {
     artefact_id: 2119,
@@ -39,7 +39,7 @@ const pseudoArtefacts: Artefact[] = [
     artefact_desc: '',
     artefact_type_id: ArtefactTypeEnum.DATE,
     artefact_type_desc: artefactTypeDescMap[ArtefactTypeEnum.DATE],
-    values: [],
+    values: []
   },
   {
     artefact_id: 2120,
@@ -50,7 +50,7 @@ const pseudoArtefacts: Artefact[] = [
     artefact_desc: '',
     artefact_type_id: ArtefactTypeEnum.DATE,
     artefact_type_desc: artefactTypeDescMap[ArtefactTypeEnum.DATE],
-    values: [],
+    values: []
   },
   {
     artefact_id: 2121,
@@ -60,7 +60,7 @@ const pseudoArtefacts: Artefact[] = [
     artefact_desc: '',
     artefact_type_id: ArtefactTypeEnum.TEXT,
     artefact_type_desc: artefactTypeDescMap[ArtefactTypeEnum.TEXT],
-    values: [],
+    values: []
   },
 
   // @TODO: Группа: Аллокация применения (указывается в %, максимально 100 по всем 5 полям)
@@ -74,7 +74,7 @@ const pseudoArtefacts: Artefact[] = [
     artefact_type_id: ArtefactTypeEnum.PERCENTAGE,
     artefact_type_desc: artefactTypeDescMap[ArtefactTypeEnum.PERCENTAGE],
     group: 'Аллокация применения',
-    values: [],
+    values: []
   },
   {
     artefact_id: 3001,
@@ -85,7 +85,7 @@ const pseudoArtefacts: Artefact[] = [
     artefact_type_id: ArtefactTypeEnum.PERCENTAGE,
     artefact_type_desc: artefactTypeDescMap[ArtefactTypeEnum.PERCENTAGE],
     group: 'Аллокация применения',
-    values: [],
+    values: []
   },
   {
     artefact_id: 3002,
@@ -96,7 +96,7 @@ const pseudoArtefacts: Artefact[] = [
     artefact_type_id: ArtefactTypeEnum.PERCENTAGE,
     artefact_type_desc: artefactTypeDescMap[ArtefactTypeEnum.PERCENTAGE],
     group: 'Аллокация применения',
-    values: [],
+    values: []
   },
   {
     artefact_id: 3003,
@@ -107,7 +107,7 @@ const pseudoArtefacts: Artefact[] = [
     artefact_type_id: ArtefactTypeEnum.PERCENTAGE,
     artefact_type_desc: artefactTypeDescMap[ArtefactTypeEnum.PERCENTAGE],
     group: 'Аллокация применения',
-    values: [],
+    values: []
   },
   {
     artefact_id: 3004,
@@ -118,7 +118,7 @@ const pseudoArtefacts: Artefact[] = [
     artefact_type_id: ArtefactTypeEnum.PERCENTAGE,
     artefact_type_desc: artefactTypeDescMap[ArtefactTypeEnum.PERCENTAGE],
     group: 'Аллокация применения',
-    values: [],
+    values: []
   },
 
   // @TODO: Группа: Комментарий к аллокации применения (текстовый комментарий для каждой ГБЛ)
@@ -132,7 +132,7 @@ const pseudoArtefacts: Artefact[] = [
     artefact_type_id: ArtefactTypeEnum.TEXT,
     artefact_type_desc: artefactTypeDescMap[ArtefactTypeEnum.TEXT],
     group: 'Комментарий к аллокации применения',
-    values: [],
+    values: []
   },
   {
     artefact_id: 3006,
@@ -143,7 +143,7 @@ const pseudoArtefacts: Artefact[] = [
     artefact_type_id: ArtefactTypeEnum.TEXT,
     artefact_type_desc: artefactTypeDescMap[ArtefactTypeEnum.TEXT],
     group: 'Комментарий к аллокации применения',
-    values: [],
+    values: []
   },
   {
     artefact_id: 3007,
@@ -154,7 +154,7 @@ const pseudoArtefacts: Artefact[] = [
     artefact_type_id: ArtefactTypeEnum.TEXT,
     artefact_type_desc: artefactTypeDescMap[ArtefactTypeEnum.TEXT],
     group: 'Комментарий к аллокации применения',
-    values: [],
+    values: []
   },
   {
     artefact_id: 3008,
@@ -165,7 +165,7 @@ const pseudoArtefacts: Artefact[] = [
     artefact_type_id: ArtefactTypeEnum.TEXT,
     artefact_type_desc: artefactTypeDescMap[ArtefactTypeEnum.TEXT],
     group: 'Комментарий к аллокации применения',
-    values: [],
+    values: []
   },
   {
     artefact_id: 3009,
@@ -176,7 +176,7 @@ const pseudoArtefacts: Artefact[] = [
     artefact_type_id: ArtefactTypeEnum.TEXT,
     artefact_type_desc: artefactTypeDescMap[ArtefactTypeEnum.TEXT],
     group: 'Комментарий к аллокации применения',
-    values: [],
+    values: []
   },
 
   //  @TODO: Группа: Дата подтверждения использования (Указывается дата подтверждения по кварталам в формате дд/мм/гггг)
@@ -191,7 +191,7 @@ const pseudoArtefacts: Artefact[] = [
     artefact_type_desc: artefactTypeDescMap[ArtefactTypeEnum.QUARTERLY_DATE],
     group: 'Дата подтверждения использования',
     start_date_depend_artefact: 'create_date',
-    values: [],
+    values: []
   },
   {
     artefact_id: 3011,
@@ -203,7 +203,7 @@ const pseudoArtefacts: Artefact[] = [
     artefact_type_desc: artefactTypeDescMap[ArtefactTypeEnum.QUARTERLY_DATE],
     group: 'Дата подтверждения использования',
     start_date_depend_artefact: 'create_date',
-    values: [],
+    values: []
   },
   {
     artefact_id: 3012,
@@ -215,7 +215,7 @@ const pseudoArtefacts: Artefact[] = [
     artefact_type_desc: artefactTypeDescMap[ArtefactTypeEnum.QUARTERLY_DATE],
     group: 'Дата подтверждения использования',
     start_date_depend_artefact: 'create_date',
-    values: [],
+    values: []
   },
   {
     artefact_id: 3013,
@@ -227,7 +227,7 @@ const pseudoArtefacts: Artefact[] = [
     artefact_type_desc: artefactTypeDescMap[ArtefactTypeEnum.QUARTERLY_DATE],
     group: 'Дата подтверждения использования',
     start_date_depend_artefact: 'create_date',
-    values: [],
+    values: []
   },
 
   // @TODO: Модель используется заказчиком (Dropdown с вариантами Да/Нет)
@@ -248,16 +248,16 @@ const pseudoArtefacts: Artefact[] = [
         is_active_flag: '1',
         artefact_parent_value_id: null,
         artefact_value_id: 100,
-        artefact_value: 'Да',
+        artefact_value: 'Да'
       },
       {
         artefact_id: 3014,
         is_active_flag: '1',
         artefact_parent_value_id: null,
         artefact_value_id: 101,
-        artefact_value: 'Нет',
-      },
-    ],
+        artefact_value: 'Нет'
+      }
+    ]
   },
   {
     artefact_id: 3015,
@@ -275,16 +275,16 @@ const pseudoArtefacts: Artefact[] = [
         is_active_flag: '1',
         artefact_parent_value_id: null,
         artefact_value_id: 102,
-        artefact_value: 'Да',
+        artefact_value: 'Да'
       },
       {
         artefact_id: 3015,
         is_active_flag: '1',
         artefact_parent_value_id: null,
         artefact_value_id: 103,
-        artefact_value: 'Нет',
-      },
-    ],
+        artefact_value: 'Нет'
+      }
+    ]
   },
   {
     artefact_id: 3016,
@@ -302,16 +302,16 @@ const pseudoArtefacts: Artefact[] = [
         is_active_flag: '1',
         artefact_parent_value_id: null,
         artefact_value_id: 104,
-        artefact_value: 'Да',
+        artefact_value: 'Да'
       },
       {
         artefact_id: 3016,
         is_active_flag: '1',
         artefact_parent_value_id: null,
         artefact_value_id: 105,
-        artefact_value: 'Нет',
-      },
-    ],
+        artefact_value: 'Нет'
+      }
+    ]
   },
   {
     artefact_id: 3017,
@@ -329,17 +329,17 @@ const pseudoArtefacts: Artefact[] = [
         is_active_flag: '1',
         artefact_parent_value_id: null,
         artefact_value_id: 106,
-        artefact_value: 'Да',
+        artefact_value: 'Да'
       },
       {
         artefact_id: 3017,
         is_active_flag: '1',
         artefact_parent_value_id: null,
         artefact_value_id: 107,
-        artefact_value: 'Нет',
-      },
-    ],
-  },
-];
+        artefact_value: 'Нет'
+      }
+    ]
+  }
+]
 
-export { pseudoArtefacts };
+export { pseudoArtefacts }

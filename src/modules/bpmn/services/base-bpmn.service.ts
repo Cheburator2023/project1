@@ -1,9 +1,9 @@
-import { Logger } from '@nestjs/common';
-import { IBpmnService } from '../interfaces';
-import { BpmnInstanceEntity } from '../entities';
+import { Logger } from '@nestjs/common'
+import { IBpmnService } from '../interfaces'
+import { BpmnInstanceEntity } from '../entities'
 
 export abstract class BaseBpmnService implements IBpmnService {
-  protected abstract logger: Logger;
+  protected abstract logger: Logger
 
   protected constructor(public readonly databaseService) {}
 
@@ -13,6 +13,6 @@ export abstract class BaseBpmnService implements IBpmnService {
     FROM BPMN_INSTANCES
     ${bpmnIds ? 'WHERE BPMN_INSTANCE_ID = ANY(:bpmnIds::text[])' : ''}
   `
-    return await this.databaseService.query(query, bpmnIds ? { bpmnIds } : {});
+    return await this.databaseService.query(query, bpmnIds ? { bpmnIds } : {})
   }
 }

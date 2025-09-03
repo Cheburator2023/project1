@@ -24,8 +24,6 @@ FROM (
     )
 ) t
 WHERE t.rn = 1
-`;
+`
 
-export { getLatestArtefactsForModels };
-
-
+export { getLatestArtefactsForModels }

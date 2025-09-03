@@ -41,8 +41,13 @@ export class ArtefactClassificationHandler implements IArtefactHandler {
    * @param {UpdateArtefactDto['artefact_tech_label']} artefactTechLabel - The technical label of the artefact.
    * @returns {boolean} - true if the handler supports the specified type, otherwise false.
    */
-  supports(artefactTechLabel: UpdateArtefactDto['artefact_tech_label']): boolean {
-    return artefactTechLabel === 'classification_of_rs_by_order_of_application_within_pvr'
+  supports(
+    artefactTechLabel: UpdateArtefactDto['artefact_tech_label']
+  ): boolean {
+    return (
+      artefactTechLabel ===
+      'classification_of_rs_by_order_of_application_within_pvr'
+    )
   }
 
   /**
@@ -62,16 +67,18 @@ export class ArtefactClassificationHandler implements IArtefactHandler {
     }
 
     // Retrieve the artefact for "PVR"
-    const pvrArtefact: ArtefactEntity | null = await this.artefactService.getArtefactByTechLabel('pvr')
+    const pvrArtefact: ArtefactEntity | null =
+      await this.artefactService.getArtefactByTechLabel('pvr')
     if (!pvrArtefact) {
       return false
     }
 
     // Determine the value for "PVR" based on the classification attribute
-    const isRegulatorApprovalRequired = await this.checkIfArtefactHasSpecificValue(
-      artefactData,
-      'Рейтинговые системы, подлежащие согласованию Регулятором'
-    )
+    const isRegulatorApprovalRequired =
+      await this.checkIfArtefactHasSpecificValue(
+        artefactData,
+        'Рейтинговые системы, подлежащие согласованию Регулятором'
+      )
 
     const pvrValue = isRegulatorApprovalRequired ? '1' : '0'
 
@@ -95,19 +102,28 @@ export class ArtefactClassificationHandler implements IArtefactHandler {
     artefactData: UpdateArtefactDto,
     valueToCheck: string
   ): Promise<boolean> {
-    const classificationArtefact: ArtefactEntity | null = await this.artefactService.getArtefactByTechLabel(
-      artefactData.artefact_tech_label
-    )
+    const classificationArtefact: ArtefactEntity | null =
+      await this.artefactService.getArtefactByTechLabel(
+        artefactData.artefact_tech_label
+      )
     if (!classificationArtefact) {
       return false
     }
-    const artefactValues: ArtefactValueEntity[] = await this.artefactService.getArtefactValues(classificationArtefact.artefact_id)
-    const resolvedArtefactValueId = this.artefactService.resolveArtefactValueId(artefactData, artefactValues)
+    const artefactValues: ArtefactValueEntity[] =
+      await this.artefactService.getArtefactValues(
+        classificationArtefact.artefact_id
+      )
+    const resolvedArtefactValueId = this.artefactService.resolveArtefactValueId(
+      artefactData,
+      artefactValues
+    )
 
     return (
       Array.isArray(artefactValues) &&
       artefactValues.some(
-        (value) => value.artefact_value_id === resolvedArtefactValueId && value.artefact_value === valueToCheck
+        (value) =>
+          value.artefact_value_id === resolvedArtefactValueId &&
+          value.artefact_value === valueToCheck
       )
     )
   }

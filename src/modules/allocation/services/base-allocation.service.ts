@@ -7,8 +7,7 @@ export abstract class BaseAllocationService implements IAllocationService {
   protected abstract modelsTableName: string
   protected abstract logger: Logger
 
-  protected constructor(public readonly databaseService) {
-  }
+  protected constructor(public readonly databaseService) {}
 
   handleUpdateAllocation(data: UpdateAllocationDto): Promise<boolean> {
     return Promise.resolve(true)
@@ -18,7 +17,7 @@ export abstract class BaseAllocationService implements IAllocationService {
   async getModelById(model_id: UpdateArtefactDto['model_id']): Promise<any> {
     const [model] = await this.databaseService.query(
       `
-      SELECT * FROM ${ this.modelsTableName } WHERE model_id = :model_id
+      SELECT * FROM ${this.modelsTableName} WHERE model_id = :model_id
       `,
       {
         model_id
@@ -28,5 +27,3 @@ export abstract class BaseAllocationService implements IAllocationService {
     return model || null
   }
 }
-
-

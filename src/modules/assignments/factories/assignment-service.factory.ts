@@ -5,10 +5,7 @@ import { IAssignmentService } from '../interfaces'
 
 @Injectable()
 export class AssignmentServiceFactory {
-  constructor(
-    private readonly sumAssignmentService: SumAssignmentService
-  ) {
-  }
+  constructor(private readonly sumAssignmentService: SumAssignmentService) {}
 
   getService(source: MODEL_SOURCES): IAssignmentService {
     let service: IAssignmentService
@@ -18,7 +15,7 @@ export class AssignmentServiceFactory {
         service = this.sumAssignmentService
         break
       default:
-        throw new Error(`Unknown model source ${ source }`)
+        throw new Error(`Unknown model source ${source}`)
     }
 
     return service

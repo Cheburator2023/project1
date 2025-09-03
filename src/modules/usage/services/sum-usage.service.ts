@@ -6,10 +6,34 @@ import { UpdateUsageDto } from '../dto'
 import { SUMUsageEntity, SUMUsageHistEntity } from '../entities'
 import { SumModelService } from 'src/modules/models/services'
 
-type GetUsageParams = Pick<UpdateUsageDto, 'model_id' | 'confirmation_year' | 'confirmation_quarter'>
-type UpdateUsageParams = Pick<UpdateUsageDto, 'model_id' | 'confirmation_date' | 'is_used' | 'confirmation_year' | 'confirmation_quarter'>
-type InsertUsageParams = Pick<UpdateUsageDto, 'model_id' | 'confirmation_date' | 'is_used' | 'confirmation_year' | 'confirmation_quarter'>
-type InsertUsageHistoryParams = Pick<UpdateUsageDto, 'model_id' | 'confirmation_quarter' | 'confirmation_year' | 'is_used' | 'creator'>
+type GetUsageParams = Pick<
+  UpdateUsageDto,
+  'model_id' | 'confirmation_year' | 'confirmation_quarter'
+>
+type UpdateUsageParams = Pick<
+  UpdateUsageDto,
+  | 'model_id'
+  | 'confirmation_date'
+  | 'is_used'
+  | 'confirmation_year'
+  | 'confirmation_quarter'
+>
+type InsertUsageParams = Pick<
+  UpdateUsageDto,
+  | 'model_id'
+  | 'confirmation_date'
+  | 'is_used'
+  | 'confirmation_year'
+  | 'confirmation_quarter'
+>
+type InsertUsageHistoryParams = Pick<
+  UpdateUsageDto,
+  | 'model_id'
+  | 'confirmation_quarter'
+  | 'confirmation_year'
+  | 'is_used'
+  | 'creator'
+>
 
 @Injectable()
 export class SumUsageService extends BaseUsageService implements IUsageService {
@@ -23,7 +47,14 @@ export class SumUsageService extends BaseUsageService implements IUsageService {
   }
 
   async handleUpdateUsage(data: UpdateUsageDto): Promise<boolean> {
-    const { model_id, confirmation_date, is_used, confirmation_year, confirmation_quarter, creator } = data
+    const {
+      model_id,
+      confirmation_date,
+      is_used,
+      confirmation_year,
+      confirmation_quarter,
+      creator
+    } = data
 
     // проверить существование модели
     const model = await this.modelService.getModelById(model_id)
@@ -37,8 +68,13 @@ export class SumUsageService extends BaseUsageService implements IUsageService {
       confirmation_year,
       confirmation_quarter
     })
-    let confirmationDate = confirmation_date !== null ? confirmation_date : usage ? usage.confirmation_date : (new Date()).toISOString().split('T')[0]
-    let isUsed = is_used !== null ? is_used : usage ? usage.confirmed : false
+    const confirmationDate =
+      confirmation_date !== null
+        ? confirmation_date
+        : usage
+        ? usage.confirmation_date
+        : new Date().toISOString().split('T')[0]
+    const isUsed = is_used !== null ? is_used : usage ? usage.confirmed : false
 
     if (!usage) {
       // если нет записи, то добавляем
@@ -55,7 +91,11 @@ export class SumUsageService extends BaseUsageService implements IUsageService {
       }
     } else {
       // проверяем, изменились ли данные
-      if (this.normalizeToLocalDate(usage.confirmation_date) === this.normalizeToLocalDate(confirmation_date) && usage.confirmed === isUsed) {
+      if (
+        this.normalizeToLocalDate(usage.confirmation_date) ===
+          this.normalizeToLocalDate(confirmation_date) &&
+        usage.confirmed === isUsed
+      ) {
         return false
       }
 
@@ -134,7 +174,9 @@ export class SumUsageService extends BaseUsageService implements IUsageService {
     return usage || null
   }
 
-  async insertUsageHistory(params: InsertUsageHistoryParams): Promise<SUMUsageHistEntity | null> {
+  async insertUsageHistory(
+    params: InsertUsageHistoryParams
+  ): Promise<SUMUsageHistEntity | null> {
     const [usageHist] = await this.databaseService.query(
       `
       INSERT INTO model_usage_confirm_history (model_id, quarter, creator_full_name, effective_year, confirmed)

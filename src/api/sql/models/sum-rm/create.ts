@@ -13,6 +13,6 @@ VALUES (nextval('models_seq'),
         :create_date,
         :update_date)
 RETURNING *;
-`;
+`
 
-export { sql };
+export { sql }

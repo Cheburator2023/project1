@@ -19,7 +19,7 @@ import {
   TasksMetric,
   StalledModelsByMonthsMetric,
   FinalStatusByMonthsMetric,
-  DistributionByLifecycleStageMetric,
+  DistributionByLifecycleStageMetric
 } from './implementations'
 import { MetricsEnum } from './enums'
 
@@ -36,11 +36,17 @@ import { MetricsEnum } from './enums'
         new PilotsMetric(MetricsEnum.PilotsMetric),
         new FinalStatusMetric(MetricsEnum.FinalStatusModelsMetric),
         new OnMonitoringMetric(MetricsEnum.OnMonitoringModelsMetric),
-        new TakenOutOfOperationMetric(MetricsEnum.TakenOutOfOperationModelsMetric),
+        new TakenOutOfOperationMetric(
+          MetricsEnum.TakenOutOfOperationModelsMetric
+        ),
         new TasksMetric(MetricsEnum.TasksMetric),
         new StalledModelsByMonthsMetric(MetricsEnum.StalledModelsByMonthMetric),
-        new FinalStatusByMonthsMetric(MetricsEnum.FinalStatusByMonthModelsMetric),
-        new DistributionByLifecycleStageMetric(MetricsEnum.DistributionByLifecycleStageModelsMetric),
+        new FinalStatusByMonthsMetric(
+          MetricsEnum.FinalStatusByMonthModelsMetric
+        ),
+        new DistributionByLifecycleStageMetric(
+          MetricsEnum.DistributionByLifecycleStageModelsMetric
+        )
       ]
     },
     {
@@ -48,7 +54,9 @@ import { MetricsEnum } from './enums'
       useFactory: () => [
         new TotalMetric(MetricsEnum.TotalModelsMetric),
         new RegistryCoverageMetric(MetricsEnum.RegistryCoverageModelsMetric),
-        new RiskCoverageFinalStatusMetric(MetricsEnum.RiskCoverageFinalStatusModelsMetric),
+        new RiskCoverageFinalStatusMetric(
+          MetricsEnum.RiskCoverageFinalStatusModelsMetric
+        )
       ]
     }
   ],
@@ -61,5 +69,4 @@ import { MetricsEnum } from './enums'
   ],
   exports: [MetricsAggregator]
 })
-export class MetricsModule {
-}
+export class MetricsModule {}

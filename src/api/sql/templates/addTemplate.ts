@@ -5,6 +5,6 @@ WITH template_rows AS (
     RETURNING *
 )
 SELECT * FROM template_rows
-`;
+`
 
-export { sql };
+export { sql }

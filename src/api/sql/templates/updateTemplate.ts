@@ -10,4 +10,4 @@ WITH template_rows AS (
 SELECT *
 FROM template_rows
 `
-export { sql };
+export { sql }

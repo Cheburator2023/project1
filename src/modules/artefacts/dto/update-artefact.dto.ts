@@ -6,12 +6,18 @@ export type UpdateArtefactDto = {
   creator: string
 }
 
-export type SingleValueArtefact = Omit<UpdateArtefactDto, 'artefact_string_value' | 'artefact_value_id'> & {
+export type SingleValueArtefact = Omit<
+  UpdateArtefactDto,
+  'artefact_string_value' | 'artefact_value_id'
+> & {
   artefact_string_value: string
   artefact_value_id: number | null
 }
 
-export type MultiDropdownArtefact = Omit<UpdateArtefactDto, 'artefact_string_value' | 'artefact_value_id'> & {
+export type MultiDropdownArtefact = Omit<
+  UpdateArtefactDto,
+  'artefact_string_value' | 'artefact_value_id'
+> & {
   artefact_string_value: string[]
   artefact_value_id: number[]
 }

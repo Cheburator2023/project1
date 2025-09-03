@@ -1,4 +1,7 @@
-import { LIFE_CYCLE_STAGES, LIFE_CYCLE_STAGES_DESCRIPTION } from 'src/system/common/constants'
+import {
+  LIFE_CYCLE_STAGES,
+  LIFE_CYCLE_STAGES_DESCRIPTION
+} from 'src/system/common/constants'
 
 export const FINAL_STATUSES = [
   LIFE_CYCLE_STAGES_DESCRIPTION[LIFE_CYCLE_STAGES.DEVELOPED_NOT_IMPLEMENTED],

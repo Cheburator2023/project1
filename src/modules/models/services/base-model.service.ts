@@ -7,10 +7,11 @@ export abstract class BaseModelService implements IModelService {
   protected abstract modelsTableName: string
   protected abstract logger: Logger
 
-  protected constructor(protected readonly databaseService) {
-  }
+  protected constructor(protected readonly databaseService) {}
 
-  async updateModelName(data: Pick<UpdateModelDto, 'model_id' | 'model_name'>): Promise<boolean> {
+  async updateModelName(
+    data: Pick<UpdateModelDto, 'model_id' | 'model_name'>
+  ): Promise<boolean> {
     const { model_id, model_name } = data
 
     const model: ModelEntity | null = await this.getModelById(model_id)
@@ -25,7 +26,7 @@ export abstract class BaseModelService implements IModelService {
     await this.databaseService.query(
       `
       UPDATE
-        ${ this.modelsTableName }
+        ${this.modelsTableName}
       SET model_name = :model_name
       WHERE model_id = :model_id
       `,
@@ -43,7 +44,10 @@ export abstract class BaseModelService implements IModelService {
     return true
   }
 
-  async updateUpdateDate(data: Pick<UpdateModelDto, 'model_id'> & Partial<Pick<UpdateModelDto, 'update_date'>>): Promise<boolean> {
+  async updateUpdateDate(
+    data: Pick<UpdateModelDto, 'model_id'> &
+      Partial<Pick<UpdateModelDto, 'update_date'>>
+  ): Promise<boolean> {
     const { model_id, update_date = new Date() } = data
 
     const model: ModelEntity | null = await this.getModelById(model_id)
@@ -54,7 +58,7 @@ export abstract class BaseModelService implements IModelService {
     await this.databaseService.query(
       `
       UPDATE
-        ${ this.modelsTableName }
+        ${this.modelsTableName}
       SET update_date = :update_date
       WHERE model_id = :model_id
       `,
@@ -70,7 +74,7 @@ export abstract class BaseModelService implements IModelService {
   async getModelById(model_id: string): Promise<ModelEntity | null> {
     const [model] = await this.databaseService.query(
       `
-      SELECT * FROM ${ this.modelsTableName } WHERE model_id = :model_id
+      SELECT * FROM ${this.modelsTableName} WHERE model_id = :model_id
       `,
       {
         model_id

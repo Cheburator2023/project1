@@ -12,8 +12,9 @@ import { ArtefactExecutionContextService } from '../services'
 export class ArtefactModelIdHandler implements IArtefactHandler {
   private artefactService: IArtefactService
 
-  constructor(private readonly artefactExecutionContextService: ArtefactExecutionContextService) {
-  }
+  constructor(
+    private readonly artefactExecutionContextService: ArtefactExecutionContextService
+  ) {}
 
   /**
    * Configurable list of artefact labels that can be edited programmatically.
@@ -55,7 +56,9 @@ export class ArtefactModelIdHandler implements IArtefactHandler {
    * @param artefactTechLabel The technical label of the artefact.
    * @returns true if the artefact is one of the priority attributes.
    */
-  supports(artefactTechLabel: UpdateArtefactDto['artefact_tech_label']): boolean {
+  supports(
+    artefactTechLabel: UpdateArtefactDto['artefact_tech_label']
+  ): boolean {
     return this.priorityAttributes.includes(artefactTechLabel)
   }
 
@@ -67,7 +70,10 @@ export class ArtefactModelIdHandler implements IArtefactHandler {
   async handle(artefactData: UpdateArtefactDto): Promise<boolean> {
     this.artefactService.canEditArtefact = this.canEditArtefact.bind(this)
 
-    if (artefactData.artefact_tech_label !== 'model_alias' && artefactData.artefact_tech_label !== 'system_model_id') {
+    if (
+      artefactData.artefact_tech_label !== 'model_alias' &&
+      artefactData.artefact_tech_label !== 'system_model_id'
+    ) {
       // Perform the artefact update via the main service
       const result = await this.artefactService.updateArtefact(artefactData)
       if (!result) {
@@ -76,14 +82,19 @@ export class ArtefactModelIdHandler implements IArtefactHandler {
     }
 
     // Retrieve the artefact for "Model Identifier/ID"
-    const modelIdArtefact: ArtefactEntity | null = await this.artefactService.getArtefactByTechLabel('model_id')
+    const modelIdArtefact: ArtefactEntity | null =
+      await this.artefactService.getArtefactByTechLabel('model_id')
     if (!modelIdArtefact) {
       return false
     }
 
     const artefactsBatch = this.artefactExecutionContextService.getBatch()
-    const { currentModelIdValue, priorityValues } = await this.getExistingArtefactValuesForModel(artefactData.model_id)
-    const combinedArtefacts = this.combineArtefacts(artefactsBatch, priorityValues)
+    const { currentModelIdValue, priorityValues } =
+      await this.getExistingArtefactValuesForModel(artefactData.model_id)
+    const combinedArtefacts = this.combineArtefacts(
+      artefactsBatch,
+      priorityValues
+    )
     const preferredValue = this.resolvePreferredValue(combinedArtefacts)
     const needUpdate = preferredValue !== currentModelIdValue
 
@@ -101,18 +112,30 @@ export class ArtefactModelIdHandler implements IArtefactHandler {
   }
 
   private async getExistingArtefactValuesForModel(modelId: string): Promise<{
-    currentModelIdValue: string | null;
-    priorityValues: { artefact_tech_label: string; value: string | null }[];
+    currentModelIdValue: string | null
+    priorityValues: { artefact_tech_label: string; value: string | null }[]
   }> {
     const results: { artefact_tech_label: string; value: string | null }[] = []
-    const modelIdArtefact = await this.artefactService.getArtefactByTechLabel('model_id')
-    const modelIdRealization = await this.artefactService.getLatestArtefactRealization(modelId, modelIdArtefact.artefact_id)
-    const currentModelIdValue = modelIdRealization?.artefact_string_value ?? null
+    const modelIdArtefact = await this.artefactService.getArtefactByTechLabel(
+      'model_id'
+    )
+    const modelIdRealization =
+      await this.artefactService.getLatestArtefactRealization(
+        modelId,
+        modelIdArtefact.artefact_id
+      )
+    const currentModelIdValue =
+      modelIdRealization?.artefact_string_value ?? null
 
     for (const techLabel of this.priorityAttributes) {
-      const artefact: ArtefactEntity | null = await this.artefactService.getArtefactByTechLabel(techLabel)
+      const artefact: ArtefactEntity | null =
+        await this.artefactService.getArtefactByTechLabel(techLabel)
       if (artefact) {
-        const realization = await this.artefactService.getLatestArtefactRealization(modelId, artefact.artefact_id)
+        const realization =
+          await this.artefactService.getLatestArtefactRealization(
+            modelId,
+            artefact.artefact_id
+          )
         results.push({
           artefact_tech_label: artefact.artefact_tech_label,
           value: realization?.artefact_string_value ?? null
@@ -139,18 +162,27 @@ export class ArtefactModelIdHandler implements IArtefactHandler {
 
     // Перезаписываем значениями из batch (batch имеет приоритет)
     for (const artefact of batchArtefacts) {
-      combinedMap.set(artefact.artefact_tech_label, artefact.artefact_string_value)
+      combinedMap.set(
+        artefact.artefact_tech_label,
+        artefact.artefact_string_value
+      )
     }
 
-    return Array.from(combinedMap.entries()).map(([artefact_tech_label, value]) => ({
-      artefact_tech_label,
-      value
-    }))
+    return Array.from(combinedMap.entries()).map(
+      ([artefact_tech_label, value]) => ({
+        artefact_tech_label,
+        value
+      })
+    )
   }
 
-  private resolvePreferredValue(artefacts: { artefact_tech_label: string; value: string | null }[]): string | null {
+  private resolvePreferredValue(
+    artefacts: { artefact_tech_label: string; value: string | null }[]
+  ): string | null {
     for (const attr of this.priorityAttributes) {
-      const artefact = artefacts.find(a => a.artefact_tech_label === attr && a.value !== null)
+      const artefact = artefacts.find(
+        (a) => a.artefact_tech_label === attr && a.value !== null
+      )
       if (artefact) {
         return artefact.value
       }

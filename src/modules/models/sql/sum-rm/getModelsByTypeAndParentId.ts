@@ -159,6 +159,6 @@ FROM models_new m_
 ) a ON m_.model_id = a.system_model_id
 WHERE type_id = :type_id
   AND parent_model_id = :parent_model_id
-`;
+`
 
-export { getModelsByTypeAndParentId };
+export { getModelsByTypeAndParentId }

@@ -13,5 +13,4 @@ import { SumAssignmentService } from './services'
   ],
   exports: [AssignmentService]
 })
-export class AssignmentModule {
-}
+export class AssignmentModule {}

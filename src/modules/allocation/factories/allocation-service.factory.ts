@@ -8,8 +8,7 @@ export class AllocationServiceFactory {
   constructor(
     private readonly sumAllocationService: SumAllocationService,
     private readonly mrmAllocationService: MrmAllocationService
-  ) {
-  }
+  ) {}
 
   getService(source: MODEL_SOURCES): IAllocationService {
     let service: IAllocationService
@@ -22,7 +21,7 @@ export class AllocationServiceFactory {
         service = this.sumAllocationService
         break
       default:
-        throw new Error(`Unknown allocation source ${ source }`)
+        throw new Error(`Unknown allocation source ${source}`)
     }
 
     return service

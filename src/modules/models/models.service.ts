@@ -15,13 +15,36 @@ import {
   updateModelAllocation as updateSumRmModelAllocation
 } from './sql/sum-rm'
 
-import { LIFE_CYCLE_STAGES, LIFE_CYCLE_STAGES_DESCRIPTION, MODEL_SOURCES, MODEL_STATUS, MODEL_DISPLAY_MODES } from 'src/system/common/constants'
-import { BUSINESS_CUSTOMER_DEPARTMENT_MAPPING, DEPARTMENT_TO_STREAM_MAPPING, pseudoArtefacts } from './constants'
-import { Artefact, ArtefactValue, GroupedResults, Model, ModelRelationsResponse, ModelType } from './interfaces'
+import {
+  LIFE_CYCLE_STAGES,
+  LIFE_CYCLE_STAGES_DESCRIPTION,
+  MODEL_SOURCES,
+  MODEL_STATUS,
+  MODEL_DISPLAY_MODES
+} from 'src/system/common/constants'
+import {
+  BUSINESS_CUSTOMER_DEPARTMENT_MAPPING,
+  DEPARTMENT_TO_STREAM_MAPPING,
+  pseudoArtefacts
+} from './constants'
+import {
+  Artefact,
+  ArtefactValue,
+  GroupedResults,
+  Model,
+  ModelRelationsResponse,
+  ModelType
+} from './interfaces'
 import { CompareModelsDto, ModelsDto, ModelWithRelationsDto } from './dto'
 import { ArtefactFormatting, ArtefactFormattingType } from './rules'
 
-import { formatDateTime, isValidDate, parseDate, canEditQuarter, generateModelAlias } from 'src/system/common/utils'
+import {
+  formatDateTime,
+  isValidDate,
+  parseDate,
+  canEditQuarter,
+  generateModelAlias
+} from 'src/system/common/utils'
 import { ModelCreateDto } from 'src/api/dto/index.dto'
 import { randomUUID } from 'crypto'
 import { sql as parentSumRmModel } from 'src/api/sql/models/sum-rm/parent'
@@ -30,14 +53,14 @@ import { sql as newArtefacts } from 'src/api/sql/artefacts/new'
 import { ModelEntity } from './entities'
 
 interface ArtefactUpdateDto {
-  artefact_tech_label: string,
-  artefact_string_value: string,
+  artefact_tech_label: string
+  artefact_string_value: string
   artefact_value_id: string | null
 }
 
 interface ModelsUpdateDto {
-  model_id: string;
-  model_source?: MODEL_SOURCES,
+  model_id: string
+  model_source?: MODEL_SOURCES
   artefacts: ArtefactUpdateDto[]
 }
 
@@ -69,7 +92,7 @@ export class ModelsService {
 
     // 2. Форматируем копии моделей
     const resultsWithFormatting = await this.formatResults(
-      rawResults.map(model => ({ ...model }))
+      rawResults.map((model) => ({ ...model }))
     )
 
     // 3. Фильтрация по режиму эксплуатации (если не отключена)
@@ -85,15 +108,26 @@ export class ModelsService {
     return filteredByGroups
   }
 
-  async getModelsByDates({ firstDate, secondDate }: CompareModelsDto, groups?: []): Promise<{ data: { cards: GroupedResults } }> {
+  async getModelsByDates(
+    { firstDate, secondDate }: CompareModelsDto,
+    groups?: []
+  ): Promise<{ data: { cards: GroupedResults } }> {
     const firstDateResults = await this.fetchAndMergeModels(firstDate, null)
     const secondDateResults = await this.fetchAndMergeModels(secondDate, null)
 
-    const filteredFirstDateResults = groups ? this.filterModelsByUserGroups(firstDateResults, groups) : firstDateResults
-    const filteredSecondDateResults = groups ? this.filterModelsByUserGroups(secondDateResults, groups) : secondDateResults
+    const filteredFirstDateResults = groups
+      ? this.filterModelsByUserGroups(firstDateResults, groups)
+      : firstDateResults
+    const filteredSecondDateResults = groups
+      ? this.filterModelsByUserGroups(secondDateResults, groups)
+      : secondDateResults
 
-    const formattedFirstDateResults = await this.formatResults(filteredFirstDateResults)
-    const formattedSecondDateResults = await this.formatResults(filteredSecondDateResults)
+    const formattedFirstDateResults = await this.formatResults(
+      filteredFirstDateResults
+    )
+    const formattedSecondDateResults = await this.formatResults(
+      filteredSecondDateResults
+    )
 
     const groupedResults = this.groupResultsByModelIdAndSource(
       formattedFirstDateResults,
@@ -107,22 +141,35 @@ export class ModelsService {
     }
   }
 
-  async getModelWithRelations({ model_id }: ModelWithRelationsDto): Promise<ModelRelationsResponse> {
-    const mrmModel = await this.mrmDatabaseService.query(getSumRmModel, { model_id })
+  async getModelWithRelations({
+    model_id
+  }: ModelWithRelationsDto): Promise<ModelRelationsResponse> {
+    const mrmModel = await this.mrmDatabaseService.query(getSumRmModel, {
+      model_id
+    })
 
-    const modelTypes: ModelType[] = await this.mrmDatabaseService.query('SELECT * FROM model_types', {})
+    const modelTypes: ModelType[] = await this.mrmDatabaseService.query(
+      'SELECT * FROM model_types',
+      {}
+    )
 
     const modelTypeDict = this.createModelTypeDictionary(modelTypes)
 
-    const modules = await this.mrmDatabaseService.query(getSumRmModelsByTypeAndParentId, {
-      type_id: modelTypeDict.module,
-      parent_model_id: model_id
-    })
+    const modules = await this.mrmDatabaseService.query(
+      getSumRmModelsByTypeAndParentId,
+      {
+        type_id: modelTypeDict.module,
+        parent_model_id: model_id
+      }
+    )
 
-    const calibrations = await this.mrmDatabaseService.query(getSumRmModelsByTypeAndParentId, {
-      type_id: modelTypeDict.calibration,
-      parent_model_id: model_id
-    })
+    const calibrations = await this.mrmDatabaseService.query(
+      getSumRmModelsByTypeAndParentId,
+      {
+        type_id: modelTypeDict.calibration,
+        parent_model_id: model_id
+      }
+    )
 
     return {
       data: {
@@ -136,22 +183,33 @@ export class ModelsService {
   }
 
   async modelCreate(artefacts: ModelCreateDto[], user) {
-    const model_id = randomUUID();
-    let model_version = "1";
-    let addParentArtefactsQueryParams;
+    const model_id = randomUUID()
+    let model_version = '1'
+    let addParentArtefactsQueryParams
 
-    const parent_model_id_artefact = artefacts.find(artefact => artefact.artefact_tech_label === "parent_model_id");
-    const parent_model_id = parent_model_id_artefact ? parent_model_id_artefact.artefact_string_value : undefined;
-    const model_name_artefact = artefacts.find(artefact => artefact.artefact_tech_label === "model_name_validation");
-    const model_name = model_name_artefact ? model_name_artefact.artefact_string_value : undefined;
+    const parent_model_id_artefact = artefacts.find(
+      (artefact) => artefact.artefact_tech_label === 'parent_model_id'
+    )
+    const parent_model_id = parent_model_id_artefact
+      ? parent_model_id_artefact.artefact_string_value
+      : undefined
+    const model_name_artefact = artefacts.find(
+      (artefact) => artefact.artefact_tech_label === 'model_name_validation'
+    )
+    const model_name = model_name_artefact
+      ? model_name_artefact.artefact_string_value
+      : undefined
 
     if (!model_name) {
-      throw new BadRequestException("Bad Request", "model_name is required");
+      throw new BadRequestException('Bad Request', 'model_name is required')
     }
 
     if (parent_model_id) {
       // ищем родительскую модель
-      const parentModels = await this.mrmDatabaseService.query(parentSumRmModel, { parent_model_id });
+      const parentModels = await this.mrmDatabaseService.query(
+        parentSumRmModel,
+        { parent_model_id }
+      )
 
       // находим версию родительской модели
       const { root_model_id, parent_model_version } = parentModels.reduce(
@@ -160,19 +218,28 @@ export class ModelsService {
             !prev.parent_model_version ||
             prev.parent_model_version < curr.parent_model_version
           )
-            return curr;
-          return prev;
+            return curr
+          return prev
         },
         {}
-      );
+      )
 
-      model_version = String(Number(parent_model_version) + 1);
+      model_version = String(Number(parent_model_version) + 1)
 
-      const parentArtefacts = await this.mrmDatabaseService
-        .query("SELECT * FROM artefact_realizations_new WHERE model_id = :parent_model_id  AND effective_to = TO_TIMESTAMP('9999-12-3123:59:59','YYYY-MM-DDHH24:MI:SS')", { parent_model_id });
+      const parentArtefacts = await this.mrmDatabaseService.query(
+        "SELECT * FROM artefact_realizations_new WHERE model_id = :parent_model_id  AND effective_to = TO_TIMESTAMP('9999-12-3123:59:59','YYYY-MM-DDHH24:MI:SS')",
+        { parent_model_id }
+      )
 
-      addParentArtefactsQueryParams = parentArtefacts
-        .map(({ artefact_id, artefact_string_value, artefact_value_id }) => ({ artefact_id, artefact_string_value, artefact_value_id, model_id, creator: user.username }));
+      addParentArtefactsQueryParams = parentArtefacts.map(
+        ({ artefact_id, artefact_string_value, artefact_value_id }) => ({
+          artefact_id,
+          artefact_string_value,
+          artefact_value_id,
+          model_id,
+          creator: user.username
+        })
+      )
     }
 
     const createModelQueryParams = {
@@ -181,12 +248,18 @@ export class ModelsService {
       model_version,
       create_date: new Date(),
       update_date: new Date(),
-      model_creator: user.username,
-    };
-    const [ newModel ]: ModelEntity[] = await this.mrmDatabaseService.query(createModel, createModelQueryParams);
+      model_creator: user.username
+    }
+    const [newModel]: ModelEntity[] = await this.mrmDatabaseService.query(
+      createModel,
+      createModelQueryParams
+    )
 
     if (addParentArtefactsQueryParams) {
-      await this.mrmDatabaseService.queryAll(newArtefacts, addParentArtefactsQueryParams);
+      await this.mrmDatabaseService.queryAll(
+        newArtefacts,
+        addParentArtefactsQueryParams
+      )
     }
 
     const artefactsForUpdate = [
@@ -195,21 +268,31 @@ export class ModelsService {
         artefact_string_value: model_id,
         artefact_value_id: null
       },
-      ...artefacts.filter(artefact => artefact.artefact_tech_label !== 'model_name')
-    ].map(artefact => ({ ...artefact, model_id, creator: user.username }))
+      ...artefacts.filter(
+        (artefact) => artefact.artefact_tech_label !== 'model_name'
+      )
+    ].map((artefact) => ({ ...artefact, model_id, creator: user.username }))
 
-    const { ModelDefaultsService } = await import('./services/model-defaults.service')
+    const { ModelDefaultsService } = await import(
+      './services/model-defaults.service'
+    )
     const defaultsService = new ModelDefaultsService()
-    const defaults = await defaultsService.applyDefaultsOnCreate(model_id, artefacts)
-    artefactsForUpdate.push(...(defaults as unknown as typeof artefactsForUpdate))
+    const defaults = await defaultsService.applyDefaultsOnCreate(
+      model_id,
+      artefacts
+    )
+    artefactsForUpdate.push(
+      ...(defaults as unknown as typeof artefactsForUpdate)
+    )
 
     await this.executeDatabaseUpdates({ artefactsForUpdate }, MODEL_SOURCES.MRM)
 
-    return this.getModels({ model_id, ignoreModeFilter: true });
+    return this.getModels({ model_id, ignoreModeFilter: true })
   }
 
   async surrogateModelCreate(model_id: string): Promise<ModelEntity | null> {
-    const modelSum: ModelEntity | null = await this.sumModelService.getModelById(model_id)
+    const modelSum: ModelEntity | null =
+      await this.sumModelService.getModelById(model_id)
 
     if (!modelSum) {
       return null
@@ -251,23 +334,32 @@ export class ModelsService {
     return newModel
   }
 
-  private filterModelsByDisplayMode(models: Model[], mode: string[] | null): Model[] {
+  private filterModelsByDisplayMode(
+    models: Model[],
+    mode: string[] | null
+  ): Model[] {
     // Определяем активные режимы эксплуатации (Архив, Ошибка заведения, Ожидает удаления)
     const activeModes = new Set(mode ?? [])
-    const isArchiveMode = activeModes.has(MODEL_DISPLAY_MODES.ARCHIVE);
-    const isCreationErrorMode = activeModes.has(MODEL_DISPLAY_MODES.CREATION_ERROR);
-    const isPendingDeleteMode = activeModes.has(MODEL_DISPLAY_MODES.PENDING_DELETE);
+    const isArchiveMode = activeModes.has(MODEL_DISPLAY_MODES.ARCHIVE)
+    const isCreationErrorMode = activeModes.has(
+      MODEL_DISPLAY_MODES.CREATION_ERROR
+    )
+    const isPendingDeleteMode = activeModes.has(
+      MODEL_DISPLAY_MODES.PENDING_DELETE
+    )
 
-    return models.filter(model => {
+    return models.filter((model) => {
       const { model_source, models_is_active_flg, business_status } = model
 
       // Вычисляем статус модели
-      const isArchive = models_is_active_flg === '0' || business_status === MODEL_STATUS.ARCHIVE
+      const isArchive =
+        models_is_active_flg === '0' || business_status === MODEL_STATUS.ARCHIVE
       const isCreationError = business_status === MODEL_STATUS.CREATION_ERROR
       const isPendingDelete = business_status === MODEL_STATUS.PENDING_DELETE
 
       // 1. Показываем архивные модели из SUM, если включен режим Архив
-      if (model_source === MODEL_SOURCES.SUM && isArchive && isArchiveMode) return true
+      if (model_source === MODEL_SOURCES.SUM && isArchive && isArchiveMode)
+        return true
 
       // 2. Показываем модели с ошибкой заведения и ожидающие удаления из MRM, если соответствующие режимы включены
       if (model_source === MODEL_SOURCES.MRM) {
@@ -276,9 +368,7 @@ export class ModelsService {
       }
 
       // 3. По-умолчанию: показываем, если модели активны и не находятся в статусах ошибка заведения и ожидает удаления
-      const isActive = model_source === MODEL_SOURCES.SUM
-        ? !isArchive
-        : true // для моделей MRM активность не проверяется
+      const isActive = model_source === MODEL_SOURCES.SUM ? !isArchive : true // для моделей MRM активность не проверяется
       const isValidStatus = !isCreationError && !isPendingDelete
 
       return isActive && isValidStatus
@@ -286,14 +376,21 @@ export class ModelsService {
   }
 
   // Фильтрация моделей в зависимости от групп пользователя
-  private filterModelsByUserGroups(models: Model[], userGroups: string[]): Model[] {
-    const formattedGroups = userGroups.map(group => group.trim())
+  private filterModelsByUserGroups(
+    models: Model[],
+    userGroups: string[]
+  ): Model[] {
+    const formattedGroups = userGroups.map((group) => group.trim())
 
     // Если пользователь входит в группу /business_customer
-    if (formattedGroups.some(group => group.startsWith('/departament_business_customer'))) {
+    if (
+      formattedGroups.some((group) =>
+        group.startsWith('/departament_business_customer')
+      )
+    ) {
       // Собираем все департаменты пользователя в один массив
       const userDepartments = formattedGroups
-        .flatMap(group => {
+        .flatMap((group) => {
           const key = group.split('/').pop() || ''
           return BUSINESS_CUSTOMER_DEPARTMENT_MAPPING[key] || []
         })
@@ -302,27 +399,35 @@ export class ModelsService {
       return models.filter((model) => {
         const modelDepartments = (model.business_customer_departament || '')
           .split(',')
-          .map(dep => dep.trim())
+          .map((dep) => dep.trim())
 
-        return userDepartments.some(userDep => modelDepartments.includes(userDep))
+        return userDepartments.some((userDep) =>
+          modelDepartments.includes(userDep)
+        )
       })
     }
 
     // Если пользователь входит в группы /ds или /ds/ds_lead
-    if (formattedGroups.includes('/ds') || formattedGroups.includes('/ds/ds_lead')) {
+    if (
+      formattedGroups.includes('/ds') ||
+      formattedGroups.includes('/ds/ds_lead')
+    ) {
       // Извлекаем последние сегменты групп
       const userDepartments = formattedGroups
-        .filter(group => group.startsWith('/departament'))
-        .map(group => group.split('/').pop() || '')
+        .filter((group) => group.startsWith('/departament'))
+        .map((group) => group.split('/').pop() || '')
 
-      const userStreams = userDepartments.flatMap(department => {
+      const userStreams = userDepartments.flatMap((department) => {
         return DEPARTMENT_TO_STREAM_MAPPING[department] || []
       })
 
       return models.filter((model) => {
         const modelStream = model.ds_stream
 
-        return userStreams.includes(modelStream) || userDepartments.includes(modelStream)
+        return (
+          userStreams.includes(modelStream) ||
+          userDepartments.includes(modelStream)
+        )
       })
     }
 
@@ -331,8 +436,11 @@ export class ModelsService {
 
   private isBasicInfoArtefact(label) {
     return [
-      'model_id', 'model_version', 'model_alias',
-      'model_status', 'create_date'
+      'model_id',
+      'model_version',
+      'model_alias',
+      'model_status',
+      'create_date'
     ].includes(label)
   }
 
@@ -342,24 +450,34 @@ export class ModelsService {
 
   private isAllocationUsageArtefact(label) {
     return [
-      'allocation_kib_usage', 'allocation_smb_usage', 'allocation_rb_usage',
-      'allocation_kc_usage', 'allocation_other_usage'
+      'allocation_kib_usage',
+      'allocation_smb_usage',
+      'allocation_rb_usage',
+      'allocation_kc_usage',
+      'allocation_other_usage'
     ].includes(label)
   }
 
   private isAllocationCommentArtefact(label) {
     return [
-      'allocation_kib_comment', 'allocation_smb_comment', 'allocation_rb_comment',
-      'allocation_kc_comment', 'allocation_other_comment'
+      'allocation_kib_comment',
+      'allocation_smb_comment',
+      'allocation_rb_comment',
+      'allocation_kc_comment',
+      'allocation_other_comment'
     ].includes(label)
   }
 
   private isUsageArtefact(label) {
     return [
-      'usage_confirm_date_q1', 'usage_confirm_date_q2',
-      'usage_confirm_date_q3', 'usage_confirm_date_q4',
-      'usage_confirm_flag_q1', 'usage_confirm_flag_q2',
-      'usage_confirm_flag_q3', 'usage_confirm_flag_q4'
+      'usage_confirm_date_q1',
+      'usage_confirm_date_q2',
+      'usage_confirm_date_q3',
+      'usage_confirm_date_q4',
+      'usage_confirm_flag_q1',
+      'usage_confirm_flag_q2',
+      'usage_confirm_flag_q3',
+      'usage_confirm_flag_q4'
     ].includes(label)
   }
 
@@ -397,14 +515,18 @@ export class ModelsService {
       const isOriginalSumModel = model_source === MODEL_SOURCES.SUM
 
       if (isOriginalSumModel) {
-        const newModel: ModelEntity | null = await this.ensureSurrogateModelExists(model_id)
+        const newModel: ModelEntity | null =
+          await this.ensureSurrogateModelExists(model_id)
 
         if (newModel) {
           // Always ensure model_alias is updated for SUM models, regardless of current source
           updatesBySource[MODEL_SOURCES.MRM].artefactsForUpdate.push({
             model_id,
             artefact_tech_label: 'model_alias',
-            artefact_string_value: generateModelAlias(newModel.root_model_id, newModel.model_version),
+            artefact_string_value: generateModelAlias(
+              newModel.root_model_id,
+              newModel.model_version
+            ),
             artefact_value_id: null,
             creator
           })
@@ -419,9 +541,15 @@ export class ModelsService {
         }
 
         if (this.isNameArtefact(artefact_tech_label)) {
-          updates.namesForUpdate.push({ model_id, model_name: artefact_string_value })
+          updates.namesForUpdate.push({
+            model_id,
+            model_name: artefact_string_value
+          })
           if (isOriginalSumModel) {
-            updatesBySource[MODEL_SOURCES.MRM].namesForUpdate.push({ model_id, model_name: artefact_string_value })
+            updatesBySource[MODEL_SOURCES.MRM].namesForUpdate.push({
+              model_id,
+              model_name: artefact_string_value
+            })
           }
         } else if (this.isAllocationUsageArtefact(artefact_tech_label)) {
           updates.modelsAllocationForUpdate.push({
@@ -466,20 +594,38 @@ export class ModelsService {
             case 'model_changes_info':
             case 'model_desc':
             case 'rfd':
-              updatesBySource[MODEL_SOURCES.MRM].artefactsForUpdate.push({ model_id, ...artefactItem, creator })
+              updatesBySource[MODEL_SOURCES.MRM].artefactsForUpdate.push({
+                model_id,
+                ...artefactItem,
+                creator
+              })
               continue
           }
-          
-          updates.artefactsForUpdate.push({ model_id, ...artefactItem, creator })
+
+          updates.artefactsForUpdate.push({
+            model_id,
+            ...artefactItem,
+            creator
+          })
           if (isOriginalSumModel) {
-            updatesBySource[MODEL_SOURCES.MRM].artefactsForUpdate.push({ model_id, ...artefactItem, creator })
+            updatesBySource[MODEL_SOURCES.MRM].artefactsForUpdate.push({
+              model_id,
+              ...artefactItem,
+              creator
+            })
           }
         }
       }
     }
 
-    await this.executeDatabaseUpdates(updatesBySource[MODEL_SOURCES.SUM], MODEL_SOURCES.SUM)
-    await this.executeDatabaseUpdates(updatesBySource[MODEL_SOURCES.MRM], MODEL_SOURCES.MRM)
+    await this.executeDatabaseUpdates(
+      updatesBySource[MODEL_SOURCES.SUM],
+      MODEL_SOURCES.SUM
+    )
+    await this.executeDatabaseUpdates(
+      updatesBySource[MODEL_SOURCES.MRM],
+      MODEL_SOURCES.MRM
+    )
 
     await new Promise((resolve, reject) => {
       setTimeout(resolve, 1000)
@@ -488,7 +634,9 @@ export class ModelsService {
     if (modelIds.size) {
       const modelsArray = Array.from(modelIds)
       const results = await Promise.all(
-        modelsArray.map((model_id) => this.getModels({ model_id, ignoreModeFilter: true }) )
+        modelsArray.map((model_id) =>
+          this.getModels({ model_id, ignoreModeFilter: true })
+        )
       )
 
       return [].concat(...results)
@@ -496,9 +644,11 @@ export class ModelsService {
   }
 
   async ensureSurrogateModelExists(model_id): Promise<ModelEntity | null> {
-    const modelExistsInSum: ModelEntity | null = await this.sumModelService.getModelById(model_id)
+    const modelExistsInSum: ModelEntity | null =
+      await this.sumModelService.getModelById(model_id)
     if (modelExistsInSum) {
-      const modelExistsInMrm: ModelEntity | null = await this.mrmModelService.getModelById(model_id)
+      const modelExistsInMrm: ModelEntity | null =
+        await this.mrmModelService.getModelById(model_id)
       if (!modelExistsInMrm) {
         return await this.surrogateModelCreate(model_id)
       }
@@ -507,10 +657,17 @@ export class ModelsService {
 
   mergeArtefacts(modelsArtefacts) {
     return modelsArtefacts.map((modelItem) => {
-      const artefactMap = new Map<string, { stringValues: string[], valueIds: (number | null)[] }>()
+      const artefactMap = new Map<
+        string,
+        { stringValues: string[]; valueIds: (number | null)[] }
+      >()
 
       modelItem.artefacts.forEach((artefact) => {
-        const { artefact_tech_label, artefact_string_value, artefact_value_id } = artefact
+        const {
+          artefact_tech_label,
+          artefact_string_value,
+          artefact_value_id
+        } = artefact
 
         if (!artefactMap.has(artefact_tech_label)) {
           artefactMap.set(artefact_tech_label, {
@@ -524,21 +681,23 @@ export class ModelsService {
         entry.valueIds.push(artefact_value_id)
       })
 
-      const mergedArtefacts = Array.from(artefactMap.entries()).map(([label, { stringValues, valueIds }]) => {
-        if (stringValues.length === 1) {
+      const mergedArtefacts = Array.from(artefactMap.entries()).map(
+        ([label, { stringValues, valueIds }]) => {
+          if (stringValues.length === 1) {
+            return {
+              artefact_tech_label: label,
+              artefact_string_value: stringValues[0],
+              artefact_value_id: valueIds[0]
+            }
+          }
+
           return {
             artefact_tech_label: label,
-            artefact_string_value: stringValues[0],
-            artefact_value_id: valueIds[0]
+            artefact_string_value: stringValues,
+            artefact_value_id: valueIds
           }
         }
-
-        return {
-          artefact_tech_label: label,
-          artefact_string_value: stringValues,
-          artefact_value_id: valueIds
-        }
-      })
+      )
 
       return {
         ...modelItem,
@@ -553,7 +712,7 @@ export class ModelsService {
     } else if (source === MODEL_SOURCES.MRM) {
       await this.mrmModelService.updateModelName(data)
     } else {
-      throw new Error(`Unknown model source: ${ source }`)
+      throw new Error(`Unknown model source: ${source}`)
     }
   }
 
@@ -586,24 +745,26 @@ export class ModelsService {
 
   private getGblId(label) {
     const map = {
-      'allocation_kib_usage': 1,
-      'allocation_smb_usage': 2,
-      'allocation_rb_usage': 3,
-      'allocation_kc_usage': 4,
-      'allocation_other_usage': 5,
-      'allocation_kib_comment': 1,
-      'allocation_smb_comment': 2,
-      'allocation_rb_comment': 3,
-      'allocation_kc_comment': 4,
-      'allocation_other_comment': 5
+      allocation_kib_usage: 1,
+      allocation_smb_usage: 2,
+      allocation_rb_usage: 3,
+      allocation_kc_usage: 4,
+      allocation_other_usage: 5,
+      allocation_kib_comment: 1,
+      allocation_smb_comment: 2,
+      allocation_rb_comment: 3,
+      allocation_kc_comment: 4,
+      allocation_other_comment: 5
     }
     return map[label]
   }
 
-  private createModelTypeDictionary(modelTypes: ModelType[]): Record<string, number> {
+  private createModelTypeDictionary(
+    modelTypes: ModelType[]
+  ): Record<string, number> {
     const dictionary: Record<string, number> = {}
 
-    modelTypes.forEach(type => {
+    modelTypes.forEach((type) => {
       dictionary[type.name] = type.id
     })
 
@@ -626,18 +787,40 @@ export class ModelsService {
       use_previous_year_for_q4: canEditQuarter(4, new Date().getFullYear() - 1)
     })
 
-    return await this.mergeSumAndMrmModels(sumModels, mrmModels, 'system_model_id', filterDate)
+    return await this.mergeSumAndMrmModels(
+      sumModels,
+      mrmModels,
+      'system_model_id',
+      filterDate
+    )
   }
 
-  private async mergeSumAndMrmModels(sumModels: Model[], mrmModels: Model[], prop: string, filterDate: string | null): Promise<Model[]> {
+  private async mergeSumAndMrmModels(
+    sumModels: Model[],
+    mrmModels: Model[],
+    prop: string,
+    filterDate: string | null
+  ): Promise<Model[]> {
     // Prefetch maps via dedicated service and merge via merge service (DI preferred; dynamic import used here)
-    const { ModelMergePrefetchService } = await import('./services/model-merge-prefetch.service')
+    const { ModelMergePrefetchService } = await import(
+      './services/model-merge-prefetch.service'
+    )
     const { ModelMergeService } = await import('./services/model-merge.service')
-    const prefetch = new ModelMergePrefetchService(this.sumDatabaseService, this.mrmDatabaseService)
-    const { sumMap, mrmMap } = await prefetch.buildMergeMaps(sumModels, mrmModels, filterDate)
+    const prefetch = new ModelMergePrefetchService(
+      this.sumDatabaseService,
+      this.mrmDatabaseService
+    )
+    const { sumMap, mrmMap } = await prefetch.buildMergeMaps(
+      sumModels,
+      mrmModels,
+      filterDate
+    )
 
     const merger = new ModelMergeService()
-    return await merger.mergeModels(sumModels, mrmModels, filterDate, { sumMap, mrmMap })
+    return await merger.mergeModels(sumModels, mrmModels, filterDate, {
+      sumMap,
+      mrmMap
+    })
   }
 
   private async formatResults(models: Model[]): Promise<Model[]> {
@@ -645,7 +828,9 @@ export class ModelsService {
 
     return models.map((model: Model): Model => {
       Object.keys(model).forEach((techLabel) => {
-        const artefact = artefacts.find(({ artefact_tech_label }) => artefact_tech_label === techLabel)
+        const artefact = artefacts.find(
+          ({ artefact_tech_label }) => artefact_tech_label === techLabel
+        )
 
         if (artefact) {
           const artefactTechLabel = artefact.artefact_tech_label
@@ -671,28 +856,30 @@ export class ModelsService {
           if (artefactTechLabel === 'model_status') {
             if (
               Object.values(LIFE_CYCLE_STAGES).includes(value) ||
-              model.camunda_model_stage?.includes(MODEL_STATUS.REMOVED_FROM_OPERATION) ||
+              model.camunda_model_stage?.includes(
+                MODEL_STATUS.REMOVED_FROM_OPERATION
+              ) ||
               model.camunda_model_status?.includes(MODEL_STATUS.ARCHIVE)
             ) {
-              const businessStatus = model.business_status;
-              const bpmnInstanceName = value;
+              const businessStatus = model.business_status
+              const bpmnInstanceName = value
 
               const modelStage = ModelsService.formatModelStatus(
                 businessStatus,
                 bpmnInstanceName,
                 model.camunda_model_stage,
-                model.camunda_model_status,
-              );
-              
-              model['model_status'] = modelStage;
+                model.camunda_model_status
+              )
+
+              model['model_status'] = modelStage
             }
 
-            model['business_status_uncut'] = model.business_status;
+            model['business_status_uncut'] = model.business_status
             const modelStatus = ModelsService.formatModelBusinessStatus(
               model.camunda_model_stage,
               model.camunda_model_status || model.business_status
-            );
-            model['business_status'] = modelStatus;
+            )
+            model['business_status'] = modelStatus
           }
         }
       })
@@ -706,7 +893,9 @@ export class ModelsService {
     return isValidDate(value) ? formatDateTime(parseDate(value)) : ''
   }
 
-  private static formatStringField(value: number | string | null): string | null {
+  private static formatStringField(
+    value: number | string | null
+  ): string | null {
     if (value === null) return null
     return String(value)
   }
@@ -735,46 +924,48 @@ export class ModelsService {
       case LIFE_CYCLE_STAGES_DESCRIPTION[LIFE_CYCLE_STAGES.FAST_MODEL_PROCESS]:
         if (
           modelStatus === MODEL_STATUS.IMPLEMENTED_IN_PIM ||
-          modelStatus === MODEL_STATUS.VALIDATED_OUTSIDE_PIM || 
+          modelStatus === MODEL_STATUS.VALIDATED_OUTSIDE_PIM ||
           modelStatus === MODEL_STATUS.IMPLEMENTED_OUTSIDE_PIM
         ) {
-          return LIFE_CYCLE_STAGES_DESCRIPTION[LIFE_CYCLE_STAGES.VALIDATION];
+          return LIFE_CYCLE_STAGES_DESCRIPTION[LIFE_CYCLE_STAGES.VALIDATION]
         }
-        break;
-  
+        break
+
       case LIFE_CYCLE_STAGES_DESCRIPTION[LIFE_CYCLE_STAGES.MODEL]:
         if (
-          modelStatus === MODEL_STATUS.VALIDATED_OUTSIDE_PIM || 
+          modelStatus === MODEL_STATUS.VALIDATED_OUTSIDE_PIM ||
           modelStatus === MODEL_STATUS.IMPLEMENTED_OUTSIDE_PIM
         ) {
-          return LIFE_CYCLE_STAGES_DESCRIPTION[LIFE_CYCLE_STAGES.VALIDATION];
+          return LIFE_CYCLE_STAGES_DESCRIPTION[LIFE_CYCLE_STAGES.VALIDATION]
         }
-        break;
-  
+        break
+
       case LIFE_CYCLE_STAGES_DESCRIPTION[LIFE_CYCLE_STAGES.INTEGRATION_MODEL]:
         if (
-          modelStatus === MODEL_STATUS.VALIDATED_OUTSIDE_PIM || 
+          modelStatus === MODEL_STATUS.VALIDATED_OUTSIDE_PIM ||
           modelStatus === MODEL_STATUS.IMPLEMENTED_OUTSIDE_PIM
         ) {
-          return LIFE_CYCLE_STAGES_DESCRIPTION[LIFE_CYCLE_STAGES.VALIDATION];
+          return LIFE_CYCLE_STAGES_DESCRIPTION[LIFE_CYCLE_STAGES.VALIDATION]
         }
-        break;
-  
-      case LIFE_CYCLE_STAGES_DESCRIPTION[LIFE_CYCLE_STAGES.TEST_PREPROD_TRANSFER_PROD]:
+        break
+
+      case LIFE_CYCLE_STAGES_DESCRIPTION[
+        LIFE_CYCLE_STAGES.TEST_PREPROD_TRANSFER_PROD
+      ]:
         if (
-          modelStatus === MODEL_STATUS.IMPLEMENTED_IN_PIM || 
+          modelStatus === MODEL_STATUS.IMPLEMENTED_IN_PIM ||
           modelStatus === MODEL_STATUS.VALIDATED_IN_PIM
         ) {
-          return LIFE_CYCLE_STAGES_DESCRIPTION[LIFE_CYCLE_STAGES.VALIDATION];
+          return LIFE_CYCLE_STAGES_DESCRIPTION[LIFE_CYCLE_STAGES.VALIDATION]
         }
-        break;
-  
+        break
+
       default:
-        return businessStatus;
+        return businessStatus
     }
-  
-    return businessStatus;
-  };
+
+    return businessStatus
+  }
 
   private static formatModelStatus(
     status,
@@ -784,11 +975,13 @@ export class ModelsService {
   ) {
     if (bpmn_instance_name === null) return null
 
-    const lastActiveStatus = ModelsService.getLastActiveStatus(status || camunda_model_status)
+    const lastActiveStatus = ModelsService.getLastActiveStatus(
+      status || camunda_model_status
+    )
 
     const stageIncludesRemoval = camunda_model_stage
       ?.split(';')
-      .map(s => s.trim())
+      .map((s) => s.trim())
       .includes(LIFE_CYCLE_STAGES_DESCRIPTION[LIFE_CYCLE_STAGES.REMOVAL])
 
     if (
@@ -799,20 +992,29 @@ export class ModelsService {
         lastActiveStatus === MODEL_STATUS.DEVELOPED_NOT_IMPLEMENTED ||
         lastActiveStatus === MODEL_STATUS.INEFFECTIVE_FOR_BUSINESS
       ) {
-        return LIFE_CYCLE_STAGES_DESCRIPTION[LIFE_CYCLE_STAGES.DEVELOPED_NOT_IMPLEMENTED]
+        return LIFE_CYCLE_STAGES_DESCRIPTION[
+          LIFE_CYCLE_STAGES.DEVELOPED_NOT_IMPLEMENTED
+        ]
       } else {
         return LIFE_CYCLE_STAGES_DESCRIPTION[LIFE_CYCLE_STAGES.REMOVAL]
       }
     }
 
-    let currentBusinessStatus = LIFE_CYCLE_STAGES_DESCRIPTION?.[bpmn_instance_name.trim()]
+    let currentBusinessStatus =
+      LIFE_CYCLE_STAGES_DESCRIPTION?.[bpmn_instance_name.trim()]
 
-    currentBusinessStatus = ModelsService.determineLifecycleStage(currentBusinessStatus, lastActiveStatus)
+    currentBusinessStatus = ModelsService.determineLifecycleStage(
+      currentBusinessStatus,
+      lastActiveStatus
+    )
 
     // фикс "транзита состояния модели"
-    if (bpmn_instance_name === LIFE_CYCLE_STAGES.MODEL_STATE_TRANSITION && (camunda_model_status || camunda_model_stage)) {
-      currentBusinessStatus = camunda_model_stage;
-    } 
+    if (
+      bpmn_instance_name === LIFE_CYCLE_STAGES.MODEL_STATE_TRANSITION &&
+      (camunda_model_status || camunda_model_stage)
+    ) {
+      currentBusinessStatus = camunda_model_stage
+    }
 
     switch (lastActiveStatus) {
       case MODEL_STATUS.DEVELOPED_NOT_IMPLEMENTED:
@@ -830,11 +1032,11 @@ export class ModelsService {
     stage: string | null,
     status: string | null
   ) {
-    const lastActiveStatus = ModelsService.getLastActiveStatus(status || '');
+    const lastActiveStatus = ModelsService.getLastActiveStatus(status || '')
 
     if (!stage) return lastActiveStatus
 
-    const stageList = stage.split(';').map(s => s.trim())
+    const stageList = stage.split(';').map((s) => s.trim())
 
     // if (stageList.includes(MODEL_STATUS.REMOVED_FROM_OPERATION)) {
     //   return MODEL_STATUS.ARCHIVE
@@ -850,11 +1052,21 @@ export class ModelsService {
     const groupedResults: GroupedResults = {}
 
     const allResults = [...firstDateResults, ...secondDateResults]
-    const allKeys = new Set(allResults.map(result => `${ result.system_model_id }:${ result.model_source }`))
+    const allKeys = new Set(
+      allResults.map(
+        (result) => `${result.system_model_id}:${result.model_source}`
+      )
+    )
 
-    allKeys.forEach(key => {
-      const firstDateModel = firstDateResults.find(result => `${ result.system_model_id }:${ result.model_source }` === key) || null
-      const secondDateModel = secondDateResults.find(result => `${ result.system_model_id }:${ result.model_source }` === key) || null
+    allKeys.forEach((key) => {
+      const firstDateModel =
+        firstDateResults.find(
+          (result) => `${result.system_model_id}:${result.model_source}` === key
+        ) || null
+      const secondDateModel =
+        secondDateResults.find(
+          (result) => `${result.system_model_id}:${result.model_source}` === key
+        ) || null
 
       groupedResults[key] = []
 

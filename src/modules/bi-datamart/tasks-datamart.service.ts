@@ -42,12 +42,16 @@ export class TasksDatamartService {
     try {
       // Получаем все модели для передачи в getUsersActiveTasks
       this.logger.log('📊 Получение моделей...')
-      const models = await this.modelsService.getModels({ ignoreModeFilter: true })
-      
+      const models = await this.modelsService.getModels({
+        ignoreModeFilter: true
+      })
+
       // Получаем все активные задачи
       this.logger.log('📋 Получение активных задач...')
-      const tasks = await this.usersTasksService.getUsersActiveTasks(models as any)
-      
+      const tasks = await this.usersTasksService.getUsersActiveTasks(
+        models as any
+      )
+
       result.totalProcessed = tasks.length
       this.logger.log(`📦 Получено ${tasks.length} задач для синхронизации`)
 
@@ -62,7 +66,7 @@ export class TasksDatamartService {
 
       // Получаем текущие задачи из витрины для сравнения
       const existingTasks = await this.getExistingTasksMap()
-      
+
       // Очищаем витрину ДО вставки новых задач
       // Поскольку теперь все задачи вставляются как новые записи,
       // мы не можем просто удалить по task_id + model_id
@@ -71,38 +75,49 @@ export class TasksDatamartService {
         // Получаем количество существующих записей для статистики
         const existingCount = existingTasks.size
         if (existingCount > 0) {
-          this.logger.log(`🧹 Очищаем витрину (${existingCount} существующих записей) для полной синхронизации`)
+          this.logger.log(
+            `🧹 Очищаем витрину (${existingCount} существующих записей) для полной синхронизации`
+          )
           await this.cleanupDatamart()
           result.deleted = existingCount
-          
+
           // Теперь все задачи будут вставлены как новые
-          this.logger.log(`📝 Все ${tasks.length} задач будут вставлены как новые записи`)
+          this.logger.log(
+            `📝 Все ${tasks.length} задач будут вставлены как новые записи`
+          )
         }
       }
-      
+
       const processedTaskKeys = new Set<string>()
 
       // Обрабатываем задачи батчами
       const batchSize = 100
       for (let i = 0; i < tasks.length; i += batchSize) {
         const batch = tasks.slice(i, i + batchSize)
-        
-        this.logger.log(`🔄 Обрабатываем батч ${Math.floor(i/batchSize) + 1} из ${Math.ceil(tasks.length/batchSize)}`)
-        
+
+        this.logger.log(
+          `🔄 Обрабатываем батч ${Math.floor(i / batchSize) + 1} из ${Math.ceil(
+            tasks.length / batchSize
+          )}`
+        )
+
         for (let j = 0; j < batch.length; j++) {
           const task = batch[j]
           // Создаем уникальный ключ для каждой задачи, включая дубли
           // Используем индекс в батче + timestamp для уникальности
-          const uniqueKey = `${task.task_id}_${task.model_id}_${i + j}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+          const uniqueKey = `${task.task_id}_${task.model_id}_${
+            i + j
+          }_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
           processedTaskKeys.add(uniqueKey)
-          
+
           try {
             // Теперь все задачи только вставляются
             await this.upsertTask(task)
             result.inserted++
-            
           } catch (error) {
-            this.logger.error(`❌ Ошибка при обработке задачи ${uniqueKey}: ${error.message}`)
+            this.logger.error(
+              `❌ Ошибка при обработке задачи ${uniqueKey}: ${error.message}`
+            )
             result.errors.push(`Задача ${uniqueKey}: ${error.message}`)
           }
         }
@@ -110,13 +125,19 @@ export class TasksDatamartService {
 
       result.success = true
       result.duration_ms = Date.now() - startTime
-      
-      this.logger.log(`✅ Синхронизация задач завершена за ${result.duration_ms}мс`)
-      this.logger.log(`📊 Вставлено: ${result.inserted}, Удалено: ${result.deleted}`)
 
+      this.logger.log(
+        `✅ Синхронизация задач завершена за ${result.duration_ms}мс`
+      )
+      this.logger.log(
+        `📊 Вставлено: ${result.inserted}, Удалено: ${result.deleted}`
+      )
     } catch (error) {
       result.duration_ms = Date.now() - startTime
-      this.logger.error(`💥 Критическая ошибка синхронизации задач: ${error.message}`, error.stack)
+      this.logger.error(
+        `💥 Критическая ошибка синхронизации задач: ${error.message}`,
+        error.stack
+      )
       result.errors.push(`Критическая ошибка: ${error.message}`)
     }
 
@@ -128,13 +149,21 @@ export class TasksDatamartService {
    */
   async getTasksDatamartStats() {
     const [totalResult, lastUpdateResult] = await Promise.all([
-      this.mrmDatabaseService.query('SELECT COUNT(*) as count FROM tasks_bi_datamart', {}),
-      this.mrmDatabaseService.query('SELECT MAX(updated_at) as last_update FROM tasks_bi_datamart', {})
+      this.mrmDatabaseService.query(
+        'SELECT COUNT(*) as count FROM tasks_bi_datamart',
+        {}
+      ),
+      this.mrmDatabaseService.query(
+        'SELECT MAX(updated_at) as last_update FROM tasks_bi_datamart',
+        {}
+      )
     ])
 
     return {
       total_records: parseInt(totalResult[0].count),
-      last_update: lastUpdateResult[0].last_update ? new Date(lastUpdateResult[0].last_update) : null
+      last_update: lastUpdateResult[0].last_update
+        ? new Date(lastUpdateResult[0].last_update)
+        : null
     }
   }
 
@@ -142,7 +171,8 @@ export class TasksDatamartService {
    * Получение задач из витрины
    */
   async getTasksFromDatamart(): Promise<Task[]> {
-    const rows = await this.mrmDatabaseService.query(`
+    const rows = await this.mrmDatabaseService.query(
+      `
       SELECT 
         task_id,
         model_id,
@@ -153,13 +183,16 @@ export class TasksDatamartService {
         task_data
       FROM tasks_bi_datamart 
       ORDER BY model_id, task_id
-    `, {})
-    
-    return rows.map(row => {
-      const taskData = typeof row.task_data === 'string' 
-        ? JSON.parse(row.task_data) 
-        : row.task_data
-      
+    `,
+      {}
+    )
+
+    return rows.map((row) => {
+      const taskData =
+        typeof row.task_data === 'string'
+          ? JSON.parse(row.task_data)
+          : row.task_data
+
       // Базовые поля из колонок (для производительности)
       // Остальные поля из JSON
       return {
@@ -182,11 +215,12 @@ export class TasksDatamartService {
   private async upsertTask(task: Task): Promise<void> {
     // Для дублей всегда вставляем как новую запись
     // Убираем проверку на существование по task_id + model_id
-    
+
     const dataHash = this.createTaskHash(task)
-    
+
     // Всегда вставляем новую задачу
-    await this.mrmDatabaseService.query(`
+    await this.mrmDatabaseService.query(
+      `
       INSERT INTO tasks_bi_datamart (
         task_id, model_id, assignee, role, ds_stream, update_date,
         task_data, data_hash, created_at, updated_at
@@ -194,7 +228,9 @@ export class TasksDatamartService {
         :task_id, :model_id, :assignee, :role, :ds_stream, :update_date,
         :task_data::jsonb, :data_hash, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
       )
-    `, this.prepareTaskData(task, dataHash))
+    `,
+      this.prepareTaskData(task, dataHash)
+    )
   }
 
   /**
@@ -224,16 +260,16 @@ export class TasksDatamartService {
       'SELECT id FROM tasks_bi_datamart',
       {}
     )
-    
+
     // Создаем пустую карту, так как мы не используем её для логики
     // Просто возвращаем размер для статистики
     const map = new Map<string, string>()
-    
+
     // Добавляем фиктивные ключи для подсчета
     rows.forEach((row, index) => {
       map.set(`record_${index}`, 'dummy')
     })
-    
+
     return map
   }
 
@@ -272,4 +308,4 @@ export class TasksDatamartService {
     const taskString = JSON.stringify(hashableTask)
     return createHash('md5').update(taskString).digest('hex')
   }
-} 
+}

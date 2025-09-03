@@ -1,38 +1,40 @@
-import { IndependentMetric } from '../base';
-import { DistributionByLifecycleStageModelsMetricResult } from '../interfaces';
+import { IndependentMetric } from '../base'
+import { DistributionByLifecycleStageModelsMetricResult } from '../interfaces'
 
 export class DistributionByLifecycleStageMetric extends IndependentMetric<DistributionByLifecycleStageModelsMetricResult> {
-  private filteredModels: any[] = [];
-  private lifecycleStages: Map<string, number>;
+  private filteredModels: any[] = []
+  private lifecycleStages: Map<string, number>
 
   calculate(): DistributionByLifecycleStageModelsMetricResult {
-    this.filteredModels = [];
+    this.filteredModels = []
     // Use a Map to dynamically count occurrences of each model_status
-    this.lifecycleStages = new Map<string, number>();
+    this.lifecycleStages = new Map<string, number>()
     const filteredModels = this.filterModels(
       this.models,
       this.startDate,
-      this.endDate,
-    );
+      this.endDate
+    )
 
     // Iterate through all models to count model_status occurrences
     filteredModels.forEach((model) => {
-      const stage = model.model_status;
-      const status = model.business_status;
+      const stage = model.model_status
+      const status = model.business_status
 
       if (!stage) {
-        return;
+        return
       }
 
-      const modelStageArray = stage.split(';');
+      const modelStageArray = stage.split(';')
 
       modelStageArray.forEach((stageItem) => {
-        this.countStage(model, stageItem, status);
-      });
-    });
+        this.countStage(model, stageItem, status)
+      })
+    })
 
     // Convert the Map to an array of [status, count] pairs
-    return Array.from(this.lifecycleStages.entries()) as DistributionByLifecycleStageModelsMetricResult;
+    return Array.from(
+      this.lifecycleStages.entries()
+    ) as DistributionByLifecycleStageModelsMetricResult
   }
 
   private countStage(model, stage, status) {
@@ -42,29 +44,29 @@ export class DistributionByLifecycleStageMetric extends IndependentMetric<Distri
           'Модель была внедрена в ПИМ (старая модель)',
           'Модель внедряется в ПИМ',
           'Разработана, внедрена в ПИМ',
-          'Внедрена в ПИМ',
+          'Внедрена в ПИМ'
         ].includes(status)
       ) {
-        stage = 'Внедрена в ПИМ';
+        stage = 'Внедрена в ПИМ'
       }
 
       if (
         [
           'Модель внедряется вне ПИМ',
           'Разработана, внедрена вне ПИМ',
-          'Внедрена вне ПИМ',
+          'Внедрена вне ПИМ'
         ].includes(status)
       ) {
-        stage = 'Внедрена вне ПИМ';
+        stage = 'Внедрена вне ПИМ'
       }
     }
 
-    this.filteredModels.push({ ...model, calculated_status: stage });
+    this.filteredModels.push({ ...model, calculated_status: stage })
 
     if (this.lifecycleStages.has(stage)) {
-      this.lifecycleStages.set(stage, this.lifecycleStages.get(stage)! + 1);
+      this.lifecycleStages.set(stage, this.lifecycleStages.get(stage)! + 1)
     } else {
-      this.lifecycleStages.set(stage, 1);
+      this.lifecycleStages.set(stage, 1)
     }
   }
 
@@ -73,28 +75,31 @@ export class DistributionByLifecycleStageMetric extends IndependentMetric<Distri
       system_model_id: model.system_model_id,
       status: model.business_status,
       stage: model.model_status,
-      normalized_stage: model.calculated_status,
-    }));
+      normalized_stage: model.calculated_status
+    }))
   }
 
   private filterModels(
     models,
     startDate: string | null,
-    endDate: string | null,
+    endDate: string | null
   ) {
-    const { actualStartDate, actualEndDate } = this.getActualDateRange(startDate, endDate);
+    const { actualStartDate, actualEndDate } = this.getActualDateRange(
+      startDate,
+      endDate
+    )
 
     return models.filter((model) => {
-      const createDate = model.create_date ? new Date(model.create_date) : null;
+      const createDate = model.create_date ? new Date(model.create_date) : null
       const releaseDate = model.date_of_introduction_into_operation
         ? new Date(model.date_of_introduction_into_operation)
-        : null;
+        : null
       const devEndDate = model.developing_end_date
         ? new Date(model.developing_end_date)
-        : null;
+        : null
       const pilotEndDate = model.data_completion_of_stage_05a
         ? new Date(model.data_completion_of_stage_05a)
-        : null;
+        : null
 
       /**
        * Если («Дата релиза» не равна пустому значению ИЛИ «Дата окончания разработки модели» не равна
@@ -109,7 +114,7 @@ export class DistributionByLifecycleStageMetric extends IndependentMetric<Distri
         this.isWithinDateRange(devEndDate, actualStartDate, actualEndDate) ||
         this.isWithinDateRange(pilotEndDate, actualStartDate, actualEndDate)
       ) {
-        return true;
+        return true
       }
 
       /**
@@ -121,10 +126,10 @@ export class DistributionByLifecycleStageMetric extends IndependentMetric<Distri
         pilotEndDate === null &&
         this.isWithinDateRange(createDate, actualStartDate, actualEndDate)
       ) {
-        return true;
+        return true
       }
 
-      return false;
-    });
+      return false
+    })
   }
 }

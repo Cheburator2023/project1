@@ -8,8 +8,7 @@ export class ModelServiceFactory {
   constructor(
     private readonly sumModelService: SumModelService,
     private readonly mrmModelService: MrmModelService
-  ) {
-  }
+  ) {}
 
   getService(source: MODEL_SOURCES): IModelService {
     let service: IModelService
@@ -22,7 +21,7 @@ export class ModelServiceFactory {
         service = this.sumModelService
         break
       default:
-        throw new Error(`Unknown model source ${ source }`)
+        throw new Error(`Unknown model source ${source}`)
     }
 
     return service

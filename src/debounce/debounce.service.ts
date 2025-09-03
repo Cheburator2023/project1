@@ -10,11 +10,7 @@ export class DebounceService {
    * @param callback The function to be executed
    * @param delay The delay before execution (in milliseconds)
    */
-  debounce(
-    key: string,
-    callback: () => void,
-    delay: number
-  ) {
+  debounce(key: string, callback: () => void, delay: number) {
     if (this.events.has(key)) {
       clearTimeout(this.events.get(key))
     }

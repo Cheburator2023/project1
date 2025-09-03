@@ -10,4 +10,4 @@ VALUES (:model_id,
         :artefact_string_value)
 `
 
-export { sql };
+export { sql }

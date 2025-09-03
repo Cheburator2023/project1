@@ -9,15 +9,17 @@ export class BpmnService {
   constructor(
     private readonly assignmentServiceFactory: BpmnServiceFactory,
     private readonly camundaService: CamundaService
-  ) {
-  }
+  ) {}
 
-  async getInstances(bpmnIds?: string[], source: MODEL_SOURCES = MODEL_SOURCES.SUM): Promise<BpmnInstanceEntity[]> {
+  async getInstances(
+    bpmnIds?: string[],
+    source: MODEL_SOURCES = MODEL_SOURCES.SUM
+  ): Promise<BpmnInstanceEntity[]> {
     const assignmentService = this.assignmentServiceFactory.getService(source)
     return await assignmentService.getInstances(bpmnIds)
   }
 
   async tasks(groups: string[]): Promise<any[]> {
-    return await this.camundaService.tasks(groups);
+    return await this.camundaService.tasks(groups)
   }
 }

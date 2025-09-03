@@ -1,24 +1,24 @@
-import { Logger } from '@nestjs/common';
-import { IAssignmentService } from '../interfaces';
-import { AssignmentsWithRolesEntity } from '../entities';
+import { Logger } from '@nestjs/common'
+import { IAssignmentService } from '../interfaces'
+import { AssignmentsWithRolesEntity } from '../entities'
 
 export abstract class BaseAssignmentService implements IAssignmentService {
-  protected abstract logger: Logger;
+  protected abstract logger: Logger
 
   protected constructor(public readonly databaseService) {}
 
   async getAssignmentsWithRolesByModelId(
     modelIds?: string[],
-    daysOfDelay: number = 0
+    daysOfDelay = 0
   ): Promise<AssignmentsWithRolesEntity[]> {
-    const dateOfDelay = daysOfDelay > 0
-      ? new Date(Date.now() - daysOfDelay * 24 * 60 * 60 * 1000)
-          .toISOString()
-          .slice(0, 19)
-          .replace('T', ' ')
-      : null;
+    const dateOfDelay =
+      daysOfDelay > 0
+        ? new Date(Date.now() - daysOfDelay * 24 * 60 * 60 * 1000)
+            .toISOString()
+            .slice(0, 19)
+            .replace('T', ' ')
+        : null
 
-  
     const query = `
       SELECT 
         M.MODEL_ID,
@@ -64,11 +64,10 @@ export abstract class BaseAssignmentService implements IAssignmentService {
         )
       GROUP BY M.MODEL_ID, M.ROOT_MODEL_ID, M.MODEL_VERSION, AH.FUNCTIONAL_ROLE, AH.ASSIGNEE_NAME, M.MODEL_NAME, STATUS.BPMN_KEY_DESC, M_UPD_DATE.UPDATE_DATE
       ORDER BY M_UPD_DATE.UPDATE_DATE DESC
-    `;
-  
-    const queryParams = { modelIds, dateOfDelay };
-  
-    return await this.databaseService.query(query, queryParams);
+    `
+
+    const queryParams = { modelIds, dateOfDelay }
+
+    return await this.databaseService.query(query, queryParams)
   }
-  
 }

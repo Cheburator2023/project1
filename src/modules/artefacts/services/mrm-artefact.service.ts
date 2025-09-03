@@ -6,7 +6,10 @@ import { IArtefactService, IArtefactHandler } from '../interfaces'
 import { UpdateArtefactDto } from '../dto'
 
 @Injectable()
-export class MrmArtefactService extends BaseArtefactService implements IArtefactService {
+export class MrmArtefactService
+  extends BaseArtefactService
+  implements IArtefactService
+{
   protected modelsTableName = MRM_TABLES.MODELS
   protected artefactsTableName = MRM_TABLES.ARTEFACTS
   protected artefactValuesTableName = MRM_TABLES.ARTEFACT_VALUES
@@ -15,13 +18,18 @@ export class MrmArtefactService extends BaseArtefactService implements IArtefact
 
   constructor(
     databaseService: MrmDatabaseService,
-    @Inject('MrmArtefactHandlers') private readonly handlers: IArtefactHandler[]
+    @Inject('MrmArtefactHandlers')
+    private readonly handlers: IArtefactHandler[]
   ) {
     super(databaseService)
   }
 
-  async handleUpdateArtefact(artefactData: UpdateArtefactDto): Promise<boolean> {
-    const handler = this.handlers.find(handler => handler.supports(artefactData.artefact_tech_label))
+  async handleUpdateArtefact(
+    artefactData: UpdateArtefactDto
+  ): Promise<boolean> {
+    const handler = this.handlers.find((handler) =>
+      handler.supports(artefactData.artefact_tech_label)
+    )
     let result
 
     if (handler) {

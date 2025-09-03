@@ -10,7 +10,8 @@ interface ArtefactUpdateContext {
 
 @Injectable()
 export class ArtefactExecutionContextService {
-  private readonly asyncLocalStorage = new AsyncLocalStorage<ArtefactUpdateContext>()
+  private readonly asyncLocalStorage =
+    new AsyncLocalStorage<ArtefactUpdateContext>()
 
   runWithContext<T>(
     context: ArtefactUpdateContext,

@@ -15,7 +15,10 @@ export class AllocationService {
   }
 
   @UpdateDateAfterExecution()
-  async updateAllocation(data: UpdateAllocationDto, source: MODEL_SOURCES): Promise<boolean> {
+  async updateAllocation(
+    data: UpdateAllocationDto,
+    source: MODEL_SOURCES
+  ): Promise<boolean> {
     const allocationService = this.allocationServiceFactory.getService(source)
     return await allocationService.handleUpdateAllocation(data)
   }

@@ -7,16 +7,16 @@ export class ArtefactRealizationsService {
 
   constructor(private readonly db: MrmDatabaseService) {}
 
-  async getByKey({ 
-    model_id, 
-    artefact_id, 
-    as_of, 
-    include_history = false 
-  }: { 
-    model_id: string; 
-    artefact_id: string; 
-    as_of?: string;
-    include_history?: boolean;
+  async getByKey({
+    model_id,
+    artefact_id,
+    as_of,
+    include_history = false
+  }: {
+    model_id: string
+    artefact_id: string
+    as_of?: string
+    include_history?: boolean
   }) {
     try {
       if (include_history) {
@@ -40,7 +40,7 @@ export class ArtefactRealizationsService {
           `,
           { model_id, artefact_id }
         )
-        
+
         // Always return an object with history array, even if empty
         return {
           history: rows || []
@@ -68,19 +68,22 @@ export class ArtefactRealizationsService {
           `,
           { model_id, artefact_id }
         )
-        
+
         return rows?.[0] || null
       }
     } catch (error) {
-      this.logger.error(`Error in getByKey for model_id: ${model_id}, artefact_id: ${artefact_id}`, error)
-      
+      this.logger.error(
+        `Error in getByKey for model_id: ${model_id}, artefact_id: ${artefact_id}`,
+        error
+      )
+
       // For history requests, return empty history array instead of throwing
       if (include_history) {
         return {
           history: []
         }
       }
-      
+
       // For default requests, re-throw the error
       throw error
     }
@@ -141,12 +144,15 @@ export class ArtefactRealizationsService {
 
     let not_found: Array<{ model_id: string; artefact_id: string }> | undefined
     if (include_not_found) {
-      const foundKeys = new Set(items.map((it: any) => `${it.model_id}:${it.artefact_id}`))
+      const foundKeys = new Set(
+        items.map((it: any) => `${it.model_id}:${it.artefact_id}`)
+      )
       not_found = []
       for (const m of model_ids) {
         for (const a of artefact_ids) {
           const key = `${m}:${a}`
-          if (!foundKeys.has(key)) not_found.push({ model_id: m, artefact_id: a })
+          if (!foundKeys.has(key))
+            not_found.push({ model_id: m, artefact_id: a })
         }
       }
     }
@@ -154,5 +160,3 @@ export class ArtefactRealizationsService {
     return { items, not_found: not_found || [], next_cursor: null }
   }
 }
-
-

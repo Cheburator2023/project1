@@ -8,9 +8,7 @@ export class SumModelService extends BaseModelService {
   protected modelsTableName = SUM_TABLES.MODELS
   protected logger = new Logger(SumModelService.name)
 
-  constructor(
-    databaseService: SumDatabaseService
-  ) {
+  constructor(databaseService: SumDatabaseService) {
     super(databaseService)
   }
 }

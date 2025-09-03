@@ -1,30 +1,36 @@
 import { Artefact } from './artefact'
 
 interface Model {
-  [key: string]: any;
+  [key: string]: any
 }
 
 interface GroupedResults {
-  [key: string]: Model[];
+  [key: string]: Model[]
 }
 
 interface ModelType {
-  id: number;
-  name: string;
+  id: number
+  name: string
 }
 
 interface ModelRelationsResponse {
   data: {
     card: Model & {
-      modules: Model[];
-      calibrations: Model[];
-      [key: string]: Model[];
-    };
+      modules: Model[]
+      calibrations: Model[]
+      [key: string]: Model[]
+    }
   }
 }
 
 interface PreparedArtefactsResult {
-  data: Artefact[];
+  data: Artefact[]
 }
 
-export { Model, GroupedResults, ModelType, ModelRelationsResponse, PreparedArtefactsResult }
+export {
+  Model,
+  GroupedResults,
+  ModelType,
+  ModelRelationsResponse,
+  PreparedArtefactsResult
+}

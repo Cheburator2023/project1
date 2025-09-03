@@ -27,6 +27,6 @@ AND
 ORDER BY
     ar_.artefact_id,
     av_.artefact_value_id
-`;
+`
 
-export { sql };
+export { sql }

@@ -8,9 +8,7 @@ export class MrmModelService extends BaseModelService {
   protected modelsTableName = MRM_TABLES.MODELS
   protected logger = new Logger(MrmModelService.name)
 
-  constructor(
-    databaseService: MrmDatabaseService
-  ) {
+  constructor(databaseService: MrmDatabaseService) {
     super(databaseService)
   }
 }

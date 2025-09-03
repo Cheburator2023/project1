@@ -1,22 +1,29 @@
-import { Injectable, Logger, OnModuleInit, OnModuleDestroy } from '@nestjs/common'
+import {
+  Injectable,
+  Logger,
+  OnModuleInit,
+  OnModuleDestroy
+} from '@nestjs/common'
 import { BiDatamartService } from './bi-datamart.service'
 
 @Injectable()
-export class BiDatamartSchedulerService implements OnModuleInit, OnModuleDestroy {
+export class BiDatamartSchedulerService
+  implements OnModuleInit, OnModuleDestroy
+{
   private readonly logger = new Logger(BiDatamartSchedulerService.name)
   private syncInProgress = false
   private syncInterval: NodeJS.Timeout | null = null
   private readonly SYNC_HOUR = 2 // Синхронизация в 2:00 ночи
 
-  constructor(
-    private readonly biDatamartService: BiDatamartService
-  ) {}
+  constructor(private readonly biDatamartService: BiDatamartService) {}
 
   /**
    * Запуск ежедневной синхронизации в 2:00 ночи
    */
   private startDailySync(): void {
-    this.logger.log(`🕐 Настройка ежедневной синхронизации на ${this.SYNC_HOUR}:00`)
+    this.logger.log(
+      `🕐 Настройка ежедневной синхронизации на ${this.SYNC_HOUR}:00`
+    )
 
     // Рассчитываем время до следующей синхронизации
     const now = new Date()
@@ -42,7 +49,9 @@ export class BiDatamartSchedulerService implements OnModuleInit, OnModuleDestroy
 
     // В режиме разработки запускаем синхронизацию через 5 секунд
     if (process.env.NODE_ENV === 'development') {
-      this.logger.log('🔧 Development mode: запуск тестовой синхронизации через 5 секунд')
+      this.logger.log(
+        '🔧 Development mode: запуск тестовой синхронизации через 5 секунд'
+      )
       setTimeout(() => this.performDailySync(), 5000)
     }
   }
@@ -61,19 +70,30 @@ export class BiDatamartSchedulerService implements OnModuleInit, OnModuleDestroy
 
     try {
       const result = await this.biDatamartService.syncAllModelsToDatamart()
-      
+
       if (result.success) {
         this.logger.log(`✅ Ежедневная синхронизация завершена успешно`)
-        this.logger.log(`📊 Обработано ${result.totalProcessed}, Вставлено ${result.inserted}, Обновлено ${result.updated}, Пропущено ${result.skipped}`)
-        
+        this.logger.log(
+          `📊 Обработано ${result.totalProcessed}, Вставлено ${result.inserted}, Обновлено ${result.updated}, Пропущено ${result.skipped}`
+        )
+
         if (result.errors.length > 0) {
-          this.logger.warn(`⚠️ Ошибки при синхронизации: ${result.errors.length}`)
+          this.logger.warn(
+            `⚠️ Ошибки при синхронизации: ${result.errors.length}`
+          )
         }
       } else {
-        this.logger.error(`❌ Ежедневная синхронизация завершилась с ошибками: ${result.errors.join(', ')}`)
+        this.logger.error(
+          `❌ Ежедневная синхронизация завершилась с ошибками: ${result.errors.join(
+            ', '
+          )}`
+        )
       }
     } catch (error) {
-      this.logger.error(`💥 Критическая ошибка ежедневной синхронизации: ${error.message}`, error.stack)
+      this.logger.error(
+        `💥 Критическая ошибка ежедневной синхронизации: ${error.message}`,
+        error.stack
+      )
     } finally {
       this.syncInProgress = false
     }
@@ -97,4 +117,4 @@ export class BiDatamartSchedulerService implements OnModuleInit, OnModuleDestroy
       this.syncInterval = null
     }
   }
-} 
+}

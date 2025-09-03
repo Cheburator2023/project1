@@ -1,6 +1,10 @@
 import { Injectable } from '@nestjs/common'
 import { Model } from '../interfaces'
-import { TIMESTAMP_PRIORITY_ARTEFACTS, SUM_ARTEFACT_ID_MAPPINGS, MRM_ARTEFACT_ID_MAPPINGS } from '../constants'
+import {
+  TIMESTAMP_PRIORITY_ARTEFACTS,
+  SUM_ARTEFACT_ID_MAPPINGS,
+  MRM_ARTEFACT_ID_MAPPINGS
+} from '../constants'
 
 @Injectable()
 export class ModelMergeService {
@@ -20,13 +24,22 @@ export class ModelMergeService {
     mrmModels: Model[],
     filterDate: string | null,
     options?: {
-      sumMap?: Record<string, { artefact_string_value: string | null; effective_from: string | null }>
-      mrmMap?: Record<string, { artefact_string_value: string | null; effective_from: string | null }>
+      sumMap?: Record<
+        string,
+        { artefact_string_value: string | null; effective_from: string | null }
+      >
+      mrmMap?: Record<
+        string,
+        { artefact_string_value: string | null; effective_from: string | null }
+      >
     }
   ): Promise<Model[]> {
     const combined = await Promise.all(
       mrmModels.map(async (mrmModel) => {
-        const sumMatch = sumModels.find((sumModel) => sumModel['system_model_id'] === mrmModel['system_model_id'])
+        const sumMatch = sumModels.find(
+          (sumModel) =>
+            sumModel['system_model_id'] === mrmModel['system_model_id']
+        )
         if (sumMatch) {
           return await this.mergePair(sumMatch, mrmModel, filterDate, options)
         }
@@ -35,7 +48,11 @@ export class ModelMergeService {
     )
 
     const uniqueSum = sumModels.filter(
-      (sumModel) => !mrmModels.some((mrmModel) => mrmModel['system_model_id'] === sumModel['system_model_id'])
+      (sumModel) =>
+        !mrmModels.some(
+          (mrmModel) =>
+            mrmModel['system_model_id'] === sumModel['system_model_id']
+        )
     )
 
     return [...combined, ...uniqueSum]
@@ -50,15 +67,25 @@ export class ModelMergeService {
     mrmModel: Model,
     filterDate: string | null,
     options?: {
-      sumMap?: Record<string, { artefact_string_value: string | null; effective_from: string | null }>
-      mrmMap?: Record<string, { artefact_string_value: string | null; effective_from: string | null }>
+      sumMap?: Record<
+        string,
+        { artefact_string_value: string | null; effective_from: string | null }
+      >
+      mrmMap?: Record<
+        string,
+        { artefact_string_value: string | null; effective_from: string | null }
+      >
     }
   ): Promise<Model> {
     const merged: Model = { ...mrmModel }
 
     // Preserve SUM attributes when MRM doesn't have them or for specific fields
     for (const key in sumModel) {
-      if (mrmModel[key] === null || mrmModel[key] === undefined || key === 'model_source') {
+      if (
+        mrmModel[key] === null ||
+        mrmModel[key] === undefined ||
+        key === 'model_source'
+      ) {
         merged[key] = sumModel[key]
       }
     }
@@ -96,7 +123,8 @@ export class ModelMergeService {
         } else if (sumArtefact && !mrmArtefact) {
           merged[artefactLabel] = sumArtefact.artefact_string_value
           if (sumArtefact.effective_from) {
-            merged[`${artefactLabel}_effective_from`] = sumArtefact.effective_from
+            merged[`${artefactLabel}_effective_from`] =
+              sumArtefact.effective_from
           }
         }
       }
@@ -114,17 +142,22 @@ export class ModelMergeService {
     if (sumValue === null || sumValue === undefined) return mrmValue
     if (mrmValue === null || mrmValue === undefined) return sumValue
     if (sumTimestamp && mrmTimestamp) {
-      return new Date(sumTimestamp) > new Date(mrmTimestamp) ? sumValue : mrmValue
+      return new Date(sumTimestamp) > new Date(mrmTimestamp)
+        ? sumValue
+        : mrmValue
     }
     return mrmValue
   }
 
-  private getTimestampPriority(sumTimestamp?: string, mrmTimestamp?: string): string | null {
+  private getTimestampPriority(
+    sumTimestamp?: string,
+    mrmTimestamp?: string
+  ): string | null {
     if (!sumTimestamp && !mrmTimestamp) return null
     if (!sumTimestamp) return mrmTimestamp || null
     if (!mrmTimestamp) return sumTimestamp || null
-    return new Date(sumTimestamp) > new Date(mrmTimestamp) ? sumTimestamp : mrmTimestamp
+    return new Date(sumTimestamp) > new Date(mrmTimestamp)
+      ? sumTimestamp
+      : mrmTimestamp
   }
 }
-
-

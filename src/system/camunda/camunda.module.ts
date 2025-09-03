@@ -3,11 +3,8 @@ import { HttpModule } from '@nestjs/axios'
 import { CamundaService } from './camunda.service'
 
 @Module({
-  imports: [
-    HttpModule
-  ],
+  imports: [HttpModule],
   providers: [CamundaService],
   exports: [CamundaService]
 })
-export class CamundaModule {
-}
+export class CamundaModule {}

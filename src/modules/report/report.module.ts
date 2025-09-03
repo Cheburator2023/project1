@@ -8,8 +8,13 @@ import { MetricsModule } from 'src/modules/metrics/metrics.module'
 
 @Module({
   providers: [ReportService],
-  imports: [SumDatabaseModule, MrmDatabaseModule, ModelsModule, ExcelModule, MetricsModule],
+  imports: [
+    SumDatabaseModule,
+    MrmDatabaseModule,
+    ModelsModule,
+    ExcelModule,
+    MetricsModule
+  ],
   exports: [ReportService]
 })
-export class ReportModule {
-}
+export class ReportModule {}

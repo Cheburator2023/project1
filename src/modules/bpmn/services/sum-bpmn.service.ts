@@ -7,9 +7,7 @@ import { IBpmnService } from '../interfaces'
 export class SumBpmnService extends BaseBpmnService implements IBpmnService {
   protected logger = new Logger(SumBpmnService.name)
 
-  constructor(
-    databaseService: SumDatabaseService
-  ) {
+  constructor(databaseService: SumDatabaseService) {
     super(databaseService)
   }
 }

@@ -7,13 +7,14 @@ import { MRM_TABLES } from '../constants'
 import { AllocationEntity } from '../entities'
 
 @Injectable()
-export class MrmAllocationService extends BaseAllocationService implements IAllocationService {
+export class MrmAllocationService
+  extends BaseAllocationService
+  implements IAllocationService
+{
   protected modelsTableName = MRM_TABLES.MODELS
   protected logger = new Logger(MrmAllocationService.name)
 
-  constructor(
-    databaseService: MrmDatabaseService
-  ) {
+  constructor(databaseService: MrmDatabaseService) {
     super(databaseService)
   }
 
@@ -51,7 +52,10 @@ export class MrmAllocationService extends BaseAllocationService implements IAllo
     }
 
     // добавляем запись в историю
-    const allocationHistItem = await this.insertAllocationHistory(allocationId, data)
+    const allocationHistItem = await this.insertAllocationHistory(
+      allocationId,
+      data
+    )
 
     if (!allocationHistItem) {
       return false
@@ -60,7 +64,10 @@ export class MrmAllocationService extends BaseAllocationService implements IAllo
     return true
   }
 
-  async getAllocation(model_id: UpdateAllocationDto['model_id'], gbl_id: UpdateAllocationDto['gbl_id']): Promise<AllocationEntity | null> {
+  async getAllocation(
+    model_id: UpdateAllocationDto['model_id'],
+    gbl_id: UpdateAllocationDto['gbl_id']
+  ): Promise<AllocationEntity | null> {
     const [allocation] = await this.databaseService.query(
       `
       SELECT * FROM models_allocation WHERE model_id = :model_id AND gbl_id = :gbl_id;
@@ -74,7 +81,9 @@ export class MrmAllocationService extends BaseAllocationService implements IAllo
     return allocation || null
   }
 
-  async updateAllocation(data: UpdateAllocationDto): Promise<AllocationEntity | null> {
+  async updateAllocation(
+    data: UpdateAllocationDto
+  ): Promise<AllocationEntity | null> {
     const { model_id, gbl_id, percent, comment, creator } = data
 
     const [allocationItem] = await this.databaseService.query(
@@ -100,7 +109,9 @@ export class MrmAllocationService extends BaseAllocationService implements IAllo
     return allocationItem || null
   }
 
-  async insertAllocation(data: UpdateAllocationDto): Promise<AllocationEntity | null> {
+  async insertAllocation(
+    data: UpdateAllocationDto
+  ): Promise<AllocationEntity | null> {
     const { model_id, gbl_id, percent, comment, creator } = data
 
     const [allocationItem] = await this.databaseService.query(
@@ -121,7 +132,10 @@ export class MrmAllocationService extends BaseAllocationService implements IAllo
     return allocationItem || null
   }
 
-  async insertAllocationHistory(allocation_id, data: UpdateAllocationDto): Promise<AllocationEntity | null> {
+  async insertAllocationHistory(
+    allocation_id,
+    data: UpdateAllocationDto
+  ): Promise<AllocationEntity | null> {
     const { model_id, gbl_id, percent, comment, creator } = data
 
     const [allocationHistItem] = await this.databaseService.query(

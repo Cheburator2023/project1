@@ -1,7 +1,11 @@
 import { Injectable } from '@nestjs/common'
 import { IArtefactHandler, IArtefactService } from '../interfaces'
 import { UpdateArtefactDto } from '../dto'
-import { ArtefactEntity, ArtefactRealizationEntity, ArtefactValueEntity } from '../entities'
+import {
+  ArtefactEntity,
+  ArtefactRealizationEntity,
+  ArtefactValueEntity
+} from '../entities'
 import { ARTEFACT_TYPES_REQUIRING_VALUES } from '../constants'
 
 /**
@@ -41,7 +45,9 @@ export class ArtefactRatingModelHandler implements IArtefactHandler {
    * @param artefactTechLabel The technical label of the artefact.
    * @returns true if the handler supports the "rating_model" type, otherwise false.
    */
-  supports(artefactTechLabel: UpdateArtefactDto['artefact_tech_label']): boolean {
+  supports(
+    artefactTechLabel: UpdateArtefactDto['artefact_tech_label']
+  ): boolean {
     return artefactTechLabel === 'rating_model'
   }
 
@@ -60,22 +66,30 @@ export class ArtefactRatingModelHandler implements IArtefactHandler {
     }
 
     // Retrieve the "rating_model" and "record_id" artefacts
-    const ratingModelArtefact: ArtefactEntity | null = await this.artefactService.getArtefactByTechLabel(artefactData.artefact_tech_label)
-    const recordIdArtefact: ArtefactEntity | null = await this.artefactService.getArtefactByTechLabel('record_id')
+    const ratingModelArtefact: ArtefactEntity | null =
+      await this.artefactService.getArtefactByTechLabel(
+        artefactData.artefact_tech_label
+      )
+    const recordIdArtefact: ArtefactEntity | null =
+      await this.artefactService.getArtefactByTechLabel('record_id')
 
     if (!ratingModelArtefact || !recordIdArtefact) {
       return false
     }
 
     // Check for the presence of the "Да" value in the "rating_model" artefact
-    const isValuePresent = await this.checkIfArtefactHasValue(ratingModelArtefact, artefactData)
+    const isValuePresent = await this.checkIfArtefactHasValue(
+      ratingModelArtefact,
+      artefactData
+    )
     if (!isValuePresent) return false
 
     // Check if the latest realization of the "record_id" artefact exists
-    const latestRecordIdArtefactRealization: ArtefactRealizationEntity | null = await this.artefactService.getLatestArtefactRealization(
-      artefactData.model_id,
-      recordIdArtefact.artefact_id
-    )
+    const latestRecordIdArtefactRealization: ArtefactRealizationEntity | null =
+      await this.artefactService.getLatestArtefactRealization(
+        artefactData.model_id,
+        recordIdArtefact.artefact_id
+      )
 
     if (latestRecordIdArtefactRealization) {
       return false
@@ -99,16 +113,30 @@ export class ArtefactRatingModelHandler implements IArtefactHandler {
    * @param artefactData The data of the artefact to be updated.
    * @returns true if the "Да" value is present, otherwise false.
    */
-  private async checkIfArtefactHasValue(ratingModelArtefact: ArtefactEntity, artefactData: UpdateArtefactDto): Promise<boolean> {
-    const isSelectType = ARTEFACT_TYPES_REQUIRING_VALUES.has(ratingModelArtefact.artefact_type_id)
+  private async checkIfArtefactHasValue(
+    ratingModelArtefact: ArtefactEntity,
+    artefactData: UpdateArtefactDto
+  ): Promise<boolean> {
+    const isSelectType = ARTEFACT_TYPES_REQUIRING_VALUES.has(
+      ratingModelArtefact.artefact_type_id
+    )
     const artefactValues: ArtefactValueEntity[] | null = isSelectType
-      ? await this.artefactService.getArtefactValues(ratingModelArtefact.artefact_id)
+      ? await this.artefactService.getArtefactValues(
+          ratingModelArtefact.artefact_id
+        )
       : null
 
-    const resolvedArtefactValueId = this.artefactService.resolveArtefactValueId(artefactData, artefactValues)
+    const resolvedArtefactValueId = this.artefactService.resolveArtefactValueId(
+      artefactData,
+      artefactValues
+    )
     return (
       Array.isArray(artefactValues) &&
-      artefactValues.some((value) => value.artefact_value_id === resolvedArtefactValueId && value.artefact_value === 'Да')
+      artefactValues.some(
+        (value) =>
+          value.artefact_value_id === resolvedArtefactValueId &&
+          value.artefact_value === 'Да'
+      )
     )
   }
 

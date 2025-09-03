@@ -1,43 +1,45 @@
-import { IndependentMetric } from '../base';
-import { IFinalStatusMetric, MetricResult } from '../interfaces';
+import { IndependentMetric } from '../base'
+import { IFinalStatusMetric, MetricResult } from '../interfaces'
 
 export class FinalStatusMetric<T extends MetricResult>
   extends IndependentMetric<T>
   implements IFinalStatusMetric<T>
 {
-  private filteredModels: any[] = [];
-  private deltaFilteredModels: any[] = [];
+  private filteredModels: any[] = []
+  private deltaFilteredModels: any[] = []
 
   calculate() {
-    this.filteredModels = [];
-    this.deltaFilteredModels = [];
+    this.filteredModels = []
+    this.deltaFilteredModels = []
 
     this.filteredModels = this.filterModels(
       this.models,
       this.startDate,
-      this.endDate,
-    );
+      this.endDate
+    )
 
     // delta
-    this.filterModels(this.models, this.startDate, this.endDate, true);
+    this.filterModels(this.models, this.startDate, this.endDate, true)
 
-    const count = this.filteredModels.length;
+    const count = this.filteredModels.length
     const delta =
-      this.deltaFilteredModels.filter((model) => model.period === 'current').length -
-      this.deltaFilteredModels.filter((model) => model.period === 'delta').length;
+      this.deltaFilteredModels.filter((model) => model.period === 'current')
+        .length -
+      this.deltaFilteredModels.filter((model) => model.period === 'delta')
+        .length
 
     return {
       count,
-      delta,
-    } as T;
+      delta
+    } as T
   }
 
   public getFilteredRowData() {
     return this.filteredModels.map((model) => ({
       system_model_id: model.system_model_id,
       ds_stream: model.ds_stream,
-      model_status: model.model_status,
-    }));
+      model_status: model.model_status
+    }))
   }
 
   public getFilteredDeltaRowData() {
@@ -47,23 +49,27 @@ export class FinalStatusMetric<T extends MetricResult>
       model_status: model.model_status,
       filtered_date: model.relevantDate,
       history_status_date: model.historyStatusDate,
-      period: model.period,
-    }));
+      period: model.period
+    }))
   }
 
   filterModels<T extends boolean>(
     models,
     startDate: string | null,
     endDate: string | null,
-    isDeltaCalculation: boolean = false,
-    returnDate?: T,
+    isDeltaCalculation = false,
+    returnDate?: T
   ): T extends true ? { model: any; date: Date }[] : any[] {
     const { currentRange, deltaRange } = this.getCorrectDateRangeForDelta(
       startDate,
-      endDate,
-    );
+      endDate
+    )
 
-    const { actualStartDate, actualEndDate } = this.getActualDateRange(startDate, endDate, isDeltaCalculation ? 7 : null);
+    const { actualStartDate, actualEndDate } = this.getActualDateRange(
+      startDate,
+      endDate,
+      isDeltaCalculation ? 7 : null
+    )
 
     return models
       .map((model) => {
@@ -79,61 +85,61 @@ export class FinalStatusMetric<T extends MetricResult>
                 'Внедрена вне ПИМ',
                 'Разработана, не внедрена',
                 'Внедрена в ПИМ',
-                'Архив',
-              ].includes(historyItem.status_name);
+                'Архив'
+              ].includes(historyItem.status_name)
             })
             .sort(
               (a, b) =>
                 new Date(a.effective_from).getTime() -
-                new Date(b.effective_from).getTime(),
-            );
+                new Date(b.effective_from).getTime()
+            )
           if (finalStatuses.length) {
             // берём только самый ранний финальный статус
-            const firstFinalStatus = finalStatuses[0];
-            const effectiveFrom = new Date(firstFinalStatus.effective_from);
+            const firstFinalStatus = finalStatuses[0]
+            const effectiveFrom = new Date(firstFinalStatus.effective_from)
 
             if (
               this.isWithinDateRange(
                 effectiveFrom,
                 currentRange.actualStartDate,
-                currentRange.actualEndDate,
+                currentRange.actualEndDate
               )
             ) {
               this.deltaFilteredModels.push({
                 ...model,
                 historyStatusDate: effectiveFrom,
-                period: 'current',
-              });
+                period: 'current'
+              })
             } else if (
               this.isWithinDateRange(
                 effectiveFrom,
                 deltaRange.actualStartDate,
-                deltaRange.actualEndDate,
+                deltaRange.actualEndDate
               )
             ) {
               this.deltaFilteredModels.push({
                 ...model,
                 historyStatusDate: effectiveFrom,
-                period: 'delta',
-              });
+                period: 'delta'
+              })
             }
-            return returnDate ? { model, date: effectiveFrom } : model;
+            return returnDate ? { model, date: effectiveFrom } : model
           }
-          return null;
+          return null
         }
 
         // const decomissDate = model.rs_model_decommiss_date ? new Date(model.rs_model_decommiss_date) : null
         const releaseDate = model.date_of_introduction_into_operation
           ? new Date(model.date_of_introduction_into_operation)
-          : null;
+          : null
         const developingEndDate = model.developing_end_date
           ? new Date(model.developing_end_date)
-          : null;
+          : null
         const pilotEndDate = model.data_completion_of_stage_05a
           ? new Date(model.data_completion_of_stage_05a)
-          : null;
+          : null
         // const createDate = model.create_date ? new Date(model.create_date) : null
-        const modelStatus = model.model_status;
+        const modelStatus = model.model_status
 
         /**
          * 1. Условие: Если "Дата выведения РС/Модели из эксплуатации" входит в выбранный временной срез,
@@ -147,39 +153,55 @@ export class FinalStatusMetric<T extends MetricResult>
           // decomissDate,
           releaseDate,
           developingEndDate,
-          pilotEndDate,
+          pilotEndDate
           // createDate
-        ];
+        ]
         const relevantDate = modelDates.find((date) =>
-          this.isWithinDateRange(date, actualStartDate, actualEndDate),
-        );
+          this.isWithinDateRange(date, actualStartDate, actualEndDate)
+        )
         const relevantCurrentDate = modelDates.find((date) =>
-          this.isWithinDateRange(date, currentRange.actualStartDate, currentRange.actualEndDate),
-        );
+          this.isWithinDateRange(
+            date,
+            currentRange.actualStartDate,
+            currentRange.actualEndDate
+          )
+        )
         const relevantDeltaDate = modelDates.find((date) =>
-          this.isWithinDateRange(date, deltaRange.actualStartDate, deltaRange.actualEndDate),
-        );
+          this.isWithinDateRange(
+            date,
+            deltaRange.actualStartDate,
+            deltaRange.actualEndDate
+          )
+        )
 
         /**
          * 2. Условие: Если "Статус модели" равен одному из значений
          *    ТО модель попадает в категорию "Модели с финальным статусом".
          */
-        const hasFinalStatus = this.isFinalStatus(modelStatus);
+        const hasFinalStatus = this.isFinalStatus(modelStatus)
 
         if (isDeltaCalculation && hasFinalStatus) {
           if (relevantCurrentDate) {
-            this.deltaFilteredModels.push({ ...model, relevantDate: relevantCurrentDate, period: 'current' });
+            this.deltaFilteredModels.push({
+              ...model,
+              relevantDate: relevantCurrentDate,
+              period: 'current'
+            })
           } else if (relevantDeltaDate) {
-            this.deltaFilteredModels.push({ ...model, relevantDate: relevantDeltaDate, period: 'delta' });
+            this.deltaFilteredModels.push({
+              ...model,
+              relevantDate: relevantDeltaDate,
+              period: 'delta'
+            })
           }
         }
 
         if (relevantDate && hasFinalStatus) {
-          return returnDate ? { model, date: relevantDate } : model;
+          return returnDate ? { model, date: relevantDate } : model
         }
 
-        return null;
+        return null
       })
-      .filter(Boolean);
+      .filter(Boolean)
   }
 }

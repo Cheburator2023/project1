@@ -5,5 +5,4 @@ import { DebounceService } from './debounce.service'
   providers: [DebounceService],
   exports: [DebounceService]
 })
-export class DebounceModule {
-}
+export class DebounceModule {}

@@ -10,13 +10,18 @@ export class ModelDefaultsService {
 
   async applyDefaultsOnCreate(
     model_id: string,
-    inputArtefacts: Array<{ artefact_tech_label: string; artefact_string_value: string | number | null }>
+    inputArtefacts: Array<{
+      artefact_tech_label: string
+      artefact_string_value: string | number | null
+    }>
   ): Promise<DefaultArtefactInput[]> {
     const additions: DefaultArtefactInput[] = []
 
     for (const def of DEFAULT_ARTEFACTS_ON_CREATE) {
       const provided = inputArtefacts.some(
-        (a) => a.artefact_tech_label === def.artefact_tech_label && String(a.artefact_string_value ?? '').trim() !== ''
+        (a) =>
+          a.artefact_tech_label === def.artefact_tech_label &&
+          String(a.artefact_string_value ?? '').trim() !== ''
       )
       if (provided) continue
 
@@ -34,5 +39,3 @@ export class ModelDefaultsService {
     return additions
   }
 }
-
-

@@ -20,5 +20,4 @@ import { UsageService } from './usage.service'
   ],
   exports: [UsageService]
 })
-export class UsageModule {
-}
+export class UsageModule {}

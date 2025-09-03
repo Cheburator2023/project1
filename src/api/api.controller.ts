@@ -12,19 +12,19 @@ import {
   ParseArrayPipe,
   HttpStatus,
   HttpException,
-  NotFoundException,
-} from '@nestjs/common';
-import { Response } from 'express';
-import { ApiBody } from '@nestjs/swagger';
-import { MODEL_SOURCES } from 'src/system/common';
-import { ApiService } from './api.service';
-import { ModelsService } from 'src/modules/models/models.service';
-import { ArtefactService } from 'src/modules/artefacts/artefact.services';
-import { User } from 'src/decorators';
-import { MetricsAggregator } from 'src/modules/metrics/aggregators';
-import { ReportService } from 'src/modules/report/report.service';
-import { BiDatamartService } from 'src/modules/bi-datamart/bi-datamart.service';
-import { TasksDatamartService } from 'src/modules/bi-datamart/tasks-datamart.service';
+  NotFoundException
+} from '@nestjs/common'
+import { Response } from 'express'
+import { ApiBody } from '@nestjs/swagger'
+import { MODEL_SOURCES } from 'src/system/common'
+import { ApiService } from './api.service'
+import { ModelsService } from 'src/modules/models/models.service'
+import { ArtefactService } from 'src/modules/artefacts/artefact.services'
+import { User } from 'src/decorators'
+import { MetricsAggregator } from 'src/modules/metrics/aggregators'
+import { ReportService } from 'src/modules/report/report.service'
+import { BiDatamartService } from 'src/modules/bi-datamart/bi-datamart.service'
+import { TasksDatamartService } from 'src/modules/bi-datamart/tasks-datamart.service'
 import {
   ModelsDto,
   ModelWithRelationsDto,
@@ -35,8 +35,8 @@ import {
   TemplateCreateDto,
   TemplateUpdateDto,
   FilterDto,
-  MetricsDto,
-} from './dto/index.dto';
+  MetricsDto
+} from './dto/index.dto'
 
 @Controller()
 export class ApiController {
@@ -47,42 +47,42 @@ export class ApiController {
     private readonly reportService: ReportService,
     private readonly artefactService: ArtefactService,
     private readonly biDatamartService: BiDatamartService,
-    private readonly tasksDatamartService: TasksDatamartService,
+    private readonly tasksDatamartService: TasksDatamartService
   ) {}
 
   @Get('/model/relations/')
   async getModelWithRelations(
     @Query() query: ModelWithRelationsDto,
-    @Res() response,
+    @Res() response
   ) {
-    const data = await this.modelsService.getModelWithRelations(query);
+    const data = await this.modelsService.getModelWithRelations(query)
 
-    return response.status(HttpStatus.OK).json(data);
+    return response.status(HttpStatus.OK).json(data)
   }
 
   @Get('/models/compare/')
   async compareModels(
     @Query() query: CompareModelsDto,
     @Res() response,
-    @Req() req,
+    @Req() req
   ) {
     const data = await this.modelsService.getModelsByDates(
       query,
-      req.user?.groups,
-    );
+      req.user?.groups
+    )
 
-    return response.status(HttpStatus.OK).json(data);
+    return response.status(HttpStatus.OK).json(data)
   }
 
   @Get('/models/')
   async models(@Query() query: ModelsDto, @Res() response, @Req() req) {
     const result = {
       data: {
-        cards: await this.modelsService.getModels(query, req.user?.groups),
-      },
-    };
+        cards: await this.modelsService.getModels(query, req.user?.groups)
+      }
+    }
 
-    return response.status(HttpStatus.OK).json(result);
+    return response.status(HttpStatus.OK).json(result)
   }
 
   @Post('/model/create/')
@@ -91,11 +91,11 @@ export class ApiController {
     @Body(new ParseArrayPipe({ items: ModelCreateDto, whitelist: true }))
     artefacts: ModelCreateDto[],
     @Res() response,
-    @User() user,
+    @User() user
   ) {
-    const result = await this.modelsService.modelCreate(artefacts, user);
+    const result = await this.modelsService.modelCreate(artefacts, user)
 
-    return response.status(HttpStatus.CREATED).json(result[0]);
+    return response.status(HttpStatus.CREATED).json(result[0])
   }
 
   @Put('/models/update/')
@@ -104,51 +104,51 @@ export class ApiController {
     @Body(new ParseArrayPipe({ items: ModelsUpdateDto, whitelist: true }))
     modelsArtefacts: ModelsUpdateDto[],
     @Res() response,
-    @User() user,
+    @User() user
   ) {
     const result = {
       data: {
-        cards: await this.modelsService.modelsUpdate(modelsArtefacts, user),
-      },
-    };
+        cards: await this.modelsService.modelsUpdate(modelsArtefacts, user)
+      }
+    }
 
-    return response.status(HttpStatus.ACCEPTED).json(result);
+    return response.status(HttpStatus.ACCEPTED).json(result)
   }
 
   @Get('/model/artefact/history/')
   async getModelHistory(
     @Query() query: ModelArtefactHistoryDto,
-    @Res() response,
+    @Res() response
   ) {
-    const result = await this.apiService.getModelHistory(query);
+    const result = await this.apiService.getModelHistory(query)
 
-    return response.status(HttpStatus.ACCEPTED).json(result);
+    return response.status(HttpStatus.ACCEPTED).json(result)
   }
 
   @Post('/template/create/')
   async createTemplate(
     @Body() templateCreateDto: TemplateCreateDto,
     @Res() response,
-    @Req() req,
+    @Req() req
   ) {
     try {
       const createdTemplate = await this.apiService.createTemplate(
         templateCreateDto,
-        req.user,
-      );
-      return response.status(HttpStatus.OK).json(createdTemplate[0]);
+        req.user
+      )
+      return response.status(HttpStatus.OK).json(createdTemplate[0])
     } catch (error) {
       if (error.message === 'Template name already exists!') {
         throw new HttpException(
           {
             statusCode: HttpStatus.CONFLICT,
-            message: 'Такое название шаблона уже существует!',
+            message: 'Такое название шаблона уже существует!'
           },
-          HttpStatus.CONFLICT,
-        );
+          HttpStatus.CONFLICT
+        )
       }
 
-      throw error;
+      throw error
     }
   }
 
@@ -156,93 +156,93 @@ export class ApiController {
   async updateTemplate(
     @Body() templateUpdateDto: TemplateUpdateDto,
     @Res() response,
-    @Req() req,
+    @Req() req
   ) {
     try {
       const updatedTemplate = await this.apiService.updateTemplate(
         templateUpdateDto,
-        req.user,
-      );
-      return response.status(HttpStatus.OK).json(updatedTemplate);
+        req.user
+      )
+      return response.status(HttpStatus.OK).json(updatedTemplate)
     } catch (error) {
       throw new HttpException(
         {
           statusCode: HttpStatus.CONFLICT,
-          message: error.message,
+          message: error.message
         },
-        HttpStatus.CONFLICT,
-      );
+        HttpStatus.CONFLICT
+      )
     }
   }
 
   @Get('/templates/')
   async getTemplates(@Res() response, @Req() req) {
-    const result = await this.apiService.getTemplates(req.user);
+    const result = await this.apiService.getTemplates(req.user)
 
-    return response.status(HttpStatus.ACCEPTED).json(result);
+    return response.status(HttpStatus.ACCEPTED).json(result)
   }
 
   @Get('/template/:id/')
   async getTemplate(@Param('id') id: number, @Res() response, @Req() req) {
-    const result = await this.apiService.getTemplate(id, req.user);
+    const result = await this.apiService.getTemplate(id, req.user)
 
     if (result.length) {
-      return response.status(HttpStatus.OK).json(result[0]);
+      return response.status(HttpStatus.OK).json(result[0])
     } else {
-      response.status(HttpStatus.NOT_FOUND).json([]);
+      response.status(HttpStatus.NOT_FOUND).json([])
     }
   }
 
   @Delete('/template/delete/:id/')
   async deleteTemplate(@Param('id') id: number, @Res() response) {
-    await this.apiService.deleteTemplate(id);
+    await this.apiService.deleteTemplate(id)
 
-    return response.status(HttpStatus.ACCEPTED).json({ result: true });
+    return response.status(HttpStatus.ACCEPTED).json({ result: true })
   }
 
   @Get('/artefacts/')
   async getArtefacts(@Res() response, @User() user) {
     const result = await this.artefactService.getArtefacts(
       MODEL_SOURCES.MRM,
-      user,
-    );
-    return response.status(HttpStatus.OK).json(result);
+      user
+    )
+    return response.status(HttpStatus.OK).json(result)
   }
 
   @Get('/metrics/')
   async getMetrics(@Query() query: MetricsDto, @Res() response) {
     try {
-      const { startDate, endDate, stream, useDatamart } = query;
+      const { startDate, endDate, stream, useDatamart } = query
       const result = await this.metricsAggregator.getMetrics(
         startDate,
         endDate,
         stream,
-        useDatamart || false, 
-      );
+        useDatamart || false
+      )
 
       return response.status(HttpStatus.OK).json({
         ...result,
         source: useDatamart ? 'datamart' : 'live',
-        message: useDatamart 
-          ? 'Метрики получены из BI витрин' 
+        message: useDatamart
+          ? 'Метрики получены из BI витрин'
           : 'Метрики получены из живых данных (без витрин)'
-      });
+      })
     } catch (error) {
       return response.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
         message: 'Internal server error',
         error: error.message
-      });
+      })
     }
   }
 
   @Get('/metrics/export')
   async exportMetricsToExcel(@Query() query: MetricsDto, @Res() res: Response) {
-    const { metric, startDate, endDate, stream, dataType, useDatamart } = query;
+    const { metric, startDate, endDate, stream, dataType, useDatamart } = query
 
     if (!metric) {
       return res.status(HttpStatus.BAD_REQUEST).json({
-        message: 'Метрика обязательна для выгрузки Excel-файла',
-      });
+        message: 'Метрика обязательна для выгрузки Excel-файла'
+      })
     }
 
     try {
@@ -252,23 +252,28 @@ export class ApiController {
         endDate || null,
         stream || [],
         useDatamart || false,
-        dataType || 'current',
-      );
+        dataType || 'current'
+      )
 
-      const filename = useDatamart ? `${metric}_datamart.xlsx` : `${metric}_live.xlsx`;
-      
-      res.setHeader('Content-Disposition', `attachment; filename=${filename}`);
-      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-      return res.send(excelBuffer);
+      const filename = useDatamart
+        ? `${metric}_datamart.xlsx`
+        : `${metric}_live.xlsx`
+
+      res.setHeader('Content-Disposition', `attachment; filename=${filename}`)
+      res.setHeader(
+        'Content-Type',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+      )
+      return res.send(excelBuffer)
     } catch (error) {
       if (error instanceof NotFoundException) {
         return res.status(HttpStatus.NOT_FOUND).json({
-          message: error.message,
-        });
+          message: error.message
+        })
       }
       return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
-        message: 'Ошибка при формировании Excel-файла',
-      });
+        message: 'Ошибка при формировании Excel-файла'
+      })
     }
   }
 
@@ -276,20 +281,20 @@ export class ApiController {
   async getReport(
     @Body() { filters, mode }: FilterDto,
     @Res() res: Response,
-    @Req() req,
+    @Req() req
   ) {
     const response = await this.reportService.getReport(
       filters,
       req.user?.groups,
-      mode,
-    );
+      mode
+    )
 
-    res.setHeader('Content-Disposition', 'attachment; filename=report.xlsx');
+    res.setHeader('Content-Disposition', 'attachment; filename=report.xlsx')
     res.setHeader(
       'Content-Type',
-      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-    );
-    res.send(response);
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+    res.send(response)
   }
 
   // === BI Datamart API ===

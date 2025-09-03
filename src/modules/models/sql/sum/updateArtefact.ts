@@ -25,6 +25,6 @@ from cte
 WHERE NOT EXISTS(
         SELECT * FROM upsert
     )
-`;
+`
 
-export { updateArtefact };
+export { updateArtefact }

@@ -12,327 +12,327 @@ import {
   IsUUID,
   IsDateString,
   ValidateIf,
-  ValidateNested,
-} from 'class-validator';
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { Transform, Type } from 'class-transformer';
-import { ApiModelPropertyOptional } from '@nestjs/swagger/dist/decorators/api-model-property.decorator';
-import { MetricsEnum } from 'src/modules/metrics/enums';
+  ValidateNested
+} from 'class-validator'
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
+import { Transform, Type } from 'class-transformer'
+import { ApiModelPropertyOptional } from '@nestjs/swagger/dist/decorators/api-model-property.decorator'
+import { MetricsEnum } from 'src/modules/metrics/enums'
 
 export enum ModelSource {
   SUM = 'sum',
-  SUM_RM = 'sum-rm',
+  SUM_RM = 'sum-rm'
 }
 
 export class ModelsDto {
   @ApiModelPropertyOptional({
-    example: 'YYYY-MM-DD',
+    example: 'YYYY-MM-DD'
   })
   @IsOptional()
   @IsDateString()
-  date: string;
+  date: string
 
   @ApiProperty({
     example: '3009b53c-507d-11ed-9b68-0a5801020704',
-    format: 'uuid',
+    format: 'uuid'
   })
   @IsOptional()
   @IsUUID()
-  model_id: string;
+  model_id: string
 
   @ApiModelPropertyOptional({
-    example: ['Архив', 'Разработка'],
+    example: ['Архив', 'Разработка']
   })
   @Transform(({ value }) => (Array.isArray(value) ? value : [value]))
   @IsOptional()
   @IsArray()
   @IsString({ each: true })
-  mode: string[];
+  mode: string[]
 }
 
 export class ModelWithRelationsDto {
   @ApiProperty({
     example: '3009b53c-507d-11ed-9b68-0a5801020704',
-    format: 'uuid',
+    format: 'uuid'
   })
   @IsUUID()
-  model_id: string;
+  model_id: string
 }
 
 export class CompareModelsDto {
   @ApiModelPropertyOptional({
-    example: 'YYYY-MM-DD',
+    example: 'YYYY-MM-DD'
   })
   @IsDateString()
-  firstDate: string;
+  firstDate: string
 
   @ApiModelPropertyOptional({
-    example: 'YYYY-MM-DD',
+    example: 'YYYY-MM-DD'
   })
   @IsDateString()
-  secondDate: string;
+  secondDate: string
 
   @ApiModelPropertyOptional({
-    example: ['Архив', 'Разработка'],
+    example: ['Архив', 'Разработка']
   })
   @Transform(({ value }) => (Array.isArray(value) ? value : [value]))
   @IsOptional()
   @IsArray()
   @IsString({ each: true })
-  mode: string[];
+  mode: string[]
 }
 
 export class ModelCreateDto {
   @ApiProperty({
-    example: 'record_id',
+    example: 'record_id'
   })
   @IsNotEmpty()
   @IsString()
-  artefact_tech_label: string;
+  artefact_tech_label: string
 
   @ApiProperty({
     type: Number,
     nullable: true,
-    example: null,
+    example: null
   })
   @IsNumber()
   @IsPositive()
   @ValidateIf((object, value) => value !== null)
-  artefact_value_id: number | null;
+  artefact_value_id: number | null
 
   @ApiProperty({
-    example: 'new value',
+    example: 'new value'
   })
   @IsString()
-  artefact_string_value: string;
+  artefact_string_value: string
 }
 
 class ArtefactDto {
   @ApiProperty({
-    example: 'record_id',
+    example: 'record_id'
   })
   @IsNotEmpty()
   @IsString()
-  artefact_tech_label: string;
+  artefact_tech_label: string
 
   @ApiProperty({
     type: Number,
     nullable: true,
-    example: null,
+    example: null
   })
   @IsNumber()
   @IsPositive()
   @ValidateIf((object, value) => value !== null)
-  artefact_value_id: number | null;
+  artefact_value_id: number | null
 
   @ApiProperty({
-    example: 'new value',
+    example: 'new value'
   })
   @IsString()
-  artefact_string_value: string;
+  artefact_string_value: string
 }
 
 export class ModelsUpdateDto {
   @ApiProperty({
     example: '3009b53c-507d-11ed-9b68-0a5801020704',
-    format: 'uuid',
+    format: 'uuid'
   })
   @IsUUID()
-  model_id: string;
+  model_id: string
 
   @IsEnum(ModelSource)
-  model_source: string;
+  model_source: string
 
   @ApiProperty({
-    type: ArtefactDto,
+    type: ArtefactDto
   })
   @IsArray()
   @ValidateNested({ each: true })
   @ArrayNotEmpty()
   @Type(() => ArtefactDto)
-  artefacts: ArtefactDto[];
+  artefacts: ArtefactDto[]
 }
 
 export class ArtefactsUpdateDto {
   @ApiProperty({
     example: '3009b53c-507d-11ed-9b68-0a5801020704',
-    format: 'uuid',
+    format: 'uuid'
   })
   @IsUUID()
-  model_id: string;
+  model_id: string
 
   @ApiProperty({
-    example: 'record_id',
+    example: 'record_id'
   })
   @IsNotEmpty()
   @IsString()
-  artefact_tech_label: string;
+  artefact_tech_label: string
 
   @ApiProperty({
     type: Number,
     nullable: true,
-    example: null,
+    example: null
   })
   @IsNumber()
   @IsPositive()
   @ValidateIf((object, value) => value !== null)
-  artefact_value_id: number | null;
+  artefact_value_id: number | null
 
   @ApiProperty({
-    example: 'new value',
+    example: 'new value'
   })
   @IsString()
-  artefact_string_value: string;
+  artefact_string_value: string
 }
 
 export class ModelArtefactHistoryDto {
   @ApiProperty({
-    example: 'record_id',
+    example: 'record_id'
   })
   @IsNotEmpty()
   @IsString()
-  artefact_tech_label: string;
+  artefact_tech_label: string
 
   @ApiProperty({
     example: '3009b53c-507d-11ed-9b68-0a5801020704',
-    format: 'uuid',
+    format: 'uuid'
   })
   @IsUUID()
-  model_id: string;
+  model_id: string
 
   @IsEnum(ModelSource)
-  model_source: string;
+  model_source: string
 }
 
 type TemplateValueType = {
-  [key: string]: string[];
-};
+  [key: string]: string[]
+}
 
 export class TemplateCreateDto {
   @ApiProperty({
-    example: 'Template Name',
+    example: 'Template Name'
   })
   @IsNotEmpty()
   @IsString()
-  template_name: string;
+  template_name: string
 
   @ApiProperty({
-    example: true,
+    example: true
   })
   @IsBoolean()
-  public: boolean;
+  public: boolean
 
   @ApiProperty({
-    example: { target: [], record_id: ['not-null'], model_desc: [] },
+    example: { target: [], record_id: ['not-null'], model_desc: [] }
   })
   @IsObject()
-  template_value: TemplateValueType;
+  template_value: TemplateValueType
 }
 
 export class TemplateUpdateDto {
   @ApiProperty({
-    example: 1,
+    example: 1
   })
   @IsNumber()
   @IsPositive()
-  template_id: number;
+  template_id: number
 
   @ApiModelPropertyOptional({
-    example: 'Template Name',
+    example: 'Template Name'
   })
   @IsNotEmpty()
   @IsString()
   @IsOptional()
-  template_name: string;
+  template_name: string
 
   @ApiModelPropertyOptional({
-    example: true,
+    example: true
   })
   @IsBoolean()
   @IsOptional()
   @IsOptional()
-  public?: boolean;
+  public?: boolean
 
   @ApiModelPropertyOptional({
-    example: { target: [], record_id: ['not-null'], model_desc: [] },
+    example: { target: [], record_id: ['not-null'], model_desc: [] }
   })
   @IsObject()
   @IsOptional()
-  template_value: TemplateValueType;
+  template_value: TemplateValueType
 }
 
 type FilterValueType = {
-  [key: string]: string[];
-};
+  [key: string]: string[]
+}
 
 export class FilterDto {
   @ApiProperty({
     type: 'object',
     additionalProperties: {
       type: 'array',
-      items: { type: 'string' },
+      items: { type: 'string' }
     },
     example: {
       target: [],
       record_id: ['not-null'],
-      model_desc: [],
-    },
+      model_desc: []
+    }
   })
   @IsObject()
-  filters: FilterValueType;
+  filters: FilterValueType
 
   @ApiModelPropertyOptional({
-    example: ['Архив', 'Разработка'],
+    example: ['Архив', 'Разработка']
   })
   @Transform(({ value }) => (Array.isArray(value) ? value : [value]))
   @IsOptional()
   @IsArray()
   @IsString({ each: true })
-  mode: string[];
+  mode: string[]
 }
 
 export class MetricsDto {
   @ApiModelPropertyOptional({
-    example: 'YYYY-MM-DD',
+    example: 'YYYY-MM-DD'
   })
   @IsOptional()
   @IsDateString()
-  startDate: string;
+  startDate: string
 
   @ApiModelPropertyOptional({
-    example: 'YYYY-MM-DD',
+    example: 'YYYY-MM-DD'
   })
   @IsOptional()
   @IsDateString()
-  endDate: string;
+  endDate: string
 
   @ApiModelPropertyOptional({
-    example: ['stream_name1', 'stream_name2'],
+    example: ['stream_name1', 'stream_name2']
   })
   @IsOptional()
   @IsArray()
   @IsString({ each: true })
-  stream: string[];
+  stream: string[]
 
   @ApiModelPropertyOptional({ example: MetricsEnum.DevelopedModelsMetric })
   @IsOptional()
   @IsEnum(MetricsEnum)
-  metric: MetricsEnum;
+  metric: MetricsEnum
 
-  @ApiModelPropertyOptional({ 
+  @ApiModelPropertyOptional({
     example: true,
     description: 'Использовать BI витрину вместо обычного источника данных'
   })
   @IsOptional()
   @IsBoolean()
   @Transform(({ value }) => value === 'true' || value === true)
-  useDatamart: boolean = true;
-  
+  useDatamart = true
+
   @ApiModelPropertyOptional({
     example: 'current',
-    description: 'Тип данных для экспорта: current или delta',
+    description: 'Тип данных для экспорта: current или delta'
   })
   @IsOptional()
   @IsString()
-  dataType?: string;
+  dataType?: string
 }

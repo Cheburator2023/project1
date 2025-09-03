@@ -1,9 +1,17 @@
 import { DependentMetric } from '../base'
-import { MetricDependencyMap, RiskCoverageFinalStatusResult } from '../interfaces'
+import {
+  MetricDependencyMap,
+  RiskCoverageFinalStatusResult
+} from '../interfaces'
 import { MetricsEnum } from '../enums'
 
-export class RiskCoverageFinalStatusMetric extends DependentMetric<RiskCoverageFinalStatusResult,
-  Pick<MetricDependencyMap, MetricsEnum.MrmModelsMetric | MetricsEnum.FinalStatusModelsMetric>> {
+export class RiskCoverageFinalStatusMetric extends DependentMetric<
+  RiskCoverageFinalStatusResult,
+  Pick<
+    MetricDependencyMap,
+    MetricsEnum.MrmModelsMetric | MetricsEnum.FinalStatusModelsMetric
+  >
+> {
   calculate(): RiskCoverageFinalStatusResult {
     // Retrieve the count and delta for models with final status
     const { count: finalStatusModelsCount, delta: finalStatusModelsDelta } =
@@ -14,7 +22,8 @@ export class RiskCoverageFinalStatusMetric extends DependentMetric<RiskCoverageF
       this.dependencies[MetricsEnum.MrmModelsMetric]
 
     // Calculate values for the previous period
-    const previousFinalStatusModelsCount = finalStatusModelsCount - finalStatusModelsDelta
+    const previousFinalStatusModelsCount =
+      finalStatusModelsCount - finalStatusModelsDelta
     const previousMrmModelsCount = mrmModelsCount - mrmModelsDelta
 
     // Calculate the current percentage of risk coverage based on final status

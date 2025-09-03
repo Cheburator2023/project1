@@ -20,5 +20,4 @@ import { ModelsModule } from '../models/models.module'
   ],
   exports: [AllocationService]
 })
-export class AllocationModule {
-}
+export class AllocationModule {}

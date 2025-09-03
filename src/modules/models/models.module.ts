@@ -28,7 +28,14 @@ import { ModelMergePrefetchService } from './services/model-merge-prefetch.servi
     AllocationModule,
     UsageModule
   ],
-  exports: [ModelServiceFactory, ModelsService, MrmModelService, SumModelService, ModelMergeService, ModelDefaultsService, ModelMergePrefetchService]
+  exports: [
+    ModelServiceFactory,
+    ModelsService,
+    MrmModelService,
+    SumModelService,
+    ModelMergeService,
+    ModelDefaultsService,
+    ModelMergePrefetchService
+  ]
 })
-export class ModelsModule {
-}
+export class ModelsModule {}

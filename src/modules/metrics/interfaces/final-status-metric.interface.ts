@@ -4,7 +4,8 @@ import { BaseMetricResult } from './base-metric-result.interface'
 /**
  * Interface for FinalStatusMetric, extending IIndependentMetric.
  */
-export interface IFinalStatusMetric<T extends BaseMetricResult> extends IIndependentMetric<T> {
+export interface IFinalStatusMetric<T extends BaseMetricResult>
+  extends IIndependentMetric<T> {
   /**
    * Filters models by date range and status, optionally returning models with their relevant date.
    *
@@ -21,5 +22,5 @@ export interface IFinalStatusMetric<T extends BaseMetricResult> extends IIndepen
     endDate: string | null,
     isDeltaCalculation?: boolean,
     returnDate?: T
-  ): T extends true ? { model: any; date: Date }[] : any[];
+  ): T extends true ? { model: any; date: Date }[] : any[]
 }

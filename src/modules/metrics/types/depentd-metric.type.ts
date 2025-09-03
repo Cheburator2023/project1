@@ -1,4 +1,7 @@
 import { IDependentMetric } from '../interfaces'
 import { MetricDependencyMap } from '../interfaces'
 
-export type DependentMetricType = IDependentMetric<any, Partial<MetricDependencyMap>>;
+export type DependentMetricType = IDependentMetric<
+  any,
+  Partial<MetricDependencyMap>
+>

@@ -3,7 +3,12 @@ import { SumDatabaseService } from 'src/system/sum-database/database.service'
 import { MrmDatabaseService } from 'src/system/mrm-database/database.service'
 import { ModelsModule } from 'src/modules/models/models.module'
 import { ArtefactService } from './artefact.services'
-import { SumArtefactService, MrmArtefactService, ArtefactExecutionContextService, ArtefactRealizationsService } from './services'
+import {
+  SumArtefactService,
+  MrmArtefactService,
+  ArtefactExecutionContextService,
+  ArtefactRealizationsService
+} from './services'
 import { ArtefactRealizationsController } from './api/artefact-realizations.controller'
 import { ArtefactServiceFactory } from './factories'
 import { artefactHandlersProvider } from './handlers'
@@ -29,5 +34,4 @@ import { artefactHandlersProvider } from './handlers'
   exports: [ArtefactService],
   controllers: [ArtefactRealizationsController]
 })
-export class ArtefactModule {
-}
+export class ArtefactModule {}

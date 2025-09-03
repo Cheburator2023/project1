@@ -4,8 +4,7 @@ import { ConfigService } from '@nestjs/config'
 import { firstValueFrom } from 'rxjs'
 import { ICamundaService } from './interfaces'
 import { CamundaTask } from './entities'
-import * as querystring from 'querystring';
-
+import * as querystring from 'querystring'
 
 @Injectable()
 export class CamundaService implements ICamundaService {
@@ -22,7 +21,9 @@ export class CamundaService implements ICamundaService {
       'BPMN_API',
       `${process.env.BPMN_API}`
     )
-    this.authorizationHeader = `Basic ${ Buffer.from(`${ user }:${ pwd }`).toString('base64') }`
+    this.authorizationHeader = `Basic ${Buffer.from(`${user}:${pwd}`).toString(
+      'base64'
+    )}`
   }
 
   /**
@@ -39,7 +40,7 @@ export class CamundaService implements ICamundaService {
     params?: Record<string, any>,
     data?: Record<string, any>
   ): Promise<T> {
-    const url = `${ this.baseUrl }/${ endpoint }`
+    const url = `${this.baseUrl}/${endpoint}`
     try {
       const response = await firstValueFrom(
         this.httpService.request<T>({
@@ -55,7 +56,9 @@ export class CamundaService implements ICamundaService {
     } catch (error) {
       console.error('Request error:', error)
       throw new Error(
-        `Failed to make ${ method.toUpperCase() } request to ${ url }: ${ error.message }`
+        `Failed to make ${method.toUpperCase()} request to ${url}: ${
+          error.message
+        }`
       )
     }
   }
@@ -72,24 +75,23 @@ export class CamundaService implements ICamundaService {
     }
 
     try {
-      const tasks = await this.makeRequest<any[]>(
-        'get',
-        'task',
-        params
-      )
+      const tasks = await this.makeRequest<any[]>('get', 'task', params)
       return tasks
     } catch (error) {
-      throw new Error(`Failed to fetch tasks by groups: ${ error.message }`)
+      throw new Error(`Failed to fetch tasks by groups: ${error.message}`)
     }
   }
 
   async tasks(groups: string[] = ['mipm']): Promise<CamundaTask[]> {
-    const queryParams = querystring.stringify({ candidateGroups: groups.join(','), includeAssignedTasks: true });
+    const queryParams = querystring.stringify({
+      candidateGroups: groups.join(','),
+      includeAssignedTasks: true
+    })
 
     try {
-      return await this.makeRequest<CamundaTask[]>('get', `task?${queryParams}`);
+      return await this.makeRequest<CamundaTask[]>('get', `task?${queryParams}`)
     } catch (error) {
-      throw new Error(`Failed to fetch tasks: ${error.message}`);
+      throw new Error(`Failed to fetch tasks: ${error.message}`)
     }
   }
 }

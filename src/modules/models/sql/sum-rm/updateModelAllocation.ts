@@ -25,6 +25,6 @@ INTO models_allocation_history (allocation_id, model_id, gbl_id, allocation_perc
 SELECT *,
        'admin' as changed_by
 FROM upsert
-`;
+`
 
-export { updateModelAllocation };
+export { updateModelAllocation }

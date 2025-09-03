@@ -1,6 +1,11 @@
 import { UserType } from 'src/decorators'
 import { UpdateArtefactDto } from '../dto'
-import { ArtefactEntity, ArtefactRealizationEntity, ArtefactValueEntity, EnrichedArtefact } from '../entities'
+import {
+  ArtefactEntity,
+  ArtefactRealizationEntity,
+  ArtefactValueEntity,
+  EnrichedArtefact
+} from '../entities'
 import { MrmDatabaseService } from 'src/system/mrm-database/database.service'
 import { SumDatabaseService } from 'src/system/sum-database/database.service'
 
@@ -16,9 +21,13 @@ export interface IArtefactService {
     artefact_id: ArtefactEntity['artefact_id']
   ): Promise<ArtefactRealizationEntity | null>
 
-  getArtefactByTechLabel(artefact_tech_label: UpdateArtefactDto['artefact_tech_label']): Promise<ArtefactEntity | null>
+  getArtefactByTechLabel(
+    artefact_tech_label: UpdateArtefactDto['artefact_tech_label']
+  ): Promise<ArtefactEntity | null>
 
-  getArtefactValues(artefact_id: ArtefactEntity['artefact_id']): Promise<ArtefactValueEntity[]>
+  getArtefactValues(
+    artefact_id: ArtefactEntity['artefact_id']
+  ): Promise<ArtefactValueEntity[]>
 
   resolveArtefactValueId(
     artefactData: UpdateArtefactDto,
@@ -40,15 +49,15 @@ export interface IArtefactService {
     creator: string
   ): Promise<void>
 
-  getModelById(
-    model_id: string
-  ): Promise<any>
+  getModelById(model_id: string): Promise<any>
 
   getMaxArtefactUpdateDate(model_id: string): Promise<any>
 
   canEditArtefact(artefact: ArtefactEntity): boolean
-  
-  getArtefacts(): Promise<{ data: ArtefactEntity[] }>;
 
-  getArtefactWithPermissions(user: UserType): Promise<{ data: EnrichedArtefact[] }>;
+  getArtefacts(): Promise<{ data: ArtefactEntity[] }>
+
+  getArtefactWithPermissions(
+    user: UserType
+  ): Promise<{ data: EnrichedArtefact[] }>
 }

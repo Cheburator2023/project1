@@ -56,10 +56,7 @@ import { BiDatamartModule } from 'src/modules/bi-datamart/bi-datamart.module'
   ]
 })
 export class AppModule implements OnModuleInit {
-  constructor(
-    private readonly debounceService: DebounceService
-  ) {
-  }
+  constructor(private readonly debounceService: DebounceService) {}
 
   onModuleInit(): any {
     EmitEventDependencies.initialize(this.debounceService)

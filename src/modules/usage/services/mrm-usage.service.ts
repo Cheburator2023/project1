@@ -6,11 +6,28 @@ import { UpdateUsageDto } from '../dto'
 import { MRMUsageEntity, MRMUsageHistEntity } from '../entities'
 import { MrmModelService } from 'src/modules/models/services'
 
-type GetUsageParams = Pick<UpdateUsageDto, 'model_id' | 'confirmation_year' | 'confirmation_quarter'>
-type UpdateUsageParams = Pick<UpdateUsageDto, 'model_id' | 'confirmation_date' | 'is_used' | 'confirmation_year' | 'confirmation_quarter'>
-type InsertUsageParams = Pick<UpdateUsageDto, 'model_id' | 'confirmation_date' | 'is_used' | 'confirmation_year' | 'confirmation_quarter' | 'creator'>
-type InsertUsageHistoryParams =
-  Pick<MRMUsageEntity, 'usage_id'> &
+type GetUsageParams = Pick<
+  UpdateUsageDto,
+  'model_id' | 'confirmation_year' | 'confirmation_quarter'
+>
+type UpdateUsageParams = Pick<
+  UpdateUsageDto,
+  | 'model_id'
+  | 'confirmation_date'
+  | 'is_used'
+  | 'confirmation_year'
+  | 'confirmation_quarter'
+>
+type InsertUsageParams = Pick<
+  UpdateUsageDto,
+  | 'model_id'
+  | 'confirmation_date'
+  | 'is_used'
+  | 'confirmation_year'
+  | 'confirmation_quarter'
+  | 'creator'
+>
+type InsertUsageHistoryParams = Pick<MRMUsageEntity, 'usage_id'> &
   Pick<UpdateUsageDto, 'model_id' | 'confirmation_date' | 'is_used' | 'creator'>
 
 @Injectable()
@@ -25,7 +42,14 @@ export class MrmUsageService extends BaseUsageService implements IUsageService {
   }
 
   async handleUpdateUsage(data: UpdateUsageDto): Promise<boolean> {
-    const { model_id, confirmation_date, is_used, confirmation_year, confirmation_quarter, creator } = data
+    const {
+      model_id,
+      confirmation_date,
+      is_used,
+      confirmation_year,
+      confirmation_quarter,
+      creator
+    } = data
 
     // проверить существование модели
     const model = await this.modelService.getModelById(model_id)
@@ -40,8 +64,13 @@ export class MrmUsageService extends BaseUsageService implements IUsageService {
       confirmation_quarter
     })
     let usageId = null
-    let confirmationDate = confirmation_date !== null ? confirmation_date : usage ? usage.confirmation_date : (new Date()).toISOString().split('T')[0]
-    let isUsed = is_used !== null ? is_used : usage ? usage.is_used : false
+    const confirmationDate =
+      confirmation_date !== null
+        ? confirmation_date
+        : usage
+        ? usage.confirmation_date
+        : new Date().toISOString().split('T')[0]
+    const isUsed = is_used !== null ? is_used : usage ? usage.is_used : false
 
     if (!usage) {
       // если нет записи, то добавляем
@@ -61,7 +90,11 @@ export class MrmUsageService extends BaseUsageService implements IUsageService {
       usageId = usageItem.usage_id
     } else {
       // проверяем, изменились ли данные
-      if (this.normalizeToLocalDate(usage.confirmation_date) === this.normalizeToLocalDate(confirmation_date) && usage.is_used === isUsed) {
+      if (
+        this.normalizeToLocalDate(usage.confirmation_date) ===
+          this.normalizeToLocalDate(confirmation_date) &&
+        usage.is_used === isUsed
+      ) {
         return false
       }
 
@@ -142,7 +175,9 @@ export class MrmUsageService extends BaseUsageService implements IUsageService {
     return usage || null
   }
 
-  async insertUsageHistory(params: InsertUsageHistoryParams): Promise<MRMUsageHistEntity | null> {
+  async insertUsageHistory(
+    params: InsertUsageHistoryParams
+  ): Promise<MRMUsageHistEntity | null> {
     const [usageHist] = await this.databaseService.query(
       `
       INSERT INTO models_usage_history (usage_id, model_id, confirmation_date, is_used, changed_by)

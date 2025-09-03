@@ -8,22 +8,18 @@ import { TasksDatamartService } from './tasks-datamart.service'
 import { TasksDatamartSchedulerService } from './tasks-datamart-scheduler.service'
 
 @Module({
-  imports: [
-    ModelsModule,
-    TasksModule,
-    MrmDatabaseModule,
-  ],
+  imports: [ModelsModule, TasksModule, MrmDatabaseModule],
   providers: [
     BiDatamartService,
     BiDatamartSchedulerService,
     TasksDatamartService,
-    TasksDatamartSchedulerService,
+    TasksDatamartSchedulerService
   ],
   exports: [
     BiDatamartService,
     BiDatamartSchedulerService,
     TasksDatamartService,
-    TasksDatamartSchedulerService,
-  ],
+    TasksDatamartSchedulerService
+  ]
 })
-export class BiDatamartModule {} 
+export class BiDatamartModule {}
