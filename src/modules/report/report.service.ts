@@ -19,6 +19,22 @@ import {
 import { isValidDate } from 'src/system/common/utils'
 import { MetricsEnum } from 'src/modules/metrics/enums'
 
+type FilterModel = {
+  [key: string]: SetFilter | DateFilter
+}
+
+type SetFilter = {
+  values: (string | null)[]
+  filterType: string
+}
+
+type DateFilter = {
+  dateFrom: string
+  dateTo: string
+  filterType: string
+  type: string
+}
+
 type Preset = {
   key: string
   title: string
@@ -96,12 +112,13 @@ export class ReportService {
   }
 
   async getReport(
-    filters: { [key: string]: string[] },
+    filters: FilterModel | { [key: string]: string[] },
     groups?: [],
     mode?: string[]
   ): Promise<Buffer> {
+    const legacyFilters = this.convertFiltersToLegacyFormat(filters)
     const reportData: { headers: Preset[]; body: Model[] } =
-      await this.generateReportData(filters, groups, mode)
+      await this.generateReportData(legacyFilters, groups, mode)
     const xlsxBuffer: Buffer = await this.generateExcel(reportData)
 
     return xlsxBuffer
@@ -257,6 +274,43 @@ export class ReportService {
     return Object.keys(filters)
       .map((filterKey) => headers.find((header) => header.key === filterKey))
       .filter(Boolean)
+  }
+
+  private convertFiltersToLegacyFormat(
+    filters: FilterModel | { [key: string]: string[] }
+  ): { [key: string]: string[] } {
+    if (this.isLegacyFormat(filters)) {
+      return filters as { [key: string]: string[] }
+    }
+
+    const filterModel = filters as FilterModel
+    const legacyFilters: { [key: string]: string[] } = {}
+
+    Object.keys(filterModel).forEach((key) => {
+      const filter = filterModel[key]
+
+      if (filter.filterType === 'set') {
+        const setFilter = filter as SetFilter
+        legacyFilters[key] = setFilter.values.map((v) =>
+          v === null ? null : String(v)
+        )
+      } else if (filter.filterType === 'date') {
+        const dateFilter = filter as DateFilter
+        legacyFilters[key] = [dateFilter.dateFrom, dateFilter.dateTo]
+      }
+    })
+
+    return legacyFilters
+  }
+
+  private isLegacyFormat(
+    filters: FilterModel | { [key: string]: string[] }
+  ): boolean {
+    const firstKey = Object.keys(filters)[0]
+    if (!firstKey) return true
+
+    const firstValue = filters[firstKey]
+    return Array.isArray(firstValue)
   }
 
   private generateReportHeaders(artefacts: Artefact[]): Preset[] {
