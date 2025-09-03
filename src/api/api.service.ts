@@ -94,9 +94,18 @@ export class ApiService {
       throw new Error('Template name already exists!')
     }
 
+    const templateValue = {
+      filterModel: templateCreateDto.filterModel || {},
+      sortState: templateCreateDto.sortState || [],
+      columnState: templateCreateDto.columnState || [],
+      selectedIds: templateCreateDto.selectedIds || []
+    }
+
     const result = await this.mrmDatabaseService.query(addTemplate, {
       user_id: user.preferred_username,
-      ...templateCreateDto
+      template_name: templateCreateDto.template_name,
+      public: templateCreateDto.public,
+      template_value: templateValue
     })
 
     const formattedResult = result.map((item) => {
@@ -116,11 +125,11 @@ export class ApiService {
     )
 
     if (!targetTemplate) {
-      throw new Error('Template not found')
+      throw new Error('Шаблон не найден')
     }
 
     if (targetTemplate.user_id !== user.preferred_username) {
-      throw new Error("You don't have permission to edit the template")
+      throw new Error('У вас нет прав на редактирование шаблона')
     }
 
     if (
@@ -137,18 +146,31 @@ export class ApiService {
       })
 
       if (templatesWithSameName) {
-        throw new Error('Template name already exists')
+        throw new Error('Имя шаблона уже существует')
       }
     }
 
     try {
+      const templateValue =
+        templateUpdateDto.filterModel ||
+        templateUpdateDto.sortState ||
+        templateUpdateDto.columnState ||
+        templateUpdateDto.selectedIds
+          ? {
+              filterModel: templateUpdateDto.filterModel,
+              sortState: templateUpdateDto.sortState,
+              columnState: templateUpdateDto.columnState,
+              selectedIds: templateUpdateDto.selectedIds
+            }
+          : null
+
       const updatedTemplate = await this.mrmDatabaseService.query(
         updateTemplate,
         {
-          template_name: null,
-          public: null,
-          template_value: null,
-          ...templateUpdateDto
+          template_name: templateUpdateDto.template_name || null,
+          public: templateUpdateDto.public ?? null,
+          template_value: templateValue,
+          template_id: templateUpdateDto.template_id
         }
       )
 
@@ -159,7 +181,7 @@ export class ApiService {
         }
       }
     } catch (e) {
-      throw new Error('Something went wrong')
+      throw new Error('Произошла ошибка')
     }
   }
 

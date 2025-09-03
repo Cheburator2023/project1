@@ -204,13 +204,36 @@ export class ModelArtefactHistoryDto {
   model_source: string
 }
 
-type TemplateValueType = {
-  [key: string]: string[]
+type SetFilter = {
+  values: (string | null)[]
+  filterType: string
+}
+
+type DateFilter = {
+  dateFrom: string
+  dateTo: string
+  filterType: string
+  type: string
+}
+
+type FilterModel = {
+  [key: string]: SetFilter | DateFilter
+}
+
+type SortState = {
+  colId: string
+  sort: 'asc' | 'desc'
+  sortIndex: number
+}
+
+type ColumnState = {
+  colId: string
+  hide?: boolean
 }
 
 export class TemplateCreateDto {
   @ApiProperty({
-    example: 'Template Name'
+    example: 'Название шаблона'
   })
   @IsNotEmpty()
   @IsString()
@@ -223,10 +246,41 @@ export class TemplateCreateDto {
   public: boolean
 
   @ApiProperty({
-    example: { target: [], record_id: ['not-null'], model_desc: [] }
+    example: {
+      record_id: { values: ['value1', 'value2'], filterType: 'set' },
+      created_date: {
+        dateFrom: '2024-01-01',
+        dateTo: '2024-12-31',
+        filterType: 'date',
+        type: 'inRange'
+      }
+    }
   })
   @IsObject()
-  template_value: TemplateValueType
+  @IsOptional()
+  filterModel?: FilterModel
+
+  @ApiProperty({
+    example: [{ colId: 'record_id', sort: 'asc', sortIndex: 0 }]
+  })
+  @IsArray()
+  @IsOptional()
+  sortState?: SortState[]
+
+  @ApiProperty({
+    example: [{ colId: 'model_desc', hide: true }]
+  })
+  @IsArray()
+  @IsOptional()
+  columnState?: ColumnState[]
+
+  @ApiProperty({
+    example: ['model-1', 'model-2']
+  })
+  @IsArray()
+  @IsString({ each: true })
+  @IsOptional()
+  selectedIds?: string[]
 }
 
 export class TemplateUpdateDto {
@@ -238,48 +292,73 @@ export class TemplateUpdateDto {
   template_id: number
 
   @ApiModelPropertyOptional({
-    example: 'Template Name'
+    example: 'Название шаблона'
   })
   @IsNotEmpty()
   @IsString()
   @IsOptional()
-  template_name: string
+  template_name?: string
 
   @ApiModelPropertyOptional({
     example: true
   })
   @IsBoolean()
   @IsOptional()
-  @IsOptional()
   public?: boolean
 
   @ApiModelPropertyOptional({
-    example: { target: [], record_id: ['not-null'], model_desc: [] }
+    example: {
+      record_id: { values: ['value1', 'value2'], filterType: 'set' },
+      created_date: {
+        dateFrom: '2024-01-01',
+        dateTo: '2024-12-31',
+        filterType: 'date',
+        type: 'inRange'
+      }
+    }
   })
   @IsObject()
   @IsOptional()
-  template_value: TemplateValueType
-}
+  filterModel?: FilterModel
 
-type FilterValueType = {
-  [key: string]: string[]
+  @ApiModelPropertyOptional({
+    example: [{ colId: 'record_id', sort: 'asc', sortIndex: 0 }]
+  })
+  @IsArray()
+  @IsOptional()
+  sortState?: SortState[]
+
+  @ApiModelPropertyOptional({
+    example: [{ colId: 'model_desc', hide: true }]
+  })
+  @IsArray()
+  @IsOptional()
+  columnState?: ColumnState[]
+
+  @ApiModelPropertyOptional({
+    example: ['model-1', 'model-2']
+  })
+  @IsArray()
+  @IsString({ each: true })
+  @IsOptional()
+  selectedIds?: string[]
 }
 
 export class FilterDto {
   @ApiProperty({
     type: 'object',
-    additionalProperties: {
-      type: 'array',
-      items: { type: 'string' }
-    },
     example: {
-      target: [],
-      record_id: ['not-null'],
-      model_desc: []
+      record_id: { values: ['value1', 'value2'], filterType: 'set' },
+      created_date: {
+        dateFrom: '2024-01-01',
+        dateTo: '2024-12-31',
+        filterType: 'date',
+        type: 'inRange'
+      }
     }
   })
   @IsObject()
-  filters: FilterValueType
+  filters: FilterModel
 
   @ApiModelPropertyOptional({
     example: ['Архив', 'Разработка']

@@ -168,14 +168,15 @@ export class ReportService {
     filterValues,
     artefactType: ArtefactTypeId
   ): boolean {
-    // @TODO: Нужно будет убрать проверку filterValues.length === 1 и фильтровать только по not-null
-    if (filterValues.includes('not-null') && filterValues.length === 1) {
-      return ReportService.filterByNotNull(artefactValue)
+    const hasNullInFilter = filterValues.includes(null)
+    const isValueEmpty = ReportService.filterByEmpty(artefactValue)
+
+    if (!hasNullInFilter && isValueEmpty) {
+      return false
     }
 
-    // @TODO: Нужно будет убрать проверку filterValues.length === 1 и фильтровать только по not-null
-    if (filterValues.includes('empty') && filterValues.length === 1) {
-      return ReportService.filterByEmpty(artefactValue)
+    if (hasNullInFilter && isValueEmpty) {
+      return true
     }
 
     switch (artefactType) {
