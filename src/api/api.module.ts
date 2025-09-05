@@ -6,11 +6,30 @@ import { SumDatabaseModule } from 'src/system/sum-database/database.module'
 import { MrmDatabaseModule } from 'src/system/mrm-database/database.module'
 import { ArtefactModule } from 'src/modules/artefacts/artefact.module'
 import { BiDatamartModule } from 'src/modules/bi-datamart/bi-datamart.module'
-import { ApiController } from './api.controller'
+import { CacheModule } from 'src/modules/cache/cache.module'
+import {
+  ModelsController,
+  TemplatesController,
+  MetricsController,
+  CacheController,
+  MonitoringController,
+  ArtefactsController,
+  ReportsController,
+  BiDatamartController
+} from './controllers'
 import { ApiService } from './api.service'
 
 @Module({
-  controllers: [ApiController],
+  controllers: [
+    ModelsController,
+    TemplatesController,
+    MetricsController,
+    CacheController,
+    MonitoringController,
+    ArtefactsController,
+    ReportsController,
+    BiDatamartController
+  ],
   providers: [ApiService],
   imports: [
     SumDatabaseModule,
@@ -19,7 +38,8 @@ import { ApiService } from './api.service'
     ReportModule,
     MetricsModule,
     ArtefactModule,
-    BiDatamartModule
+    BiDatamartModule,
+    CacheModule
   ]
 })
 export class ApiModule {}

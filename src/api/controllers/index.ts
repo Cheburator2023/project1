@@ -1,0 +1,8 @@
+export { ModelsController } from './models.controller'
+export { TemplatesController } from './templates.controller'
+export { MetricsController } from './metrics.controller'
+export { CacheController } from './cache.controller'
+export { MonitoringController } from './monitoring.controller'
+export { ArtefactsController } from './artefacts.controller'
+export { ReportsController } from './reports.controller'
+export { BiDatamartController } from './bi-datamart.controller'

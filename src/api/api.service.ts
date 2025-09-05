@@ -3,6 +3,7 @@ import { REQUEST } from '@nestjs/core'
 import { Inject, Injectable, Scope } from '@nestjs/common'
 import { SumDatabaseService } from 'src/system/sum-database/database.service'
 import { MrmDatabaseService } from 'src/system/mrm-database/database.service'
+import { ModelsCacheService } from 'src/modules/models/models-cache.service'
 import { sql as getSumRmModelHistory } from './sql/models/sum-rm/history'
 import { sql as getSumModelHistory } from './sql/models/sum/history'
 import { sql as getTemplate } from './sql/templates/getTemplate'
@@ -28,6 +29,7 @@ interface LegacyTemplateValue {
 interface FilterModel {
   [key: string]: {
     filterType: string
+    type?: string
     values?: string[]
     dateFrom?: string
     dateTo?: string
@@ -37,7 +39,11 @@ interface FilterModel {
 interface NewTemplateValue {
   filterModel: FilterModel
   sortState: any[]
-  columnState: any[]
+  legacy_values: LegacyTemplateValue
+  columnState?: Array<{
+    colId: string
+    hide?: boolean
+  }>
   selectedIds: string[]
 }
 
@@ -46,7 +52,8 @@ export class ApiService {
   constructor(
     @Inject(REQUEST) private readonly request: Request,
     private readonly sumDatabaseService: SumDatabaseService,
-    private readonly mrmDatabaseService: MrmDatabaseService
+    private readonly mrmDatabaseService: MrmDatabaseService,
+    private readonly modelsCacheService: ModelsCacheService
   ) {}
 
   async getModelHistory(query: ModelArtefactHistoryDto) {
@@ -220,51 +227,69 @@ export class ApiService {
         let processedValues = values.filter((v) => v !== 'empty')
 
         if (values.includes('not-null')) {
-          try {
-            const allValues = await this.getAllValuesForColumn(key)
-            processedValues = processedValues.filter((v) => v !== 'not-null')
-            processedValues = [...new Set([...processedValues, ...allValues])]
-          } catch (error) {
-            console.warn(
-              `Не удалось получить значения для колонки ${key}:`,
-              error
-            )
-            processedValues = processedValues.filter((v) => v !== 'not-null')
+          // Удаляем 'not-null' из значений, так как это специальный маркер
+          processedValues = processedValues.filter((v) => v !== 'not-null')
+
+          // Если после удаления 'not-null' остались другие значения, используем их
+          // Если остался только 'not-null', то получаем все непустые значения из базы
+          if (processedValues.length === 0) {
+            try {
+              const allValues = await this.getAllValuesForColumn(key)
+
+              processedValues = allValues
+            } catch (error) {
+              console.warn(
+                `Не удалось получить значения для колонки ${key}:`,
+                error
+              )
+              processedValues = []
+            }
           }
         }
 
-        filterModel[key] = {
-          filterType: 'set',
-          values: processedValues
+        if (key.includes('date')) {
+          filterModel[key] = {
+            filterType: 'date',
+            type:
+              processedValues[0] &&
+              processedValues[1] &&
+              !(processedValues[0] === processedValues[1])
+                ? 'inRange'
+                : 'equals',
+            dateFrom: processedValues[0] || null,
+            dateTo: processedValues[1] || null
+          }
+        } else {
+          filterModel[key] = {
+            filterType: 'set',
+            values: processedValues
+          }
         }
       }
     }
 
     return {
       filterModel,
+      legacy_values: legacyValue,
       sortState: [],
-      columnState: [],
+      columnState: Object.keys(filterModel).map((key) => ({
+        colId: key,
+        hide: false
+      })),
       selectedIds: []
     }
   }
 
   private async getAllValuesForColumn(columnName: string): Promise<string[]> {
     try {
-      const query = `
-        SELECT DISTINCT ar_.artefact_string_value
-        FROM artefact_realizations_new ar_
-        INNER JOIN artefacts a_ ON ar_.artefact_id = a_.artefact_id
-        WHERE a_.artefact_tech_label = $1
-        AND ar_.artefact_string_value IS NOT NULL
-        AND ar_.artefact_string_value != ''
-        ORDER BY ar_.artefact_string_value
-      `
+      // Используем кеш моделей вместо прямого запроса к БД
+      // const values = this.modelsCacheService.getNonEmptyColumnValues(columnName)
+      const values = this.modelsCacheService.getColumnValues(columnName)
 
-      const result = await this.sumDatabaseService.query(query, [columnName])
-      return result.map((row) => row.artefact_string_value)
+      return values
     } catch (error) {
       console.error(
-        `Ошибка при получении значений для колонки ${columnName}:`,
+        `Ошибка при получении значений для колонки -- ${columnName}:`,
         error
       )
       return []
@@ -292,13 +317,21 @@ export class ApiService {
               processedTemplateValue = await this.convertLegacyToNewFormat(
                 template_value
               )
+
+              return {
+                user_id,
+                isOwner: user_id === user?.preferred_username,
+                public: is_public,
+                ...processedTemplateValue,
+                ...template
+              }
             }
 
             return {
               user_id,
               isOwner: user_id === user?.preferred_username,
               public: is_public,
-              template_value: processedTemplateValue,
+              ...processedTemplateValue,
               ...template
             }
           }
