@@ -1,5 +1,13 @@
 # Semantic Versioning Changelog
 
+# [1.32.0](https://git.sfera.inno.local/sumd/mrms-backend/compare/v1.31.0...v1.32.0) (2025-09-08)
+
+
+### Features
+
+* add developing_model_reason artefact ID mappings and update merge strategies ([4b777e2](https://git.sfera.inno.local/sumd/mrms-backend/commit/4b777e2d6413215a1652dfb4609ebc63516f9525))
+* enhance artefact-realizations API to support historical data retrieval ([c1cbf52](https://git.sfera.inno.local/sumd/mrms-backend/commit/c1cbf52b0f73056f3f56760cfc781eed98537132))
+
 # [1.31.0](https://git.sfera.inno.local/sumd/mrms-backend/compare/v1.30.0...v1.31.0) (2025-09-01)
 
 
