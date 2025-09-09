@@ -40,7 +40,14 @@ export class CacheController {
         }
       }
     } catch (error) {
-      throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR)
+      throw new HttpException(
+        {
+          message: 'Внутренняя ошибка сервера',
+          statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+          stack: error.stack
+        },
+        HttpStatus.INTERNAL_SERVER_ERROR
+      )
     }
   }
 
@@ -59,7 +66,14 @@ export class CacheController {
         message: 'Кеш моделей успешно обновлен'
       }
     } catch (error) {
-      throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR)
+      throw new HttpException(
+        {
+          message: 'Внутренняя ошибка сервера',
+          statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+          stack: error.stack
+        },
+        HttpStatus.INTERNAL_SERVER_ERROR
+      )
     }
   }
 
@@ -91,7 +105,14 @@ export class CacheController {
         }
       }
     } catch (error) {
-      throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR)
+      throw new HttpException(
+        {
+          message: 'Внутренняя ошибка сервера',
+          statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+          stack: error.stack
+        },
+        HttpStatus.INTERNAL_SERVER_ERROR
+      )
     }
   }
 
@@ -134,7 +155,14 @@ export class CacheController {
         }
       }
     } catch (error) {
-      throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR)
+      throw new HttpException(
+        {
+          message: 'Внутренняя ошибка сервера',
+          statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+          stack: error.stack
+        },
+        HttpStatus.INTERNAL_SERVER_ERROR
+      )
     }
   }
 
@@ -174,7 +202,14 @@ export class CacheController {
       if (error instanceof NotFoundException) {
         throw error
       }
-      throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR)
+      throw new HttpException(
+        {
+          message: 'Внутренняя ошибка сервера',
+          statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+          stack: error.stack
+        },
+        HttpStatus.INTERNAL_SERVER_ERROR
+      )
     }
   }
 }

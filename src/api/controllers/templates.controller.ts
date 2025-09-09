@@ -93,8 +93,9 @@ export class TemplatesController {
       if (error.message === 'Template name already exists!') {
         throw new HttpException(
           {
+            message: 'Такое название шаблона уже существует!',
             statusCode: HttpStatus.CONFLICT,
-            message: 'Такое название шаблона уже существует!'
+            stack: error.stack
           },
           HttpStatus.CONFLICT
         )
@@ -129,8 +130,9 @@ export class TemplatesController {
     } catch (error) {
       throw new HttpException(
         {
+          message: error.message,
           statusCode: HttpStatus.CONFLICT,
-          message: error.message
+          stack: error.stack
         },
         HttpStatus.CONFLICT
       )

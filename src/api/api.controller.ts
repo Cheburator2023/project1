@@ -252,8 +252,9 @@ export class ApiController {
       if (error.message === 'Template name already exists!') {
         throw new HttpException(
           {
+            message: 'Такое название шаблона уже существует!',
             statusCode: HttpStatus.CONFLICT,
-            message: 'Такое название шаблона уже существует!'
+            stack: error.stack
           },
           HttpStatus.CONFLICT
         )
@@ -289,8 +290,9 @@ export class ApiController {
     } catch (error) {
       throw new HttpException(
         {
+          message: error.message,
           statusCode: HttpStatus.CONFLICT,
-          message: error.message
+          stack: error.stack
         },
         HttpStatus.CONFLICT
       )
@@ -396,8 +398,9 @@ export class ApiController {
       })
     } catch (error) {
       return response.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
-        message: 'Internal server error',
-        error: error.message
+        message: 'Внутренняя ошибка сервера',
+        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+        stack: error.stack
       })
     }
   }
@@ -439,7 +442,9 @@ export class ApiController {
         })
       }
       return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
-        message: 'Ошибка при формировании Excel-файла'
+        message: 'Ошибка при формировании Excel-файла',
+        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+        stack: error.stack
       })
     }
   }
@@ -501,7 +506,14 @@ export class ApiController {
         }
       }
     } catch (error) {
-      throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR)
+      throw new HttpException(
+        {
+          message: 'Внутренняя ошибка сервера',
+          statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+          stack: error.stack
+        },
+        HttpStatus.INTERNAL_SERVER_ERROR
+      )
     }
   }
 
@@ -514,7 +526,14 @@ export class ApiController {
         message: 'Кеш моделей успешно обновлен'
       }
     } catch (error) {
-      throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR)
+      throw new HttpException(
+        {
+          message: 'Внутренняя ошибка сервера',
+          statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+          stack: error.stack
+        },
+        HttpStatus.INTERNAL_SERVER_ERROR
+      )
     }
   }
 
@@ -531,7 +550,14 @@ export class ApiController {
         }
       }
     } catch (error) {
-      throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR)
+      throw new HttpException(
+        {
+          message: 'Внутренняя ошибка сервера',
+          statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+          stack: error.stack
+        },
+        HttpStatus.INTERNAL_SERVER_ERROR
+      )
     }
   }
 
@@ -651,7 +677,14 @@ export class ApiController {
         }
       }
     } catch (error) {
-      throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR)
+      throw new HttpException(
+        {
+          message: 'Внутренняя ошибка сервера',
+          statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+          stack: error.stack
+        },
+        HttpStatus.INTERNAL_SERVER_ERROR
+      )
     }
   }
 
@@ -679,7 +712,14 @@ export class ApiController {
       if (error instanceof NotFoundException) {
         throw error
       }
-      throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR)
+      throw new HttpException(
+        {
+          message: 'Внутренняя ошибка сервера',
+          statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+          stack: error.stack
+        },
+        HttpStatus.INTERNAL_SERVER_ERROR
+      )
     }
   }
 }

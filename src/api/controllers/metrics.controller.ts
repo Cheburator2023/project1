@@ -47,8 +47,9 @@ export class MetricsController {
       })
     } catch (error) {
       return response.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
-        message: 'Internal server error',
-        error: error.message
+        message: 'Внутренняя ошибка сервера',
+        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+        stack: error.stack
       })
     }
   }
@@ -112,7 +113,9 @@ export class MetricsController {
         })
       }
       return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
-        message: 'Ошибка при формировании Excel-файла'
+        message: 'Ошибка при формировании Excel-файла',
+        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+        stack: error.stack
       })
     }
   }

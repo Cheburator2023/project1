@@ -5,6 +5,7 @@ import { NestFactory } from '@nestjs/core'
 import { ValidationPipe } from '@nestjs/common'
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger'
 import { API_PREFIX } from 'src/system/common/constants'
+import { GlobalExceptionFilter } from './filters'
 
 import { AppModule } from './app.module'
 
@@ -19,6 +20,7 @@ async function bootstrap() {
       forbidNonWhitelisted: true
     })
   )
+  app.useGlobalFilters(new GlobalExceptionFilter())
 
   const config = new DocumentBuilder()
     .setTitle('SUM RM API')
