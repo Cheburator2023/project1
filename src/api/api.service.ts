@@ -4,14 +4,15 @@ import { Inject, Injectable, Scope } from '@nestjs/common'
 import { SumDatabaseService } from 'src/system/sum-database/database.service'
 import { MrmDatabaseService } from 'src/system/mrm-database/database.service'
 import { ModelsCacheService } from 'src/modules/models/models-cache.service'
-import { sql as getSumRmModelHistory } from './sql/models/sum-rm/history'
-import { sql as getSumModelHistory } from './sql/models/sum/history'
-import { sql as getTemplate } from './sql/templates/getTemplate'
-import { sql as getTemplateByLowerName } from './sql/templates/getTemplateByLowerName'
-import { sql as getTemplates } from './sql/templates/getTemplates'
-import { sql as addTemplate } from './sql/templates/addTemplate'
-import { sql as deleteTemplate } from './sql/templates/deleteTemplate'
-import { sql as updateTemplate } from './sql/templates/updateTemplate'
+
+import { sql as getSumRmModelHistorySql } from './sql/models/sum-rm/history'
+import { sql as getSumModelHistorySql } from './sql/models/sum/history'
+import { sql as getTemplateSql } from './sql/templates/getTemplate'
+import { sql as getTemplateByLowerNameSql } from './sql/templates/getTemplateByLowerName'
+import { sql as getTemplatesSql } from './sql/templates/getTemplates'
+import { sql as addTemplateSql } from './sql/templates/addTemplate'
+import { sql as deleteTemplateSql } from './sql/templates/deleteTemplate'
+import { sql as updateTemplateSql } from './sql/templates/updateTemplate'
 
 import {
   ModelArtefactHistoryDto,
@@ -59,11 +60,11 @@ export class ApiService {
   async getModelHistory(query: ModelArtefactHistoryDto) {
     const { model_source, model_id, artefact_tech_label } = query
     const result = await Promise.all([
-      ...(await this.sumDatabaseService.query(getSumModelHistory, {
+      ...(await this.sumDatabaseService.query(getSumModelHistorySql, {
         model_id,
         artefact_tech_label
       })),
-      ...(await this.mrmDatabaseService.query(getSumRmModelHistory, {
+      ...(await this.mrmDatabaseService.query(getSumRmModelHistorySql, {
         model_id,
         artefact_tech_label
       }))
@@ -113,7 +114,7 @@ export class ApiService {
 
   async createTemplate(templateCreateDto: TemplateCreateDto, user) {
     const templateWithSameName = await this.mrmDatabaseService.query(
-      getTemplateByLowerName,
+      getTemplateByLowerNameSql,
       { template_name: templateCreateDto.template_name }
     )
 
@@ -128,7 +129,7 @@ export class ApiService {
       selectedIds: templateCreateDto.selectedIds || []
     }
 
-    const result = await this.mrmDatabaseService.query(addTemplate, {
+    const result = await this.mrmDatabaseService.query(addTemplateSql, {
       user_id: user?.preferred_username,
       template_name: templateCreateDto.template_name,
       public: templateCreateDto.public,
@@ -146,7 +147,7 @@ export class ApiService {
   }
 
   async updateTemplate(templateUpdateDto: TemplateUpdateDto, user) {
-    const templates = await this.mrmDatabaseService.query(getTemplates, [])
+    const templates = await this.mrmDatabaseService.query(getTemplatesSql, [])
     const targetTemplate = templates.find(
       ({ template_id }) => template_id === templateUpdateDto.template_id
     )
@@ -192,7 +193,7 @@ export class ApiService {
           : null
 
       const updatedTemplate = await this.mrmDatabaseService.query(
-        updateTemplate,
+        updateTemplateSql,
         {
           template_name: templateUpdateDto.template_name || null,
           public: templateUpdateDto.public ?? null,
@@ -297,7 +298,7 @@ export class ApiService {
   }
 
   async getTemplates(user) {
-    const result = await this.mrmDatabaseService.query(getTemplates, [])
+    const result = await this.mrmDatabaseService.query(getTemplatesSql, [])
 
     const templatesWithProcessedValues = await Promise.all(
       result
@@ -356,7 +357,7 @@ export class ApiService {
   }
 
   async getTemplate(id, user) {
-    const result = await this.mrmDatabaseService.query(getTemplate, {
+    const result = await this.mrmDatabaseService.query(getTemplateSql, {
       template_id: id
     })
 
@@ -387,7 +388,7 @@ export class ApiService {
   }
 
   async deleteTemplate(id) {
-    return await this.mrmDatabaseService.query(deleteTemplate, {
+    return await this.mrmDatabaseService.query(deleteTemplateSql, {
       template_id: id
     })
   }

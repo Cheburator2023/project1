@@ -32,7 +32,7 @@ export class ModelsDto {
   @IsDateString()
   date: string
 
-  @ApiProperty({
+  @ApiModelPropertyOptional({
     example: '3009b53c-507d-11ed-9b68-0a5801020704',
     format: 'uuid'
   })
@@ -220,6 +220,24 @@ type FilterModel = {
   [key: string]: SetFilter | DateFilter
 }
 
+export class SortStateDto {
+  @IsString()
+  colId: string
+
+  @IsEnum(['asc', 'desc'])
+  sort: 'asc' | 'desc'
+
+  @Transform(({ value }) => {
+    if (typeof value === 'string') {
+      const num = parseInt(value, 10)
+      return isNaN(num) ? 0 : num
+    }
+    return Number(value) || 0
+  })
+  @IsNumber()
+  sortIndex: number
+}
+
 type SortState = {
   colId: string
   sort: 'asc' | 'desc'
@@ -242,6 +260,12 @@ export class TemplateCreateDto {
   @ApiProperty({
     example: true
   })
+  @Transform(({ value }) => {
+    if (typeof value === 'string') {
+      return value === 'true'
+    }
+    return Boolean(value)
+  })
   @IsBoolean()
   public: boolean
 
@@ -260,12 +284,14 @@ export class TemplateCreateDto {
   @IsOptional()
   filterModel?: FilterModel
 
-  @ApiProperty({
+  @ApiModelPropertyOptional({
     example: [{ colId: 'record_id', sort: 'asc', sortIndex: 0 }]
   })
   @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => SortStateDto)
   @IsOptional()
-  sortState?: SortState[]
+  sortState?: SortStateDto[]
 
   @ApiProperty({
     example: [{ colId: 'model_desc', hide: true }]
@@ -274,7 +300,7 @@ export class TemplateCreateDto {
   @IsOptional()
   columnState?: ColumnState[]
 
-  @ApiProperty({
+  @ApiModelPropertyOptional({
     example: ['model-1', 'model-2']
   })
   @IsArray()
@@ -325,8 +351,10 @@ export class TemplateUpdateDto {
     example: [{ colId: 'record_id', sort: 'asc', sortIndex: 0 }]
   })
   @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => SortStateDto)
   @IsOptional()
-  sortState?: SortState[]
+  sortState?: SortStateDto[]
 
   @ApiModelPropertyOptional({
     example: [{ colId: 'model_desc', hide: true }]

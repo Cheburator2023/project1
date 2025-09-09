@@ -23,6 +23,9 @@ import {
   ModelsUpdateDto,
   ModelArtefactHistoryDto
 } from '../dto/index.dto'
+import { MODEL_DISPLAY_MODES } from 'src/system/common/constants/base.constants'
+import { MODEL_STATUS } from 'src/system/common/constants/model-status'
+import { MODEL_SOURCES } from 'src/system/common/constants/models.constants'
 
 @ApiTags('Модели')
 @Controller('models')
@@ -32,6 +35,102 @@ export class ModelsController {
     private readonly modelsCacheService: ModelsCacheService,
     private readonly apiService: ApiService
   ) {}
+
+  private filterCachedModels(
+    models: any[],
+    query: ModelsDto,
+    userGroups?: string[]
+  ): any[] {
+    let filteredModels = models
+
+    // Фильтрация по model_id
+    if (query.model_id) {
+      filteredModels = filteredModels.filter(
+        (model) => model.model_id === query.model_id
+      )
+    }
+
+    // Фильтрация по дате
+    if (query.date) {
+      const filterDate = new Date(query.date)
+      filteredModels = filteredModels.filter((model) => {
+        if (!model.create_date) return false
+        const modelDate = new Date(model.create_date)
+        return modelDate <= filterDate
+      })
+    }
+
+    // Фильтрация по режиму
+    if (query.mode && query.mode.length > 0) {
+      const activeModes = new Set(query.mode)
+      const isArchiveMode = activeModes.has(MODEL_DISPLAY_MODES.ARCHIVE)
+      const isCreationErrorMode = activeModes.has(
+        MODEL_DISPLAY_MODES.CREATION_ERROR
+      )
+      const isPendingDeleteMode = activeModes.has(
+        MODEL_DISPLAY_MODES.PENDING_DELETE
+      )
+
+      filteredModels = filteredModels.filter((model) => {
+        const { model_source, models_is_active_flg, business_status } = model
+
+        const isArchive =
+          models_is_active_flg === '0' ||
+          business_status === MODEL_STATUS.ARCHIVE
+        const isCreationError = business_status === MODEL_STATUS.CREATION_ERROR
+        const isPendingDelete = business_status === MODEL_STATUS.PENDING_DELETE
+
+        if (model_source === MODEL_SOURCES.SUM && isArchive && isArchiveMode)
+          return true
+        if (model_source === MODEL_SOURCES.MRM) {
+          if (isCreationError && isCreationErrorMode) return true
+          if (isPendingDelete && isPendingDeleteMode) return true
+        }
+
+        const isActive = model_source === MODEL_SOURCES.SUM ? !isArchive : true
+        const isValidStatus = !isCreationError && !isPendingDelete
+
+        return isActive && isValidStatus
+      })
+    }
+
+    // Фильтрация по группам пользователя
+    if (userGroups && userGroups.length > 0) {
+      filteredModels = this.filterModelsByUserGroups(filteredModels, userGroups)
+    }
+
+    return filteredModels
+  }
+
+  private filterModelsByUserGroups(models: any[], userGroups: string[]): any[] {
+    const formattedGroups = userGroups.map((group) => group.trim())
+
+    // Если пользователь входит в группу /business_customer
+    if (
+      formattedGroups.some((group) =>
+        group.startsWith('/departament_business_customer')
+      )
+    ) {
+      return models.filter((model) => {
+        const modelDepartments = (model.business_customer_departament || '')
+          .split(',')
+          .map((dep) => dep.trim())
+        return modelDepartments.length > 0
+      })
+    }
+
+    // Если пользователь входит в группы /ds или /ds/ds_lead
+    if (
+      formattedGroups.includes('/ds') ||
+      formattedGroups.includes('/ds/ds_lead')
+    ) {
+      return models.filter((model) => {
+        return model.stream_name
+      })
+    }
+
+    return models
+  }
 
   @ApiOperation({
     summary: 'Получить список моделей',
@@ -50,17 +149,23 @@ export class ModelsController {
     // Получаем модели из кеша
     const cachedModels = this.modelsCacheService.getCachedModels()
 
-    // Если кеш пуст, используем fallback к прямому запросу
-    const models =
-      cachedModels.length > 0
-        ? cachedModels
-        : await this.modelsService.getModels(query, req.user?.groups)
+    let models: any[]
+    let fromCache = false
+
+    if (cachedModels.length > 0) {
+      // Применяем фильтрацию к кешированным данным
+      models = this.filterCachedModels(cachedModels, query, req.user?.groups)
+      fromCache = true
+    } else {
+      // Если кеш пуст, используем fallback к прямому запросу
+      models = await this.modelsService.getModels(query, req.user?.groups)
+    }
 
     const result = {
       data: {
         cards: models
       },
-      fromCache: cachedModels.length > 0
+      fromCache
     }
 
     return response.status(HttpStatus.OK).json(result)
