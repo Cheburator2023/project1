@@ -141,6 +141,18 @@ export class ModelsController {
   @ApiResponse({ status: 500, description: 'Внутренняя ошибка сервера' })
   @Get('/')
   async getModels(@Query() query: ModelsDto, @Res() response, @Req() req) {
+    // Если включен режим NO_ROLES, используем запрос для получения всех моделей
+    if (process.env.NO_ROLES === 'true') {
+      const allModels = await this.apiService.getAllModelsForGodMode(req.user)
+      const result = {
+        data: {
+          cards: allModels
+        },
+        fromCache: false
+      }
+      return response.status(HttpStatus.OK).json(result)
+    }
+
     // Ждем загрузки кеша, если он еще обновляется
     while (this.modelsCacheService.isUpdatingCache()) {
       await new Promise((resolve) => setTimeout(resolve, 100))

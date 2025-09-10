@@ -1,10 +1,16 @@
-import { BadRequestException, Injectable } from '@nestjs/common'
+import {
+  BadRequestException,
+  Injectable,
+  Inject,
+  forwardRef
+} from '@nestjs/common'
 import { MrmModelService, SumModelService } from './services'
 import { AllocationService } from 'src/modules/allocation/allocation.service'
 import { UsageService } from 'src/modules/usage/usage.service'
 import { ArtefactService } from 'src/modules/artefacts/artefact.services'
 import { SumDatabaseService } from 'src/system/sum-database/database.service'
 import { MrmDatabaseService } from 'src/system/mrm-database/database.service'
+import { ModelsCacheService } from './models-cache.service'
 
 import { getModels as getSumModels } from './sql/sum'
 import {
@@ -73,7 +79,9 @@ export class ModelsService {
     private readonly allocationService: AllocationService,
     private readonly usageService: UsageService,
     private readonly sumDatabaseService: SumDatabaseService,
-    private readonly mrmDatabaseService: MrmDatabaseService
+    private readonly mrmDatabaseService: MrmDatabaseService,
+    @Inject(forwardRef(() => ModelsCacheService))
+    private readonly modelsCacheService: ModelsCacheService
   ) {}
 
   async getModels(
@@ -286,6 +294,10 @@ export class ModelsService {
     )
 
     await this.executeDatabaseUpdates({ artefactsForUpdate }, MODEL_SOURCES.MRM)
+
+    // Обновляем кеш и ждем завершения операции перед возвратом результата
+
+    await this.modelsCacheService.forceUpdateCache()
 
     return this.getModels({ model_id, ignoreModeFilter: true })
   }
@@ -627,9 +639,10 @@ export class ModelsService {
       MODEL_SOURCES.MRM
     )
 
-    await new Promise((resolve, reject) => {
-      setTimeout(resolve, 1000)
-    })
+    // Обновляем кеш и ждем завершения операции перед возвратом результата
+    if (process.env.NO_ROLES !== 'true') {
+      await this.modelsCacheService.forceUpdateCache()
+    }
 
     if (modelIds.size) {
       const modelsArray = Array.from(modelIds)

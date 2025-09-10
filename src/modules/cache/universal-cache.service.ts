@@ -101,6 +101,12 @@ export class UniversalCacheService<T = any> implements OnModuleDestroy {
    * Принудительно обновить кеш
    */
   async forceUpdateCache(): Promise<void> {
+    // Если кеш уже обновляется, ждем завершения текущего обновления
+    while (this.isUpdating) {
+      await new Promise((resolve) => setTimeout(resolve, 10))
+    }
+
+    // Запускаем обновление кеша
     await this.updateCache()
   }
 

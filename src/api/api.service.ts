@@ -7,6 +7,7 @@ import { ModelsCacheService } from 'src/modules/models/models-cache.service'
 
 import { sql as getSumRmModelHistorySql } from './sql/models/sum-rm/history'
 import { sql as getSumModelHistorySql } from './sql/models/sum/history'
+
 import { sql as getTemplateSql } from './sql/templates/getTemplate'
 import { sql as getTemplateByLowerNameSql } from './sql/templates/getTemplateByLowerName'
 import { sql as getTemplatesSql } from './sql/templates/getTemplates'
@@ -407,5 +408,9 @@ export class ApiService {
     return await this.mrmDatabaseService.query(deleteTemplateSql, {
       template_id: id
     })
+  }
+
+  async getAllModelsForGodMode(user) {
+    return this.modelsCacheService.getCachedModels()
   }
 }

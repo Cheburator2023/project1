@@ -2,7 +2,9 @@ import {
   Injectable,
   Logger,
   OnModuleInit,
-  OnModuleDestroy
+  OnModuleDestroy,
+  Inject,
+  forwardRef
 } from '@nestjs/common'
 import { ModelsService } from './models.service'
 import { Model } from './interfaces'
@@ -16,12 +18,13 @@ export class ModelsCacheService implements OnModuleInit, OnModuleDestroy {
   private readonly CACHE_NAME = 'models'
 
   constructor(
+    @Inject(forwardRef(() => ModelsService))
     private readonly modelsService: ModelsService,
     private readonly cacheFactory: CacheFactoryService
   ) {
     const config: CacheConfig<Model[]> = {
       maxSize: 100 * 1024 * 1024, // 100MB
-      updateInterval: 15 * 60 * 1000, // 15 минут
+      updateInterval: 2 * 60 * 1000, // 2 минуты
       dataLoader: () => this.modelsService.getModels(),
       onError: (error) => {
         this.logger.error(`Ошибка кеша моделей: ${error.message}`)
