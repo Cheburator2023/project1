@@ -200,8 +200,14 @@ export class ModelArtefactHistoryDto {
   @IsUUID()
   model_id: string
 
+  @ApiPropertyOptional({
+    example: 'sum-rm',
+    enum: ModelSource,
+    description: 'Источник модели: sum или sum-rm. По умолчанию sum-rm'
+  })
+  @IsOptional()
   @IsEnum(ModelSource)
-  model_source: string
+  model_source?: string = ModelSource.SUM_RM
 }
 
 type SetFilter = {

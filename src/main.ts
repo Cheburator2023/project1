@@ -6,11 +6,14 @@ import { ValidationPipe } from '@nestjs/common'
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger'
 import { API_PREFIX } from 'src/system/common/constants'
 import { GlobalExceptionFilter } from './filters'
+import * as express from 'express'
 
 import { AppModule } from './app.module'
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule)
+  app.use(express.json({ limit: '50mb' }))
+  app.use(express.urlencoded({ limit: '50mb', extended: true }))
   app.enableCors()
   app.setGlobalPrefix(API_PREFIX.VERSION)
   app.useGlobalPipes(

@@ -39,7 +39,10 @@ export class MrmDatabaseService {
 
       return result.rows
     } catch (error) {
-      this.logger.error(`Error executing SQL query: ${error}`)
+      this.logger.error(
+        `Error executing SQL query: ${error}, params: ${JSON.stringify(params)}`
+      )
+      this.logger.error(`Error in SQL: ${sql}`)
       throw error
     }
   }

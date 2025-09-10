@@ -21,7 +21,20 @@ export const User = createParamDecorator(
     const request = ctx.switchToHttp().getRequest()
 
     if (!request.user) {
-      throw new UnauthorizedException('No user found in request')
+      if (process.env.NO_ROLES === 'true') {
+        return {
+          name: 'Суперпользователь',
+          username: 'god_mode_user',
+          email: 'god@dev.local',
+          keycloakGroups: ['admin'],
+          family_name: 'Режим',
+          given_name: 'Бога Разработчика',
+          preferred_username: 'god_mode_user',
+          groups: ['admin'],
+          roles: ['admin']
+        }
+      }
+      throw new UnauthorizedException('Пользователь не найден в запросе')
     }
 
     return {

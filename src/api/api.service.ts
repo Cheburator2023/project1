@@ -58,17 +58,33 @@ export class ApiService {
   ) {}
 
   async getModelHistory(query: ModelArtefactHistoryDto) {
-    const { model_source, model_id, artefact_tech_label } = query
-    const result = await Promise.all([
-      ...(await this.sumDatabaseService.query(getSumModelHistorySql, {
+    const { model_id, artefact_tech_label } = query
+    const model_source = query.model_source || ModelSource.SUM_RM
+
+    let result = []
+
+    if (model_source === ModelSource.SUM) {
+      result = await this.sumDatabaseService.query(getSumModelHistorySql, {
         model_id,
         artefact_tech_label
-      })),
-      ...(await this.mrmDatabaseService.query(getSumRmModelHistorySql, {
+      })
+    } else if (model_source === ModelSource.SUM_RM) {
+      result = await this.mrmDatabaseService.query(getSumRmModelHistorySql, {
         model_id,
         artefact_tech_label
-      }))
-    ])
+      })
+    } else {
+      result = await Promise.all([
+        ...(await this.sumDatabaseService.query(getSumModelHistorySql, {
+          model_id,
+          artefact_tech_label
+        })),
+        ...(await this.mrmDatabaseService.query(getSumRmModelHistorySql, {
+          model_id,
+          artefact_tech_label
+        }))
+      ])
+    }
 
     function filterAndSortData(data: any[]) {
       return data

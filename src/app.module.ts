@@ -19,6 +19,7 @@ import { DebounceService } from 'src/debounce/debounce.service'
 import { EmitEventDependencies } from 'src/system/common'
 import { KeycloakModule } from 'src/system/keycloak/keycloak.module'
 import { BiDatamartModule } from 'src/modules/bi-datamart/bi-datamart.module'
+import { DatabaseSchemaModule } from 'src/modules/database-schema/database-schema.module'
 import { TemplateMigrationService } from 'src/migrations/migrate-templates'
 import { MigrationModule } from 'src/modules/migration.module'
 
@@ -41,6 +42,7 @@ import { GodModeGuard } from 'src/system/guards/god-mode.guard'
     ApiModule,
     KeycloakModule,
     BiDatamartModule,
+    DatabaseSchemaModule,
     MigrationModule
   ],
   controllers: [],
