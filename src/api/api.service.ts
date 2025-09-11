@@ -241,7 +241,7 @@ export class ApiService {
     const filterModel: FilterModel = {}
 
     for (const [key, values] of Object.entries(legacyValue)) {
-      if (Array.isArray(values)) {
+      if (Array.isArray(values) && values.length > 0) {
         let processedValues = values.filter((v) => v !== 'empty')
 
         if (values.includes('not-null')) {
@@ -290,7 +290,7 @@ export class ApiService {
       filterModel,
       legacy_values: legacyValue,
       sortState: [],
-      columnState: Object.keys(filterModel).map((key) => ({
+      columnState: Object.keys(legacyValue).map((key) => ({
         colId: key,
         hide: false
       })),
