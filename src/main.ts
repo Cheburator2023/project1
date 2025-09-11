@@ -1,6 +1,8 @@
 /* eslint-disable @typescript-eslint/no-var-requires */
 require('dotenv').config({ path: '.env.dev' })
 
+process.env.UV_THREADPOOL_SIZE = '10'
+
 import { NestFactory } from '@nestjs/core'
 import { ValidationPipe } from '@nestjs/common'
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger'
@@ -28,6 +30,17 @@ async function bootstrap() {
   const config = new DocumentBuilder()
     .setTitle('SUM RM API')
     .setVersion('1.0')
+    .addBearerAuth(
+      {
+        type: 'http',
+        scheme: 'bearer',
+        bearerFormat: 'JWT',
+        name: 'JWT',
+        description: 'Введите JWT токен',
+        in: 'header'
+      },
+      'JWT-auth'
+    )
     .build()
   const document = SwaggerModule.createDocument(app, config)
 

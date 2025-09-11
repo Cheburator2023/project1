@@ -103,39 +103,14 @@ export class ModelsController {
   }
 
   private filterModelsByUserGroups(models: any[], userGroups: string[]): any[] {
-    const formattedGroups = userGroups.map((group) => group.trim())
-
-    // Если пользователь входит в группу /business_customer
-    if (
-      formattedGroups.some((group) =>
-        group.startsWith('/departament_business_customer')
-      )
-    ) {
-      return models.filter((model) => {
-        const modelDepartments = (model.business_customer_departament || '')
-          .split(',')
-          .map((dep) => dep.trim())
-        return modelDepartments.length > 0
-      })
-    }
-
-    // Если пользователь входит в группы /ds или /ds/ds_lead
-    if (
-      formattedGroups.includes('/ds') ||
-      formattedGroups.includes('/ds/ds_lead')
-    ) {
-      return models.filter((model) => {
-        return model.stream_name
-      })
-    }
-
-    return models
+    // Используем ту же логику, что и в ModelsService
+    return this.modelsService.filterModelsByUserGroups(models, userGroups)
   }
 
   @ApiOperation({
     summary: 'Получить список моделей',
     description:
-      'Возвращает список всех доступных моделей с возможностью фильтрации. Использует кеширование для повышения производительности.'
+      'Возвращает список всех доступных моделей с возможностью фильтрации. По умолчанию использует кеширование для повышения производительности. Параметр useCache=false позволяет получить актуальные данные напрямую из базы данных.'
   })
   @ApiResponse({ status: 200, description: 'Список моделей успешно получен' })
   @ApiResponse({ status: 500, description: 'Внутренняя ошибка сервера' })
@@ -147,6 +122,18 @@ export class ModelsController {
       const result = {
         data: {
           cards: allModels
+        },
+        fromCache: false
+      }
+      return response.status(HttpStatus.OK).json(result)
+    }
+
+    // Если useCache=false, получаем данные напрямую
+    if (query.useCache === false) {
+      const models = await this.modelsService.getModels(query, req.user?.groups)
+      const result = {
+        data: {
+          cards: models
         },
         fromCache: false
       }

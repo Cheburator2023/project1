@@ -388,7 +388,7 @@ export class ModelsService {
   }
 
   // Фильтрация моделей в зависимости от групп пользователя
-  private filterModelsByUserGroups(
+  public filterModelsByUserGroups(
     models: Model[],
     userGroups: string[]
   ): Model[] {
