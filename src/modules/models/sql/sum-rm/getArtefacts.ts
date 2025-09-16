@@ -16,6 +16,7 @@ FROM artefacts t1
      ON
          t1.artefact_type_id = t3.artefact_type_id
 ORDER BY t1.artefact_id,
+         t2.sort_order NULLS LAST,
          t2.artefact_value_id
 `
 

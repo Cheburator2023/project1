@@ -80,6 +80,7 @@ export abstract class BaseArtefactService implements IArtefactService {
           ON
               t1.ARTEFACT_TYPE_ID = t3.ARTEFACT_TYPE_ID
       ORDER BY t1.ARTEFACT_ID,
+              t2.SORT_ORDER NULLS LAST,
               t2.ARTEFACT_VALUE_ID
       `,
       []
