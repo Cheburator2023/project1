@@ -1,5 +1,12 @@
 # Semantic Versioning Changelog
 
+# [1.33.0](https://git.sfera.inno.local:7999/SUMD/mrms-backend/compare/v1.32.0...v1.33.0) (2025-09-16)
+
+
+### Features
+
+* add sorting for artefact values by sort_order ([5d83ebf](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/5d83ebf314759b014d37b9e9affdcbf0e76d93dd))
+
 # [1.32.0](https://git.sfera.inno.local/sumd/mrms-backend/compare/v1.31.0...v1.32.0) (2025-09-08)
 
 
