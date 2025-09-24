@@ -22,7 +22,10 @@ export const MERGE_STRATEGIES = {
  */
 export const TIMESTAMP_PRIORITY_ARTEFACTS = [
   'rfd',
-  'developing_model_reason', 
+  'developing_model_reason',
+  'output_table',
+  'allocation_assessment_class',
+  'allocation_assessment_parameters',
 ] as const;
 
 /**
