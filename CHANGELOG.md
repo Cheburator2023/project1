@@ -1,5 +1,12 @@
 # Semantic Versioning Changelog
 
+# [1.34.0](https://git.sfera.inno.local:7999/SUMD/mrms-backend/compare/v1.33.0...v1.34.0) (2025-09-30)
+
+
+### Features
+
+* изменение схемы продуктивизация ([ec76cda](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/ec76cdab2d4a3cec6f4c73dcd68eca7bf510f223))
+
 # [1.33.0](https://git.sfera.inno.local:7999/SUMD/mrms-backend/compare/v1.32.0...v1.33.0) (2025-09-16)
 
 
