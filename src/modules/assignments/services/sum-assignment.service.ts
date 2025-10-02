@@ -1,15 +1,15 @@
-import { Injectable, Logger } from '@nestjs/common'
+import { Injectable } from '@nestjs/common'
 import { SumDatabaseService } from 'src/system/sum-database/database.service'
 import { BaseAssignmentService } from './base-assignment.service'
 import { IAssignmentService } from '../interfaces'
+import { LoggerService } from 'src/system/logger/logger.service'
 
 @Injectable()
 export class SumAssignmentService extends BaseAssignmentService implements IAssignmentService {
-  protected logger = new Logger(SumAssignmentService.name)
-
   constructor(
-    databaseService: SumDatabaseService
+    databaseService: SumDatabaseService,
+    logger: LoggerService
   ) {
-    super(databaseService)
+    super(databaseService, logger)
   }
 }

@@ -7,11 +7,17 @@ import { API_PREFIX } from 'src/system/common/constants';
 import * as KeycloakConnect from 'keycloak-connect';
 
 import { AppModule } from './app.module';
+import { LoggerService } from './system/logger/logger.service';
 
 const session = require('express-session');
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+
+  // Initialize logger
+  const logger = app.get(LoggerService);
+  logger.sys('Application starting...');
+
   app.enableCors();
   app.setGlobalPrefix(API_PREFIX.VERSION);
   app.useGlobalPipes(
@@ -42,7 +48,10 @@ async function bootstrap() {
   const keycloak = new KeycloakConnect({ store: memoryStore }, kcConfig);
 
   app.use(keycloak.middleware());
+
   await app.listen(3000);
+
+  logger.sys('Application started successfully on port 3000');
 }
 
 bootstrap();

@@ -1,14 +1,13 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { Pool, types } from 'pg';
 import { queryConvert } from 'src/system/common/utils';
+import { LoggerService } from 'src/system/logger/logger.service';
 
 @Injectable()
 export class SumDatabaseService {
-  private readonly logger = new Logger(SumDatabaseService.name);
   private pool: Pool;
 
-  constructor() {
-    // Описание типа данных numeric в PostgreSQL
+  constructor(private readonly logger: LoggerService) {
     const NUMERIC_OID = 1700;
 
     // Check for SSL connection
@@ -25,26 +24,65 @@ export class SumDatabaseService {
       port: process.env.SUM_PG_PORT,
       ssl: enableSSL
         ? {
-            rejectUnauthorized: false,
-          }
+          rejectUnauthorized: false,
+        }
         : false,
+    });
+
+    this.logger.sys('SUM Database Service initialized', {
+      host: process.env.SUM_PG_HOST,
+      database: process.env.SUM_PG_SCHEMA,
+      ssl_enabled: enableSSL
     });
   }
 
   async query(sql: string, params: any = {}): Promise<any> {
+    this.logger.info('Executing SQL query', 'ВыполнениеSQLЗапроса', {
+      sql: sql.substring(0, 200) + (sql.length > 200 ? '...' : ''),
+      params_count: Object.keys(params).length
+    });
+
     try {
       const client = await this.pool.connect();
-      const result = await client.query(queryConvert(sql, params));
+      const convertedQuery = queryConvert(sql, params);
+
+      const result = await client.query(convertedQuery.text, convertedQuery.values);
       client.release();
+
+      this.logger.info('SQL query executed successfully', 'SQLЗапросУспешноВыполнен', {
+        row_count: result.rows.length
+      });
 
       return result.rows;
     } catch (error) {
-      this.logger.error(`Error executing SQL query: ${error}`);
+      this.logger.error('Error executing SQL query', 'ОшибкаВыполненияSQLЗапроса', error, {
+        sql: sql.substring(0, 200) + (sql.length > 200 ? '...' : ''),
+        params_count: Object.keys(params).length
+      });
       throw error;
     }
   }
 
   async queryAll(sql: string, params: Object[] = [{}]): Promise<any> {
-    return Promise.all(params.map((arg) => this.query(sql, arg)));
+    this.logger.info('Executing multiple SQL queries', 'ВыполнениеНесколькихSQLЗапросов', {
+      sql: sql.substring(0, 200) + (sql.length > 200 ? '...' : ''),
+      queries_count: params.length
+    });
+
+    try {
+      const results = await Promise.all(params.map((arg) => this.query(sql, arg)));
+
+      this.logger.info('Multiple SQL queries executed successfully', 'НесколькоЗапросовУспешноВыполнены', {
+        total_results: results.reduce((acc, curr) => acc + curr.length, 0)
+      });
+
+      return results;
+    } catch (error) {
+      this.logger.error('Error executing multiple SQL queries', 'ОшибкаВыполненияНесколькихSQLЗапросов', error, {
+        sql: sql.substring(0, 200) + (sql.length > 200 ? '...' : ''),
+        queries_count: params.length
+      });
+      throw error;
+    }
   }
 }
