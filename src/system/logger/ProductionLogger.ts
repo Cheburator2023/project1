@@ -17,16 +17,21 @@ export class ProductionLogger extends LoggerInterface {
 
   constructor(private config: any) {
     super();
-    this.currentLogger = new ConsoleLogger();
+    this.currentLogger = new ConsoleLogger(config);
     this.initialize();
   }
 
   private async initialize(): Promise<void> {
     try {
       this.initialized = true;
-      await this.trySwitchToTSLG();
+
+      if (process.env.NODE_ENV === 'production') {
+        await this.trySwitchToTSLG();
+      } else {
+        this.loggerType = 'console';
+      }
     } catch (error) {
-      this.originalConsole.error('Failed to initialize ProductionLogger:', error);
+      this.originalConsole.error('[ProductionLogger] Failed to initialize:', error);
       this.initialized = false;
     }
   }
@@ -49,10 +54,12 @@ export class ProductionLogger extends LoggerInterface {
         this.currentLogger = tslgLogger;
         this.loggerType = 'tslg';
 
-        this.originalConsole.log(`Successfully switched to TSLG logger. Connected to ${this.config.host}:${this.config.port}`);
+        this.originalConsole.log(`[TSLG] Successfully switched to TSLG logger. Connected to ${this.config.host}:${this.config.port}`);
+      } else {
+        this.originalConsole.warn('[TSLG] TSLG agent not available, using console logger');
       }
     } catch (error) {
-      this.originalConsole.error('Failed to switch to TSLG logger:', error);
+      this.originalConsole.error('[TSLG] Failed to switch to TSLG logger:', error);
     }
   }
 
@@ -65,7 +72,7 @@ export class ProductionLogger extends LoggerInterface {
     try {
       this.currentLogger.log(level, message, event, error, additionalData);
     } catch (logError) {
-      this.originalConsole.error('Error in logger:', logError);
+      this.originalConsole.error('[ProductionLogger] Error in logger:', logError);
       this.fallbackLog(level, message, event, error, additionalData);
     }
   }
@@ -102,7 +109,7 @@ export class ProductionLogger extends LoggerInterface {
       try {
         this.currentLogger.close();
       } catch (error) {
-        this.originalConsole.error('Error closing logger:', error);
+        this.originalConsole.error('[ProductionLogger] Error closing logger:', error);
       }
     }
     this.initialized = false;
@@ -120,15 +127,16 @@ export class ProductionLogger extends LoggerInterface {
     const baseStatus = {
       type: 'ProductionLogger',
       initialized: true,
-      loggerType: this.loggerType
+      loggerType: this.loggerType,
+      currentLogger: this.currentLogger ? this.currentLogger.constructor.name : 'none'
     };
 
     if (this.currentLogger && this.currentLogger.getStatus) {
       try {
         const loggerStatus = this.currentLogger.getStatus();
         return { ...baseStatus, ...loggerStatus };
-      } catch (error) {
-        return { ...baseStatus, statusError: error };
+      } catch (error: any) {
+        return { ...baseStatus, statusError: error.message };
       }
     }
 

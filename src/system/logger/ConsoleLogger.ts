@@ -9,6 +9,30 @@ export class ConsoleLogger extends LoggerInterface {
     debug: console.debug
   };
 
+  private config: any;
+
+  constructor(config?: any) {
+    super();
+    this.config = this.mergeWithDefaults(config || {});
+  }
+
+  private mergeWithDefaults(config: any): any {
+    const defaults = {
+      appName: process.env.APP_NAME || 'surm-backend',
+      projectCode: process.env.PROJECT_CODE || 'SURM',
+      risCode: process.env.RIS_CODE || '1404',
+      appType: 'NODEJS',
+      envType: 'K8S',
+      tslgClientVersion: process.env.TSLG_CLIENT_VERSION || '1.0.0',
+      namespace: process.env.KUBERNETES_NAMESPACE || 'local-dev',
+      podName: process.env.POD_NAME || 'localhost',
+      podIp: process.env.POD_IP || '127.0.0.1',
+      nodeName: process.env.NODE_NAME || 'local-machine'
+    };
+
+    return { ...defaults, ...config };
+  }
+
   private safeStringify(obj: any, depth: number = 0): string {
     if (depth > 10) return '[Circular]';
 

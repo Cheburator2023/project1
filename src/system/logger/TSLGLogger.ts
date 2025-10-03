@@ -11,6 +11,9 @@ export class TSLGLogger extends LoggerInterface {
   private logBuffer: string[] = [];
   private connectionAttempts: number = 0;
   private maxConnectionAttempts: number = 3;
+  private maxBufferSize: number = 1000;
+
+  private config: any;
   private metrics: any;
 
   private originalConsole = {
@@ -20,7 +23,7 @@ export class TSLGLogger extends LoggerInterface {
     info: console.info
   };
 
-  constructor(private config: any) {
+  constructor(config: any = {}) {
     super();
     this.config = this.mergeWithDefaults(config);
     this.metrics = this.initializeMetrics();
@@ -38,20 +41,22 @@ export class TSLGLogger extends LoggerInterface {
       appType: 'NODEJS',
       envType: 'K8S',
       tslgClientVersion: process.env.TSLG_CLIENT_VERSION || '1.0.0',
-      reconnectionDelay: parseInt(process.env.TSLG_RECONNECTION_DELAY_MS || '5000', 10),
+      reconnectionDelay: parseInt(process.env.TSLG_RECONNECTION_DELAY_MS || '1000', 10),
       connectionTTL: parseInt(process.env.TSLG_CONNECTION_TTL_MS || '2000', 10),
       socketTimeout: parseInt(process.env.TSLG_SOCKET_TIMEOUT_MS || '10000', 10),
-      maxBufferSize: parseInt(process.env.TSLG_MAX_BUFFER_SIZE || '500', 10),
-      namespace: process.env.KUBERNETES_NAMESPACE || 'local-dev',
-      podName: process.env.POD_NAME || 'localhost',
-      podIp: process.env.POD_IP || '127.0.0.1',
-      nodeName: process.env.NODE_NAME || 'local-machine'
+      maxBufferSize: parseInt(process.env.TSLG_MAX_BUFFER_SIZE || '1000', 10),
+      namespace: process.env.KUBERNETES_NAMESPACE || 'dk1-sumd01-sumd-core',
+      podName: process.env.POD_NAME || 'surm-backend-7c8b5d9f6-abc123',
+      podIp: process.env.POD_IP || '10.244.1.25',
+      nodeName: process.env.NODE_NAME || 'dk1-sumd01-node-05',
+      enableTraceFields: process.env.TSLG_ENABLE_TRACE_FIELDS === 'true',
+      consoleOutput: process.env.TSLG_CONSOLE_OUTPUT === 'true'
     };
 
     return { ...defaults, ...config };
   }
 
-  private initializeMetrics(): any {
+  private initializeMetrics() {
     return {
       sentLogs: 0,
       failedLogs: 0,
@@ -61,21 +66,9 @@ export class TSLGLogger extends LoggerInterface {
     };
   }
 
-  private getLocalIP(): string | null {
-    const interfaces = os.networkInterfaces();
-    for (const interfaceName in interfaces) {
-      const addresses = interfaces[interfaceName];
-      for (const address of addresses!) {
-        if (address.family === 'IPv4' && !address.internal) {
-          return address.address;
-        }
-      }
-    }
-    return null;
-  }
-
-  private initializeBuffer(): void {
+  private initializeBuffer() {
     this.logBuffer = [];
+    this.maxBufferSize = this.config.maxBufferSize;
     this.isFlushing = false;
   }
 
@@ -83,16 +76,16 @@ export class TSLGLogger extends LoggerInterface {
     return !!(this.socket && !this.socket.destroyed && this.socket.writable);
   }
 
-  private connect(): void {
+  private connect() {
     if (this.connectionAttempts >= this.maxConnectionAttempts) {
-      this.originalConsole.error(`Max connection attempts (${this.maxConnectionAttempts}) reached. Giving up.`);
+      this.originalConsole.error(`[TSLG] Max connection attempts (${this.maxConnectionAttempts}) reached. Giving up.`);
       return;
     }
 
     this.connectionAttempts++;
 
     try {
-      this.originalConsole.log(`Attempting to connect to TSLG agent at ${this.config.host}:${this.config.port} (attempt ${this.connectionAttempts})`);
+      this.originalConsole.log(`[TSLG] Attempting to connect to TSLG agent at ${this.config.host}:${this.config.port} (attempt ${this.connectionAttempts})`);
 
       this.socket = net.createConnection({
         host: this.config.host,
@@ -104,50 +97,52 @@ export class TSLGLogger extends LoggerInterface {
       this.socket.setKeepAlive(true, 60000);
 
     } catch (error) {
-      this.originalConsole.error('Failed to create TSLG connection:', error);
+      this.originalConsole.error('[TSLG] Failed to create TSLG connection:', error);
       this.scheduleReconnect();
     }
   }
 
-  private setupSocketEventHandlers(): void {
-    this.socket!.on('connect', () => {
+  private setupSocketEventHandlers() {
+    if (!this.socket) return;
+
+    this.socket.on('connect', () => {
       this.lastConnectionTime = Date.now();
       this.connectionAttempts = 0;
       this.metrics.reconnections++;
-      this.originalConsole.log(`TSLG connected successfully to ${this.config.host}:${this.config.port}`);
+      this.originalConsole.log(`[TSLG] Connected successfully to ${this.config.host}:${this.config.port}`);
       this.flushBuffer();
     });
 
-    this.socket!.on('error', (error) => {
+    this.socket.on('error', (error) => {
       this.metrics.connectionErrors++;
-      this.originalConsole.error(`TSLG connection error: ${error.message}`);
+      this.originalConsole.error(`[TSLG] Connection error: ${error.message}`);
       this.scheduleReconnect();
     });
 
-    this.socket!.on('close', (hadError) => {
-      this.originalConsole.log(`TSLG connection closed${hadError ? ' with error' : ''}`);
+    this.socket.on('close', (hadError) => {
+      this.originalConsole.log(`[TSLG] Connection closed${hadError ? ' with error' : ''}`);
       if (hadError) {
         this.scheduleReconnect();
       }
     });
 
-    this.socket!.on('timeout', () => {
-      this.originalConsole.error('TSLG connection timeout');
+    this.socket.on('timeout', () => {
+      this.originalConsole.error('[TSLG] Connection timeout');
       this.safeReconnect();
     });
 
-    this.socket!.on('drain', () => {
+    this.socket.on('drain', () => {
       this.flushBuffer();
     });
   }
 
-  private scheduleReconnect(): void {
+  private scheduleReconnect() {
     if (this.reconnectTimeout) {
       clearTimeout(this.reconnectTimeout);
     }
 
     const delay = this.calculateReconnectDelay();
-    this.originalConsole.log(`Scheduling reconnect in ${delay}ms`);
+    this.originalConsole.log(`[TSLG] Scheduling reconnect in ${delay}ms`);
 
     this.reconnectTimeout = setTimeout(() => {
       this.connect();
@@ -161,7 +156,7 @@ export class TSLGLogger extends LoggerInterface {
     return delay;
   }
 
-  private safeReconnect(): void {
+  private safeReconnect() {
     if (this.socket) {
       this.socket.destroy();
       this.socket = null;
@@ -169,11 +164,11 @@ export class TSLGLogger extends LoggerInterface {
     this.scheduleReconnect();
   }
 
-  private bufferLog(logData: string): void {
-    if (this.logBuffer.length >= this.config.maxBufferSize) {
+  private bufferLog(logData: string) {
+    if (this.logBuffer.length >= this.maxBufferSize) {
       this.logBuffer.shift();
       this.metrics.failedLogs++;
-      this.originalConsole.warn('TSLG buffer overflow, removed oldest log');
+      this.originalConsole.warn('[TSLG] Buffer overflow, removed oldest log');
     }
 
     this.logBuffer.push(logData);
@@ -183,7 +178,7 @@ export class TSLGLogger extends LoggerInterface {
     }
   }
 
-  private async flushBuffer(): Promise<void> {
+  private async flushBuffer() {
     if (!this.isConnected() || this.isFlushing || this.logBuffer.length === 0) {
       return;
     }
@@ -205,7 +200,7 @@ export class TSLGLogger extends LoggerInterface {
             break;
           }
         } catch (error) {
-          this.originalConsole.error('Error writing to socket:', error);
+          this.originalConsole.error('[TSLG] Error writing to socket:', error);
           break;
         }
 
@@ -218,7 +213,7 @@ export class TSLGLogger extends LoggerInterface {
     }
   }
 
-  private createLogEntry(level: string, message: string, event: string, error: Error | null, additionalData: any): any {
+  private createLogEntry(level: string, message: string, event: string, error: Error | null, additionalData: any) {
     const timestamp = new Date();
 
     const logEntry: any = {
@@ -228,13 +223,10 @@ export class TSLGLogger extends LoggerInterface {
       "text": typeof message === 'string' ? message : JSON.stringify(message, null, 2),
       "localTime": timestamp.toISOString(),
       "PID": process.pid,
-      "workerId": 0,
       "appType": this.config.appType,
-      "risCode": this.config.risCode,
       "projectCode": this.config.projectCode,
       "appName": this.config.appName,
       "timestamp": timestamp.toISOString(),
-      "message": "",
       "envType": this.config.envType,
       "namespace": this.config.namespace,
       "podName": this.config.podName,
@@ -243,13 +235,23 @@ export class TSLGLogger extends LoggerInterface {
         "podIp": this.config.podIp
       },
       "tslgClientVersion": this.config.tslgClientVersion,
+      "eventOutcome": event,
+      "risCode": this.config.risCode,
       ...this.sanitizeData(additionalData)
     };
 
+    if (this.config.enableTraceFields) {
+      logEntry.workerId = 0;
+    }
+
     if (error) {
       if (error instanceof Error) {
-        logEntry.stack = error.stack ? error.stack.split('\n').map(line => line.trim()).join('\n') : '';
+        logEntry.stack = error.stack ? error.stack.split('\n').map((line: string) => line.trim()).join('\n') : '';
         logEntry.errorMessage = error.message;
+
+        if (this.config.enableTraceFields) {
+          logEntry.stack = logEntry.stack;
+        }
       } else {
         logEntry.error = JSON.stringify(error);
       }
@@ -289,7 +291,9 @@ export class TSLGLogger extends LoggerInterface {
     const logEntry = this.createLogEntry(level, message, event, error, additionalData);
     const logData = JSON.stringify(logEntry) + '\n';
 
-    this.writeToConsole(level, message, event, error);
+    if (this.config.consoleOutput) {
+      this.writeToConsole(level, message, event, error);
+    }
 
     if (!this.isConnected()) {
       this.bufferLog(logData);
@@ -308,12 +312,12 @@ export class TSLGLogger extends LoggerInterface {
         this.bufferLog(logData);
       }
     } catch (error) {
-      this.originalConsole.error('Failed to send log to TSLG:', error);
+      this.originalConsole.error('[TSLG] Failed to send log to TSLG:', error);
       this.bufferLog(logData);
     }
   }
 
-  private writeToConsole(level: string, message: string, event: string, error: Error | null): void {
+  private writeToConsole(level: string, message: string, event: string, error: Error | null) {
     const timestamp = new Date().toISOString();
     const levelUpper = level.toUpperCase();
     const logMessage = `[${timestamp}] [${levelUpper}] [${event}] ${message}`;
@@ -347,7 +351,7 @@ export class TSLGLogger extends LoggerInterface {
     }
 
     if (this.logBuffer.length > 0) {
-      this.originalConsole.log(`Attempting to flush ${this.logBuffer.length} buffered logs before shutdown`);
+      this.originalConsole.log(`[TSLG] Attempting to flush ${this.logBuffer.length} buffered logs before shutdown`);
       this.flushBufferSync();
     }
 
@@ -355,10 +359,10 @@ export class TSLGLogger extends LoggerInterface {
       this.socket.destroy();
     }
 
-    this.originalConsole.log('TSLG logger closed');
+    this.originalConsole.log('[TSLG] Logger closed');
   }
 
-  private flushBufferSync(): void {
+  private flushBufferSync() {
     if (!this.isConnected() || this.logBuffer.length === 0) return;
 
     let attempts = 0;

@@ -24,7 +24,7 @@ export class TSLGConnectionTester {
         lastTest: now
       };
 
-    } catch (error) {
+    } catch (error: any) {
       this.hostStatus = {
         dnsResolved: false,
         tcpReachable: false,
