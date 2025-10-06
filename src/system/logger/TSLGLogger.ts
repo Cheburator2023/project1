@@ -50,7 +50,7 @@ export class TSLGLogger extends LoggerInterface {
       podIp: process.env.POD_IP || '10.244.1.25',
       nodeName: process.env.NODE_NAME || 'dk1-sumd01-node-05',
       enableTraceFields: process.env.TSLG_ENABLE_TRACE_FIELDS === 'true',
-      consoleOutput: process.env.TSLG_CONSOLE_OUTPUT === 'true'
+      consoleOutput: process.env.TSLG_CONSOLE_OUTPUT === 'true' // Управляем выводом в консоль через env
     };
 
     return { ...defaults, ...config };
@@ -62,7 +62,8 @@ export class TSLGLogger extends LoggerInterface {
       failedLogs: 0,
       reconnections: 0,
       bufferFlushes: 0,
-      connectionErrors: 0
+      connectionErrors: 0,
+      ttlReconnections: 0
     };
   }
 
@@ -291,8 +292,9 @@ export class TSLGLogger extends LoggerInterface {
     const logEntry = this.createLogEntry(level, message, event, error, additionalData);
     const logData = JSON.stringify(logEntry) + '\n';
 
+    // ЕДИНСТВЕННОЕ место для вывода в консоль - управляется через consoleOutput
     if (this.config.consoleOutput) {
-      this.writeToConsole(level, message, event, error);
+      this.writeToConsole(level, message, event, error, additionalData);
     }
 
     if (!this.isConnected()) {
@@ -317,15 +319,50 @@ export class TSLGLogger extends LoggerInterface {
     }
   }
 
-  private writeToConsole(level: string, message: string, event: string, error: Error | null) {
+  private writeToConsole(level: string, message: string, event: string, error: Error | null, additionalData: any = {}): void {
     const timestamp = new Date().toISOString();
     const levelUpper = level.toUpperCase();
-    const logMessage = `[${timestamp}] [${levelUpper}] [${event}] ${message}`;
+
+    let logMessage = `[${timestamp}] [${levelUpper}] [${event}] ${this.safeStringify(message)}`;
 
     if (error) {
-      this.originalConsole.error(logMessage, error);
-    } else {
-      this.originalConsole.log(logMessage);
+      logMessage += ` | Error: ${this.safeStringify(error)}`;
+    }
+
+    if (additionalData && Object.keys(additionalData).length > 0) {
+      logMessage += ` | Data: ${this.safeStringify(additionalData)}`;
+    }
+
+    switch (level) {
+      case 'error':
+        this.originalConsole.error(logMessage);
+        if (error && error.stack) {
+          this.originalConsole.error(error.stack);
+        }
+        break;
+      case 'warn':
+        this.originalConsole.warn(logMessage);
+        break;
+      case 'info':
+      default:
+        this.originalConsole.log(logMessage);
+    }
+  }
+
+  private safeStringify(obj: any, depth: number = 0): string {
+    if (depth > 10) return '[Circular]';
+
+    try {
+      if (obj === null || obj === undefined) return String(obj);
+      if (typeof obj === 'string') return obj;
+      if (typeof obj === 'number' || typeof obj === 'boolean') return String(obj);
+      if (obj instanceof Error) return obj.toString();
+      if (typeof obj === 'object') {
+        return JSON.stringify(obj, null, 2);
+      }
+      return String(obj);
+    } catch (error) {
+      return `[Stringification error: ${error.message}]`;
     }
   }
 
@@ -392,11 +429,16 @@ export class TSLGLogger extends LoggerInterface {
       config: {
         host: this.config.host,
         port: this.config.port,
-        appName: this.config.appName
+        appName: this.config.appName,
+        consoleOutput: this.config.consoleOutput
       },
       metrics: { ...this.metrics },
       bufferSize: this.logBuffer.length,
-      connectionAttempts: this.connectionAttempts
+      connectionAttempts: this.connectionAttempts,
+      lastConnectionTime: this.lastConnectionTime,
+      isFlushing: this.isFlushing,
+      socketWritable: this.socket ? this.socket.writable : false,
+      socketBufferSize: this.socket ? this.socket.writableLength : 0
     };
   }
 }
