@@ -12,10 +12,13 @@ import { LoggerService } from './system/logger/logger.service';
 const session = require('express-session');
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, {
+    bufferLogs: true,
+  });
 
-  // Initialize logger
   const logger = app.get(LoggerService);
+  app.useLogger(logger);
+
   logger.sys('Application starting...');
 
   app.enableCors();

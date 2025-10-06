@@ -6,7 +6,7 @@ export class TSLGConnectionTester {
   private cacheTTL: number = 30000;
   private hostStatus: any = null;
 
-  constructor(private config: { host: string; port: number }) {}
+  constructor(private config: { host: string; port: number; socketTimeout?: number }) {}
 
   async testConnection(): Promise<any> {
     const now = Date.now();
@@ -54,13 +54,13 @@ export class TSLGConnectionTester {
       const socket = net.createConnection({
         host: this.config.host,
         port: this.config.port,
-        timeout: 5000
+        timeout: this.config.socketTimeout || 5000
       });
 
       const timeout = setTimeout(() => {
         socket.destroy();
         resolve(false);
-      }, 5000);
+      }, this.config.socketTimeout || 5000);
 
       socket.on('connect', () => {
         clearTimeout(timeout);

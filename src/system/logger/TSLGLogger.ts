@@ -1,7 +1,14 @@
 import * as net from 'net';
 import { v4 as uuidv4 } from 'uuid';
-import * as os from 'os';
 import { LoggerInterface } from './LoggerInterface';
+
+interface CallerInfo {
+  callerClass?: string;
+  callerMethod?: string;
+  callerLine?: number;
+  callerFile?: string;
+  loggerName?: string;
+}
 
 export class TSLGLogger extends LoggerInterface {
   private socket: net.Socket | null = null;
@@ -10,8 +17,9 @@ export class TSLGLogger extends LoggerInterface {
   private isFlushing: boolean = false;
   private logBuffer: string[] = [];
   private connectionAttempts: number = 0;
-  private maxConnectionAttempts: number = 3;
+  private maxConnectionAttempts: number = 10;
   private maxBufferSize: number = 1000;
+  private ttlInterval: NodeJS.Timeout | null = null;
 
   private config: any;
   private metrics: any;
@@ -29,6 +37,7 @@ export class TSLGLogger extends LoggerInterface {
     this.metrics = this.initializeMetrics();
     this.initializeBuffer();
     this.connect();
+    this.startTTLMonitor();
   }
 
   private mergeWithDefaults(config: any): any {
@@ -50,7 +59,8 @@ export class TSLGLogger extends LoggerInterface {
       podIp: process.env.POD_IP || '10.244.1.25',
       nodeName: process.env.NODE_NAME || 'dk1-sumd01-node-05',
       enableTraceFields: process.env.TSLG_ENABLE_TRACE_FIELDS === 'true',
-      consoleOutput: process.env.TSLG_CONSOLE_OUTPUT === 'true' // Управляем выводом в консоль через env
+      consoleOutput: process.env.TSLG_CONSOLE_OUTPUT === 'true' || process.env.NODE_ENV !== 'production',
+      debugJson: process.env.DEBUG_JSON === 'true'
     };
 
     return { ...defaults, ...config };
@@ -73,6 +83,79 @@ export class TSLGLogger extends LoggerInterface {
     this.isFlushing = false;
   }
 
+  private startTTLMonitor(): void {
+    if (this.ttlInterval) {
+      clearInterval(this.ttlInterval);
+    }
+
+    this.ttlInterval = setInterval(async () => {
+      if (!this.isConnected()) {
+        return;
+      }
+
+      const now = Date.now();
+      const timeSinceReconnect = now - this.lastConnectionTime;
+
+      if (timeSinceReconnect >= this.config.connectionTTL) {
+        this.originalConsole.log(`[TSLG] TTL ${this.config.connectionTTL}ms expired, scheduling reconnection for load balancing`);
+        await this.performGracefulReconnect();
+      }
+    }, 1000);
+  }
+
+  private async performGracefulReconnect(): Promise<void> {
+    try {
+      this.originalConsole.log('[TSLG] Starting graceful reconnection for load balancing');
+
+      if (this.isConnected()) {
+        const status = this.getStatus();
+
+        if (status.bufferSize > 0) {
+          this.originalConsole.log(`[TSLG] Waiting for ${status.bufferSize} buffered logs to be sent`);
+          await this.waitForBufferFlush(status.bufferSize);
+        }
+
+        if (this.socket) {
+          this.socket.destroy();
+          this.socket = null;
+        }
+      }
+
+      this.connect();
+      this.lastConnectionTime = Date.now();
+      this.metrics.ttlReconnections++;
+
+      this.originalConsole.log('[TSLG] Graceful reconnection completed successfully');
+
+    } catch (error) {
+      this.originalConsole.error('[TSLG] Graceful reconnection failed:', error);
+    }
+  }
+
+  private async waitForBufferFlush(initialBufferSize: number): Promise<void> {
+    return new Promise((resolve) => {
+      let attempts = 0;
+      const maxAttempts = 10;
+
+      const checkBuffer = () => {
+        attempts++;
+
+        const status = this.getStatus();
+
+        if (status.bufferSize === 0 || attempts >= maxAttempts) {
+          if (status.bufferSize > 0) {
+            this.originalConsole.warn(`[TSLG] Buffer not fully flushed after ${attempts} attempts, ${status.bufferSize} logs remaining`);
+          }
+          resolve();
+        } else {
+          setTimeout(checkBuffer, 500);
+        }
+      };
+
+      setTimeout(checkBuffer, 500);
+    });
+  }
+
   private isConnected(): boolean {
     return !!(this.socket && !this.socket.destroyed && this.socket.writable);
   }
@@ -90,7 +173,8 @@ export class TSLGLogger extends LoggerInterface {
 
       this.socket = net.createConnection({
         host: this.config.host,
-        port: this.config.port
+        port: this.config.port,
+        timeout: this.config.socketTimeout
       });
 
       this.setupSocketEventHandlers();
@@ -192,7 +276,7 @@ export class TSLGLogger extends LoggerInterface {
         const logData = this.logBuffer[0];
 
         try {
-          const success = this.socket!.write(logData);
+          const success = this.socket!.write(logData + '\n');
 
           if (success) {
             this.logBuffer.shift();
@@ -214,51 +298,130 @@ export class TSLGLogger extends LoggerInterface {
     }
   }
 
+  private getCallerInfo(additionalData: any): CallerInfo {
+    if (additionalData.context && typeof additionalData.context === 'string') {
+      if (!additionalData.context.includes('\n    at ')) {
+        return {
+          loggerName: additionalData.context
+        };
+      }
+    }
+
+    const error = {} as any;
+    Error.captureStackTrace(error);
+
+    const stackLines = error.stack.split('\n');
+
+    for (let i = 4; i < stackLines.length; i++) {
+      const line = stackLines[i];
+      const match = line.match(/at\s+(.+)\s+\((.+):(\d+):(\d+)\)/) ||
+        line.match(/at\s+(.+):(\d+):(\d+)/);
+
+      if (match) {
+        let className = 'unknown';
+        let methodName = 'anonymous';
+
+        if (match[1] && match[1] !== 'Object.<anonymous>') {
+          const parts = match[1].split('.');
+          if (parts.length > 1) {
+            className = parts[parts.length - 2] || 'unknown';
+            methodName = parts[parts.length - 1];
+          } else {
+            methodName = parts[0];
+          }
+        }
+
+        if (match[2] && !match[2].includes('node_modules') && !match[2].includes('internal/')) {
+          const fileName = match[2].split('/').pop() || match[2];
+          return {
+            loggerName: className,
+            callerClass: fileName.replace('.ts', '').replace('.js', ''),
+            callerMethod: methodName,
+            callerLine: parseInt(match[3], 10),
+            callerFile: fileName
+          };
+        }
+      }
+    }
+
+    return { loggerName: 'application' };
+  }
+
   private createLogEntry(level: string, message: string, event: string, error: Error | null, additionalData: any) {
     const timestamp = new Date();
+    const callerInfo = this.getCallerInfo(additionalData);
 
     const logEntry: any = {
-      "@timestamp": timestamp.getTime() / 1000,
-      "level": level.toLowerCase(),
       "eventId": uuidv4(),
+      "appName": this.config.appName,
+      "level": level.toUpperCase(), // Верхний регистр как в образце
       "text": typeof message === 'string' ? message : JSON.stringify(message, null, 2),
       "localTime": timestamp.toISOString(),
-      "PID": process.pid,
-      "appType": this.config.appType,
-      "projectCode": this.config.projectCode,
-      "appName": this.config.appName,
-      "timestamp": timestamp.toISOString(),
-      "envType": this.config.envType,
-      "namespace": this.config.namespace,
-      "podName": this.config.podName,
-      "tec": {
-        "nodeName": this.config.nodeName,
-        "podIp": this.config.podIp
-      },
       "tslgClientVersion": this.config.tslgClientVersion,
-      "eventOutcome": event,
       "risCode": this.config.risCode,
-      ...this.sanitizeData(additionalData)
+      "projectCode": this.config.projectCode,
+      "appType": this.config.appType,
+      "envType": this.config.envType,
+      "PID": process.pid,
+      "loggerName": callerInfo.loggerName || 'application'
     };
 
-    if (this.config.enableTraceFields) {
-      logEntry.workerId = 0;
+    if (this.config.envType === 'K8S') {
+      logEntry.namespace = this.config.namespace;
+      logEntry.podName = this.config.podName;
+      logEntry.tec = {
+        "podIp": this.config.podIp,
+        "nodeName": this.config.nodeName
+      };
+    }
+
+    if (callerInfo.callerClass && callerInfo.callerClass !== 'unknown') {
+      logEntry.callerClass = callerInfo.callerClass;
+    }
+    if (callerInfo.callerMethod && callerInfo.callerMethod !== 'anonymous') {
+      logEntry.callerMethod = callerInfo.callerMethod;
+    }
+    if (callerInfo.callerLine) {
+      logEntry.callerLine = callerInfo.callerLine;
     }
 
     if (error) {
       if (error instanceof Error) {
-        logEntry.stack = error.stack ? error.stack.split('\n').map((line: string) => line.trim()).join('\n') : '';
+        logEntry.stack = this.cleanStack(error.stack);
         logEntry.errorMessage = error.message;
-
-        if (this.config.enableTraceFields) {
-          logEntry.stack = logEntry.stack;
-        }
       } else {
         logEntry.error = JSON.stringify(error);
       }
     }
 
+    const sanitizedData = this.sanitizeData(additionalData);
+    Object.keys(sanitizedData).forEach(key => {
+      if (!logEntry.hasOwnProperty(key) &&
+        key !== 'context' &&
+        key !== 'params' &&
+        key !== 'stack') {
+        logEntry[key] = sanitizedData[key];
+      }
+    });
+
+    if (sanitizedData.params && Array.isArray(sanitizedData.params)) {
+      sanitizedData.params.forEach((param: any, index: number) => {
+        if (typeof param === 'string' && param.length > 0) {
+          logEntry[`param${index}`] = param;
+        }
+      });
+    }
+
     return logEntry;
+  }
+
+  private cleanStack(stack?: string): string {
+    if (!stack) return '';
+    return stack
+      .split('\n')
+      .slice(1)
+      .map(line => line.trim())
+      .join('\n');
   }
 
   private sanitizeData(data: any): any {
@@ -290,11 +453,12 @@ export class TSLGLogger extends LoggerInterface {
 
   log(level: string, message: string, event: string = 'Информация', error: Error | null = null, additionalData: any = {}): void {
     const logEntry = this.createLogEntry(level, message, event, error, additionalData);
-    const logData = JSON.stringify(logEntry) + '\n';
+    const logData = JSON.stringify(logEntry);
 
-    // ЕДИНСТВЕННОЕ место для вывода в консоль - управляется через consoleOutput
-    if (this.config.consoleOutput) {
-      this.writeToConsole(level, message, event, error, additionalData);
+    this.writeToConsole(level, message, event, error, additionalData);
+
+    if (this.config.debugJson) {
+      this.originalConsole.log(logData);
     }
 
     if (!this.isConnected()) {
@@ -304,7 +468,7 @@ export class TSLGLogger extends LoggerInterface {
 
     try {
       if (this.socket!.writableLength < 65536) {
-        const success = this.socket!.write(logData);
+        const success = this.socket!.write(logData + '\n');
         if (success) {
           this.metrics.sentLogs++;
         } else {
@@ -382,7 +546,20 @@ export class TSLGLogger extends LoggerInterface {
     this.log('info', message, 'Системное', null, additionalData);
   }
 
+  debug(message: string, event: string = 'Отладка', additionalData: any = {}): void {
+    this.log('debug', message, event, null, additionalData);
+  }
+
+  verbose(message: string, event: string = 'Подробно', additionalData: any = {}): void {
+    this.log('verbose', message, event, null, additionalData);
+  }
+
   close(): void {
+    if (this.ttlInterval) {
+      clearInterval(this.ttlInterval);
+      this.ttlInterval = null;
+    }
+
     if (this.reconnectTimeout) {
       clearTimeout(this.reconnectTimeout);
     }
@@ -406,7 +583,7 @@ export class TSLGLogger extends LoggerInterface {
     while (this.logBuffer.length > 0 && attempts < 3) {
       try {
         const logData = this.logBuffer[0];
-        const success = this.socket!.write(logData);
+        const success = this.socket!.write(logData + '\n');
 
         if (success) {
           this.logBuffer.shift();
@@ -424,13 +601,15 @@ export class TSLGLogger extends LoggerInterface {
   getStatus(): any {
     return {
       type: 'TSLGLogger',
-      isProduction: true,
+      isProduction: process.env.NODE_ENV === 'production',
       isConnected: this.isConnected(),
       config: {
         host: this.config.host,
         port: this.config.port,
         appName: this.config.appName,
-        consoleOutput: this.config.consoleOutput
+        consoleOutput: this.config.consoleOutput,
+        connectionTTL: this.config.connectionTTL,
+        reconnectionDelay: this.config.reconnectionDelay
       },
       metrics: { ...this.metrics },
       bufferSize: this.logBuffer.length,

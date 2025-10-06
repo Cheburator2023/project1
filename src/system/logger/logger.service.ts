@@ -1,8 +1,8 @@
-import { Injectable, OnModuleDestroy } from '@nestjs/common';
+import { Injectable, OnModuleDestroy, LoggerService as NestLoggerService } from '@nestjs/common';
 import { LoggerFactory } from './LoggerFactory';
 
 @Injectable()
-export class LoggerService implements OnModuleDestroy {
+export class LoggerService implements NestLoggerService, OnModuleDestroy {
   private logger;
 
   constructor() {
@@ -22,21 +22,69 @@ export class LoggerService implements OnModuleDestroy {
       socketTimeout: parseInt(process.env.TSLG_SOCKET_TIMEOUT_MS || '10000', 10),
       maxBufferSize: parseInt(process.env.TSLG_MAX_BUFFER_SIZE || '1000', 10),
       enableTraceFields: process.env.TSLG_ENABLE_TRACE_FIELDS === 'true',
-      consoleOutput: process.env.TSLG_CONSOLE_OUTPUT === 'true'
+      consoleOutput: process.env.TSLG_CONSOLE_OUTPUT === 'true' || process.env.NODE_ENV !== 'production',
+      debugJson: process.env.DEBUG_JSON === 'true'
     };
 
     this.logger = LoggerFactory.createLogger(config);
+  }
+
+  log(message: any, ...optionalParams: any[]) {
+    this.logger.info(message, 'Информация', this.parseOptionalParams(optionalParams));
+  }
+
+  error(message: any, ...optionalParams: any[]) {
+    let error: Error | null = null;
+    let additionalData: any = {};
+
+    if (optionalParams.length > 0) {
+      const firstParam = optionalParams[0];
+      if (firstParam instanceof Error) {
+        error = firstParam;
+        additionalData = this.parseOptionalParams(optionalParams.slice(1));
+      } else if (typeof firstParam === 'string') {
+        additionalData = { context: firstParam, ...this.parseOptionalParams(optionalParams.slice(1)) };
+      } else {
+        additionalData = this.parseOptionalParams(optionalParams);
+      }
+    }
+
+    this.logger.error(message, 'Ошибка', error, additionalData);
+  }
+
+  warn(message: any, ...optionalParams: any[]) {
+    this.logger.warn(message, 'Предупреждение', this.parseOptionalParams(optionalParams));
+  }
+
+  debug(message: any, ...optionalParams: any[]) {
+    this.logger.debug(message, 'Отладка', this.parseOptionalParams(optionalParams));
+  }
+
+  verbose(message: any, ...optionalParams: any[]) {
+    this.logger.verbose(message, 'Подробно', this.parseOptionalParams(optionalParams));
+  }
+
+  private parseOptionalParams(optionalParams: any[]): any {
+    if (optionalParams.length === 0) {
+      return {};
+    }
+
+    if (optionalParams.length === 1 && typeof optionalParams[0] === 'object' && !Array.isArray(optionalParams[0])) {
+      return optionalParams[0];
+    }
+
+    return { params: optionalParams };
   }
 
   info(message: string, event: string = 'Информация', additionalData: any = {}) {
     this.logger.info(message, event, additionalData);
   }
 
-  warn(message: string, event: string = 'Предупреждение', additionalData: any = {}) {
+  warnMessage(message: string, event: string = 'Предупреждение', additionalData: any = {}) {
     this.logger.warn(message, event, additionalData);
   }
 
-  error(message: string, event: string = 'Ошибка', error: Error | null = null, additionalData: any = {}) {
+  errorMessage(message: string, event: string = 'Ошибка', error: Error | null = null, additionalData: any = {}) {
     this.logger.error(message, event, error, additionalData);
   }
 

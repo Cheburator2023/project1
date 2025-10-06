@@ -6,4 +6,6 @@ export abstract class LoggerInterface {
   abstract sys(message: string, additionalData?: any): void;
   abstract close(): void;
   abstract getStatus(): any;
+  abstract debug(message: string, event?: string, additionalData?: any): void;
+  abstract verbose(message: string, event?: string, additionalData?: any): void;
 }
