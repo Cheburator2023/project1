@@ -10,6 +10,14 @@ interface CallerInfo {
   loggerName?: string;
 }
 
+interface UserData {
+  userId?: string;
+  username?: string;
+  email?: string;
+  roles?: string[];
+  groups?: string[];
+}
+
 export class TSLGLogger extends LoggerInterface {
   private socket: net.Socket | null = null;
   private reconnectTimeout: NodeJS.Timeout | null = null;
@@ -37,12 +45,15 @@ export class TSLGLogger extends LoggerInterface {
     this.metrics = this.initializeMetrics();
     this.initializeBuffer();
     this.connect();
-    this.startTTLMonitor();
+
+    if (this.config.connectionTTL > 0) {
+      this.startTTLMonitor();
+    }
   }
 
   private mergeWithDefaults(config: any): any {
     const defaults = {
-      host: process.env.TSLG_AGENT_HOST || 'tslg-agent-svc-main',
+      host: process.env.TSLG_AGENT_HOST || 'tslg-agent-svc-main.dk1-sumd01-sumd-core.svc.cluster.local',
       port: parseInt(process.env.TSLG_AGENT_PORT || '5170', 10),
       appName: process.env.APP_NAME || 'surm-backend',
       projectCode: process.env.PROJECT_CODE || 'SURM',
@@ -51,7 +62,7 @@ export class TSLGLogger extends LoggerInterface {
       envType: 'K8S',
       tslgClientVersion: process.env.TSLG_CLIENT_VERSION || '1.0.0',
       reconnectionDelay: parseInt(process.env.TSLG_RECONNECTION_DELAY_MS || '1000', 10),
-      connectionTTL: parseInt(process.env.TSLG_CONNECTION_TTL_MS || '2000', 10),
+      connectionTTL: parseInt(process.env.TSLG_CONNECTION_TTL_MS || '0', 10),
       socketTimeout: parseInt(process.env.TSLG_SOCKET_TIMEOUT_MS || '10000', 10),
       maxBufferSize: parseInt(process.env.TSLG_MAX_BUFFER_SIZE || '1000', 10),
       namespace: process.env.KUBERNETES_NAMESPACE || 'dk1-sumd01-sumd-core',
@@ -60,7 +71,9 @@ export class TSLGLogger extends LoggerInterface {
       nodeName: process.env.NODE_NAME || 'dk1-sumd01-node-05',
       enableTraceFields: process.env.TSLG_ENABLE_TRACE_FIELDS === 'true',
       consoleOutput: process.env.TSLG_CONSOLE_OUTPUT === 'true' || process.env.NODE_ENV !== 'production',
-      debugJson: process.env.DEBUG_JSON === 'true'
+      debugJson: process.env.DEBUG_JSON === 'true',
+      enableUserData: process.env.TSLG_ENABLE_USER_DATA === 'true',
+      sanitizeSensitiveData: process.env.TSLG_SANITIZE_SENSITIVE_DATA !== 'false'
     };
 
     return { ...defaults, ...config };
@@ -73,7 +86,8 @@ export class TSLGLogger extends LoggerInterface {
       reconnections: 0,
       bufferFlushes: 0,
       connectionErrors: 0,
-      ttlReconnections: 0
+      ttlReconnections: 0,
+      sanitizedDataCount: 0
     };
   }
 
@@ -347,15 +361,65 @@ export class TSLGLogger extends LoggerInterface {
     return { loggerName: 'application' };
   }
 
+  private extractUserData(additionalData: any): UserData {
+    if (!this.config.enableUserData) {
+      return {};
+    }
+
+    const userData: UserData = {};
+
+    try {
+      if (additionalData.user) {
+        userData.userId = additionalData.user.id || additionalData.user.userId;
+        userData.username = additionalData.user.username || additionalData.user.preferred_username;
+        userData.email = additionalData.user.email;
+        userData.roles = additionalData.user.roles;
+        userData.groups = additionalData.user.groups;
+      }
+
+      if (additionalData.jwt || additionalData.token) {
+        const token = additionalData.jwt || additionalData.token;
+        if (typeof token === 'string' && token.length > 100) {
+          try {
+            const payload = JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString());
+            userData.userId = userData.userId || payload.sub;
+            userData.username = userData.username || payload.preferred_username;
+            userData.email = userData.email || payload.email;
+            userData.roles = userData.roles || payload.roles;
+            userData.groups = userData.groups || payload.groups;
+          } catch (e) {
+          }
+        }
+      }
+
+      if (additionalData.userId && !userData.userId) {
+        userData.userId = additionalData.userId;
+      }
+      if (additionalData.username && !userData.username) {
+        userData.username = additionalData.username;
+      }
+
+    } catch (error) {
+      this.originalConsole.warn('[TSLG] Error extracting user data:', error);
+    }
+
+    return userData;
+  }
+
   private createLogEntry(level: string, message: string, event: string, error: Error | null, additionalData: any) {
     const timestamp = new Date();
     const callerInfo = this.getCallerInfo(additionalData);
 
+    const userData = this.extractUserData(additionalData);
+
+    const sanitizedData = this.config.sanitizeSensitiveData ?
+      this.sanitizeData(additionalData) : additionalData;
+
     const logEntry: any = {
       "eventId": uuidv4(),
       "appName": this.config.appName,
-      "level": level.toUpperCase(), // Верхний регистр как в образце
-      "text": typeof message === 'string' ? message : JSON.stringify(message, null, 2),
+      "level": level.toUpperCase(),
+      "text": this.createLogText(message, userData, sanitizedData),
       "localTime": timestamp.toISOString(),
       "tslgClientVersion": this.config.tslgClientVersion,
       "risCode": this.config.risCode,
@@ -363,8 +427,25 @@ export class TSLGLogger extends LoggerInterface {
       "appType": this.config.appType,
       "envType": this.config.envType,
       "PID": process.pid,
-      "loggerName": callerInfo.loggerName || 'application'
+      "loggerName": callerInfo.loggerName || 'application',
+      "threadName": `node-${process.pid}`
     };
+
+    if (this.config.enableUserData && userData.userId) {
+      logEntry.userId = userData.userId;
+      if (userData.username) logEntry.username = userData.username;
+      if (userData.roles && userData.roles.length > 0) logEntry.userRoles = userData.roles;
+      if (userData.groups && userData.groups.length > 0) logEntry.userGroups = userData.groups;
+    }
+
+    const levelMap: { [key: string]: number } = {
+      'error': 40,
+      'warn': 30,
+      'info': 20,
+      'debug': 10,
+      'verbose': 5
+    };
+    logEntry.levelInt = levelMap[level.toLowerCase()] || 0;
 
     if (this.config.envType === 'K8S') {
       logEntry.namespace = this.config.namespace;
@@ -394,12 +475,15 @@ export class TSLGLogger extends LoggerInterface {
       }
     }
 
-    const sanitizedData = this.sanitizeData(additionalData);
     Object.keys(sanitizedData).forEach(key => {
       if (!logEntry.hasOwnProperty(key) &&
         key !== 'context' &&
         key !== 'params' &&
-        key !== 'stack') {
+        key !== 'stack' &&
+        key !== 'errorMessage' &&
+        key !== 'user' &&
+        key !== 'jwt' &&
+        key !== 'token') {
         logEntry[key] = sanitizedData[key];
       }
     });
@@ -415,6 +499,22 @@ export class TSLGLogger extends LoggerInterface {
     return logEntry;
   }
 
+  private createLogText(message: string, userData: UserData, additionalData: any): string {
+    let text = typeof message === 'string' ? message : JSON.stringify(message, null, 2);
+
+    if (this.config.enableUserData && userData.userId) {
+      const userInfo = [];
+      if (userData.username) userInfo.push(`user: ${userData.username}`);
+      if (userData.userId) userInfo.push(`userId: ${userData.userId}`);
+
+      if (userInfo.length > 0) {
+        text = `[${userInfo.join(' | ')}] ${text}`;
+      }
+    }
+
+    return text;
+  }
+
   private cleanStack(stack?: string): string {
     if (!stack) return '';
     return stack
@@ -428,8 +528,15 @@ export class TSLGLogger extends LoggerInterface {
     if (!data || typeof data !== 'object') return {};
 
     const sensitiveFields = [
-      'password', 'token', 'jwt', 'accessToken', 'refreshToken',
-      'authorization', 'secret', 'apiKey', 'credentials'
+      'password', 'token', 'jwt', 'accessToken', 'refreshToken', 'authorization',
+      'secret', 'apiKey', 'credentials', 'privateKey', 'certificate', 'signature',
+      'bearer', 'auth', 'authentication'
+    ];
+
+    const sensitivePatterns = [
+      /eyJ[a-zA-Z0-9_-]*\.[a-zA-Z0-9_-]*\.[a-zA-Z0-9_-]*/g, // JWT tokens
+      /[A-Za-z0-9+/]{40,}={0,2}/g, // Base64-like strings
+      /[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}/g // UUIDs that might be tokens
     ];
 
     const sanitized = JSON.parse(JSON.stringify(data));
@@ -438,6 +545,16 @@ export class TSLGLogger extends LoggerInterface {
       for (const key in obj) {
         if (sensitiveFields.includes(key.toLowerCase())) {
           obj[key] = '*****';
+          this.metrics.sanitizedDataCount++;
+        } else if (typeof obj[key] === 'string') {
+          let value = obj[key];
+          sensitivePatterns.forEach(pattern => {
+            if (pattern.test(value)) {
+              value = value.replace(pattern, '*****');
+              this.metrics.sanitizedDataCount++;
+            }
+          });
+          obj[key] = value;
         } else if (typeof obj[key] === 'object' && obj[key] !== null) {
           sanitizeRecursive(obj[key]);
         }
@@ -484,6 +601,8 @@ export class TSLGLogger extends LoggerInterface {
   }
 
   private writeToConsole(level: string, message: string, event: string, error: Error | null, additionalData: any = {}): void {
+    if (!this.config.consoleOutput) return;
+
     const timestamp = new Date().toISOString();
     const levelUpper = level.toUpperCase();
 
@@ -609,7 +728,9 @@ export class TSLGLogger extends LoggerInterface {
         appName: this.config.appName,
         consoleOutput: this.config.consoleOutput,
         connectionTTL: this.config.connectionTTL,
-        reconnectionDelay: this.config.reconnectionDelay
+        reconnectionDelay: this.config.reconnectionDelay,
+        enableUserData: this.config.enableUserData,
+        sanitizeSensitiveData: this.config.sanitizeSensitiveData
       },
       metrics: { ...this.metrics },
       bufferSize: this.logBuffer.length,
