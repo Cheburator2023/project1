@@ -18,14 +18,15 @@ export class LoggerService implements NestLoggerService, OnModuleDestroy {
       nodeName: process.env.NODE_NAME || 'dk1-sumd01-node-05',
       tslgClientVersion: process.env.TSLG_CLIENT_VERSION || '1.0.0',
       reconnectionDelay: parseInt(process.env.TSLG_RECONNECTION_DELAY_MS || '1000', 10),
-      connectionTTL: parseInt(process.env.TSLG_CONNECTION_TTL_MS || '0', 10),
+      connectionTTL: parseInt(process.env.TSLG_CONNECTION_TTL_MS || '2000', 10), // Изменено на 2000 мс
       socketTimeout: parseInt(process.env.TSLG_SOCKET_TIMEOUT_MS || '10000', 10),
       maxBufferSize: parseInt(process.env.TSLG_MAX_BUFFER_SIZE || '1000', 10),
       enableTraceFields: process.env.TSLG_ENABLE_TRACE_FIELDS === 'true',
       consoleOutput: process.env.TSLG_CONSOLE_OUTPUT === 'true' || process.env.NODE_ENV !== 'production',
       debugJson: process.env.DEBUG_JSON === 'true',
       enableUserData: process.env.TSLG_ENABLE_USER_DATA === 'true',
-      sanitizeSensitiveData: process.env.TSLG_SANITIZE_SENSITIVE_DATA !== 'false'
+      sanitizeSensitiveData: process.env.TSLG_SANITIZE_SENSITIVE_DATA !== 'false',
+      enableFullContext: process.env.TSLG_ENABLE_FULL_CONTEXT === 'true'
     };
 
     this.logger = LoggerFactory.createLogger(config);
