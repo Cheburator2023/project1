@@ -43,7 +43,19 @@ export class ModelsDto {
   @ApiModelPropertyOptional({
     example: ['Архив', 'Разработка']
   })
-  @Transform(({ value }) => (Array.isArray(value) ? value : [value]))
+  @Transform(({ value }) => {
+    if (!value) return []
+    if (Array.isArray(value)) {
+      // Если массив, обрабатываем каждый элемент
+      return value.flatMap((item) =>
+        typeof item === 'string' ? item.split(',').map((s) => s.trim()) : item
+      )
+    }
+    // Если строка, разделяем по запятым
+    return typeof value === 'string'
+      ? value.split(',').map((s) => s.trim())
+      : [value]
+  })
   @IsOptional()
   @IsArray()
   @IsString({ each: true })
@@ -84,7 +96,17 @@ export class CompareModelsDto {
   @ApiModelPropertyOptional({
     example: ['Архив', 'Разработка']
   })
-  @Transform(({ value }) => (Array.isArray(value) ? value : [value]))
+  @Transform(({ value }) => {
+    if (!value) return []
+    if (Array.isArray(value)) {
+      return value.flatMap((item) =>
+        typeof item === 'string' ? item.split(',').map((s) => s.trim()) : item
+      )
+    }
+    return typeof value === 'string'
+      ? value.split(',').map((s) => s.trim())
+      : [value]
+  })
   @IsOptional()
   @IsArray()
   @IsString({ each: true })
@@ -406,7 +428,17 @@ export class FilterDto {
   @ApiModelPropertyOptional({
     example: ['Архив', 'Разработка']
   })
-  @Transform(({ value }) => (Array.isArray(value) ? value : [value]))
+  @Transform(({ value }) => {
+    if (!value) return []
+    if (Array.isArray(value)) {
+      return value.flatMap((item) =>
+        typeof item === 'string' ? item.split(',').map((s) => s.trim()) : item
+      )
+    }
+    return typeof value === 'string'
+      ? value.split(',').map((s) => s.trim())
+      : [value]
+  })
   @IsOptional()
   @IsArray()
   @IsString({ each: true })

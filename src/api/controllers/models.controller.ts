@@ -77,20 +77,45 @@ export class ModelsController {
         const isArchive =
           models_is_active_flg === '0' ||
           business_status === MODEL_STATUS.ARCHIVE
+
         const isCreationError = business_status === MODEL_STATUS.CREATION_ERROR
         const isPendingDelete = business_status === MODEL_STATUS.PENDING_DELETE
 
-        if (model_source === MODEL_SOURCES.SUM && isArchive && isArchiveMode)
-          return true
-        if (model_source === MODEL_SOURCES.MRM) {
-          if (isCreationError && isCreationErrorMode) return true
-          if (isPendingDelete && isPendingDeleteMode) return true
+        // Проверяем соответствие модели запрошенным режимам
+        let matchesRequestedModes = false
+
+        // Проверка архивного режима
+        if (isArchiveMode && model_source === MODEL_SOURCES.SUM && isArchive) {
+          matchesRequestedModes = true
         }
 
-        const isActive = model_source === MODEL_SOURCES.SUM ? !isArchive : true
-        const isValidStatus = !isCreationError && !isPendingDelete
+        // Проверка режима ошибки создания
+        if (
+          isCreationErrorMode &&
+          model_source === MODEL_SOURCES.MRM &&
+          isCreationError
+        ) {
+          matchesRequestedModes = true
+        }
 
-        return isActive && isValidStatus
+        // Проверка режима ожидания удаления
+        if (
+          isPendingDeleteMode &&
+          model_source === MODEL_SOURCES.MRM &&
+          isPendingDelete
+        ) {
+          matchesRequestedModes = true
+        }
+
+        // Если не запрошены специальные режимы, показываем активные модели
+        if (!isArchiveMode && !isCreationErrorMode && !isPendingDeleteMode) {
+          const isActive =
+            model_source === MODEL_SOURCES.SUM ? !isArchive : true
+          const isValidStatus = !isCreationError && !isPendingDelete
+          matchesRequestedModes = isActive && isValidStatus
+        }
+
+        return matchesRequestedModes
       })
     }
 
@@ -119,17 +144,28 @@ export class ModelsController {
     // Если включен режим NO_ROLES, используем запрос для получения всех моделей
     if (process.env.NO_ROLES === 'true') {
       const allModels = await this.apiService.getAllModelsForGodMode(req.user)
+
+      // Применяем фильтрацию даже в режиме NO_ROLES
+      const filteredModels = this.filterCachedModels(
+        allModels,
+        query,
+        req.user?.groups
+      )
+
       const result = {
         data: {
-          cards: allModels
+          cards: filteredModels
         },
         fromCache: false
       }
       return response.status(HttpStatus.OK).json(result)
     }
 
-    // Если useCache=false, получаем данные напрямую
-    if (query.useCache === false) {
+    // Если useCache=false или есть фильтры, получаем данные напрямую
+    const hasFilters =
+      query.date || query.model_id || (query.mode && query.mode.length > 0)
+
+    if (query.useCache === false || hasFilters) {
       const models = await this.modelsService.getModels(query, req.user?.groups)
       const result = {
         data: {
