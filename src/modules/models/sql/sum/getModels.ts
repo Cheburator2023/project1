@@ -49,8 +49,13 @@ SELECT m_.model_id                                                              
        dm_.model_epic_12_date,
        dm_.developing_model_reason,
        dm_.model_desc,
-       st.status                                                                                     AS business_status,
-       activeBpmnInstance.bpmn_instance_name                                                         AS model_status,
+       dm_.output_table,
+       dm_.allocation_assessment_class,
+       dm_.allocation_assessment_parameters,
+       m_.model_status                                                                               AS camunda_model_status,
+       m_.model_stage                                                                                AS camunda_model_stage,
+       activeBpmnInstance.bpmn_instance_name                                                                 AS model_status,
+       st.status                                                                                             AS business_status,
        -- Используется для подсчета метрик: Динамика моделей по стримам 
        activeBpmnInstance.bpmn_instance_name                                                         AS bpmn_key,
        null                                                                                          AS model_status_assignee,
@@ -379,19 +384,22 @@ ON m_.model_id = allocation_data.allocation_model_id
                            MAX(CASE WHEN ARTEFACT_ID = 870 THEN ARTEFACT_STRING_VALUE ELSE NULL END) AS model_epic_11_date,
                            MAX(CASE WHEN ARTEFACT_ID = 898 THEN ARTEFACT_STRING_VALUE ELSE NULL END) AS model_epic_12,
                            MAX(CASE WHEN ARTEFACT_ID = 899 THEN ARTEFACT_STRING_VALUE ELSE NULL END) AS model_epic_12_date,
-                           MAX(CASE WHEN ARTEFACT_ID = 69 THEN ARTEFACT_STRING_VALUE ELSE NULL END) AS developing_model_reason,
-                           MAX(CASE WHEN ARTEFACT_ID = 905 THEN ARTEFACT_STRING_VALUE ELSE NULL END) AS model_desc
+                           MAX(CASE WHEN ARTEFACT_ID = 69 THEN ARTEFACT_STRING_VALUE ELSE NULL END)  AS developing_model_reason,
+                           MAX(CASE WHEN ARTEFACT_ID = 905 THEN ARTEFACT_STRING_VALUE ELSE NULL END) AS model_desc,
+                           MAX(CASE WHEN ARTEFACT_ID = 914 THEN ARTEFACT_STRING_VALUE ELSE NULL END) AS output_table,
+                           MAX(CASE WHEN ARTEFACT_ID = 915 THEN ARTEFACT_STRING_VALUE ELSE NULL END) AS allocation_assessment_class,
+                           MAX(CASE WHEN ARTEFACT_ID = 916 THEN ARTEFACT_STRING_VALUE ELSE NULL END) AS allocation_assessment_parameters
                     FROM artefact_realizations
                     WHERE effective_to = TO_TIMESTAMP('9999-12-3123:59:59', 'YYYY-MM-DDHH24:MI:SS')
-                    AND artefact_id IN (7, 72, 786, 787, 788, 789, 33, 34,
-                                        790, 781, 788, 871, 794, 795, 796, 797,
-                                        123, 888, 803, 811, 812, 820, 821, 823, 827, 839, 840, 873,
-                                        867, 868, 869, 870, 898, 899, 900, 69, 905)
-                    AND (
-                          :filter_date::Date IS NULL
-                          OR TO_DATE(CAST(:filter_date AS Varchar(4000)), 'YYYY-MM-DD')
-                              BETWEEN DATE_TRUNC('day', effective_from)::Date AND DATE_TRUNC('day', effective_to)::Date
-                      )
+                      AND artefact_id IN (7, 72, 786, 787, 788, 789, 33, 34,
+                                          790, 781, 788, 871, 794, 795, 796, 797,
+                                          123, 888, 803, 811, 812, 820, 821, 823, 839, 840, 873,
+                                          867, 868, 869, 870, 898, 899, 900, 69, 905, 914, 915, 916)
+                      AND (
+                            :filter_date::Date IS NULL
+                            OR TO_DATE(CAST(:filter_date AS Varchar(4000)), 'YYYY-MM-DD')
+                                BETWEEN DATE_TRUNC('day', effective_from)::Date AND DATE_TRUNC('day', effective_to)::Date
+                        )
                     GROUP BY model_id) dm_ ON m_.model_id = dm_.model_id
 WHERE 
 dm_.model_desc IS DISTINCT FROM 'AutoML'
