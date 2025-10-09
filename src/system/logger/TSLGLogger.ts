@@ -1,40 +1,13 @@
 import * as net from 'net';
-import { v4 as uuidv4 } from 'uuid';
 import { LoggerInterface } from './LoggerInterface';
-
-interface CallerInfo {
-  callerClass?: string;
-  callerMethod?: string;
-  callerLine?: number;
-  callerFile?: string;
-  loggerName?: string;
-}
-
-interface UserData {
-  userId?: string;
-  username?: string;
-  email?: string;
-  roles?: string[];
-  groups?: string[];
-}
-
-interface ErrorContext {
-  message: string;
-  stack?: string;
-  type?: string;
-  code?: string;
-  additionalInfo?: any;
-}
+import { LogEntryBuilder } from './LogEntryBuilder';
+import { ConnectionManager } from './ConnectionManager';
+import { BufferManager } from './BufferManager';
 
 export class TSLGLogger extends LoggerInterface {
-  private socket: net.Socket | null = null;
-  private reconnectTimeout: NodeJS.Timeout | null = null;
-  private lastConnectionTime: number = 0;
-  private isFlushing: boolean = false;
-  private logBuffer: string[] = [];
-  private connectionAttempts: number = 0;
-  private maxConnectionAttempts: number = 10;
-  private maxBufferSize: number = 1000;
+  private connectionManager: ConnectionManager;
+  private bufferManager: BufferManager;
+  private logEntryBuilder: LogEntryBuilder;
   private ttlInterval: NodeJS.Timeout | null = null;
   private flushInterval: NodeJS.Timeout | null = null;
 
@@ -52,8 +25,38 @@ export class TSLGLogger extends LoggerInterface {
     super();
     this.config = this.mergeWithDefaults(config);
     this.metrics = this.initializeMetrics();
-    this.initializeBuffer();
-    this.connect();
+
+    this.connectionManager = new ConnectionManager(
+      {
+        host: this.config.host,
+        port: this.config.port,
+        socketTimeout: this.config.socketTimeout,
+        reconnectionDelay: this.config.reconnectionDelay,
+        maxConnectionAttempts: this.config.maxConnectionAttempts
+      },
+      this.originalConsole
+    );
+
+    this.bufferManager = new BufferManager(this.config.maxBufferSize, this.metrics);
+
+    this.logEntryBuilder = new LogEntryBuilder({
+      appName: this.config.appName,
+      risCode: this.config.risCode,
+      projectCode: this.config.projectCode,
+      appType: this.config.appType,
+      envType: this.config.envType,
+      namespace: this.config.namespace,
+      podName: this.config.podName,
+      podIp: this.config.podIp,
+      nodeName: this.config.nodeName,
+      tslgClientVersion: this.config.tslgClientVersion,
+      enableUserData: this.config.enableUserData,
+      sanitizeSensitiveData: this.config.sanitizeSensitiveData,
+      enableFullContext: this.config.enableFullContext,
+      sanitizePercentage: this.config.sanitizePercentage
+    });
+
+    this.connectionManager.connect();
 
     if (this.config.connectionTTL > 0) {
       this.startTTLMonitor();
@@ -76,6 +79,7 @@ export class TSLGLogger extends LoggerInterface {
       connectionTTL: parseInt(process.env.TSLG_CONNECTION_TTL_MS || '2000', 10),
       socketTimeout: parseInt(process.env.TSLG_SOCKET_TIMEOUT_MS || '10000', 10),
       maxBufferSize: parseInt(process.env.TSLG_MAX_BUFFER_SIZE || '1000', 10),
+      maxConnectionAttempts: parseInt(process.env.TSLG_MAX_CONNECTION_ATTEMPTS || '10', 10),
       namespace: process.env.KUBERNETES_NAMESPACE || 'dk1-sumd01-sumd-core',
       podName: process.env.POD_NAME || 'surm-backend-7c8b5d9f6-abc123',
       podIp: process.env.POD_IP || '10.244.1.25',
@@ -86,7 +90,8 @@ export class TSLGLogger extends LoggerInterface {
       enableUserData: process.env.TSLG_ENABLE_USER_DATA === 'true',
       sanitizeSensitiveData: process.env.TSLG_SANITIZE_SENSITIVE_DATA !== 'false',
       enableFullContext: process.env.TSLG_ENABLE_FULL_CONTEXT === 'true',
-      bufferFlushInterval: parseInt(process.env.TSLG_BUFFER_FLUSH_INTERVAL_MS || '500', 10)
+      bufferFlushInterval: parseInt(process.env.TSLG_BUFFER_FLUSH_INTERVAL_MS || '500', 10),
+      sanitizePercentage: parseInt(process.env.TSLG_SANITIZE_PERCENTAGE || '60', 10)
     };
 
     return { ...defaults, ...config };
@@ -106,24 +111,18 @@ export class TSLGLogger extends LoggerInterface {
     };
   }
 
-  private initializeBuffer() {
-    this.logBuffer = [];
-    this.maxBufferSize = this.config.maxBufferSize;
-    this.isFlushing = false;
-  }
-
   private startTTLMonitor(): void {
     if (this.ttlInterval) {
       clearInterval(this.ttlInterval);
     }
 
     this.ttlInterval = setInterval(async () => {
-      if (!this.isConnected()) {
+      if (!this.connectionManager.isConnected()) {
         return;
       }
 
       const now = Date.now();
-      const timeSinceReconnect = now - this.lastConnectionTime;
+      const timeSinceReconnect = now - this.connectionManager.getLastConnectionTime();
 
       if (timeSinceReconnect >= this.config.connectionTTL) {
         this.originalConsole.log(`[TSLG] TTL ${this.config.connectionTTL}ms expired, scheduling reconnection for load balancing`);
@@ -138,9 +137,11 @@ export class TSLGLogger extends LoggerInterface {
     }
 
     this.flushInterval = setInterval(() => {
-      if (this.logBuffer.length > 0 && this.isConnected() && !this.isFlushing) {
+      if (this.bufferManager.getBufferSize() > 0 &&
+        this.connectionManager.isConnected() &&
+        !this.bufferManager['isFlushing']) {
         this.metrics.forcedFlushes++;
-        this.flushBuffer();
+        this.bufferManager.flushBuffer((data) => this.connectionManager.write(data + '\n'));
       }
     }, this.config.bufferFlushInterval);
   }
@@ -149,7 +150,7 @@ export class TSLGLogger extends LoggerInterface {
     try {
       this.originalConsole.log('[TSLG] Starting graceful reconnection for load balancing');
 
-      if (this.isConnected()) {
+      if (this.connectionManager.isConnected()) {
         const status = this.getStatus();
 
         if (status.bufferSize > 0) {
@@ -157,14 +158,10 @@ export class TSLGLogger extends LoggerInterface {
           await this.waitForBufferFlush(status.bufferSize);
         }
 
-        if (this.socket) {
-          this.socket.destroy();
-          this.socket = null;
-        }
+        this.connectionManager.close();
       }
 
-      this.connect();
-      this.lastConnectionTime = Date.now();
+      this.connectionManager.connect();
       this.metrics.ttlReconnections++;
 
       this.originalConsole.log('[TSLG] Graceful reconnection completed successfully');
@@ -198,457 +195,8 @@ export class TSLGLogger extends LoggerInterface {
     });
   }
 
-  private isConnected(): boolean {
-    return !!(this.socket && !this.socket.destroyed && this.socket.writable);
-  }
-
-  private connect() {
-    if (this.connectionAttempts >= this.maxConnectionAttempts) {
-      this.originalConsole.error(`[TSLG] Max connection attempts (${this.maxConnectionAttempts}) reached. Giving up.`);
-      return;
-    }
-
-    this.connectionAttempts++;
-
-    try {
-      this.originalConsole.log(`[TSLG] Attempting to connect to TSLG agent at ${this.config.host}:${this.config.port} (attempt ${this.connectionAttempts})`);
-
-      this.socket = net.createConnection({
-        host: this.config.host,
-        port: this.config.port,
-        timeout: this.config.socketTimeout
-      });
-
-      this.setupSocketEventHandlers();
-      this.socket.setTimeout(this.config.socketTimeout);
-      this.socket.setKeepAlive(true, 60000);
-
-    } catch (error) {
-      this.originalConsole.error('[TSLG] Failed to create TSLG connection:', error);
-      this.scheduleReconnect();
-    }
-  }
-
-  private setupSocketEventHandlers() {
-    if (!this.socket) return;
-
-    this.socket.on('connect', () => {
-      this.lastConnectionTime = Date.now();
-      this.connectionAttempts = 0;
-      this.metrics.reconnections++;
-      this.originalConsole.log(`[TSLG] Connected successfully to ${this.config.host}:${this.config.port}`);
-      this.flushBuffer();
-    });
-
-    this.socket.on('error', (error) => {
-      this.metrics.connectionErrors++;
-      this.originalConsole.error(`[TSLG] Connection error: ${error.message}`);
-      this.scheduleReconnect();
-    });
-
-    this.socket.on('close', (hadError) => {
-      this.originalConsole.log(`[TSLG] Connection closed${hadError ? ' with error' : ''}`);
-      if (hadError) {
-        this.scheduleReconnect();
-      }
-    });
-
-    this.socket.on('timeout', () => {
-      this.originalConsole.error('[TSLG] Connection timeout');
-      this.safeReconnect();
-    });
-
-    this.socket.on('drain', () => {
-      this.flushBuffer();
-    });
-  }
-
-  private scheduleReconnect() {
-    if (this.reconnectTimeout) {
-      clearTimeout(this.reconnectTimeout);
-    }
-
-    const delay = this.calculateReconnectDelay();
-    this.originalConsole.log(`[TSLG] Scheduling reconnect in ${delay}ms`);
-
-    this.reconnectTimeout = setTimeout(() => {
-      this.connect();
-    }, delay);
-  }
-
-  private calculateReconnectDelay(): number {
-    const baseDelay = this.config.reconnectionDelay;
-    const maxDelay = 30000;
-    const delay = Math.min(baseDelay * Math.pow(1.5, this.connectionAttempts - 1), maxDelay);
-    return delay;
-  }
-
-  private safeReconnect() {
-    if (this.socket) {
-      this.socket.destroy();
-      this.socket = null;
-    }
-    this.scheduleReconnect();
-  }
-
-  private bufferLog(logData: string) {
-    if (this.logBuffer.length >= this.maxBufferSize) {
-      this.logBuffer.shift();
-      this.metrics.failedLogs++;
-      this.metrics.bufferOverflows++;
-      this.originalConsole.warn('[TSLG] Buffer overflow, removed oldest log');
-    }
-
-    this.logBuffer.push(logData);
-
-    if (!this.isFlushing && this.isConnected()) {
-      setImmediate(() => this.flushBuffer());
-    }
-  }
-
-  private async flushBuffer() {
-    if (!this.isConnected() || this.isFlushing || this.logBuffer.length === 0) {
-      return;
-    }
-
-    this.isFlushing = true;
-    this.metrics.bufferFlushes++;
-
-    try {
-      while (this.logBuffer.length > 0 && this.isConnected()) {
-        const logData = this.logBuffer[0];
-
-        try {
-          const success = this.socket!.write(logData + '\n');
-
-          if (success) {
-            this.logBuffer.shift();
-            this.metrics.sentLogs++;
-          } else {
-            break;
-          }
-        } catch (error) {
-          this.originalConsole.error('[TSLG] Error writing to socket:', error);
-          break;
-        }
-
-        // Даем event loop возможность обработать другие события
-        if (this.logBuffer.length > 5) {
-          await new Promise(resolve => setImmediate(resolve));
-        }
-      }
-    } finally {
-      this.isFlushing = false;
-    }
-  }
-
-  private getCallerInfo(additionalData: any): CallerInfo {
-    if (additionalData.context && typeof additionalData.context === 'string') {
-      if (!additionalData.context.includes('\n    at ')) {
-        return {
-          loggerName: additionalData.context
-        };
-      }
-    }
-
-    const error = {} as any;
-    Error.captureStackTrace(error);
-
-    const stackLines = error.stack.split('\n');
-
-    for (let i = 4; i < stackLines.length; i++) {
-      const line = stackLines[i];
-      const match = line.match(/at\s+(.+)\s+\((.+):(\d+):(\d+)\)/) ||
-        line.match(/at\s+(.+):(\d+):(\d+)/);
-
-      if (match) {
-        let className = 'unknown';
-        let methodName = 'anonymous';
-
-        if (match[1] && match[1] !== 'Object.<anonymous>') {
-          const parts = match[1].split('.');
-          if (parts.length > 1) {
-            className = parts[parts.length - 2] || 'unknown';
-            methodName = parts[parts.length - 1];
-          } else {
-            methodName = parts[0];
-          }
-        }
-
-        if (match[2] && !match[2].includes('node_modules') && !match[2].includes('internal/')) {
-          const fileName = match[2].split('/').pop() || match[2];
-          return {
-            loggerName: className,
-            callerClass: fileName.replace('.ts', '').replace('.js', ''),
-            callerMethod: methodName,
-            callerLine: parseInt(match[3], 10),
-            callerFile: fileName
-          };
-        }
-      }
-    }
-
-    return { loggerName: 'application' };
-  }
-
-  private extractUserData(additionalData: any): UserData {
-    if (!this.config.enableUserData) {
-      return {};
-    }
-
-    const userData: UserData = {};
-
-    try {
-      if (additionalData.user) {
-        userData.userId = additionalData.user.id || additionalData.user.userId;
-        userData.username = additionalData.user.username || additionalData.user.preferred_username;
-        userData.email = additionalData.user.email;
-        userData.roles = additionalData.user.roles;
-        userData.groups = additionalData.user.groups;
-      }
-
-      if (additionalData.jwt || additionalData.token) {
-        const token = additionalData.jwt || additionalData.token;
-        if (typeof token === 'string' && token.length > 100) {
-          try {
-            const payload = JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString());
-            userData.userId = userData.userId || payload.sub;
-            userData.username = userData.username || payload.preferred_username;
-            userData.email = userData.email || payload.email;
-            userData.roles = userData.roles || payload.roles;
-            userData.groups = userData.groups || payload.groups;
-          } catch (e) {
-          }
-        }
-      }
-
-      if (additionalData.userId && !userData.userId) {
-        userData.userId = additionalData.userId;
-      }
-      if (additionalData.username && !userData.username) {
-        userData.username = additionalData.username;
-      }
-
-    } catch (error) {
-      this.originalConsole.warn('[TSLG] Error extracting user data:', error);
-    }
-
-    return userData;
-  }
-
-  private createErrorContext(error: Error | null, additionalData: any): ErrorContext {
-    if (!error) {
-      return { message: '' };
-    }
-
-    const context: ErrorContext = {
-      message: error.message,
-      stack: this.cleanStack(error.stack),
-      type: error.constructor.name
-    };
-
-    if (additionalData.errorCode) {
-      context.code = additionalData.errorCode;
-    }
-
-    if (additionalData.httpStatus) {
-      context.additionalInfo = {
-        ...context.additionalInfo,
-        httpStatus: additionalData.httpStatus
-      };
-    }
-
-    return context;
-  }
-
-  private createLogEntry(level: string, message: string, event: string, error: Error | null, additionalData: any) {
-    const timestamp = new Date();
-    const callerInfo = this.getCallerInfo(additionalData);
-    const userData = this.extractUserData(additionalData);
-    const errorContext = this.createErrorContext(error, additionalData);
-
-    const sanitizedData = this.config.sanitizeSensitiveData ?
-      this.sanitizeData(additionalData) : additionalData;
-
-    const logText = this.createLogText(message, userData, errorContext, sanitizedData, event);
-
-    const logEntry: any = {
-      "eventId": uuidv4(),
-      "appName": this.config.appName,
-      "level": level.toUpperCase(),
-      "text": logText,
-      "localTime": timestamp.toISOString(),
-      "tslgClientVersion": this.config.tslgClientVersion,
-      "risCode": this.config.risCode,
-      "projectCode": this.config.projectCode,
-      "appType": this.config.appType,
-      "envType": this.config.envType,
-      "PID": process.pid,
-      "loggerName": callerInfo.loggerName || 'application',
-      "threadName": `node-${process.pid}`,
-      "event": event
-    };
-
-    if (this.config.enableUserData && userData.userId) {
-      logEntry.userId = userData.userId;
-      if (userData.username) logEntry.username = userData.username;
-      if (userData.roles && userData.roles.length > 0) logEntry.userRoles = userData.roles;
-      if (userData.groups && userData.groups.length > 0) logEntry.userGroups = userData.groups;
-    }
-
-    const levelMap: { [key: string]: number } = {
-      'error': 40,
-      'warn': 30,
-      'info': 20,
-      'debug': 10,
-      'verbose': 5
-    };
-    logEntry.levelInt = levelMap[level.toLowerCase()] || 0;
-
-    if (this.config.envType === 'K8S') {
-      logEntry.namespace = this.config.namespace;
-      logEntry.podName = this.config.podName;
-      logEntry.tec = {
-        "podIp": this.config.podIp,
-        "nodeName": this.config.nodeName
-      };
-    }
-
-    if (callerInfo.callerClass && callerInfo.callerClass !== 'unknown') {
-      logEntry.callerClass = callerInfo.callerClass;
-    }
-    if (callerInfo.callerMethod && callerInfo.callerMethod !== 'anonymous') {
-      logEntry.callerMethod = callerInfo.callerMethod;
-    }
-    if (callerInfo.callerLine) {
-      logEntry.callerLine = callerInfo.callerLine;
-    }
-
-    if (error) {
-      logEntry.stack = errorContext.stack;
-      logEntry.errorMessage = errorContext.message;
-      if (errorContext.type) logEntry.errorType = errorContext.type;
-      if (errorContext.code) logEntry.errorCode = errorContext.code;
-      if (errorContext.additionalInfo) {
-        logEntry.errorAdditionalInfo = errorContext.additionalInfo;
-      }
-    }
-
-    Object.keys(sanitizedData).forEach(key => {
-      if (!logEntry.hasOwnProperty(key) &&
-        key !== 'context' &&
-        key !== 'params' &&
-        key !== 'stack' &&
-        key !== 'errorMessage' &&
-        key !== 'user' &&
-        key !== 'jwt' &&
-        key !== 'token' &&
-        key !== 'errorCode' &&
-        key !== 'httpStatus') {
-        logEntry[key] = sanitizedData[key];
-      }
-    });
-
-    if (sanitizedData.params && Array.isArray(sanitizedData.params)) {
-      sanitizedData.params.forEach((param: any, index: number) => {
-        if (typeof param === 'string' && param.length > 0) {
-          logEntry[`param${index}`] = param;
-        }
-      });
-    }
-
-    return logEntry;
-  }
-
-  private createLogText(message: string, userData: UserData, errorContext: ErrorContext, additionalData: any, event: string): string {
-    let text = typeof message === 'string' ? message : JSON.stringify(message, null, 2);
-
-    if (this.config.enableUserData && userData.userId) {
-      const userInfo = [];
-      if (userData.username) userInfo.push(`user: ${userData.username}`);
-      if (userData.userId) userInfo.push(`userId: ${userData.userId}`);
-
-      if (userInfo.length > 0) {
-        text = `[${userInfo.join(' | ')}] ${text}`;
-      }
-    }
-
-    if (errorContext.message && this.config.enableFullContext) {
-      text += ` | Ошибка: ${errorContext.message}`;
-      if (errorContext.code) {
-        text += ` (код: ${errorContext.code})`;
-      }
-    }
-
-    if (event && event !== 'Информация' && this.config.enableFullContext) {
-      text += ` | Событие: ${event}`;
-    }
-
-    return text;
-  }
-
-  private cleanStack(stack?: string): string {
-    if (!stack) return '';
-    return stack
-      .split('\n')
-      .slice(1)
-      .map(line => line.trim())
-      .join('\n');
-  }
-
-  private sanitizeData(data: any): any {
-    if (!data || typeof data !== 'object') return {};
-
-    const sensitiveFields = [
-      'password', 'token', 'jwt', 'accessToken', 'refreshToken', 'authorization',
-      'secret', 'apiKey', 'credentials', 'privateKey', 'certificate', 'signature',
-      'bearer', 'auth', 'authentication', 'pwd', 'pass', 'key'
-    ];
-
-    const sensitivePatterns = [
-      /eyJ[a-zA-Z0-9_-]*\.[a-zA-Z0-9_-]*\.[a-zA-Z0-9_-]*/g, // JWT tokens
-      /[A-Za-z0-9+/]{40,}={0,2}/g, // Base64-like strings
-      /[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}/g, // UUIDs that might be tokens
-      /(?:4[0-9]{12}(?:[0-9]{3})?|5[1-5][0-9]{14})/g, // Credit card numbers
-      /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/g // Email addresses
-    ];
-
-    const sanitized = JSON.parse(JSON.stringify(data));
-
-    const sanitizeRecursive = (obj: any) => {
-      for (const key in obj) {
-        if (obj.hasOwnProperty(key)) {
-          if (sensitiveFields.includes(key.toLowerCase())) {
-            obj[key] = '*****';
-            this.metrics.sanitizedDataCount++;
-          } else if (typeof obj[key] === 'string') {
-            let value = obj[key];
-            sensitivePatterns.forEach(pattern => {
-              const matches = value.match(pattern);
-              if (matches) {
-                matches.forEach(match => {
-                  value = value.replace(match, '*****');
-                  this.metrics.sanitizedDataCount++;
-                });
-              }
-            });
-            obj[key] = value;
-          } else if (typeof obj[key] === 'object' && obj[key] !== null) {
-            sanitizeRecursive(obj[key]);
-          }
-        }
-      }
-    };
-
-    if (Object.keys(sanitized).length > 0) {
-      sanitizeRecursive(sanitized);
-    }
-
-    return sanitized;
-  }
-
   log(level: string, message: string, event: string = 'Информация', error: Error | null = null, additionalData: any = {}): void {
-    const logEntry = this.createLogEntry(level, message, event, error, additionalData);
+    const logEntry = this.logEntryBuilder.buildLogEntry(level, message, event, error, additionalData);
     const logData = JSON.stringify(logEntry);
 
     this.writeToConsole(level, message, event, error, additionalData);
@@ -657,25 +205,21 @@ export class TSLGLogger extends LoggerInterface {
       this.originalConsole.log(logData);
     }
 
-    if (!this.isConnected()) {
-      this.bufferLog(logData);
+    if (!this.connectionManager.isConnected()) {
+      this.bufferManager.bufferLog(logData);
       return;
     }
 
     try {
-      if (this.socket!.writableLength < 65536) {
-        const success = this.socket!.write(logData + '\n');
-        if (success) {
-          this.metrics.sentLogs++;
-        } else {
-          this.bufferLog(logData);
-        }
+      const success = this.connectionManager.write(logData + '\n');
+      if (!success) {
+        this.bufferManager.bufferLog(logData);
       } else {
-        this.bufferLog(logData);
+        this.metrics.sentLogs++;
       }
     } catch (error) {
       this.originalConsole.error('[TSLG] Failed to send log to TSLG:', error);
-      this.bufferLog(logData);
+      this.bufferManager.bufferLog(logData);
     }
   }
 
@@ -763,49 +307,20 @@ export class TSLGLogger extends LoggerInterface {
       this.flushInterval = null;
     }
 
-    if (this.reconnectTimeout) {
-      clearTimeout(this.reconnectTimeout);
+    if (this.bufferManager.getBufferSize() > 0) {
+      this.originalConsole.log(`[TSLG] Attempting to flush ${this.bufferManager.getBufferSize()} buffered logs before shutdown`);
+      this.bufferManager.flushBufferSync((data) => this.connectionManager.write(data + '\n'));
     }
 
-    if (this.logBuffer.length > 0) {
-      this.originalConsole.log(`[TSLG] Attempting to flush ${this.logBuffer.length} buffered logs before shutdown`);
-      this.flushBufferSync();
-    }
-
-    if (this.socket) {
-      this.socket.destroy();
-    }
-
+    this.connectionManager.close();
     this.originalConsole.log('[TSLG] Logger closed');
-  }
-
-  private flushBufferSync() {
-    if (!this.isConnected() || this.logBuffer.length === 0) return;
-
-    let attempts = 0;
-    while (this.logBuffer.length > 0 && attempts < 3) {
-      try {
-        const logData = this.logBuffer[0];
-        const success = this.socket!.write(logData + '\n');
-
-        if (success) {
-          this.logBuffer.shift();
-          this.metrics.sentLogs++;
-        } else {
-          attempts++;
-        }
-      } catch (error) {
-        attempts++;
-        break;
-      }
-    }
   }
 
   getStatus(): any {
     return {
       type: 'TSLGLogger',
       isProduction: process.env.NODE_ENV === 'production',
-      isConnected: this.isConnected(),
+      isConnected: this.connectionManager.isConnected(),
       config: {
         host: this.config.host,
         port: this.config.port,
@@ -815,15 +330,13 @@ export class TSLGLogger extends LoggerInterface {
         reconnectionDelay: this.config.reconnectionDelay,
         enableUserData: this.config.enableUserData,
         sanitizeSensitiveData: this.config.sanitizeSensitiveData,
-        enableFullContext: this.config.enableFullContext
+        enableFullContext: this.config.enableFullContext,
+        sanitizePercentage: this.config.sanitizePercentage
       },
       metrics: { ...this.metrics },
-      bufferSize: this.logBuffer.length,
-      connectionAttempts: this.connectionAttempts,
-      lastConnectionTime: this.lastConnectionTime,
-      isFlushing: this.isFlushing,
-      socketWritable: this.socket ? this.socket.writable : false,
-      socketBufferSize: this.socket ? this.socket.writableLength : 0
+      bufferSize: this.bufferManager.getBufferSize(),
+      connectionAttempts: this.connectionManager.getConnectionAttempts(),
+      lastConnectionTime: this.connectionManager.getLastConnectionTime()
     };
   }
 }
