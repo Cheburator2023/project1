@@ -8,8 +8,16 @@ export interface UserData {
   groups?: string[];
 }
 
+export interface UserFieldsMapping {
+  userId?: string;
+  username?: string;
+  email?: string;
+  firstName?: string;
+  lastName?: string;
+}
+
 export class UserDataExtractor {
-  static extractFromToken(token: string): UserData {
+  static extractFromToken(token: string, fieldsMapping?: UserFieldsMapping): UserData {
     if (!token || typeof token !== 'string' || token.length < 100) {
       return {};
     }
@@ -21,21 +29,28 @@ export class UserDataExtractor {
       }
 
       const payload = JSON.parse(Buffer.from(parts[1], 'base64').toString());
-      return this.extractUserDataFromPayload(payload);
+      return this.extractUserDataFromPayload(payload, fieldsMapping);
     } catch (error) {
       return {};
     }
   }
 
-  static extractUserDataFromPayload(payload: any): UserData {
+  static extractUserDataFromPayload(payload: any, fieldsMapping?: UserFieldsMapping): UserData {
     const userData: UserData = {};
 
-    userData.userId = payload.sub;
-    userData.username = payload.preferred_username;
-    userData.email = payload.email;
+    const mapping = fieldsMapping || {
+      userId: 'sub',
+      username: 'preferred_username',
+      email: 'email',
+      firstName: 'given_name',
+      lastName: 'family_name'
+    };
 
-    userData.firstName = payload.given_name;
-    userData.lastName = payload.family_name;
+    userData.userId = this.getNestedValue(payload, mapping.userId || 'sub');
+    userData.username = this.getNestedValue(payload, mapping.username || 'preferred_username');
+    userData.email = this.getNestedValue(payload, mapping.email || 'email');
+    userData.firstName = this.getNestedValue(payload, mapping.firstName || 'given_name');
+    userData.lastName = this.getNestedValue(payload, mapping.lastName || 'family_name');
 
     if ((!userData.firstName || !userData.lastName) && payload.name) {
       const nameParts = payload.name.split(' ');
@@ -58,6 +73,14 @@ export class UserDataExtractor {
     }
 
     return userData;
+  }
+
+  private static getNestedValue(obj: any, path: string): any {
+    if (!path) return undefined;
+
+    return path.split('.').reduce((current, key) => {
+      return current && current[key] !== undefined ? current[key] : undefined;
+    }, obj);
   }
 
   static sanitizeUserData(userData: UserData, sanitizePercentage: number = 60): UserData {

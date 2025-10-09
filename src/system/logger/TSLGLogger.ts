@@ -53,7 +53,8 @@ export class TSLGLogger extends LoggerInterface {
       enableUserData: this.config.enableUserData,
       sanitizeSensitiveData: this.config.sanitizeSensitiveData,
       enableFullContext: this.config.enableFullContext,
-      sanitizePercentage: this.config.sanitizePercentage
+      sanitizePercentage: this.config.sanitizePercentage,
+      userFieldsMapping: this.config.userFieldsMapping
     });
 
     this.connectionManager.connect();
@@ -91,7 +92,15 @@ export class TSLGLogger extends LoggerInterface {
       sanitizeSensitiveData: process.env.TSLG_SANITIZE_SENSITIVE_DATA !== 'false',
       enableFullContext: process.env.TSLG_ENABLE_FULL_CONTEXT === 'true',
       bufferFlushInterval: parseInt(process.env.TSLG_BUFFER_FLUSH_INTERVAL_MS || '500', 10),
-      sanitizePercentage: parseInt(process.env.TSLG_SANITIZE_PERCENTAGE || '60', 10)
+      sanitizePercentage: parseInt(process.env.TSLG_SANITIZE_PERCENTAGE || '60', 10),
+      logLevel: process.env.TSLG_LOG_LEVEL || 'info',
+      userFieldsMapping: {
+        userId: process.env.TSLG_USER_ID || 'sub',
+        username: process.env.TSLG_USER_USERNAME || 'preferred_username',
+        email: process.env.TSLG_USER_EMAIL || 'email',
+        firstName: process.env.TSLG_USER_FIRSTNAME || 'given_name',
+        lastName: process.env.TSLG_USER_LASTNAME || 'family_name'
+      }
     };
 
     return { ...defaults, ...config };
@@ -111,91 +120,26 @@ export class TSLGLogger extends LoggerInterface {
     };
   }
 
-  private startTTLMonitor(): void {
-    if (this.ttlInterval) {
-      clearInterval(this.ttlInterval);
-    }
+  private shouldLog(level: string): boolean {
+    const levels = {
+      error: 0,
+      warn: 1,
+      info: 2,
+      debug: 3,
+      verbose: 4
+    };
 
-    this.ttlInterval = setInterval(async () => {
-      if (!this.connectionManager.isConnected()) {
-        return;
-      }
+    const currentLevel = levels[level as keyof typeof levels] || 2;
+    const configuredLevel = levels[this.config.logLevel as keyof typeof levels] || 2;
 
-      const now = Date.now();
-      const timeSinceReconnect = now - this.connectionManager.getLastConnectionTime();
-
-      if (timeSinceReconnect >= this.config.connectionTTL) {
-        this.originalConsole.log(`[TSLG] TTL ${this.config.connectionTTL}ms expired, scheduling reconnection for load balancing`);
-        await this.performGracefulReconnect();
-      }
-    }, 1000);
-  }
-
-  private startBufferFlushMonitor(): void {
-    if (this.flushInterval) {
-      clearInterval(this.flushInterval);
-    }
-
-    this.flushInterval = setInterval(() => {
-      if (this.bufferManager.getBufferSize() > 0 &&
-        this.connectionManager.isConnected() &&
-        !this.bufferManager['isFlushing']) {
-        this.metrics.forcedFlushes++;
-        this.bufferManager.flushBuffer((data) => this.connectionManager.write(data + '\n'));
-      }
-    }, this.config.bufferFlushInterval);
-  }
-
-  private async performGracefulReconnect(): Promise<void> {
-    try {
-      this.originalConsole.log('[TSLG] Starting graceful reconnection for load balancing');
-
-      if (this.connectionManager.isConnected()) {
-        const status = this.getStatus();
-
-        if (status.bufferSize > 0) {
-          this.originalConsole.log(`[TSLG] Waiting for ${status.bufferSize} buffered logs to be sent`);
-          await this.waitForBufferFlush(status.bufferSize);
-        }
-
-        this.connectionManager.close();
-      }
-
-      this.connectionManager.connect();
-      this.metrics.ttlReconnections++;
-
-      this.originalConsole.log('[TSLG] Graceful reconnection completed successfully');
-
-    } catch (error) {
-      this.originalConsole.error('[TSLG] Graceful reconnection failed:', error);
-    }
-  }
-
-  private async waitForBufferFlush(initialBufferSize: number): Promise<void> {
-    return new Promise((resolve) => {
-      let attempts = 0;
-      const maxAttempts = 10;
-
-      const checkBuffer = () => {
-        attempts++;
-
-        const status = this.getStatus();
-
-        if (status.bufferSize === 0 || attempts >= maxAttempts) {
-          if (status.bufferSize > 0) {
-            this.originalConsole.warn(`[TSLG] Buffer not fully flushed after ${attempts} attempts, ${status.bufferSize} logs remaining`);
-          }
-          resolve();
-        } else {
-          setTimeout(checkBuffer, 500);
-        }
-      };
-
-      setTimeout(checkBuffer, 500);
-    });
+    return currentLevel <= configuredLevel;
   }
 
   log(level: string, message: string, event: string = 'Информация', error: Error | null = null, additionalData: any = {}): void {
+    if (!this.shouldLog(level)) {
+      return;
+    }
+
     try {
       const logEntry = this.logEntryBuilder.buildLogEntry(level, message, event, error, additionalData);
       const logData = JSON.stringify(logEntry);
@@ -347,12 +291,99 @@ export class TSLGLogger extends LoggerInterface {
         enableUserData: this.config.enableUserData,
         sanitizeSensitiveData: this.config.sanitizeSensitiveData,
         enableFullContext: this.config.enableFullContext,
-        sanitizePercentage: this.config.sanitizePercentage
+        sanitizePercentage: this.config.sanitizePercentage,
+        logLevel: this.config.logLevel,
+        userFieldsMapping: this.config.userFieldsMapping
       },
       metrics: { ...this.metrics },
       bufferSize: this.bufferManager.getBufferSize(),
       connectionAttempts: this.connectionManager.getConnectionAttempts(),
       lastConnectionTime: this.connectionManager.getLastConnectionTime()
     };
+  }
+
+  // Остальные методы класса остаются без изменений
+  private startTTLMonitor(): void {
+    if (this.ttlInterval) {
+      clearInterval(this.ttlInterval);
+    }
+
+    this.ttlInterval = setInterval(async () => {
+      if (!this.connectionManager.isConnected()) {
+        return;
+      }
+
+      const now = Date.now();
+      const timeSinceReconnect = now - this.connectionManager.getLastConnectionTime();
+
+      if (timeSinceReconnect >= this.config.connectionTTL) {
+        this.originalConsole.log(`[TSLG] TTL ${this.config.connectionTTL}ms expired, scheduling reconnection for load balancing`);
+        await this.performGracefulReconnect();
+      }
+    }, 1000);
+  }
+
+  private startBufferFlushMonitor(): void {
+    if (this.flushInterval) {
+      clearInterval(this.flushInterval);
+    }
+
+    this.flushInterval = setInterval(() => {
+      if (this.bufferManager.getBufferSize() > 0 &&
+        this.connectionManager.isConnected() &&
+        !this.bufferManager['isFlushing']) {
+        this.metrics.forcedFlushes++;
+        this.bufferManager.flushBuffer((data) => this.connectionManager.write(data + '\n'));
+      }
+    }, this.config.bufferFlushInterval);
+  }
+
+  private async performGracefulReconnect(): Promise<void> {
+    try {
+      this.originalConsole.log('[TSLG] Starting graceful reconnection for load balancing');
+
+      if (this.connectionManager.isConnected()) {
+        const status = this.getStatus();
+
+        if (status.bufferSize > 0) {
+          this.originalConsole.log(`[TSLG] Waiting for ${status.bufferSize} buffered logs to be sent`);
+          await this.waitForBufferFlush(status.bufferSize);
+        }
+
+        this.connectionManager.close();
+      }
+
+      this.connectionManager.connect();
+      this.metrics.ttlReconnections++;
+
+      this.originalConsole.log('[TSLG] Graceful reconnection completed successfully');
+
+    } catch (error) {
+      this.originalConsole.error('[TSLG] Graceful reconnection failed:', error);
+    }
+  }
+
+  private async waitForBufferFlush(initialBufferSize: number): Promise<void> {
+    return new Promise((resolve) => {
+      let attempts = 0;
+      const maxAttempts = 10;
+
+      const checkBuffer = () => {
+        attempts++;
+
+        const status = this.getStatus();
+
+        if (status.bufferSize === 0 || attempts >= maxAttempts) {
+          if (status.bufferSize > 0) {
+            this.originalConsole.warn(`[TSLG] Buffer not fully flushed after ${attempts} attempts, ${status.bufferSize} logs remaining`);
+          }
+          resolve();
+        } else {
+          setTimeout(checkBuffer, 500);
+        }
+      };
+
+      setTimeout(checkBuffer, 500);
+    });
   }
 }

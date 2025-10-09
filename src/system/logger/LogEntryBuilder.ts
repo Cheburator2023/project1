@@ -1,5 +1,5 @@
 import { v4 as uuidv4 } from 'uuid';
-import { UserDataExtractor, UserData } from './UserDataExtractor';
+import { UserDataExtractor, UserData, UserFieldsMapping } from './UserDataExtractor';
 import { CallerInfoExtractor } from './CallerInfoExtractor';
 import { DataSanitizer } from './DataSanitizer';
 
@@ -18,6 +18,7 @@ interface LogEntryConfig {
   sanitizeSensitiveData: boolean;
   enableFullContext: boolean;
   sanitizePercentage: number;
+  userFieldsMapping?: UserFieldsMapping;
 }
 
 export class LogEntryBuilder {
@@ -89,11 +90,11 @@ export class LogEntryBuilder {
     let userData: UserData = {};
 
     if (additionalData.user && typeof additionalData.user === 'object') {
-      userData = UserDataExtractor.extractUserDataFromPayload(additionalData.user);
+      userData = UserDataExtractor.extractUserDataFromPayload(additionalData.user, this.config.userFieldsMapping);
     } else if (additionalData.jwt || additionalData.token) {
       const token = additionalData.jwt || additionalData.token;
       if (typeof token === 'string') {
-        userData = UserDataExtractor.extractFromToken(token);
+        userData = UserDataExtractor.extractFromToken(token, this.config.userFieldsMapping);
       }
     } else if (additionalData.userId || additionalData.username) {
       userData = {
@@ -130,6 +131,7 @@ export class LogEntryBuilder {
       if (userData.username) logEntry.username = userData.username;
       if (userData.firstName) logEntry.firstName = userData.firstName;
       if (userData.lastName) logEntry.lastName = userData.lastName;
+      if (userData.email) logEntry.email = userData.email;
       if (userData.roles && userData.roles.length > 0) logEntry.userRoles = userData.roles;
       if (userData.groups && userData.groups.length > 0) logEntry.userGroups = userData.groups;
     }
@@ -174,7 +176,7 @@ export class LogEntryBuilder {
     const excludedFields = [
       'context', 'params', 'stack', 'errorMessage',
       'user', 'jwt', 'token', 'errorCode', 'httpStatus',
-      'userId', 'username', 'firstName', 'lastName'
+      'userId', 'username', 'firstName', 'lastName', 'email'
     ];
 
     Object.keys(sanitizedData).forEach(key => {
