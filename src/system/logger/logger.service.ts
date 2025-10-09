@@ -22,7 +22,7 @@ export class LoggerService implements NestLoggerService, OnModuleDestroy {
       socketTimeout: parseInt(process.env.TSLG_SOCKET_TIMEOUT_MS || '10000', 10),
       maxBufferSize: parseInt(process.env.TSLG_MAX_BUFFER_SIZE || '1000', 10),
       enableTraceFields: process.env.TSLG_ENABLE_TRACE_FIELDS === 'true',
-      consoleOutput: process.env.TSLG_CONSOLE_OUTPUT === 'true' || process.env.NODE_ENV !== 'production',
+      consoleOutput: this.parseBoolean(process.env.TSLG_CONSOLE_OUTPUT) ?? process.env.NODE_ENV !== 'production',
       debugJson: process.env.DEBUG_JSON === 'true',
       enableUserData: process.env.TSLG_ENABLE_USER_DATA === 'true',
       sanitizeSensitiveData: process.env.TSLG_SANITIZE_SENSITIVE_DATA !== 'false',
@@ -31,6 +31,16 @@ export class LoggerService implements NestLoggerService, OnModuleDestroy {
     };
 
     this.logger = LoggerFactory.createLogger(config);
+  }
+
+  private parseBoolean(value: any): boolean | null {
+    if (value === undefined || value === null) return null;
+    if (typeof value === 'boolean') return value;
+    if (typeof value === 'string') {
+      const lowerValue = value.toLowerCase().trim();
+      return lowerValue === 'true' || lowerValue === '1' || lowerValue === 'yes';
+    }
+    return null;
   }
 
   log(message: any, ...optionalParams: any[]) {

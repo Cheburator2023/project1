@@ -14,6 +14,7 @@ const session = require('express-session');
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
     bufferLogs: true,
+    logger: false,
   });
 
   const logger = app.get(LoggerService);

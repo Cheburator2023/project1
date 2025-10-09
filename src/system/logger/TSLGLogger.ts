@@ -85,12 +85,12 @@ export class TSLGLogger extends LoggerInterface {
       podName: process.env.POD_NAME || 'surm-backend-7c8b5d9f6-abc123',
       podIp: process.env.POD_IP || '10.244.1.25',
       nodeName: process.env.NODE_NAME || 'dk1-sumd01-node-05',
-      enableTraceFields: process.env.TSLG_ENABLE_TRACE_FIELDS === 'true',
-      consoleOutput: process.env.TSLG_CONSOLE_OUTPUT === 'true' || process.env.NODE_ENV !== 'production',
-      debugJson: process.env.DEBUG_JSON === 'true',
-      enableUserData: process.env.TSLG_ENABLE_USER_DATA === 'true',
-      sanitizeSensitiveData: process.env.TSLG_SANITIZE_SENSITIVE_DATA !== 'false',
-      enableFullContext: process.env.TSLG_ENABLE_FULL_CONTEXT === 'true',
+      enableTraceFields: this.parseBoolean(process.env.TSLG_ENABLE_TRACE_FIELDS) ?? false,
+      consoleOutput: this.parseBoolean(process.env.TSLG_CONSOLE_OUTPUT) ?? process.env.NODE_ENV !== 'production',
+      debugJson: this.parseBoolean(process.env.DEBUG_JSON) ?? false,
+      enableUserData: this.parseBoolean(process.env.TSLG_ENABLE_USER_DATA) ?? false,
+      sanitizeSensitiveData: this.parseBoolean(process.env.TSLG_SANITIZE_SENSITIVE_DATA) ?? true,
+      enableFullContext: this.parseBoolean(process.env.TSLG_ENABLE_FULL_CONTEXT) ?? false,
       bufferFlushInterval: parseInt(process.env.TSLG_BUFFER_FLUSH_INTERVAL_MS || '500', 10),
       sanitizePercentage: parseInt(process.env.TSLG_SANITIZE_PERCENTAGE || '60', 10),
       logLevel: process.env.TSLG_LOG_LEVEL || 'info',
@@ -104,6 +104,16 @@ export class TSLGLogger extends LoggerInterface {
     };
 
     return { ...defaults, ...config };
+  }
+
+  private parseBoolean(value: any): boolean | null {
+    if (value === undefined || value === null) return null;
+    if (typeof value === 'boolean') return value;
+    if (typeof value === 'string') {
+      const lowerValue = value.toLowerCase().trim();
+      return lowerValue === 'true' || lowerValue === '1' || lowerValue === 'yes';
+    }
+    return null;
   }
 
   private initializeMetrics() {
