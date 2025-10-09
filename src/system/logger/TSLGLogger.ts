@@ -196,15 +196,31 @@ export class TSLGLogger extends LoggerInterface {
   }
 
   log(level: string, message: string, event: string = 'Информация', error: Error | null = null, additionalData: any = {}): void {
-    const logEntry = this.logEntryBuilder.buildLogEntry(level, message, event, error, additionalData);
-    const logData = JSON.stringify(logEntry);
+    try {
+      const logEntry = this.logEntryBuilder.buildLogEntry(level, message, event, error, additionalData);
+      const logData = JSON.stringify(logEntry);
 
-    this.writeToConsole(level, message, event, error, additionalData);
+      this.writeToConsole(level, message, event, error, additionalData);
 
-    if (this.config.debugJson) {
-      this.originalConsole.log(logData);
+      if (this.config.debugJson) {
+        this.originalConsole.log('[TSLG DEBUG JSON]:', logData);
+      }
+
+      if (Buffer.byteLength(logData, 'utf8') > 1000000) {
+        this.originalConsole.warn('[TSLG] Log message too large, truncating');
+        const truncatedEntry = { ...logEntry, text: logEntry.text.substring(0, 1000) + ' [TRUNCATED]' };
+        const truncatedData = JSON.stringify(truncatedEntry);
+        this.sendLogData(truncatedData);
+      } else {
+        this.sendLogData(logData);
+      }
+    } catch (logError) {
+      this.originalConsole.error('[TSLG] Error building log entry:', logError);
+      this.writeToConsole(level, message, event, error, additionalData);
     }
+  }
 
+  private sendLogData(logData: string): void {
     if (!this.connectionManager.isConnected()) {
       this.bufferManager.bufferLog(logData);
       return;

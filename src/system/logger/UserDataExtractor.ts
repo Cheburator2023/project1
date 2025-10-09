@@ -10,7 +10,7 @@ export interface UserData {
 
 export class UserDataExtractor {
   static extractFromToken(token: string): UserData {
-    if (!token || typeof token !== 'string') {
+    if (!token || typeof token !== 'string' || token.length < 100) {
       return {};
     }
 
@@ -37,10 +37,14 @@ export class UserDataExtractor {
     userData.firstName = payload.given_name;
     userData.lastName = payload.family_name;
 
-    if (!userData.firstName && !userData.lastName && payload.name) {
+    if ((!userData.firstName || !userData.lastName) && payload.name) {
       const nameParts = payload.name.split(' ');
-      userData.firstName = nameParts[0];
-      userData.lastName = nameParts.slice(1).join(' ');
+      if (nameParts.length >= 2) {
+        userData.firstName = nameParts[0];
+        userData.lastName = nameParts.slice(1).join(' ');
+      } else if (nameParts.length === 1) {
+        userData.firstName = nameParts[0];
+      }
     }
 
     if (payload.roles && Array.isArray(payload.roles)) {
@@ -59,36 +63,25 @@ export class UserDataExtractor {
   static sanitizeUserData(userData: UserData, sanitizePercentage: number = 60): UserData {
     const sanitized: UserData = { ...userData };
 
-    const sanitizeString = (str: string, percentage: number): string => {
-      if (!str) return str;
+    const sanitizeString = (str: string | undefined, percentage: number): string | undefined => {
+      if (!str || str.length <= 3) return str;
 
-      const charsToKeep = Math.floor(str.length * (percentage / 100));
+      const charsToKeep = Math.max(1, Math.floor(str.length * (percentage / 100)));
       const visiblePart = str.substring(0, charsToKeep);
-      const hiddenPart = '*'.repeat(str.length - charsToKeep);
+      const hiddenPart = '*'.repeat(Math.max(0, str.length - charsToKeep));
 
       return visiblePart + hiddenPart;
     };
 
-    if (sanitized.userId) {
-      sanitized.userId = sanitizeString(sanitized.userId, sanitizePercentage);
-    }
-
-    if (sanitized.username) {
-      sanitized.username = sanitizeString(sanitized.username, sanitizePercentage);
-    }
-
-    if (sanitized.firstName) {
-      sanitized.firstName = sanitizeString(sanitized.firstName, sanitizePercentage);
-    }
-
-    if (sanitized.lastName) {
-      sanitized.lastName = sanitizeString(sanitized.lastName, sanitizePercentage);
-    }
+    sanitized.userId = sanitizeString(sanitized.userId, sanitizePercentage);
+    sanitized.username = sanitizeString(sanitized.username, sanitizePercentage);
+    sanitized.firstName = sanitizeString(sanitized.firstName, sanitizePercentage);
+    sanitized.lastName = sanitizeString(sanitized.lastName, sanitizePercentage);
 
     if (sanitized.email) {
       const [localPart, domain] = sanitized.email.split('@');
       if (localPart && domain) {
-        const sanitizedLocal = sanitizeString(localPart, sanitizePercentage);
+        const sanitizedLocal = sanitizeString(localPart, sanitizePercentage) || localPart;
         sanitized.email = `${sanitizedLocal}@${domain}`;
       }
     }
@@ -115,6 +108,30 @@ export class UserDataExtractor {
       parts.push(`lastName: ${userData.lastName}`);
     }
 
-    return parts.join(' | ');
+    return parts.length > 0 ? parts.join(' | ') : '';
+  }
+
+  static sanitizeJwtToken(token: string, sanitizePercentage: number = 60): string {
+    if (!token || token.length < 100) return token;
+
+    try {
+      const parts = token.split('.');
+      if (parts.length !== 3) return this.sanitizeString(token, sanitizePercentage);
+
+      const header = parts[0];
+      const payloadStart = parts[1].substring(0, 10);
+      const signatureStart = parts[2].substring(0, 10);
+
+      return `${header}.${payloadStart}...${signatureStart}... [SANITIZED]`;
+    } catch (error) {
+      return this.sanitizeString(token, sanitizePercentage);
+    }
+  }
+
+  private static sanitizeString(str: string, percentage: number): string {
+    const charsToKeep = Math.max(1, Math.floor(str.length * (percentage / 100)));
+    const visiblePart = str.substring(0, charsToKeep);
+    const hiddenPart = '*'.repeat(Math.max(0, str.length - charsToKeep));
+    return visiblePart + hiddenPart;
   }
 }

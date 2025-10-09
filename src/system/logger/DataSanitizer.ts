@@ -1,6 +1,8 @@
+import { UserDataExtractor } from './UserDataExtractor';
+
 export class DataSanitizer {
   static sanitizeData(data: any, sanitizePercentage: number = 60): any {
-    if (!data || typeof data !== 'object') return {};
+    if (!data || typeof data !== 'object') return data || {};
 
     const sensitiveFields = [
       'password', 'token', 'jwt', 'accessToken', 'refreshToken', 'authorization',
@@ -8,52 +10,59 @@ export class DataSanitizer {
       'bearer', 'auth', 'authentication', 'pwd', 'pass', 'key'
     ];
 
+    const sensitivePatterns = [
+      /eyJ[a-zA-Z0-9_-]*\.[a-zA-Z0-9_-]*\.[a-zA-Z0-9_-]*/g, // JWT tokens
+    ];
+
     const sanitized = JSON.parse(JSON.stringify(data));
-    this.sanitizeRecursive(sanitized, sensitiveFields, sanitizePercentage);
+    this.sanitizeRecursive(sanitized, sensitiveFields, sensitivePatterns, sanitizePercentage);
     return sanitized;
   }
 
-  private static sanitizeRecursive(obj: any, sensitiveFields: string[], sanitizePercentage: number) {
+  private static sanitizeRecursive(
+    obj: any,
+    sensitiveFields: string[],
+    sensitivePatterns: RegExp[],
+    sanitizePercentage: number
+  ) {
     for (const key in obj) {
       if (obj.hasOwnProperty(key)) {
         if (sensitiveFields.includes(key.toLowerCase())) {
-          if (typeof obj[key] === 'string') {
+          if ((key.toLowerCase().includes('token') || key.toLowerCase().includes('jwt')) &&
+            typeof obj[key] === 'string' && obj[key].length > 100) {
+            obj[key] = UserDataExtractor.sanitizeJwtToken(obj[key], sanitizePercentage);
+          } else if (typeof obj[key] === 'string') {
             obj[key] = this.sanitizeString(obj[key], sanitizePercentage);
           } else {
             obj[key] = '*****';
           }
         } else if (typeof obj[key] === 'string') {
-          obj[key] = this.sanitizeSensitivePatterns(obj[key], sanitizePercentage);
+          obj[key] = this.sanitizeSensitivePatterns(obj[key], sensitivePatterns, sanitizePercentage);
         } else if (typeof obj[key] === 'object' && obj[key] !== null) {
-          this.sanitizeRecursive(obj[key], sensitiveFields, sanitizePercentage);
+          this.sanitizeRecursive(obj[key], sensitiveFields, sensitivePatterns, sanitizePercentage);
         }
       }
     }
   }
 
-  private static sanitizeString(str: string, percentage: number): string {
-    const charsToKeep = Math.floor(str.length * (percentage / 100));
-    const visiblePart = str.substring(0, charsToKeep);
-    const hiddenPart = '*'.repeat(str.length - charsToKeep);
-    return visiblePart + hiddenPart;
-  }
-
-  private static sanitizeSensitivePatterns(value: string, sanitizePercentage: number): string {
-    const patterns = [
-      /eyJ[a-zA-Z0-9_-]*\.[a-zA-Z0-9_-]*\.[a-zA-Z0-9_-]*/g, // JWT tokens
-      /[A-Za-z0-9+/]{40,}={0,2}/g, // Base64-like strings
-    ];
-
+  private static sanitizeSensitivePatterns(value: string, patterns: RegExp[], sanitizePercentage: number): string {
     let result = value;
     patterns.forEach(pattern => {
       const matches = result.match(pattern);
       if (matches) {
         matches.forEach(match => {
-          result = result.replace(match, this.sanitizeString(match, sanitizePercentage));
+          result = result.replace(match, UserDataExtractor.sanitizeJwtToken(match, sanitizePercentage));
         });
       }
     });
-
     return result;
+  }
+
+  private static sanitizeString(str: string, percentage: number): string {
+    if (str.length <= 3) return str;
+    const charsToKeep = Math.max(1, Math.floor(str.length * (percentage / 100)));
+    const visiblePart = str.substring(0, charsToKeep);
+    const hiddenPart = '*'.repeat(Math.max(0, str.length - charsToKeep));
+    return visiblePart + hiddenPart;
   }
 }

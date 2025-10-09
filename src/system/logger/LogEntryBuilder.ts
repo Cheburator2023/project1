@@ -26,11 +26,14 @@ export class LogEntryBuilder {
   buildLogEntry(level: string, message: string, event: string, error: Error | null, additionalData: any) {
     const timestamp = new Date();
     const callerInfo = CallerInfoExtractor.getCallerInfo(additionalData);
+
+    const sanitizedMessage = this.sanitizeMessage(message);
+
     const userData = this.extractAndSanitizeUserData(additionalData);
     const sanitizedData = this.config.sanitizeSensitiveData ?
       DataSanitizer.sanitizeData(additionalData, this.config.sanitizePercentage) : additionalData;
 
-    const logText = this.createLogText(message, userData, event);
+    const logText = this.createLogText(sanitizedMessage, userData, event);
 
     const logEntry: any = {
       "eventId": uuidv4(),
@@ -58,6 +61,26 @@ export class LogEntryBuilder {
     return logEntry;
   }
 
+  private sanitizeMessage(message: string): string {
+    if (typeof message !== 'string') return message;
+
+    const jwtPattern = /eyJ[a-zA-Z0-9_-]*\.[a-zA-Z0-9_-]*\.[a-zA-Z0-9_-]*/g;
+    const matches = message.match(jwtPattern);
+
+    if (matches) {
+      let sanitizedMessage = message;
+      matches.forEach(jwt => {
+        sanitizedMessage = sanitizedMessage.replace(
+          jwt,
+          UserDataExtractor.sanitizeJwtToken(jwt, this.config.sanitizePercentage)
+        );
+      });
+      return sanitizedMessage;
+    }
+
+    return message;
+  }
+
   private extractAndSanitizeUserData(additionalData: any): UserData {
     if (!this.config.enableUserData) {
       return {};
@@ -65,11 +88,13 @@ export class LogEntryBuilder {
 
     let userData: UserData = {};
 
-    if (additionalData.user) {
+    if (additionalData.user && typeof additionalData.user === 'object') {
       userData = UserDataExtractor.extractUserDataFromPayload(additionalData.user);
     } else if (additionalData.jwt || additionalData.token) {
       const token = additionalData.jwt || additionalData.token;
-      userData = UserDataExtractor.extractFromToken(token);
+      if (typeof token === 'string') {
+        userData = UserDataExtractor.extractFromToken(token);
+      }
     } else if (additionalData.userId || additionalData.username) {
       userData = {
         userId: additionalData.userId,
@@ -146,17 +171,14 @@ export class LogEntryBuilder {
   }
 
   private addAdditionalData(logEntry: any, sanitizedData: any) {
+    const excludedFields = [
+      'context', 'params', 'stack', 'errorMessage',
+      'user', 'jwt', 'token', 'errorCode', 'httpStatus',
+      'userId', 'username', 'firstName', 'lastName'
+    ];
+
     Object.keys(sanitizedData).forEach(key => {
-      if (!logEntry.hasOwnProperty(key) &&
-        key !== 'context' &&
-        key !== 'params' &&
-        key !== 'stack' &&
-        key !== 'errorMessage' &&
-        key !== 'user' &&
-        key !== 'jwt' &&
-        key !== 'token' &&
-        key !== 'errorCode' &&
-        key !== 'httpStatus') {
+      if (!logEntry.hasOwnProperty(key) && !excludedFields.includes(key)) {
         logEntry[key] = sanitizedData[key];
       }
     });
