@@ -1,5 +1,22 @@
 # Semantic Versioning Changelog
 
+# [1.35.0](https://git.sfera.inno.local:7999/SUMD/mrms-backend/compare/v1.34.0...v1.35.0) (2025-10-10)
+
+
+### Features
+
+* Добавил TSLGlogger ([b883c2f](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/b883c2f64035c5a8980f23220366e1ca9a5e7b9c))
+* Добавил очистку буфера ([714a027](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/714a027cf49a69f71287024217f6a2a7bcef21ac))
+* Добавил пользователя ([7defaab](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/7defaab966a5b3a166e4b538b8ab7db33d103d2f))
+* Добавил уровень логирования в env ([7aca610](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/7aca61004de7b8abf74e479def3923a82b9f0f74))
+* Поправил env ([568e3dd](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/568e3ddafb1db58cb2583f8c0765a0ca201fff5a))
+* Поправил вывод логов в консоль ([42dae14](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/42dae14e463ec8ec45ce52eb2ddd47ad95344768))
+* Поправил вывод логов в консоль ([0bf9bea](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/0bf9bea171748dee9c8de59f82bf1685df3b4cfa))
+* Поправил вывод логов консоль ([9aa40ae](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/9aa40ae63a4110df9281b21685549fa3a7fe4abf))
+* Поправил логи TSLGlogger ([af8d810](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/af8d810bb02bf250a2a558a8cbc58bc67e84ea72))
+* Поправил санитаизацию ([b69d765](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/b69d76501ad9a8c0d9d7f252d1e7aa8f0ae8abd9))
+* Рефакторинг TSLGLogger ([157d328](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/157d328dbf47f85addae98b0553d4a2bcaa6c6dd))
+
 # [1.34.0](https://git.sfera.inno.local:7999/SUMD/mrms-backend/compare/v1.33.0...v1.34.0) (2025-09-30)
 
 
