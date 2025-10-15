@@ -7,6 +7,7 @@ SELECT m_.model_id                                                              
        clsf_.group_company,
        clsf_.business_customer_departament,
        m_.model_name,
+       m_.model_name                                                                                             AS model_name_validation,
        m_.create_date,
        m_.model_version,
        m_.update_date,
@@ -49,6 +50,7 @@ SELECT m_.model_id                                                              
        dm_.model_epic_12_date,
        dm_.developing_model_reason,
        dm_.model_desc,
+       dm_.significance_validity,
        dm_.output_table,
        dm_.allocation_assessment_class,
        dm_.allocation_assessment_parameters,
@@ -406,6 +408,7 @@ FROM models m_
                            MAX(CASE WHEN ARTEFACT_ID = 898 THEN ARTEFACT_STRING_VALUE ELSE NULL END) AS model_epic_12,
                            MAX(CASE WHEN ARTEFACT_ID = 899 THEN ARTEFACT_STRING_VALUE ELSE NULL END) AS model_epic_12_date,
                            MAX(CASE WHEN ARTEFACT_ID = 69 THEN ARTEFACT_STRING_VALUE ELSE NULL END)  AS developing_model_reason,
+                           MAX(CASE WHEN ARTEFACT_ID = 67 THEN ARTEFACT_STRING_VALUE ELSE NULL END)  AS significance_validity,
                            MAX(CASE WHEN ARTEFACT_ID = 905 THEN ARTEFACT_STRING_VALUE ELSE NULL END) AS model_desc,
                            MAX(CASE WHEN ARTEFACT_ID = 914 THEN ARTEFACT_STRING_VALUE ELSE NULL END) AS output_table,
                            MAX(CASE WHEN ARTEFACT_ID = 915 THEN ARTEFACT_STRING_VALUE ELSE NULL END) AS allocation_assessment_class,
@@ -415,7 +418,7 @@ FROM models m_
                       AND artefact_id IN (7, 72, 786, 787, 788, 789, 33, 34,
                                           790, 781, 788, 871, 794, 795, 796, 797,
                                           123, 888, 803, 811, 812, 820, 821, 823, 839, 840, 873,
-                                          867, 868, 869, 870, 898, 899, 900, 69, 905, 914, 915, 916)
+                                          867, 868, 869, 870, 898, 899, 900, 69, 67, 905, 914, 915, 916)
                       AND (
                             :filter_date::Date IS NULL
                             OR TO_DATE(CAST(:filter_date AS Varchar(4000)), 'YYYY-MM-DD')
