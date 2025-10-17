@@ -1,5 +1,12 @@
 # Semantic Versioning Changelog
 
+# [1.36.0](https://git.sfera.inno.local:7999/SUMD/mrms-backend/compare/v1.35.0...v1.36.0) (2025-10-17)
+
+
+### Features
+
+* добавлена синхронизация significance_validity и model_name_validation из сум в сурм ([b653863](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/b653863e75e62323b9697036e170494cb9fea1b4))
+
 # [1.35.0](https://git.sfera.inno.local:7999/SUMD/mrms-backend/compare/v1.34.0...v1.35.0) (2025-10-10)
 
 
