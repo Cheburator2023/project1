@@ -408,7 +408,7 @@ AND (m_.temp_block_flag != 1 OR m_.temp_block_flag IS NULL)
 AND (
   :filter_date::Date IS NULL
   OR TO_DATE(CAST(:filter_date AS Varchar(4000)), 'YYYY-MM-DD')
-    BETWEEN DATE_TRUNC('day', m_.create_date)::Date AND DATE_TRUNC('day', NOW())::Date
+    BETWEEN DATE_TRUNC('day', COALESCE(m_.update_date, m_.create_date))::Date AND DATE_TRUNC('day', NOW())::Date
   )
 `
 

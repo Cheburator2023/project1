@@ -50,13 +50,14 @@ export class ModelsController {
       )
     }
 
-    // Фильтрация по дате
+    // Фильтрация по дате - используем update_date если есть, иначе create_date
     if (query.date) {
       const filterDate = new Date(query.date)
       filteredModels = filteredModels.filter((model) => {
-        if (!model.create_date) return false
-        const modelDate = new Date(model.create_date)
-        return modelDate <= filterDate
+        const modelDate = model.update_date || model.create_date
+        if (!modelDate) return false
+        const modelDateObj = new Date(modelDate)
+        return modelDateObj <= filterDate
       })
     }
 
