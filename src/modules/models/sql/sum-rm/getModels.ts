@@ -292,7 +292,7 @@ AND (:model_id::varchar IS NULL OR m.model_id = :model_id)
 AND (
   :filter_date::DATE IS NULL
   OR TO_DATE(CAST(:filter_date AS VARCHAR(4000)), 'YYYY-MM-DD')
-    BETWEEN DATE_TRUNC('day', COALESCE(m.update_date, m.create_date))::DATE
+    BETWEEN DATE_TRUNC('day', m.create_date)::DATE
     AND DATE_TRUNC('day', NOW())::DATE
 )
 `
