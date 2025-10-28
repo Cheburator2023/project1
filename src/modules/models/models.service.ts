@@ -608,6 +608,7 @@ export class ModelsService {
             case 'rfd':
             case 'output_table':
             case 'allocation_assessment_class':
+            case 'status': // Add this line
             case 'allocation_assessment_parameters':
               updatesBySource[MODEL_SOURCES.MRM].artefactsForUpdate.push({
                 model_id,
