@@ -138,7 +138,7 @@ LEFT JOIN (
         STRING_AGG((CASE WHEN ar.artefact_id = 2032 THEN av.artefact_value ELSE NULL END)::Varchar, ',' ORDER BY ar.artefact_value_id) AS business_customer_departament
     FROM artefact_realizations_new ar
     INNER JOIN artefact_values av ON ar.artefact_value_id = av.artefact_value_id AND av.is_active_flg = '1'
-    WHERE ar.effective_to = TO_TIMESTAMP('9999-12-3123:59:59', 'YYYY-MM-DDHH24:MI:SS')
+    WHERE ar.effective_to = TO_TIMESTAMP('9999-12-31 23:59:59', 'YYYY-MM-DD HH24:MI:SS')
     GROUP BY ar.model_id
 ) AS artefact_values_data
 ON m.model_id = artefact_values_data.artefacts_model_id
@@ -255,7 +255,7 @@ LEFT JOIN (
         MAX(CASE WHEN artefact_id = 2109 THEN artefact_string_value ELSE NULL END) AS business_model_risk_subtype,
         MAX(CASE WHEN artefact_id = 2110 THEN artefact_string_value ELSE NULL END) AS rating_model,
         MAX(CASE WHEN artefact_id = 2655 THEN artefact_string_value ELSE NULL END) AS reason_model_delete,
-        MAX(CASE WHEN artefact_id = 2656 THEN artefact_string_value ELSE NULL END) AS status,
+        MAX(CASE WHEN artefact_id = 2656 THEN artefact_string_value ELSE NULL END) AS business_status,
         MAX(CASE WHEN artefact_id = 2657 THEN artefact_string_value ELSE NULL END) AS lead_validator_comment_model_delete,
         MAX(CASE WHEN artefact_id = 2658 THEN artefact_string_value ELSE NULL END) AS lead_validator_resolution_model_delete,
         MAX(CASE WHEN artefact_id = 2558 THEN artefact_string_value ELSE NULL END) AS remove_date_validation,
@@ -281,7 +281,7 @@ LEFT JOIN (
                     END DESC
             ) AS rn
         FROM artefact_realizations_new
-        WHERE artefact_realizations_new.effective_to = TO_TIMESTAMP('9999-12-3123:59:59', 'YYYY-MM-DDHH24:MI:SS')
+        WHERE artefact_realizations_new.effective_to = TO_TIMESTAMP('9999-12-31 23:59:59', 'YYYY-MM-DD HH24:MI:SS')
         AND (
             :filter_date::DATE IS NULL
             OR DATE_TRUNC('day', artefact_realizations_new.effective_from)::DATE <= TO_DATE(CAST(:filter_date AS VARCHAR(4000)), 'YYYY-MM-DD')

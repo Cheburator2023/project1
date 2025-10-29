@@ -209,7 +209,7 @@ ON m_.model_id = allocation_data.allocation_model_id
                     FROM artefact_realizations ar_
                              INNER JOIN artefact_values av_ ON ar_.artefact_value_id = av_.artefact_value_id AND av_.is_active_flg = '1'
                     WHERE ar_.artefact_id IN (173, 6, 67, 73)
-                      AND ar_.effective_to = TO_TIMESTAMP('9999-12-3123:59:59', 'YYYY-MM-DDHH24:MI:SS')
+                      AND ar_.effective_to = TO_TIMESTAMP('9999-12-31 23:59:59', 'YYYY-MM-DD HH24:MI:SS')
                     GROUP BY ar_.model_id) clsf_ ON m_.model_id = clsf_.model_id
          LEFT JOIN
          (
@@ -302,7 +302,7 @@ ON m_.model_id = allocation_data.allocation_model_id
                             THEN 'Опытная эксплуатация на контуре разработки'
                         END AS status
                     FROM artefact_realizations
-                    WHERE effective_to = TO_TIMESTAMP('9999-12-3123:59:59', 'YYYY-MM-DDHH24:MI:SS')
+                    WHERE effective_to = TO_TIMESTAMP('9999-12-31 23:59:59', 'YYYY-MM-DD HH24:MI:SS')
              ) AS FOO
              GROUP BY model_id
          ) st
@@ -389,8 +389,8 @@ ON m_.model_id = allocation_data.allocation_model_id
                            MAX(CASE WHEN ARTEFACT_ID = 914 THEN ARTEFACT_STRING_VALUE ELSE NULL END) AS output_table,
                            MAX(CASE WHEN ARTEFACT_ID = 915 THEN ARTEFACT_STRING_VALUE ELSE NULL END) AS allocation_assessment_class,
                            MAX(CASE WHEN ARTEFACT_ID = 916 THEN ARTEFACT_STRING_VALUE ELSE NULL END) AS allocation_assessment_parameters
-                    FROM artefact_realizations
-                    WHERE effective_to = TO_TIMESTAMP('9999-12-3123:59:59', 'YYYY-MM-DDHH24:MI:SS')
+                     FROM artefact_realizations
+                     WHERE effective_to = TO_TIMESTAMP('9999-12-31 23:59:59', 'YYYY-MM-DD HH24:MI:SS')
                       AND artefact_id IN (7, 72, 786, 787, 788, 789, 33, 34,
                                           790, 781, 788, 871, 794, 795, 796, 797,
                                           123, 888, 803, 811, 812, 820, 821, 823, 839, 840, 873,
