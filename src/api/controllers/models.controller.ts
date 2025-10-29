@@ -61,7 +61,7 @@ export class ModelsController {
         const dateToCompare = model.update_date || model.create_date
         if (!dateToCompare) return false
         const modelDate = new Date(dateToCompare)
-        return modelDate <= filterDate
+        return modelDate >= filterDate
       })
     }
 
