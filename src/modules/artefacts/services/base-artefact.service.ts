@@ -383,7 +383,7 @@ export abstract class BaseArtefactService implements IArtefactService {
       FROM ${this.artefactRealizationsTableName}
       WHERE model_id = :model_id
             AND artefact_id = :artefact_id
-        AND EFFECTIVE_TO = TO_TIMESTAMP('9999-12-3123:59:59','YYYY-MM-DDHH24:MI:SS');
+        AND EFFECTIVE_TO = TO_TIMESTAMP('9999-12-31 23:59:59','YYYY-MM-DD HH24:MI:SS');
       `,
       {
         model_id,

@@ -235,7 +235,7 @@ export class ModelsService {
       model_version = String(Number(parent_model_version) + 1)
 
       const parentArtefacts = await this.mrmDatabaseService.query(
-        "SELECT * FROM artefact_realizations_new WHERE model_id = :parent_model_id  AND effective_to = TO_TIMESTAMP('9999-12-3123:59:59','YYYY-MM-DDHH24:MI:SS')",
+        "SELECT * FROM artefact_realizations_new WHERE model_id = :parent_model_id  AND effective_to = TO_TIMESTAMP('9999-12-31 23:59:59','YYYY-MM-DD HH24:MI:SS')",
         { parent_model_id }
       )
 

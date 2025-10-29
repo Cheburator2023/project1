@@ -23,9 +23,6 @@ SELECT
     -- Источник модели
     'sum-rm' AS model_source,
     
-    -- Бизнес статус Модели (всегда берем значение из СУМ, для этого явно прописываем business_status как null)
-    null as business_status,
-    
     -- Столбцы для дат подтверждения и флагов использования по кварталам
     usage_data.usage_confirm_date_q1,
     usage_data.usage_confirm_date_q2,
