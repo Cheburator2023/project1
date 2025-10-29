@@ -269,17 +269,22 @@ LEFT JOIN (
             artefact_realizations_new.model_id,
             artefact_realizations_new.artefact_id,
             artefact_realizations_new.artefact_string_value,
+            artefact_realizations_new.effective_from,
             ROW_NUMBER() OVER (
                 PARTITION BY artefact_realizations_new.model_id, artefact_realizations_new.artefact_id
-                ORDER BY artefact_realizations_new.effective_from DESC
+                ORDER BY 
+                    CASE 
+                        WHEN :filter_date::DATE IS NULL THEN artefact_realizations_new.effective_from
+                        WHEN DATE_TRUNC('day', artefact_realizations_new.effective_from)::DATE <= TO_DATE(CAST(:filter_date AS VARCHAR(4000)), 'YYYY-MM-DD') 
+                        THEN artefact_realizations_new.effective_from
+                        ELSE TO_TIMESTAMP('1900-01-01', 'YYYY-MM-DD')
+                    END DESC
             ) AS rn
         FROM artefact_realizations_new
         WHERE artefact_realizations_new.effective_to = TO_TIMESTAMP('9999-12-3123:59:59', 'YYYY-MM-DDHH24:MI:SS')
         AND (
             :filter_date::DATE IS NULL
-            OR TO_DATE(CAST(:filter_date AS VARCHAR(4000)), 'YYYY-MM-DD')
-                BETWEEN DATE_TRUNC('day', artefact_realizations_new.effective_from)::DATE
-                AND DATE_TRUNC('day', artefact_realizations_new.effective_to)::DATE
+            OR DATE_TRUNC('day', artefact_realizations_new.effective_from)::DATE <= TO_DATE(CAST(:filter_date AS VARCHAR(4000)), 'YYYY-MM-DD')
         )
     ) ar
     WHERE ar.rn = 1
@@ -291,7 +296,7 @@ WHERE
 AND (:model_id::varchar IS NULL OR m.model_id = :model_id)
 AND (
   :filter_date::DATE IS NULL
-  OR COALESCE(m.update_date, m.create_date) >= TO_DATE(CAST(:filter_date AS VARCHAR(4000)), 'YYYY-MM-DD')
+  OR m.create_date <= TO_DATE(CAST(:filter_date AS VARCHAR(4000)), 'YYYY-MM-DD')
 )
 `
 

@@ -397,8 +397,7 @@ ON m_.model_id = allocation_data.allocation_model_id
                                           867, 868, 869, 870, 898, 899, 900, 69, 905, 914, 915, 916)
                       AND (
                             :filter_date::Date IS NULL
-                            OR TO_DATE(CAST(:filter_date AS Varchar(4000)), 'YYYY-MM-DD')
-                                BETWEEN DATE_TRUNC('day', effective_from)::Date AND DATE_TRUNC('day', effective_to)::Date
+                            OR DATE_TRUNC('day', effective_from)::Date <= TO_DATE(CAST(:filter_date AS Varchar(4000)), 'YYYY-MM-DD')
                         )
                     GROUP BY model_id) dm_ ON m_.model_id = dm_.model_id
 WHERE 
@@ -407,7 +406,7 @@ AND (:model_id::varchar IS NULL OR m_.model_id = :model_id)
 AND (m_.temp_block_flag != 1 OR m_.temp_block_flag IS NULL)
 AND (
   :filter_date::Date IS NULL
-  OR COALESCE(m_.update_date, m_.create_date) >= TO_DATE(CAST(:filter_date AS Varchar(4000)), 'YYYY-MM-DD')
+  OR m_.create_date <= TO_DATE(CAST(:filter_date AS Varchar(4000)), 'YYYY-MM-DD')
   )
 `
 

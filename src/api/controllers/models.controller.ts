@@ -53,15 +53,14 @@ export class ModelsController {
       )
     }
 
-    // Фильтрация по дате
+    // Фильтрация по дате - показываем состояние реестра на выбранную дату
     if (query.date) {
       const filterDate = new Date(query.date)
       filteredModels = filteredModels.filter((model) => {
-        // Используем update_date если есть, иначе create_date
-        const dateToCompare = model.update_date || model.create_date
-        if (!dateToCompare) return false
-        const modelDate = new Date(dateToCompare)
-        return modelDate >= filterDate
+        // Проверяем, что модель была создана до или в выбранную дату
+        if (!model.create_date) return false
+        const createDate = new Date(model.create_date)
+        return createDate <= filterDate
       })
     }
 
