@@ -1,14 +1,17 @@
-import { Injectable } from '@nestjs/common'
+import { Injectable, Inject, forwardRef } from '@nestjs/common'
 import { UsageServiceFactory } from './factories'
 import { UpdateUsageDto } from './dto'
 import { canEditQuarter, MODEL_SOURCES } from 'src/system/common'
 import { ModelServiceFactory } from 'src/modules/models/factories'
+import { ModelsCacheService } from 'src/modules/models/models-cache.service'
 
 @Injectable()
 export class UsageService {
   constructor(
     private readonly usageServiceFactory: UsageServiceFactory,
-    private readonly modelsServiceFactory: ModelServiceFactory
+    private readonly modelsServiceFactory: ModelServiceFactory,
+    @Inject(forwardRef(() => ModelsCacheService))
+    private readonly modelsCacheService: ModelsCacheService
   ) {}
 
   async updateUsage(data, source: MODEL_SOURCES): Promise<boolean> {
@@ -28,6 +31,9 @@ export class UsageService {
       await modelService.updateUpdateDate({
         model_id: transformedArtefacts[0].model_id
       })
+
+      // Force cache update to ensure fresh data is available immediately
+      await this.modelsCacheService.forceUpdateCache()
     }
 
     return hasUpdates

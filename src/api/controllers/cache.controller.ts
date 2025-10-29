@@ -5,18 +5,20 @@ import {
   Post,
   HttpStatus,
   HttpException,
-  NotFoundException
+  NotFoundException,
+  Inject,
+  CACHE_MANAGER
 } from '@nestjs/common'
+import { Cache } from 'cache-manager'
 import { ApiTags, ApiOperation, ApiResponse, ApiParam } from '@nestjs/swagger'
 import { ModelsCacheService } from 'src/modules/models/models-cache.service'
-import { CacheFactoryService } from 'src/modules/cache/cache-factory.service'
 
 @ApiTags('Кеширование')
 @Controller('cache')
 export class CacheController {
   constructor(
     private readonly modelsCacheService: ModelsCacheService,
-    private readonly cacheFactory: CacheFactoryService
+    @Inject(CACHE_MANAGER) private cacheManager: Cache
   ) {}
 
   @ApiOperation({
@@ -28,7 +30,7 @@ export class CacheController {
   @Get('/models/status')
   async getModelsCacheStatus() {
     try {
-      const cachedModels = this.modelsCacheService.getCachedModels()
+      const cachedModels = await this.modelsCacheService.getCachedModels()
       const isUpdating = this.modelsCacheService.isUpdatingCache()
 
       return {
@@ -95,7 +97,9 @@ export class CacheController {
   @Get('/models/column-values/:columnName')
   async getColumnValuesFromCache(@Param('columnName') columnName: string) {
     try {
-      const values = this.modelsCacheService.getNonEmptyColumnValues(columnName)
+      const values = await this.modelsCacheService.getNonEmptyColumnValues(
+        columnName
+      )
       return {
         success: true,
         data: {
@@ -129,29 +133,29 @@ export class CacheController {
   @Get('/all')
   async getAllCacheContents() {
     try {
-      const allCaches = this.cacheFactory.getAllCaches()
-      const cacheContents = {}
-
-      for (const cacheInstance of allCaches) {
-        const { name, cache } = cacheInstance
-        const status = cache.getStatus()
-        const data = cache.getCachedData()
-
-        cacheContents[name] = {
-          status,
-          data: data ? (Array.isArray(data) ? data.slice(0, 10) : data) : null,
-          dataPreview:
-            Array.isArray(data) && data.length > 10
-              ? `Показано 10 из ${data.length} элементов`
-              : null
-        }
-      }
+      // With native cache manager, we can only access the models cache through the service
+      const cachedModels = await this.modelsCacheService.getCachedModels()
+      const isUpdating = this.modelsCacheService.isUpdatingCache()
 
       return {
         success: true,
         data: {
-          totalCaches: allCaches.length,
-          caches: cacheContents
+          totalCaches: 1,
+          caches: {
+            models: {
+              status: {
+                isUpdating,
+                dataCount: cachedModels.length,
+                lastUpdate:
+                  cachedModels.length > 0 ? 'Кеш загружен' : 'Кеш пуст'
+              },
+              data: cachedModels.slice(0, 10),
+              dataPreview:
+                cachedModels.length > 10
+                  ? `Показано 10 из ${cachedModels.length} элементов`
+                  : null
+            }
+          }
         }
       }
     } catch (error) {
@@ -181,21 +185,24 @@ export class CacheController {
   @Get('/:key')
   async getCacheByKey(@Param('key') key: string) {
     try {
-      const cache = this.cacheFactory.getCache(key)
-
-      if (!cache) {
+      // With native cache manager, we only support the 'models' key
+      if (key !== 'models') {
         throw new NotFoundException(`Кеш с ключом "${key}" не найден`)
       }
 
-      const status = cache.getStatus()
-      const data = cache.getCachedData()
+      const cachedModels = await this.modelsCacheService.getCachedModels()
+      const isUpdating = this.modelsCacheService.isUpdatingCache()
 
       return {
         success: true,
         data: {
           key,
-          status,
-          data
+          status: {
+            isUpdating,
+            dataCount: cachedModels.length,
+            lastUpdate: cachedModels.length > 0 ? 'Кеш загружен' : 'Кеш пуст'
+          },
+          data: cachedModels
         }
       }
     } catch (error) {

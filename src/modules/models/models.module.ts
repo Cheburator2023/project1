@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common'
+import { Module, CacheModule } from '@nestjs/common'
 import { SumModelService, MrmModelService } from './services'
 import { ModelsService } from './models.service'
 import { ModelsCacheService } from './models-cache.service'
@@ -7,7 +7,6 @@ import { AllocationModule } from 'src/modules/allocation/allocation.module'
 import { UsageModule } from 'src/modules/usage/usage.module'
 import { SumDatabaseModule } from 'src/system/sum-database/database.module'
 import { MrmDatabaseModule } from 'src/system/mrm-database/database.module'
-import { CacheModule } from '../cache/cache.module'
 import { ModelServiceFactory } from './factories'
 import { ModelMergeService } from './services/model-merge.service'
 import { ModelDefaultsService } from './services/model-defaults.service'
@@ -30,7 +29,10 @@ import { ModelMergePrefetchService } from './services/model-merge-prefetch.servi
     ArtefactModule,
     AllocationModule,
     UsageModule,
-    CacheModule
+    CacheModule.register({
+      ttl: 300, // 5 minutes
+      max: 100 // maximum number of items in cache
+    })
   ],
   exports: [
     ModelServiceFactory,

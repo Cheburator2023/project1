@@ -8,7 +8,8 @@ import {
   Req,
   Res,
   ParseArrayPipe,
-  HttpStatus
+  HttpStatus,
+  Logger
 } from '@nestjs/common'
 import { ApiTags, ApiOperation, ApiResponse, ApiBody } from '@nestjs/swagger'
 import { ModelsService } from 'src/modules/models/models.service'
@@ -30,6 +31,8 @@ import { MODEL_SOURCES } from 'src/system/common/constants/models.constants'
 @ApiTags('Модели')
 @Controller('models')
 export class ModelsController {
+  private readonly logger = new Logger(ModelsController.name)
+
   constructor(
     private readonly modelsService: ModelsService,
     private readonly modelsCacheService: ModelsCacheService,
@@ -54,8 +57,10 @@ export class ModelsController {
     if (query.date) {
       const filterDate = new Date(query.date)
       filteredModels = filteredModels.filter((model) => {
-        if (!model.create_date) return false
-        const modelDate = new Date(model.create_date)
+        // Используем update_date если есть, иначе create_date
+        const dateToCompare = model.update_date || model.create_date
+        if (!dateToCompare) return false
+        const modelDate = new Date(dateToCompare)
         return modelDate <= filterDate
       })
     }
@@ -176,13 +181,31 @@ export class ModelsController {
       return response.status(HttpStatus.OK).json(result)
     }
 
-    // Ждем загрузки кеша, если он еще обновляется
+    // Ждем загрузки кеша, если он еще обновляется (максимум 10 секунд)
+    const maxWaitTime = 10000 // 10 seconds
+    const startTime = Date.now()
     while (this.modelsCacheService.isUpdatingCache()) {
+      if (Date.now() - startTime > maxWaitTime) {
+        this.logger.warn(
+          'Cache update timeout reached, falling back to direct database query'
+        )
+        const models = await this.modelsService.getModels(
+          query,
+          req.user?.groups
+        )
+        const result = {
+          data: {
+            cards: models
+          },
+          fromCache: false
+        }
+        return response.status(HttpStatus.OK).json(result)
+      }
       await new Promise((resolve) => setTimeout(resolve, 100))
     }
 
     // Получаем модели из кеша
-    const cachedModels = this.modelsCacheService.getCachedModels()
+    const cachedModels = await this.modelsCacheService.getCachedModels()
 
     let models: any[]
     let fromCache = false
@@ -252,6 +275,9 @@ export class ModelsController {
   ) {
     const result = await this.modelsService.modelCreate(artefacts, user)
 
+    // Invalidate cache after successful creation to ensure fresh data
+    await this.modelsCacheService.forceUpdateCache()
+
     return response.status(HttpStatus.CREATED).json(result[0])
   }
 
@@ -282,7 +308,10 @@ export class ModelsController {
       }
     }
 
-    return response.status(HttpStatus.ACCEPTED).json(result)
+    // Invalidate cache after successful update to ensure fresh data
+    await this.modelsCacheService.forceUpdateCache()
+
+    return response.status(HttpStatus.OK).json(result)
   }
 
   @ApiOperation({

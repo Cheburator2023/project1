@@ -1,5 +1,0 @@
-export { UniversalCacheService } from './universal-cache.service'
-export { CacheFactoryService } from './cache-factory.service'
-export { CacheModule } from './cache.module'
-export type { CacheConfig, CacheStatus } from './universal-cache.service'
-export type { CacheInstance } from './cache-factory.service'

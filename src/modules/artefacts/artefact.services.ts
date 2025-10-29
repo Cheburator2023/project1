@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common'
+import { Injectable, Inject, forwardRef } from '@nestjs/common'
 import { ArtefactServiceFactory } from './factories'
 import { UpdateArtefactDto } from './dto'
 import { MODEL_SOURCES } from 'src/system/common'
@@ -6,13 +6,16 @@ import { ModelServiceFactory } from 'src/modules/models/factories'
 import { UserType } from 'src/decorators'
 import { EnrichedArtefact } from './entities'
 import { ArtefactExecutionContextService } from './services'
+import { ModelsCacheService } from 'src/modules/models/models-cache.service'
 
 @Injectable()
 export class ArtefactService {
   constructor(
     private readonly artefactServiceFactory: ArtefactServiceFactory,
     private readonly artefactExecutionContextService: ArtefactExecutionContextService,
-    private readonly modelsServiceFactory: ModelServiceFactory
+    private readonly modelsServiceFactory: ModelServiceFactory,
+    @Inject(forwardRef(() => ModelsCacheService))
+    private readonly modelsCacheService: ModelsCacheService
   ) {}
 
   async updateArtefact(
@@ -32,6 +35,9 @@ export class ArtefactService {
 
     const modelsService = this.modelsServiceFactory.getService(source)
     await modelsService.updateUpdateDate({ model_id: artefacts[0].model_id })
+
+    // Force cache update to ensure fresh data is available immediately
+    await this.modelsCacheService.forceUpdateCache()
 
     return true
   }

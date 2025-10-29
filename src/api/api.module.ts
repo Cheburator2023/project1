@@ -6,7 +6,7 @@ import { SumDatabaseModule } from 'src/system/sum-database/database.module'
 import { MrmDatabaseModule } from 'src/system/mrm-database/database.module'
 import { ArtefactModule } from 'src/modules/artefacts/artefact.module'
 import { BiDatamartModule } from 'src/modules/bi-datamart/bi-datamart.module'
-import { CacheModule } from 'src/modules/cache/cache.module'
+import { CacheModule } from '@nestjs/common'
 import {
   ModelsController,
   TemplatesController,
@@ -39,7 +39,10 @@ import { ApiService } from './api.service'
     MetricsModule,
     ArtefactModule,
     BiDatamartModule,
-    CacheModule
+    CacheModule.register({
+      ttl: 300, // 5 minutes
+      max: 100 // maximum number of items in cache
+    })
   ]
 })
 export class ApiModule {}
