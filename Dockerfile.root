@@ -1,0 +1,24 @@
+FROM docker.repo-ci.sfera.inno.local/sumd-docker-lib/ubi8-base-mrms-backend:v1.0.0
+
+ARG NPM_REGISTRY
+ARG NPM_EMAIL
+ARG NPM_AUTH
+
+#COPY certs/. /ca-certs/.
+#RUN trust anchor --store /ca-certs/* && \
+#    cp /etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem /certs/ca-bundle.crt
+
+WORKDIR /app
+COPY package.json /app
+
+
+RUN npm config set audit false && \
+    npm config set chromedriver_skip_download true && \
+    npm config set cafile /certs/ca-bundle.crt && \
+    npm config set always-auth true && \
+    npm config set email ${EMAIL} && \
+    npm config set _auth ${NPM_AUTH} && \
+    npm config set registry https://${NPM_REGISTRY} && \
+    npm i --only-production
+
+RUN rm ~/.npmrc
