@@ -14,8 +14,12 @@ export class TasksDatamartSchedulerService
   private syncInProgress = false
   private syncInterval: NodeJS.Timeout | null = null
   private readonly SYNC_HOUR = 3 // Синхронизация в 3:00 ночи (после моделей)
+  private readonly isEnabled: boolean
 
-  constructor(private readonly tasksDatamartService: TasksDatamartService) {}
+  constructor(private readonly tasksDatamartService: TasksDatamartService) {
+    // Проверяем переменную окружения для включения/отключения витрины
+    this.isEnabled = process.env.BI_DATAMART_ENABLED !== 'false'
+  }
 
   /**
    * Запуск ежедневной синхронизации в 3:00 ночи
@@ -105,6 +109,13 @@ export class TasksDatamartSchedulerService
    * Инициализация при старте модуля
    */
   async onModuleInit(): Promise<void> {
+    if (!this.isEnabled) {
+      this.logger.warn(
+        '⚠️ BI витрина Tasks ОТКЛЮЧЕНА (BI_DATAMART_ENABLED=false)'
+      )
+      return
+    }
+
     this.logger.log('🚀 Запуск планировщика Tasks BI витрины')
     this.startDailySync()
   }

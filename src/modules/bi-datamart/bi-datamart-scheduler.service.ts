@@ -14,8 +14,12 @@ export class BiDatamartSchedulerService
   private syncInProgress = false
   private syncInterval: NodeJS.Timeout | null = null
   private readonly SYNC_HOUR = 2 // Синхронизация в 2:00 ночи
+  private readonly isEnabled: boolean
 
-  constructor(private readonly biDatamartService: BiDatamartService) {}
+  constructor(private readonly biDatamartService: BiDatamartService) {
+    // Проверяем переменную окружения для включения/отключения витрины
+    this.isEnabled = process.env.BI_DATAMART_ENABLED !== 'false'
+  }
 
   /**
    * Запуск ежедневной синхронизации в 2:00 ночи
@@ -103,6 +107,13 @@ export class BiDatamartSchedulerService
    * Инициализация при старте модуля
    */
   async onModuleInit(): Promise<void> {
+    if (!this.isEnabled) {
+      this.logger.warn(
+        '⚠️ BI витрина Models ОТКЛЮЧЕНА (BI_DATAMART_ENABLED=false)'
+      )
+      return
+    }
+
     this.logger.log('🚀 Запуск планировщика BI витрины')
     this.startDailySync()
   }

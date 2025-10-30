@@ -16,6 +16,30 @@ export class TasksDatamartService {
   ) {}
 
   /**
+   * Проверка существования таблицы tasks_bi_datamart
+   */
+  private async checkTableExists(): Promise<boolean> {
+    try {
+      const result = await this.mrmDatabaseService.query(
+        `
+        SELECT EXISTS (
+          SELECT FROM information_schema.tables 
+          WHERE table_schema = 'public' 
+          AND table_name = 'tasks_bi_datamart'
+        ) as table_exists
+      `,
+        {}
+      )
+      return result[0]?.table_exists === true
+    } catch (error) {
+      this.logger.error(
+        `❌ Ошибка проверки существования таблицы: ${error.message}`
+      )
+      return false
+    }
+  }
+
+  /**
    * Синхронизация всех задач в BI витрину
    * Запускается раз в сутки
    */
@@ -40,6 +64,19 @@ export class TasksDatamartService {
     }
 
     try {
+      // Проверяем существование таблицы
+      const tableExists = await this.checkTableExists()
+      if (!tableExists) {
+        this.logger.warn(
+          '⚠️ Таблица tasks_bi_datamart не существует. Пропускаем синхронизацию.'
+        )
+        result.success = true
+        result.duration_ms = Date.now() - startTime
+        result.errors.push(
+          'Таблица tasks_bi_datamart не существует - миграция не применена'
+        )
+        return result
+      }
       // Получаем все модели для передачи в getUsersActiveTasks
       this.logger.log('📊 Получение моделей...')
       const models = await this.modelsService.getModels({
@@ -148,22 +185,44 @@ export class TasksDatamartService {
    * Получение статистики Tasks витрины
    */
   async getTasksDatamartStats() {
-    const [totalResult, lastUpdateResult] = await Promise.all([
-      this.mrmDatabaseService.query(
-        'SELECT COUNT(*) as count FROM tasks_bi_datamart',
-        {}
-      ),
-      this.mrmDatabaseService.query(
-        'SELECT MAX(updated_at) as last_update FROM tasks_bi_datamart',
-        {}
-      )
-    ])
+    // Проверяем существование таблицы
+    const tableExists = await this.checkTableExists()
+    if (!tableExists) {
+      this.logger.warn('⚠️ Таблица tasks_bi_datamart не существует')
+      return {
+        total_records: 0,
+        last_update: null,
+        error: 'Таблица не существует'
+      }
+    }
 
-    return {
-      total_records: parseInt(totalResult[0].count),
-      last_update: lastUpdateResult[0].last_update
-        ? new Date(lastUpdateResult[0].last_update)
-        : null
+    try {
+      const [totalResult, lastUpdateResult] = await Promise.all([
+        this.mrmDatabaseService.query(
+          'SELECT COUNT(*) as count FROM tasks_bi_datamart',
+          {}
+        ),
+        this.mrmDatabaseService.query(
+          'SELECT MAX(updated_at) as last_update FROM tasks_bi_datamart',
+          {}
+        )
+      ])
+
+      return {
+        total_records: parseInt(totalResult[0].count),
+        last_update: lastUpdateResult[0].last_update
+          ? new Date(lastUpdateResult[0].last_update)
+          : null
+      }
+    } catch (error) {
+      this.logger.error(
+        `❌ Ошибка получения статистики Tasks: ${error.message}`
+      )
+      return {
+        total_records: 0,
+        last_update: null,
+        error: error.message
+      }
     }
   }
 
@@ -171,8 +230,18 @@ export class TasksDatamartService {
    * Получение задач из витрины
    */
   async getTasksFromDatamart(): Promise<Task[]> {
-    const rows = await this.mrmDatabaseService.query(
-      `
+    // Проверяем существование таблицы
+    const tableExists = await this.checkTableExists()
+    if (!tableExists) {
+      this.logger.warn(
+        '⚠️ Таблица tasks_bi_datamart не существует. Возвращаем пустой массив.'
+      )
+      return []
+    }
+
+    try {
+      const rows = await this.mrmDatabaseService.query(
+        `
       SELECT 
         task_id,
         model_id,
@@ -184,28 +253,34 @@ export class TasksDatamartService {
       FROM tasks_bi_datamart 
       ORDER BY model_id, task_id
     `,
-      {}
-    )
+        {}
+      )
 
-    return rows.map((row) => {
-      const taskData =
-        typeof row.task_data === 'string'
-          ? JSON.parse(row.task_data)
-          : row.task_data
+      return rows.map((row) => {
+        const taskData =
+          typeof row.task_data === 'string'
+            ? JSON.parse(row.task_data)
+            : row.task_data
 
-      // Базовые поля из колонок (для производительности)
-      // Остальные поля из JSON
-      return {
-        ...taskData,
-        // Переопределяем ключевые поля из колонок, так как они могут быть более актуальными
-        task_id: row.task_id,
-        model_id: row.model_id,
-        assignee: row.assignee,
-        role: row.role,
-        ds_stream: row.ds_stream,
-        update_date: row.update_date
-      }
-    })
+        // Базовые поля из колонок (для производительности)
+        // Остальные поля из JSON
+        return {
+          ...taskData,
+          // Переопределяем ключевые поля из колонок, так как они могут быть более актуальными
+          task_id: row.task_id,
+          model_id: row.model_id,
+          assignee: row.assignee,
+          role: row.role,
+          ds_stream: row.ds_stream,
+          update_date: row.update_date
+        }
+      })
+    } catch (error) {
+      this.logger.error(
+        `❌ Ошибка получения задач из витрины: ${error.message}`
+      )
+      return []
+    }
   }
 
   /**

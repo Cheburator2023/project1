@@ -13,6 +13,30 @@ export class BiDatamartService {
   ) {}
 
   /**
+   * Проверка существования таблицы models_bi_datamart
+   */
+  private async checkTableExists(): Promise<boolean> {
+    try {
+      const result = await this.mrmDatabaseService.query(
+        `
+        SELECT EXISTS (
+          SELECT FROM information_schema.tables 
+          WHERE table_schema = 'public' 
+          AND table_name = 'models_bi_datamart'
+        ) as table_exists
+      `,
+        {}
+      )
+      return result[0]?.table_exists === true
+    } catch (error) {
+      this.logger.error(
+        `❌ Ошибка проверки существования таблицы: ${error.message}`
+      )
+      return false
+    }
+  }
+
+  /**
    * Синхронизация всех данных из ModelsService в BI витрину
    * Запускается раз в сутки
    */
@@ -43,6 +67,19 @@ export class BiDatamartService {
     }
 
     try {
+      // Проверяем существование таблицы
+      const tableExists = await this.checkTableExists()
+      if (!tableExists) {
+        this.logger.warn(
+          '⚠️ Таблица models_bi_datamart не существует. Пропускаем синхронизацию.'
+        )
+        result.success = true
+        result.duration_ms = Date.now() - startTime
+        result.errors.push(
+          'Таблица models_bi_datamart не существует - миграция не применена'
+        )
+        return result
+      }
       // Получаем ВСЕ модели из ModelsService
       this.logger.log('📊 Получение данных из ModelsService...')
 
@@ -164,22 +201,44 @@ export class BiDatamartService {
    * Получение базовой статистики BI витрины
    */
   async getDatamartStats() {
-    const [totalResult, lastUpdateResult] = await Promise.all([
-      this.mrmDatabaseService.query(
-        'SELECT COUNT(*) as count FROM models_bi_datamart',
-        {}
-      ),
-      this.mrmDatabaseService.query(
-        'SELECT MAX(updated_at) as last_update FROM models_bi_datamart',
-        {}
-      )
-    ])
+    // Проверяем существование таблицы
+    const tableExists = await this.checkTableExists()
+    if (!tableExists) {
+      this.logger.warn('⚠️ Таблица models_bi_datamart не существует')
+      return {
+        total_records: 0,
+        last_update: null,
+        error: 'Таблица не существует'
+      }
+    }
 
-    return {
-      total_records: parseInt(totalResult[0].count),
-      last_update: lastUpdateResult[0].last_update
-        ? new Date(lastUpdateResult[0].last_update)
-        : null
+    try {
+      const [totalResult, lastUpdateResult] = await Promise.all([
+        this.mrmDatabaseService.query(
+          'SELECT COUNT(*) as count FROM models_bi_datamart',
+          {}
+        ),
+        this.mrmDatabaseService.query(
+          'SELECT MAX(updated_at) as last_update FROM models_bi_datamart',
+          {}
+        )
+      ])
+
+      return {
+        total_records: parseInt(totalResult[0].count),
+        last_update: lastUpdateResult[0].last_update
+          ? new Date(lastUpdateResult[0].last_update)
+          : null
+      }
+    } catch (error) {
+      this.logger.error(
+        `❌ Ошибка получения статистики: ${error.message}`
+      )
+      return {
+        total_records: 0,
+        last_update: null,
+        error: error.message
+      }
     }
   }
 
