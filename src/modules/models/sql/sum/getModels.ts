@@ -17,7 +17,6 @@ SELECT m_.model_id                                                              
        dm_.model_type,
        dm_.implementation_validity,
        dm_.validity_approve,
-       dm_.remove_decision,
        dm_.DS_DEPARTMENT,
        dm_.developing_start_date,
        dm_.developing_end_date,
