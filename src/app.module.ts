@@ -24,6 +24,7 @@ import { TemplateMigrationService } from 'src/migrations/migrate-templates'
 import { MigrationModule } from 'src/modules/migration.module'
 
 import { GodModeGuard } from 'src/system/guards/god-mode.guard'
+import { LoggerModule } from 'src/system/logger/logger.module'
 
 @Module({
   imports: [
@@ -43,7 +44,8 @@ import { GodModeGuard } from 'src/system/guards/god-mode.guard'
     KeycloakModule,
     BiDatamartModule,
     DatabaseSchemaModule,
-    MigrationModule
+    MigrationModule,
+    LoggerModule
   ],
   controllers: [],
   providers: [
@@ -93,7 +95,7 @@ export class AppModule implements OnModuleInit {
     // try {
     //   console.log('Запуск миграции шаблонов...')
     //   await this.migrationService.migrateTemplates()
-    //   console.log('Миграция шаблонов завершена успешно')
+    //   console.log('Миграцияшаблонов завершена успешно')
     // } catch (error) {
     //   console.error('Ошибка при миграции шаблонов:', error.message)
     // }

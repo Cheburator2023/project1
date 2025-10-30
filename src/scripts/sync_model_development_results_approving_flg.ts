@@ -4,6 +4,7 @@ require('dotenv').config({ path: '.env.dev' })
 import { SumDatabaseService } from 'src/system/sum-database/database.service'
 import { MrmDatabaseService } from 'src/system/mrm-database/database.service'
 import { ArtefactValueEntity } from 'src/modules/artefacts/entities'
+import { LoggerService } from '../system/logger/logger.service'
 
 const ART_1 = 'Модель принята владельцем, внедрение требуется'
 const ART_2 = 'Модель принята владельцем, внедрение не требуется'
@@ -12,8 +13,10 @@ const ART_4 = 'Модель не принята владельцем, дораб
 const ART_5 = 'Внедряется'
 const ART_6 = 'Не внедряется'
 
-const sumDb = new SumDatabaseService()
-const mrmDb = new MrmDatabaseService()
+const logger = new LoggerService()
+
+const sumDb = new SumDatabaseService(logger)
+const mrmDb = new MrmDatabaseService(logger)
 
 // "убираем" из РМ заполненные артефакты, которые уже имеют значения в СУМ
 const processArtefactsSumToMrm = async () => {

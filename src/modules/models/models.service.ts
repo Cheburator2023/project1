@@ -605,6 +605,7 @@ export class ModelsService {
             case 'auto_validation_result':
             case 'model_changes_info':
             case 'model_desc':
+            case 'model_name_validation':
             case 'rfd':
             case 'output_table':
             case 'allocation_assessment_class':
