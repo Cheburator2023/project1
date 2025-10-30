@@ -244,7 +244,9 @@ export class ApiService {
       if (Array.isArray(values) && values.length > 0) {
         let processedValues = values.filter((v) => v !== 'empty')
 
-        if (values.includes('not-null')) {
+        const hasNotNull = values.includes('not-null')
+
+        if (hasNotNull) {
           // Удаляем 'not-null' из значений, так как это специальный маркер
           processedValues = processedValues.filter((v) => v !== 'not-null')
 
@@ -253,8 +255,14 @@ export class ApiService {
           if (processedValues.length === 0) {
             try {
               const allValues = await this.getAllValuesForColumn(key)
-
-              processedValues = allValues
+              // Фильтруем null/undefined значения для 'not-null' фильтра
+              processedValues = allValues.filter(
+                (value) =>
+                  value !== null &&
+                  value !== undefined &&
+                  value !== '' &&
+                  value.toString().trim() !== ''
+              )
             } catch (error) {
               console.warn(
                 `Не удалось получить значения для колонки ${key}:`,
