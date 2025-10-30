@@ -7,6 +7,7 @@ import {
   forwardRef,
   CACHE_MANAGER
 } from '@nestjs/common'
+import { ConfigService } from '@nestjs/config'
 import { Cache } from 'cache-manager'
 import { ModelsService } from './models.service'
 import { Model } from './interfaces'
@@ -21,13 +22,18 @@ export class ModelsCacheService implements OnModuleInit, OnModuleDestroy {
   constructor(
     @Inject(forwardRef(() => ModelsService))
     private readonly modelsService: ModelsService,
-    @Inject(CACHE_MANAGER) private cacheManager: Cache
+    @Inject(CACHE_MANAGER) private cacheManager: Cache,
+    private readonly configService: ConfigService
   ) {}
 
   async onModuleInit(): Promise<void> {
     this.logger.log('🚀 Инициализация кеша моделей')
-    await this.loadModelsToCache()
-    this.startPeriodicUpdate()
+    if (this.isCacheEnabled()) {
+      await this.loadModelsToCache()
+      this.startPeriodicUpdate()
+    } else {
+      this.logger.log('⚠️ Кеш моделей отключен через MODEL_CACHE_ENABLED=false')
+    }
   }
 
   async onModuleDestroy(): Promise<void> {
@@ -51,6 +57,13 @@ export class ModelsCacheService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
+  private isCacheEnabled(): boolean {
+    const result =
+      this.configService.get<string>('MODEL_CACHE_ENABLED', 'true') === 'true'
+
+    return false
+  }
+
   private startPeriodicUpdate(): void {
     this.updateInterval = setInterval(async () => {
       await this.loadModelsToCache()
@@ -61,6 +74,11 @@ export class ModelsCacheService implements OnModuleInit, OnModuleDestroy {
    * Получить все модели из кеша
    */
   async getCachedModels(): Promise<Model[]> {
+    if (!this.isCacheEnabled()) {
+      // Если кеш отключен, возвращаем данные напрямую из базы
+      return await this.modelsService.getModels()
+    }
+
     const models = await this.cacheManager.get<Model[]>(this.CACHE_KEY)
     return models || []
   }
@@ -88,6 +106,9 @@ export class ModelsCacheService implements OnModuleInit, OnModuleDestroy {
    * Проверить, обновляется ли кеш в данный момент
    */
   isUpdatingCache(): boolean {
+    if (!this.isCacheEnabled()) {
+      return false
+    }
     return this.isUpdating
   }
 
@@ -95,6 +116,12 @@ export class ModelsCacheService implements OnModuleInit, OnModuleDestroy {
    * Принудительно обновить кеш
    */
   async forceUpdateCache(): Promise<void> {
+    if (!this.isCacheEnabled()) {
+      this.logger.log(
+        '⚠️ Принудительное обновление кеша пропущено - кеш отключен'
+      )
+      return
+    }
     await this.loadModelsToCache()
   }
 }

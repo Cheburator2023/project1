@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-var-requires */
 require('dotenv').config({ path: '.env.dev' })
 
-process.env.UV_THREADPOOL_SIZE = '10'
+process.env.MODEL_CACHE_ENABLED = 'false'
 
 import { NestFactory } from '@nestjs/core'
 import { ValidationPipe } from '@nestjs/common'

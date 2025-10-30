@@ -63,12 +63,12 @@ export class ModelsDto {
 
   @ApiModelPropertyOptional({
     example: true,
-    description: 'Использовать кеш для получения моделей. По умолчанию true'
+    description: 'Использовать кеш для получения моделей. По умолчанию false'
   })
   @IsOptional()
   @IsBoolean()
   @Transform(({ value }) => value === 'true' || value === true)
-  useCache?: boolean = true
+  useCache?: boolean = false
 }
 
 export class ModelWithRelationsDto {
