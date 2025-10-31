@@ -8,8 +8,7 @@ import {
   Req,
   Res,
   ParseArrayPipe,
-  HttpStatus,
-  Logger
+  HttpStatus
 } from '@nestjs/common'
 import { ApiTags, ApiOperation, ApiResponse, ApiBody } from '@nestjs/swagger'
 import { ModelsService } from 'src/modules/models/models.service'
@@ -31,8 +30,6 @@ import { MODEL_SOURCES } from 'src/system/common/constants/models.constants'
 @ApiTags('Модели')
 @Controller('models')
 export class ModelsController {
-  private readonly logger = new Logger(ModelsController.name)
-
   constructor(
     private readonly modelsService: ModelsService,
     private readonly modelsCacheService: ModelsCacheService,
@@ -275,16 +272,53 @@ export class ModelsController {
     @Res() response,
     @User() user
   ) {
-    const result = {
-      data: {
-        cards: await this.modelsService.modelsUpdate(modelsArtefacts, user)
+    const startTime = Date.now()
+
+    try {
+      // Create timeout promise (30 seconds)
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(
+          () =>
+            reject(new Error('Update operation timed out after 15 seconds')),
+          15000
+        )
+      )
+
+      // Race between the actual update and timeout
+      const updatePromise = this.modelsService.modelsUpdate(
+        modelsArtefacts,
+        user
+      )
+      const cards = await Promise.race([updatePromise, timeoutPromise])
+
+      const result = {
+        data: {
+          cards
+        }
       }
+
+      // Invalidate cache after successful update to ensure fresh data
+      // await this.modelsCacheService.forceUpdateCache()
+
+      return response.status(HttpStatus.ACCEPTED).json(result)
+    } catch (error) {
+      const duration = Date.now() - startTime
+
+      if (error.message.includes('timed out')) {
+        return response.status(HttpStatus.REQUEST_TIMEOUT).json({
+          error: 'Update operation timed out',
+          message:
+            'The update operation took too long to complete. Please try again or contact support.',
+          duration
+        })
+      }
+
+      return response.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
+        error: 'Failed to update models',
+        message: error.message,
+        duration
+      })
     }
-
-    // Invalidate cache after successful update to ensure fresh data
-    // await this.modelsCacheService.forceUpdateCache()
-
-    return response.status(HttpStatus.ACCEPTED).json(result)
   }
 
   @ApiOperation({

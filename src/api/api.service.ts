@@ -308,8 +308,6 @@ export class ApiService {
 
   private async getAllValuesForColumn(columnName: string): Promise<string[]> {
     try {
-      // Используем кеш моделей вместо прямого запроса к БД
-      // const values = this.modelsCacheService.getNonEmptyColumnValues(columnName)
       const values = this.modelsCacheService.getColumnValues(columnName)
 
       return values

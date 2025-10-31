@@ -27,34 +27,36 @@ export class ModelsCacheService implements OnModuleInit, OnModuleDestroy {
   ) {}
 
   async onModuleInit(): Promise<void> {
-    this.logger.log('🚀 Инициализация кеша моделей')
-    if (this.isCacheEnabled()) {
-      await this.loadModelsToCache()
-      this.startPeriodicUpdate()
-    } else {
-      this.logger.log('⚠️ Кеш моделей отключен через MODEL_CACHE_ENABLED=false')
-    }
+    // this.logger.log('🚀 Инициализация кеша моделей')
+    // if (this.isCacheEnabled()) {
+    //   await this.loadModelsToCache()
+    //   this.startPeriodicUpdate()
+    // } else {
+    //   this.logger.log('⚠️ Кеш моделей отключен через MODEL_CACHE_ENABLED=false')
+    // }
   }
 
   async onModuleDestroy(): Promise<void> {
-    this.logger.log('🛑 Остановка кеша моделей')
-    if (this.updateInterval) {
-      clearInterval(this.updateInterval)
-      this.updateInterval = null
-    }
+    // this.logger.log('🛑 Остановка кеша моделей')
+    // if (this.updateInterval) {
+    //   clearInterval(this.updateInterval)
+    //   this.updateInterval = null
+    // }
   }
 
   private async loadModelsToCache(): Promise<void> {
-    try {
-      this.isUpdating = true
-      const models = await this.modelsService.getModels()
-      await this.cacheManager.set(this.CACHE_KEY, models, 300000) // 5 minutes TTL
-      this.logger.log(`✅ Кеш моделей обновлен: ${models.length} моделей`)
-    } catch (error) {
-      this.logger.error(`Ошибка кеша моделей: ${error.message}`)
-    } finally {
-      this.isUpdating = false
-    }
+    await Promise.resolve()
+
+    // try {
+    //   this.isUpdating = true
+    //   const models = await this.modelsService.getModels()
+    //   await this.cacheManager.set(this.CACHE_KEY, models, 300000) // 5 minutes TTL
+    //   this.logger.log(`✅ Кеш моделей обновлен: ${models.length} моделей`)
+    // } catch (error) {
+    //   this.logger.error(`Ошибка кеша моделей: ${error.message}`)
+    // } finally {
+    //   this.isUpdating = false
+    // }
   }
 
   private isCacheEnabled(): boolean {
@@ -74,10 +76,10 @@ export class ModelsCacheService implements OnModuleInit, OnModuleDestroy {
    * Получить все модели из кеша
    */
   async getCachedModels(): Promise<Model[]> {
-    if (!this.isCacheEnabled()) {
-      // Если кеш отключен, возвращаем данные напрямую из базы
-      return await this.modelsService.getModels()
-    }
+    // if (!this.isCacheEnabled()) {
+    // Если кеш отключен, возвращаем данные напрямую из базы
+    return await this.modelsService.getModels()
+    // }
 
     const models = await this.cacheManager.get<Model[]>(this.CACHE_KEY)
     return models || []

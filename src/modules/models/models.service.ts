@@ -490,165 +490,189 @@ export class ModelsService {
   }
 
   async modelsUpdate(modelsArtefacts, user) {
-    const creator = user.name
+    const startTime = Date.now()
 
-    let modelSource = MODEL_SOURCES.MRM
-    const modelIds: Set<string> = new Set()
-    const updatesBySource = {
-      [MODEL_SOURCES.SUM]: {
-        namesForUpdate: [],
-        descriptionsForUpdate: [],
-        artefactsForUpdate: [],
-        modelsAllocationForUpdate: [],
-        modelsUsageForUpdate: []
-      },
-      [MODEL_SOURCES.MRM]: {
-        namesForUpdate: [],
-        descriptionsForUpdate: [],
-        artefactsForUpdate: [],
-        modelsAllocationForUpdate: [],
-        modelsUsageForUpdate: []
-      }
-    }
-    const formattedModelsArtefacts = this.mergeArtefacts(modelsArtefacts)
+    try {
+      const creator = user.name
 
-    for (const modelItem of formattedModelsArtefacts) {
-      const { model_id, artefacts, model_source } = modelItem
-      modelIds.add(model_id)
-      modelSource = model_source
-      const updates = updatesBySource[model_source]
-
-      // Trust the initial model_source value from the request
-      // If model_source is 'sum', it means this model originally came from SUM
-      const isOriginalSumModel = model_source === MODEL_SOURCES.SUM
-
-      if (isOriginalSumModel) {
-        const newModel: ModelEntity | null =
-          await this.ensureSurrogateModelExists(model_id)
-
-        if (newModel) {
-          // Always ensure model_alias is updated for SUM models, regardless of current source
-          updatesBySource[MODEL_SOURCES.MRM].artefactsForUpdate.push({
-            model_id,
-            artefact_tech_label: 'model_alias',
-            artefact_string_value: generateModelAlias(
-              newModel.root_model_id,
-              newModel.model_version
-            ),
-            artefact_value_id: null,
-            creator
-          })
+      let modelSource = MODEL_SOURCES.MRM
+      const modelIds: Set<string> = new Set()
+      const updatesBySource = {
+        [MODEL_SOURCES.SUM]: {
+          namesForUpdate: [],
+          descriptionsForUpdate: [],
+          artefactsForUpdate: [],
+          modelsAllocationForUpdate: [],
+          modelsUsageForUpdate: []
+        },
+        [MODEL_SOURCES.MRM]: {
+          namesForUpdate: [],
+          descriptionsForUpdate: [],
+          artefactsForUpdate: [],
+          modelsAllocationForUpdate: [],
+          modelsUsageForUpdate: []
         }
       }
+      const formattedModelsArtefacts = this.mergeArtefacts(modelsArtefacts)
 
-      for (const artefactItem of artefacts) {
-        const { artefact_tech_label, artefact_string_value } = artefactItem
+      for (const modelItem of formattedModelsArtefacts) {
+        const { model_id, artefacts, model_source } = modelItem
+        modelIds.add(model_id)
+        modelSource = model_source
+        const updates = updatesBySource[model_source]
 
-        if (this.isBasicInfoArtefact(artefact_tech_label)) {
-          continue
+        // Trust the initial model_source value from the request
+        // If model_source is 'sum', it means this model originally came from SUM
+        const isOriginalSumModel = model_source === MODEL_SOURCES.SUM
+
+        if (isOriginalSumModel) {
+          const newModel: ModelEntity | null =
+            await this.ensureSurrogateModelExists(model_id)
+
+          if (newModel) {
+            // Always ensure model_alias is updated for SUM models, regardless of current source
+            updatesBySource[MODEL_SOURCES.MRM].artefactsForUpdate.push({
+              model_id,
+              artefact_tech_label: 'model_alias',
+              artefact_string_value: generateModelAlias(
+                newModel.root_model_id,
+                newModel.model_version
+              ),
+              artefact_value_id: null,
+              creator
+            })
+          }
         }
 
-        if (this.isNameArtefact(artefact_tech_label)) {
-          updates.namesForUpdate.push({
-            model_id,
-            model_name: artefact_string_value
-          })
-          if (isOriginalSumModel) {
-            updatesBySource[MODEL_SOURCES.MRM].namesForUpdate.push({
+        for (const artefactItem of artefacts) {
+          const { artefact_tech_label, artefact_string_value } = artefactItem
+
+          if (this.isBasicInfoArtefact(artefact_tech_label)) {
+            continue
+          }
+
+          if (this.isNameArtefact(artefact_tech_label)) {
+            updates.namesForUpdate.push({
               model_id,
               model_name: artefact_string_value
             })
-          }
-        } else if (this.isAllocationUsageArtefact(artefact_tech_label)) {
-          updates.modelsAllocationForUpdate.push({
-            model_id,
-            gbl_id: this.getGblId(artefact_tech_label),
-            percent: artefact_string_value,
-            comment: null,
-            creator
-          })
-        } else if (this.isAllocationCommentArtefact(artefact_tech_label)) {
-          updates.modelsAllocationForUpdate.push({
-            model_id,
-            gbl_id: this.getGblId(artefact_tech_label),
-            percent: null,
-            comment: artefact_string_value,
-            creator
-          })
-        } else if (this.isUsageArtefact(artefact_tech_label)) {
-          updates.modelsUsageForUpdate.push({
-            ...artefactItem,
-            model_id,
-            creator
-          })
-        } else {
-          switch (artefact_tech_label) {
-            case 'model_type':
-            case 'significance_validity':
-            case 'responsible_for_significance_validity':
-            case 'segment_name':
-            case 'implementation_segment':
-            case 'developing_report':
-            case 'data_source_description':
-            case 'target':
-            case 'psi_protocol':
-            case 'validation_department':
-            case 'plan_validation_type':
-            case 'validation_period':
-            case 'validation_report_approve_date':
-            case 'validation_result':
-            case 'validation_result_approve_date':
-            case 'auto_validation_result':
-            case 'model_changes_info':
-            case 'model_desc':
-            case 'model_name_validation':
-            case 'rfd':
-            case 'output_table':
-            case 'allocation_assessment_class':
-            case 'allocation_assessment_parameters':
-            case 'remove_decision':
+            if (isOriginalSumModel) {
+              updatesBySource[MODEL_SOURCES.MRM].namesForUpdate.push({
+                model_id,
+                model_name: artefact_string_value
+              })
+            }
+          } else if (this.isAllocationUsageArtefact(artefact_tech_label)) {
+            updates.modelsAllocationForUpdate.push({
+              model_id,
+              gbl_id: this.getGblId(artefact_tech_label),
+              percent: artefact_string_value,
+              comment: null,
+              creator
+            })
+          } else if (this.isAllocationCommentArtefact(artefact_tech_label)) {
+            updates.modelsAllocationForUpdate.push({
+              model_id,
+              gbl_id: this.getGblId(artefact_tech_label),
+              percent: null,
+              comment: artefact_string_value,
+              creator
+            })
+          } else if (this.isUsageArtefact(artefact_tech_label)) {
+            updates.modelsUsageForUpdate.push({
+              ...artefactItem,
+              model_id,
+              creator
+            })
+          } else {
+            switch (artefact_tech_label) {
+              case 'model_type':
+              case 'significance_validity':
+              case 'responsible_for_significance_validity':
+              case 'segment_name':
+              case 'implementation_segment':
+              case 'developing_report':
+              case 'data_source_description':
+              case 'target':
+              case 'psi_protocol':
+              case 'validation_department':
+              case 'plan_validation_type':
+              case 'validation_period':
+              case 'validation_report_approve_date':
+              case 'validation_result':
+              case 'validation_result_approve_date':
+              case 'auto_validation_result':
+              case 'model_changes_info':
+              case 'model_desc':
+              case 'model_name_validation':
+              case 'rfd':
+              case 'output_table':
+              case 'allocation_assessment_class':
+              case 'allocation_assessment_parameters':
+              case 'remove_decision':
+                updatesBySource[MODEL_SOURCES.MRM].artefactsForUpdate.push({
+                  model_id,
+                  ...artefactItem,
+                  creator
+                })
+                continue
+            }
+
+            updates.artefactsForUpdate.push({
+              model_id,
+              ...artefactItem,
+              creator
+            })
+            if (isOriginalSumModel) {
               updatesBySource[MODEL_SOURCES.MRM].artefactsForUpdate.push({
                 model_id,
                 ...artefactItem,
                 creator
               })
-              continue
-          }
-
-          updates.artefactsForUpdate.push({
-            model_id,
-            ...artefactItem,
-            creator
-          })
-          if (isOriginalSumModel) {
-            updatesBySource[MODEL_SOURCES.MRM].artefactsForUpdate.push({
-              model_id,
-              ...artefactItem,
-              creator
-            })
+            }
           }
         }
       }
-    }
 
-    await this.executeDatabaseUpdates(
-      updatesBySource[MODEL_SOURCES.SUM],
-      MODEL_SOURCES.SUM
-    )
-    await this.executeDatabaseUpdates(
-      updatesBySource[MODEL_SOURCES.MRM],
-      MODEL_SOURCES.MRM
-    )
-
-    if (modelIds.size) {
-      const modelsArray = Array.from(modelIds)
-      const results = await Promise.all(
-        modelsArray.map((model_id) =>
-          this.getModels({ model_id, ignoreModeFilter: true })
-        )
+      await this.executeDatabaseUpdates(
+        updatesBySource[MODEL_SOURCES.SUM],
+        MODEL_SOURCES.SUM
+      )
+      await this.executeDatabaseUpdates(
+        updatesBySource[MODEL_SOURCES.MRM],
+        MODEL_SOURCES.MRM
       )
 
-      return [].concat(...results)
+      if (modelIds.size) {
+        const modelsArray = Array.from(modelIds)
+
+        const fetchStartTime = Date.now()
+
+        try {
+          const results = await Promise.all(
+            modelsArray.map(async (model_id) => {
+              try {
+                return await this.getModels({
+                  model_id,
+                  ignoreModeFilter: true
+                })
+              } catch (error) {
+                throw new Error(
+                  `Failed to fetch updated data for model ${model_id}: ${error.message}`
+                )
+              }
+            })
+          )
+
+          return [].concat(...results)
+        } catch (error) {
+          throw error
+        }
+      }
+
+      return []
+    } catch (error) {
+      throw error
     }
   }
 
@@ -737,19 +761,35 @@ export class ModelsService {
       artefactsForUpdate = []
     } = updates
 
-    for (const name of namesForUpdate) {
-      await this.updateModelName(name, source)
-    }
+    try {
+      // Update model names
+      if (namesForUpdate.length > 0) {
+        const nameStartTime = Date.now()
 
-    if (artefactsForUpdate.length) {
-      await this.artefactService.updateArtefact(artefactsForUpdate, source)
-    }
+        for (const name of namesForUpdate) {
+          await this.updateModelName(name, source)
+        }
+      }
 
-    for (const allocation of modelsAllocationForUpdate) {
-      await this.updateModelAllocation(allocation, source)
-    }
+      // Update artefacts
+      if (artefactsForUpdate.length > 0) {
+        await this.artefactService.updateArtefact(artefactsForUpdate, source)
+      }
 
-    await this.usageService.updateUsage(modelsUsageForUpdate, source)
+      // Update allocations
+      if (modelsAllocationForUpdate.length > 0) {
+        for (const allocation of modelsAllocationForUpdate) {
+          await this.updateModelAllocation(allocation, source)
+        }
+      }
+
+      // Update usage
+      if (modelsUsageForUpdate.length > 0) {
+        await this.usageService.updateUsage(modelsUsageForUpdate, source)
+      }
+    } catch (error) {
+      throw error
+    }
   }
 
   private getGblId(label) {
