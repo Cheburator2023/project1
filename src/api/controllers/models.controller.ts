@@ -145,87 +145,61 @@ export class ModelsController {
   @ApiResponse({ status: 500, description: 'Внутренняя ошибка сервера' })
   @Get('/')
   async getModels(@Query() query: ModelsDto, @Res() response, @Req() req) {
-    // Если включен режим NO_ROLES, используем запрос для получения всех моделей
-    if (process.env.NO_ROLES === 'true') {
-      const allModels = await this.apiService.getAllModelsForGodMode(req.user)
-
-      // Применяем фильтрацию даже в режиме NO_ROLES
-      const filteredModels = this.filterCachedModels(
-        allModels,
-        query,
-        req.user?.groups
-      )
-
-      const result = {
-        data: {
-          cards: filteredModels
-        },
-        fromCache: false
-      }
-      return response.status(HttpStatus.OK).json(result)
-    }
-
-    // Если useCache=false или есть фильтры, получаем данные напрямую
-    const hasFilters =
-      query.date || query.model_id || (query.mode && query.mode.length > 0)
-
-    if (query.useCache === false || hasFilters) {
-      const models = await this.modelsService.getModels(query, req.user?.groups)
-      const result = {
-        data: {
-          cards: models
-        },
-        fromCache: false
-      }
-      return response.status(HttpStatus.OK).json(result)
-    }
-
-    // Ждем загрузки кеша, если он еще обновляется (максимум 10 секунд)
-    const maxWaitTime = 10000 // 10 seconds
-    const startTime = Date.now()
-    while (this.modelsCacheService.isUpdatingCache()) {
-      if (Date.now() - startTime > maxWaitTime) {
-        this.logger.warn(
-          'Cache update timeout reached, falling back to direct database query'
-        )
-        const models = await this.modelsService.getModels(
-          query,
-          req.user?.groups
-        )
-        const result = {
-          data: {
-            cards: models
-          },
-          fromCache: false
-        }
-        return response.status(HttpStatus.OK).json(result)
-      }
-      await new Promise((resolve) => setTimeout(resolve, 100))
-    }
-
-    // Получаем модели из кеша
-    const cachedModels = await this.modelsCacheService.getCachedModels()
-
-    let models: any[]
-    let fromCache = false
-
-    if (cachedModels.length > 0) {
-      // Применяем фильтрацию к кешированным данным
-      models = this.filterCachedModels(cachedModels, query, req.user?.groups)
-      fromCache = true
-    } else {
-      // Если кеш пуст, используем fallback к прямому запросу
-      models = await this.modelsService.getModels(query, req.user?.groups)
-    }
-
+    const models = await this.modelsService.getModels(query, req.user?.groups)
     const result = {
       data: {
         cards: models
       },
-      fromCache
+      fromCache: false
     }
-
     return response.status(HttpStatus.OK).json(result)
+
+    // Ждем загрузки кеша, если он еще обновляется (максимум 10 секунд)
+    // const maxWaitTime = 10000 // 10 seconds
+    // const startTime = Date.now()
+    // while (this.modelsCacheService.isUpdatingCache()) {
+    //   if (Date.now() - startTime > maxWaitTime) {
+    //     this.logger.warn(
+    //       'Cache update timeout reached, falling back to direct database query'
+    //     )
+    //     const models = await this.modelsService.getModels(
+    //       query,
+    //       req.user?.groups
+    //     )
+    //     const result = {
+    //       data: {
+    //         cards: models
+    //       },
+    //       fromCache: false
+    //     }
+    //     return response.status(HttpStatus.OK).json(result)
+    //   }
+    //   await new Promise((resolve) => setTimeout(resolve, 100))
+    // }
+
+    // // Получаем модели из кеша
+    // const cachedModels = await this.modelsCacheService.getCachedModels()
+
+    // let models: any[]
+    // let fromCache = false
+
+    // if (cachedModels.length > 0) {
+    //   // Применяем фильтрацию к кешированным данным
+    //   models = this.filterCachedModels(cachedModels, query, req.user?.groups)
+    //   fromCache = true
+    // } else {
+    //   // Если кеш пуст, используем fallback к прямому запросу
+    //   models = await this.modelsService.getModels(query, req.user?.groups)
+    // }
+
+    // const result = {
+    //   data: {
+    //     cards: models
+    //   },
+    //   fromCache
+    // }
+
+    // return response.status(HttpStatus.OK).json(result)
   }
 
   @ApiOperation({
