@@ -33,7 +33,7 @@ export class UsageService {
       })
 
       // Force cache update to ensure fresh data is available immediately
-      await this.modelsCacheService.forceUpdateCache()
+      // await this.modelsCacheService.forceUpdateCache()
     }
 
     return hasUpdates

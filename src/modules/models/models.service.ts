@@ -295,10 +295,6 @@ export class ModelsService {
 
     await this.executeDatabaseUpdates({ artefactsForUpdate }, MODEL_SOURCES.MRM)
 
-    // Обновляем кеш и ждем завершения операции перед возвратом результата
-
-    await this.modelsCacheService.forceUpdateCache()
-
     return this.getModels({ model_id, ignoreModeFilter: true })
   }
 
@@ -643,11 +639,6 @@ export class ModelsService {
       updatesBySource[MODEL_SOURCES.MRM],
       MODEL_SOURCES.MRM
     )
-
-    // Обновляем кеш и ждем завершения операции перед возвратом результата
-    if (process.env.NO_ROLES !== 'true') {
-      await this.modelsCacheService.forceUpdateCache()
-    }
 
     if (modelIds.size) {
       const modelsArray = Array.from(modelIds)

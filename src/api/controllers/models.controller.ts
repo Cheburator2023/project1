@@ -275,7 +275,7 @@ export class ModelsController {
     const result = await this.modelsService.modelCreate(artefacts, user)
 
     // Invalidate cache after successful creation to ensure fresh data
-    await this.modelsCacheService.forceUpdateCache()
+    // await this.modelsCacheService.forceUpdateCache()
 
     return response.status(HttpStatus.CREATED).json(result[0])
   }
@@ -308,9 +308,9 @@ export class ModelsController {
     }
 
     // Invalidate cache after successful update to ensure fresh data
-    await this.modelsCacheService.forceUpdateCache()
+    // await this.modelsCacheService.forceUpdateCache()
 
-    return response.status(HttpStatus.OK).json(result)
+    return response.status(HttpStatus.ACCEPTED).json(result)
   }
 
   @ApiOperation({

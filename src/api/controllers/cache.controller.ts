@@ -62,7 +62,7 @@ export class CacheController {
   @Post('/models/refresh')
   async refreshModelsCache() {
     try {
-      await this.modelsCacheService.forceUpdateCache()
+      // await this.modelsCacheService.forceUpdateCache()
       return {
         success: true,
         message: 'Кеш моделей успешно обновлен'

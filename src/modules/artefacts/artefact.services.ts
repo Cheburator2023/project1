@@ -37,7 +37,7 @@ export class ArtefactService {
     await modelsService.updateUpdateDate({ model_id: artefacts[0].model_id })
 
     // Force cache update to ensure fresh data is available immediately
-    await this.modelsCacheService.forceUpdateCache()
+    // await this.modelsCacheService.forceUpdateCache()
 
     return true
   }

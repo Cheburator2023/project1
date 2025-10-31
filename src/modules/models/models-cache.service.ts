@@ -117,10 +117,10 @@ export class ModelsCacheService implements OnModuleInit, OnModuleDestroy {
    */
   async forceUpdateCache(): Promise<void> {
     if (!this.isCacheEnabled()) {
-      this.logger.log(
-        '⚠️ Принудительное обновление кеша пропущено - кеш отключен'
-      )
-      return
+      // this.logger.log(
+      //   '⚠️ Принудительное обновление кеша пропущено - кеш отключен'
+      // )
+      await Promise.resolve()
     }
     await this.loadModelsToCache()
   }

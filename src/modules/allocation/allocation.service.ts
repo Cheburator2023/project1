@@ -25,11 +25,6 @@ export class AllocationService {
     const allocationService = this.allocationServiceFactory.getService(source)
     const result = await allocationService.handleUpdateAllocation(data)
 
-    if (result) {
-      // Force cache update to ensure fresh data is available immediately
-      await this.modelsCacheService.forceUpdateCache()
-    }
-
     return result
   }
 }
