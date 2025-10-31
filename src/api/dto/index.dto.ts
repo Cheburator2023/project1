@@ -480,7 +480,7 @@ export class MetricsDto {
   @IsOptional()
   @IsBoolean()
   @Transform(({ value }) => value === 'true' || value === true)
-  useDatamart = true
+  useDatamart = false
 
   @ApiModelPropertyOptional({
     example: 'current',

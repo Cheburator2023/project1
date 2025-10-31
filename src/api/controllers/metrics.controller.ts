@@ -31,7 +31,7 @@ export class MetricsController {
   @ApiResponse({ status: 500, description: 'Внутренняя ошибка сервера' })
   @Get('/')
   async getMetrics(@Query() query: MetricsDto, @Res() response) {
-    const TIMEOUT_MS = 10000 // 10 seconds timeout
+    const TIMEOUT_MS = 100000 // 100 seconds timeout
 
     try {
       const { startDate, endDate, stream, useDatamart } = query
@@ -109,7 +109,7 @@ export class MetricsController {
   })
   @Get('/export')
   async exportMetricsToExcel(@Query() query: MetricsDto, @Res() res: Response) {
-    const TIMEOUT_MS = 10000 // 10 seconds timeout for Excel generation
+    const TIMEOUT_MS = 100000 // 100 seconds timeout for Excel generation
     const { metric, startDate, endDate, stream, dataType, useDatamart } = query
 
     if (!metric) {
