@@ -1,5 +1,54 @@
 # Semantic Versioning Changelog
 
+# [1.37.0](https://git.sfera.inno.local:7999/SUMD/mrms-backend/compare/v1.36.0...v1.37.0) (2025-10-31)
+
+
+### Bug Fixes
+
+* cache fix ([f9aead0](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/f9aead0052466766a59e7870038fdf055559b213))
+* cache fix ([d81ed6d](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/d81ed6ddb5ac24b57e086d2ed44525a472fa014c))
+* **api:** improve null value filtering for 'not-null' marker ([51871ec](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/51871ec0107b55f8d243697931a2977ebb265c27))
+* deps ([e70a37a](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/e70a37a3c403ecd14f7112c553673ad0495a35f8))
+* fix for sync remove_decision artefact ([0080432](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/0080432d2b251b756dd3b91ea9140be7b518f2dd))
+* graceful degradation для би витрин и флаг отключения ([ef44687](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/ef44687d7b3dac650a90878bf7e481d04635bc6c))
+* **api.service:** prevent empty arrays from being processed in filter ([c156833](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/c156833f088fc7166a7936f3a6df4be0d4264c7a))
+* **controllers:** improve error handling with status codes and stack traces ([8d1a8ba](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/8d1a8ba92ed503a7a952b882580e9eee74696096))
+* **models:** add missing 'status' case to artefact updates ([17de024](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/17de024fdcb550443dd99f88f5f264badf0383e6))
+* **models:** change date filtering logic to use create_date only ([1149287](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/1149287c0dddd72a9353871ad0565afaa9762cd0))
+* **models:** correct date filtering logic to use >= instead of between ([fb88721](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/fb88721987ee77f616a0a0c829c17ea322b71099))
+* **models:** revert 'status' case to artefact updates ([cd60553](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/cd605534ff7c9470179a17a540ee942a773058cf))
+* **models:** use update_date instead of create_date when filtering models ([b0b6094](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/b0b6094099fa295b43cbae4ec065c57db309afb4))
+* **sql:** correct timestamp format and rename status column ([ea4c737](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/ea4c7373282d6d3bad101855d305a350cb106247))
+* **sql:** correct timestamp format in SQL queries and remove unused business_status ([eb967f4](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/eb967f4ea6e05bb16871a32b33ff1a7de5022bb4))
+* date filter fix ([a87df88](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/a87df889400c6b3bad73b0ce5a47180922ad9827))
+* filtering fix ([59a962c](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/59a962c2562d5e41cd2afd4a00b752ee45ae4d3d))
+* remove extra spaces in the department directory ([470d07f](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/470d07f8caae28fb486cff5b98d956eaeb0fc4f8))
+* фикс остаток конфликтов ([66c339b](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/66c339bb02f5533e92af216865af880d1d9d4903))
+
+
+### Features
+
+* **cache:** implement universal caching system with monitoring ([cba6c0e](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/cba6c0efc5a6ef869fdd5ba371ad3bba3a363c40))
+* **database-schema:** add database schema module and endpoint ([f0ffe4c](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/f0ffe4c2827367814dc9b31f74155434c5ef392c))
+* **metrics:** add request timeout handling for metrics endpoints ([7c83ab7](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/7c83ab7c177cfd4b844a5f29d8b323787c49934a))
+* **models:** add useCache option and refactor model filtering ([761b234](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/761b234157a033adab04670a5f6684d05f6b82c9))
+* **models-cache:** add configurable cache toggle via MODEL_CACHE_ENABLED ([7486191](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/748619106a297ddb9a33ec1c1ce26325ca806b8e))
+* add developing_model_reason artefact ID mappings and update merge strategies ([ec6862b](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/ec6862b092c31fc7a7fd32fe728a4db587d7dc20))
+* add ModelMergeService for artefacts merging logic ([7f925c9](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/7f925c91fd7fa5a7bb74f5864d2930e9762af74b))
+* add service and controller for managing artefact realizations ([4308ca8](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/4308ca8afdda66ae60423b735415912e09c6815e))
+* add SSL connection for data bases ([af4d327](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/af4d3273a45fb4af03125c5d20456ef1e94ab5df))
+* bi витрина ([d2822d5](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/d2822d5c35b8ede68dfd9c2970ceec1354652bdc))
+* bi витрина - get models ([589643e](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/589643e6edf4368a726f7d12f5ab0f64b8b5388e))
+* enhance artefact-realizations API to support historical data retrieval ([177a894](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/177a89428a82be0afe25926b418d9327bf0b1267))
+* implement god mode and template migration system ([9e00d40](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/9e00d4013f4454e8003d598ac499f0288e272cbb))
+* implement ModelMergePrefetchService for optimized artefact merging ([1eb1446](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/1eb1446f5c7e726d757b898d77333ec31b86360d))
+* introduce service for default artefact values on model creation ([2243b42](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/2243b4250101da398f700951f4c77ccfd2b8273f))
+* new template types as in ag-grid model ([da98617](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/da98617f2af414a6ed30cf6b678f3b7a50425383))
+* update get model sql query ([450691e](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/450691e55dea5a39bc17ba059849938c1aabcb9a))
+* витрина для активных задач пользователя ([455c82a](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/455c82a97e8c119998970a3dd305fbb43473f4e2))
+* синхронизация артефакта Решение о внедрении ([37f9afe](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/37f9afe27c0b129e397e0b5448351553c8594cb3))
+* создал запрос к витрине для расчета метрик ([e6ad16a](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/e6ad16adbc0beca4d0294e951cfca4cf7a851168))
+
 # [1.36.0](https://git.sfera.inno.local:7999/SUMD/mrms-backend/compare/v1.35.0...v1.36.0) (2025-10-17)
 
 
