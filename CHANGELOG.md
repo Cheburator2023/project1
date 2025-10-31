@@ -1,5 +1,12 @@
 # Semantic Versioning Changelog
 
+## [1.37.1](https://git.sfera.inno.local:7999/SUMD/mrms-backend/compare/v1.37.0...v1.37.1) (2025-10-31)
+
+
+### Bug Fixes
+
+* **metrics:** change default useDatamart to false and increase timeout ([e8e12f0](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/e8e12f02357be710ade7233361db31e46e05bad5))
+
 # [1.37.0](https://git.sfera.inno.local:7999/SUMD/mrms-backend/compare/v1.36.0...v1.37.0) (2025-10-31)
 
 
