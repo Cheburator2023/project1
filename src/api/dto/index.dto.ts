@@ -443,6 +443,14 @@ export class FilterDto {
   @IsArray()
   @IsString({ each: true })
   mode: string[]
+
+  @ApiModelPropertyOptional({
+    example: 'YYYY-MM-DD',
+    description: 'Дата отчета, влияет на расчеты устаревания КМР'
+  })
+  @IsOptional()
+  @IsDateString()
+  reportDate?: string
 }
 
 export class MetricsDto {

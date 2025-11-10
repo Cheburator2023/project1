@@ -18,6 +18,7 @@ import {
   BiDatamartController
 } from './controllers'
 import { ApiService } from './api.service'
+import { RolesGuard } from 'src/api/guards/roles.guard'
 
 @Module({
   controllers: [
@@ -30,7 +31,7 @@ import { ApiService } from './api.service'
     ReportsController,
     BiDatamartController
   ],
-  providers: [ApiService],
+  providers: [ApiService, RolesGuard],
   imports: [
     SumDatabaseModule,
     MrmDatabaseModule,

@@ -143,7 +143,8 @@ FROM models_new m_
            MAX(CASE WHEN artefact_id = 2107 THEN artefact_string_value ELSE NULL END) AS operational_monitoring,
            MAX(CASE WHEN artefact_id = 2108 THEN artefact_string_value ELSE NULL END) AS analytical_monitoring,
            MAX(CASE WHEN artefact_id = 2109 THEN artefact_string_value ELSE NULL END) AS business_model_risk_subtype,
-           MAX(CASE WHEN artefact_id = 2659 THEN artefact_string_value ELSE NULL END) AS model_desc
+           MAX(CASE WHEN artefact_id = 2659 THEN artefact_string_value ELSE NULL END) AS model_desc,
+           MAX(CASE WHEN artefact_id = 2669 THEN artefact_string_value ELSE NULL END) AS model_risk
     FROM (
              SELECT artefact_realizations_new.model_id,
                     artefact_realizations_new.artefact_id,

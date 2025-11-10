@@ -265,7 +265,8 @@ LEFT JOIN (
         MAX(CASE WHEN artefact_id = 2663 THEN artefact_string_value ELSE NULL END) AS project_ref,
         MAX(CASE WHEN artefact_id = 2666 THEN artefact_string_value ELSE NULL END) AS runtime_subsystem,
         MAX(CASE WHEN artefact_id = 2667 THEN artefact_string_value ELSE NULL END) AS buiseness_process_name,
-        MAX(CASE WHEN artefact_id = 2668 THEN artefact_string_value ELSE NULL END) AS prom_datamart_name
+        MAX(CASE WHEN artefact_id = 2668 THEN artefact_string_value ELSE NULL END) AS prom_datamart_name,
+        MAX(CASE WHEN artefact_id = 2669 THEN artefact_string_value ELSE NULL END) AS model_risk
     FROM (
         SELECT
             artefact_realizations_new.model_id,

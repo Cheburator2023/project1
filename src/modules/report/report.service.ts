@@ -16,8 +16,9 @@ import {
   ArtefactTypeId
 } from 'src/modules/models/interfaces'
 
-import { isValidDate } from 'src/system/common/utils'
 import { MetricsEnum } from 'src/modules/metrics/enums'
+import { getDefaultModelRiskForReport } from 'src/modules/models/utils/model-risk.utils'
+import { isValidDate } from 'src/system/common/utils'
 
 type FilterModel = {
   [key: string]: SetFilter | DateFilter
@@ -114,11 +115,12 @@ export class ReportService {
   async getReport(
     filters: FilterModel | { [key: string]: string[] },
     groups?: [],
-    mode?: string[]
+    mode?: string[],
+    reportDate?: string
   ): Promise<Buffer> {
     const legacyFilters = this.convertFiltersToLegacyFormat(filters)
     const reportData: { headers: Preset[]; body: Model[] } =
-      await this.generateReportData(legacyFilters, groups, mode)
+      await this.generateReportData(legacyFilters, groups, mode, reportDate)
     const xlsxBuffer: Buffer = await this.generateExcel(reportData)
 
     return xlsxBuffer
@@ -127,7 +129,8 @@ export class ReportService {
   private async generateReportData(
     filters: { [key: string]: string[] },
     groups?: [],
-    mode?: string[]
+    mode?: string[],
+    reportDate?: string
   ): Promise<{ headers: Preset[]; body: Model[] }> {
     if (!Object.keys(filters).length) {
       throw new BadRequestException(
@@ -143,6 +146,17 @@ export class ReportService {
 
     const models: Model[] = await this.modelsService.getModels({ mode }, groups)
     const filteredModels = this.filterModels(models, artefacts, filters)
+
+    // Проверяем, является ли это отчётом "Расчёт модельного риска"
+    const isModelRiskReport = mode?.includes('model_risk_calculation')
+
+    if (isModelRiskReport) {
+      // Только автозаполнение КМР по умолчанию (100%), без расчётов устаревания и сегмента
+      filteredModels.forEach((model) => {
+        const kmr = getDefaultModelRiskForReport(model.model_risk)
+        model.model_risk = String(kmr)
+      })
+    }
 
     return {
       headers: sortedHeaders,

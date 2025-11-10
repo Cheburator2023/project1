@@ -609,6 +609,7 @@ export class ModelsService {
               case 'output_table':
               case 'allocation_assessment_class':
               case 'allocation_assessment_parameters':
+              case 'model_risk':
               case 'remove_decision':
                 updatesBySource[MODEL_SOURCES.MRM].artefactsForUpdate.push({
                   model_id,
