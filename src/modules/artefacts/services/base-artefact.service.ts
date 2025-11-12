@@ -455,6 +455,7 @@ export abstract class BaseArtefactService implements IArtefactService {
       const isSelectType: boolean = ARTEFACT_TYPES_REQUIRING_VALUES.has(
         artefact.artefact_type_id
       )
+      const isMultiFill: boolean = artefact.is_multi_fill_flg === '1'
       const artefactValues: ArtefactValueEntity[] | null = isSelectType
         ? await this.getArtefactValues(artefact.artefact_id)
         : null
@@ -462,6 +463,7 @@ export abstract class BaseArtefactService implements IArtefactService {
         artefactData,
         artefactValues
       )
+
       const latestArtefactRealization: ArtefactRealizationEntity | null =
         await this.getLatestArtefactRealization(model_id, artefact.artefact_id)
 
@@ -477,7 +479,26 @@ export abstract class BaseArtefactService implements IArtefactService {
         }
       )
 
-      if (
+      if (isMultiFill) {
+        const allActiveRealizations = await this.getLatestArtefactRealizations(
+          model_id,
+          artefact.artefact_id
+        )
+
+        if (
+          allActiveRealizations &&
+          allActiveRealizations.length === 1 &&
+          allActiveRealizations[0].artefact_value_id === resolvedArtefactValueId
+        ) {
+          return false
+        }
+
+        if (allActiveRealizations && allActiveRealizations.length > 0) {
+          for (const realization of allActiveRealizations) {
+            await this.setEffectiveToArtefactRealization(realization, isSelectType)
+          }
+        }
+      } else if (
         this.shouldSkipUpdate(
           latestArtefactRealization,
           resolvedArtefactValueId,
@@ -494,9 +515,7 @@ export abstract class BaseArtefactService implements IArtefactService {
           }
         )
         return false
-      }
-
-      if (latestArtefactRealization) {
+      } else if (latestArtefactRealization) {
         this.logger.info(
           'Setting effective_to for previous realization',
           'УстановкаEffectiveToДляПредыдущейРеализации',
