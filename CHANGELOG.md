@@ -1,5 +1,12 @@
 # Semantic Versioning Changelog
 
+# [1.38.0](https://git.sfera.inno.local:7999/SUMD/mrms-backend/compare/v1.37.1...v1.38.0) (2025-11-12)
+
+
+### Features
+
+* исправление дубликатов в поле подразделение владельца модели ([cfaa66d](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/cfaa66d7e1c9f8a2d2dbfd0e45426fa4ab9633d8))
+
 ## [1.37.1](https://git.sfera.inno.local:7999/SUMD/mrms-backend/compare/v1.37.0...v1.37.1) (2025-10-31)
 
 
