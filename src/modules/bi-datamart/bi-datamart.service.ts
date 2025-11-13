@@ -12,17 +12,13 @@ export class BiDatamartService {
     private readonly mrmDatabaseService: MrmDatabaseService
   ) {}
 
-  /**
-   * Проверка существования таблицы models_bi_datamart
-   */
   private async checkTableExists(): Promise<boolean> {
     try {
       const result = await this.mrmDatabaseService.query(
         `
         SELECT EXISTS (
-          SELECT FROM information_schema.tables 
-          WHERE table_schema = 'public' 
-          AND table_name = 'models_bi_datamart'
+          SELECT FROM pg_tables 
+          WHERE tablename = 'models_bi_datamart'
         ) as table_exists
       `,
         {}
@@ -36,10 +32,6 @@ export class BiDatamartService {
     }
   }
 
-  /**
-   * Синхронизация всех данных из ModelsService в BI витрину
-   * Запускается раз в сутки
-   */
   async syncAllModelsToDatamart(): Promise<{
     success: boolean
     totalProcessed: number
@@ -67,7 +59,6 @@ export class BiDatamartService {
     }
 
     try {
-      // Проверяем существование таблицы
       const tableExists = await this.checkTableExists()
       if (!tableExists) {
         this.logger.warn(
@@ -80,10 +71,9 @@ export class BiDatamartService {
         )
         return result
       }
-      // Получаем ВСЕ модели из ModelsService
+
       this.logger.log('📊 Получение данных из ModelsService...')
 
-      // Добавляем таймаут и более детальное логирование
       const startGetModels = Date.now()
       this.logger.log(
         '🔍 Вызываем modelsService.getModels({ ignoreModeFilter: true })'
@@ -107,7 +97,6 @@ export class BiDatamartService {
         return result
       }
 
-      // Обрабатываем модели батчами
       const batchSize = 100
       for (let i = 0; i < models.length; i += batchSize) {
         const batch = models.slice(i, i + batchSize)
@@ -146,7 +135,6 @@ export class BiDatamartService {
           }
         }
 
-        // Логгируем прогресс чаще - каждые 100 моделей
         const processed = Math.min(i + batchSize, models.length)
         const percentage = Math.round((processed / models.length) * 100)
         const elapsed = Date.now() - startTime
@@ -169,7 +157,6 @@ export class BiDatamartService {
         `📊 Вставлено: ${result.inserted}, Обновлено: ${result.updated}, Пропущено: ${result.skipped}`
       )
 
-      // Подробные логи об измененных моделях
       if (result.insertedModels.length > 0) {
         this.logger.log(
           `🆕 Новые модели (${
@@ -197,11 +184,7 @@ export class BiDatamartService {
     return result
   }
 
-  /**
-   * Получение базовой статистики BI витрины
-   */
   async getDatamartStats() {
-    // Проверяем существование таблицы
     const tableExists = await this.checkTableExists()
     if (!tableExists) {
       this.logger.warn('⚠️ Таблица models_bi_datamart не существует')
@@ -242,25 +225,19 @@ export class BiDatamartService {
     }
   }
 
-  /**
-   * Вставка или обновление одной модели в витрине
-   */
   private async upsertModel(model: any): Promise<'insert' | 'update' | 'skip'> {
     const dataHash = this.createModelHash(model)
 
-    // Проверяем, есть ли модель и изменились ли данные
     const existingRecord = await this.mrmDatabaseService.query(
       'SELECT data_hash FROM models_bi_datamart WHERE system_model_id = :system_model_id',
       { system_model_id: model.system_model_id }
     )
 
     if (existingRecord.length > 0) {
-      // Модель существует, проверяем изменения
       if (existingRecord[0].data_hash === dataHash) {
-        return 'skip' // Данные не изменились
+        return 'skip'
       }
 
-      // Обновляем существующую модель
       await this.mrmDatabaseService.query(
         `
         UPDATE models_bi_datamart 
@@ -275,7 +252,6 @@ export class BiDatamartService {
 
       return 'update'
     } else {
-      // Вставляем новую модель
       await this.mrmDatabaseService.query(
         `
         INSERT INTO models_bi_datamart (
@@ -291,9 +267,6 @@ export class BiDatamartService {
     }
   }
 
-  /**
-   * Подготовка данных модели для вставки/обновления
-   */
   private prepareModelData(model: any, dataHash: string) {
     return {
       system_model_id: model.system_model_id,
@@ -302,11 +275,7 @@ export class BiDatamartService {
     }
   }
 
-  /**
-   * Создание MD5 хеша от всех данных модели (по всем полям)
-   */
   private createModelHash(model: any): string {
-    // Сортируем ключи для стабильного хеша
     const sortedModel = Object.keys(model)
       .sort()
       .reduce((result, key) => {

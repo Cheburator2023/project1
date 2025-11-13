@@ -15,17 +15,13 @@ export class TasksDatamartService {
     private readonly mrmDatabaseService: MrmDatabaseService
   ) {}
 
-  /**
-   * Проверка существования таблицы tasks_bi_datamart
-   */
   private async checkTableExists(): Promise<boolean> {
     try {
       const result = await this.mrmDatabaseService.query(
         `
         SELECT EXISTS (
-          SELECT FROM information_schema.tables 
-          WHERE table_schema = 'public' 
-          AND table_name = 'tasks_bi_datamart'
+          SELECT FROM pg_tables 
+          WHERE tablename = 'tasks_bi_datamart'
         ) as table_exists
       `,
         {}
@@ -39,10 +35,6 @@ export class TasksDatamartService {
     }
   }
 
-  /**
-   * Синхронизация всех задач в BI витрину
-   * Запускается раз в сутки
-   */
   async syncAllTasksToDatamart(): Promise<{
     success: boolean
     totalProcessed: number
@@ -64,7 +56,6 @@ export class TasksDatamartService {
     }
 
     try {
-      // Проверяем существование таблицы
       const tableExists = await this.checkTableExists()
       if (!tableExists) {
         this.logger.warn(
@@ -77,13 +68,12 @@ export class TasksDatamartService {
         )
         return result
       }
-      // Получаем все модели для передачи в getUsersActiveTasks
+
       this.logger.log('📊 Получение моделей...')
       const models = await this.modelsService.getModels({
         ignoreModeFilter: true
       })
 
-      // Получаем все активные задачи
       this.logger.log('📋 Получение активных задач...')
       const tasks = await this.usersTasksService.getUsersActiveTasks(
         models as any
@@ -94,22 +84,15 @@ export class TasksDatamartService {
 
       if (tasks.length === 0) {
         this.logger.warn('⚠️ Не найдено задач для синхронизации')
-        // Удаляем все записи из витрины, так как активных задач нет
         await this.cleanupDatamart()
         result.success = true
         result.duration_ms = Date.now() - startTime
         return result
       }
 
-      // Получаем текущие задачи из витрины для сравнения
       const existingTasks = await this.getExistingTasksMap()
 
-      // Очищаем витрину ДО вставки новых задач
-      // Поскольку теперь все задачи вставляются как новые записи,
-      // мы не можем просто удалить по task_id + model_id
-      // Вместо этого очищаем всю витрину и заполняем заново
       if (tasks.length > 0) {
-        // Получаем количество существующих записей для статистики
         const existingCount = existingTasks.size
         if (existingCount > 0) {
           this.logger.log(
@@ -118,7 +101,6 @@ export class TasksDatamartService {
           await this.cleanupDatamart()
           result.deleted = existingCount
 
-          // Теперь все задачи будут вставлены как новые
           this.logger.log(
             `📝 Все ${tasks.length} задач будут вставлены как новые записи`
           )
@@ -127,7 +109,6 @@ export class TasksDatamartService {
 
       const processedTaskKeys = new Set<string>()
 
-      // Обрабатываем задачи батчами
       const batchSize = 100
       for (let i = 0; i < tasks.length; i += batchSize) {
         const batch = tasks.slice(i, i + batchSize)
@@ -140,15 +121,12 @@ export class TasksDatamartService {
 
         for (let j = 0; j < batch.length; j++) {
           const task = batch[j]
-          // Создаем уникальный ключ для каждой задачи, включая дубли
-          // Используем индекс в батче + timestamp для уникальности
           const uniqueKey = `${task.task_id}_${task.model_id}_${
             i + j
           }_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
           processedTaskKeys.add(uniqueKey)
 
           try {
-            // Теперь все задачи только вставляются
             await this.upsertTask(task)
             result.inserted++
           } catch (error) {
@@ -181,11 +159,7 @@ export class TasksDatamartService {
     return result
   }
 
-  /**
-   * Получение статистики Tasks витрины
-   */
   async getTasksDatamartStats() {
-    // Проверяем существование таблицы
     const tableExists = await this.checkTableExists()
     if (!tableExists) {
       this.logger.warn('⚠️ Таблица tasks_bi_datamart не существует')
@@ -226,11 +200,7 @@ export class TasksDatamartService {
     }
   }
 
-  /**
-   * Получение задач из витрины
-   */
   async getTasksFromDatamart(): Promise<Task[]> {
-    // Проверяем существование таблицы
     const tableExists = await this.checkTableExists()
     if (!tableExists) {
       this.logger.warn(
@@ -262,11 +232,8 @@ export class TasksDatamartService {
             ? JSON.parse(row.task_data)
             : row.task_data
 
-        // Базовые поля из колонок (для производительности)
-        // Остальные поля из JSON
         return {
           ...taskData,
-          // Переопределяем ключевые поля из колонок, так как они могут быть более актуальными
           task_id: row.task_id,
           model_id: row.model_id,
           assignee: row.assignee,
@@ -283,17 +250,9 @@ export class TasksDatamartService {
     }
   }
 
-  /**
-   * Вставка задачи в витрину
-   * Теперь всегда вставляет новые записи для дублей
-   */
   private async upsertTask(task: Task): Promise<void> {
-    // Для дублей всегда вставляем как новую запись
-    // Убираем проверку на существование по task_id + model_id
-
     const dataHash = this.createTaskHash(task)
 
-    // Всегда вставляем новую задачу
     await this.mrmDatabaseService.query(
       `
       INSERT INTO tasks_bi_datamart (
@@ -308,9 +267,6 @@ export class TasksDatamartService {
     )
   }
 
-  /**
-   * Удаление задачи из витрины
-   */
   private async deleteTask(task_id: string, model_id: string): Promise<void> {
     await this.mrmDatabaseService.query(
       'DELETE FROM tasks_bi_datamart WHERE task_id = :task_id AND model_id = :model_id',
@@ -318,29 +274,19 @@ export class TasksDatamartService {
     )
   }
 
-  /**
-   * Очистка всей витрины (когда нет активных задач)
-   */
   private async cleanupDatamart(): Promise<void> {
     await this.mrmDatabaseService.query('TRUNCATE TABLE tasks_bi_datamart', {})
     this.logger.log('🧹 Витрина задач очищена')
   }
 
-  /**
-   * Получение карты существующих задач
-   * Теперь просто считаем количество записей для статистики
-   */
   private async getExistingTasksMap(): Promise<Map<string, string>> {
     const rows = await this.mrmDatabaseService.query(
       'SELECT id FROM tasks_bi_datamart',
       {}
     )
 
-    // Создаем пустую карту, так как мы не используем её для логики
-    // Просто возвращаем размер для статистики
     const map = new Map<string, string>()
 
-    // Добавляем фиктивные ключи для подсчета
     rows.forEach((row, index) => {
       map.set(`record_${index}`, 'dummy')
     })
@@ -348,9 +294,6 @@ export class TasksDatamartService {
     return map
   }
 
-  /**
-   * Подготовка данных задачи для вставки/обновления
-   */
   private prepareTaskData(task: Task, dataHash: string) {
     return {
       task_id: task.task_id,
@@ -364,11 +307,7 @@ export class TasksDatamartService {
     }
   }
 
-  /**
-   * Создание MD5 хеша от данных задачи
-   */
   private createTaskHash(task: Task): string {
-    // Создаём объект только с важными полями для хеша
     const hashableTask = {
       task_id: task.task_id,
       model_id: task.model_id,
