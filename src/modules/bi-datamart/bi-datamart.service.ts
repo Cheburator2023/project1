@@ -40,8 +40,6 @@ export class BiDatamartService {
     skipped: number
     errors: string[]
     duration_ms: number
-    updatedModels?: string[]
-    insertedModels?: string[]
   }> {
     const startTime = Date.now()
     this.logger.log('🚀 Начало синхронизации BI витрины')
@@ -53,9 +51,7 @@ export class BiDatamartService {
       updated: 0,
       skipped: 0,
       errors: [],
-      duration_ms: 0,
-      updatedModels: [],
-      insertedModels: []
+      duration_ms: 0
     }
 
     try {
@@ -114,12 +110,9 @@ export class BiDatamartService {
             switch (operation) {
               case 'insert':
                 result.inserted++
-                result.insertedModels.push(model.system_model_id)
                 break
               case 'update':
                 result.updated++
-                result.updatedModels.push(model.system_model_id)
-                this.logger.log(`🔄 Обновлена модель: ${model.system_model_id}`)
                 break
               case 'skip':
                 result.skipped++
@@ -156,22 +149,6 @@ export class BiDatamartService {
       this.logger.log(
         `📊 Вставлено: ${result.inserted}, Обновлено: ${result.updated}, Пропущено: ${result.skipped}`
       )
-
-      if (result.insertedModels.length > 0) {
-        this.logger.log(
-          `🆕 Новые модели (${
-            result.insertedModels.length
-          }): ${result.insertedModels.join(', ')}`
-        )
-      }
-
-      if (result.updatedModels.length > 0) {
-        this.logger.log(
-          `🔄 Обновленные модели (${
-            result.updatedModels.length
-          }): ${result.updatedModels.join(', ')}`
-        )
-      }
     } catch (error) {
       result.duration_ms = Date.now() - startTime
       this.logger.error(

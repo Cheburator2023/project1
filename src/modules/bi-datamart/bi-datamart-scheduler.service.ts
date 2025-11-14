@@ -14,7 +14,8 @@ export class BiDatamartSchedulerService
   private readonly logger = new Logger(BiDatamartSchedulerService.name)
   private syncInProgress = false
   private syncInterval: NodeJS.Timeout | null = null
-  private readonly SYNC_HOUR = 2
+  private readonly SYNC_HOUR = 
+    parseInt(process.env.BI_DATAMART_MODELS_SYNC_HOUR || '2')
   private readonly SYNC_TIMEOUT = 
     parseInt(process.env.BI_DATAMART_SYNC_TIMEOUT_MS || '1800000')
   private readonly isEnabled: boolean
