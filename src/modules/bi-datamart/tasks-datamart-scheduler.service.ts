@@ -14,8 +14,14 @@ export class TasksDatamartSchedulerService
   private readonly logger = new Logger(TasksDatamartSchedulerService.name)
   private syncInProgress = false
   private syncInterval: NodeJS.Timeout | null = null
-  private readonly SYNC_HOUR = 
-    parseInt(process.env.BI_DATAMART_TASKS_SYNC_HOUR || '3')
+  private readonly SYNC_HOUR = this.normalizeHour(
+    process.env.BI_DATAMART_TASKS_SYNC_HOUR,
+    3
+  )
+  private readonly SYNC_MINUTE = this.normalizeMinute(
+    process.env.BI_DATAMART_TASKS_SYNC_MINUTE,
+    0
+  )
   private readonly SYNC_TIMEOUT = 
     parseInt(process.env.BI_DATAMART_SYNC_TIMEOUT_MS || '1800000')
   private readonly isEnabled: boolean
@@ -33,12 +39,15 @@ export class TasksDatamartSchedulerService
 
   private startDailySync(): void {
     this.logger.log(
-      `🕐 Настройка ежедневной синхронизации Tasks на ${this.SYNC_HOUR}:00`
+      `🕐 Настройка ежедневной синхронизации Tasks на ${this.formatTime(
+        this.SYNC_HOUR,
+        this.SYNC_MINUTE
+      )}`
     )
 
     const now = new Date()
     const nextSync = new Date()
-    nextSync.setHours(this.SYNC_HOUR, 0, 0, 0)
+    nextSync.setHours(this.SYNC_HOUR, this.SYNC_MINUTE, 0, 0)
 
     if (nextSync <= now) {
       nextSync.setDate(nextSync.getDate() + 1)
@@ -62,6 +71,28 @@ export class TasksDatamartSchedulerService
       )
       setTimeout(() => this.performDailySync(), 10000)
     }
+  }
+
+  private normalizeHour(value: string | undefined, fallback: number): number {
+    const parsed = parseInt(value ?? '')
+    if (isNaN(parsed)) {
+      return fallback
+    }
+    return Math.min(Math.max(parsed, 0), 23)
+  }
+
+  private normalizeMinute(value: string | undefined, fallback: number): number {
+    const parsed = parseInt(value ?? '')
+    if (isNaN(parsed)) {
+      return fallback
+    }
+    return Math.min(Math.max(parsed, 0), 59)
+  }
+
+  private formatTime(hour: number, minute: number): string {
+    const h = hour.toString().padStart(2, '0')
+    const m = minute.toString().padStart(2, '0')
+    return `${h}:${m}`
   }
 
   private async performDailySync(): Promise<void> {
