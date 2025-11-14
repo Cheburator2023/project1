@@ -113,12 +113,6 @@ export class TasksDatamartService {
       for (let i = 0; i < tasks.length; i += batchSize) {
         const batch = tasks.slice(i, i + batchSize)
 
-        this.logger.log(
-          `🔄 Обрабатываем батч ${Math.floor(i / batchSize) + 1} из ${Math.ceil(
-            tasks.length / batchSize
-          )}`
-        )
-
         for (let j = 0; j < batch.length; j++) {
           const task = batch[j]
           const uniqueKey = `${task.task_id}_${task.model_id}_${
@@ -135,6 +129,14 @@ export class TasksDatamartService {
             )
             result.errors.push(`Задача ${uniqueKey}: ${error.message}`)
           }
+        }
+
+        const processed = Math.min(i + batchSize, tasks.length)
+        const percentage = Math.round((processed / tasks.length) * 100)
+        if (percentage % 25 === 0 || processed === tasks.length) {
+          this.logger.log(
+            `📈 Прогресс Tasks: ${processed}/${tasks.length} (${percentage}%)`
+          )
         }
       }
 

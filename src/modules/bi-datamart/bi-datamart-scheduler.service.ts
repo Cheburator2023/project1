@@ -5,8 +5,6 @@ import {
   OnModuleDestroy
 } from '@nestjs/common'
 import { BiDatamartService } from './bi-datamart.service'
-import { BiDatamartSafeWrapperService } from './bi-datamart-safe-wrapper.service'
-
 @Injectable()
 export class BiDatamartSchedulerService
   implements OnModuleInit, OnModuleDestroy
@@ -22,18 +20,15 @@ export class BiDatamartSchedulerService
     process.env.BI_DATAMART_MODELS_SYNC_MINUTE,
     0
   )
-  private readonly SYNC_TIMEOUT = 
-    parseInt(process.env.BI_DATAMART_SYNC_TIMEOUT_MS || '1800000')
   private readonly isEnabled: boolean
 
   constructor(
-    private readonly biDatamartService: BiDatamartService,
-    private readonly safeWrapper: BiDatamartSafeWrapperService
+    private readonly biDatamartService: BiDatamartService
   ) {
     this.isEnabled = process.env.BI_DATAMART_ENABLED !== 'false'
     
     this.logger.log(
-      `🔧 BiDatamartSchedulerService constructor: BI_DATAMART_ENABLED=${process.env.BI_DATAMART_ENABLED}, isEnabled=${this.isEnabled}, SYNC_TIMEOUT=${this.SYNC_TIMEOUT}ms`
+      `🔧 BiDatamartSchedulerService constructor: BI_DATAMART_ENABLED=${process.env.BI_DATAMART_ENABLED}, isEnabled=${this.isEnabled}`
     )
   }
 
@@ -103,20 +98,7 @@ export class BiDatamartSchedulerService
     this.logger.log('🌅 Начало ежедневной синхронизации BI витрины')
 
     try {
-      const result = await this.safeWrapper.safeExecute(
-        () => this.biDatamartService.syncAllModelsToDatamart(),
-        {
-          success: false,
-          totalProcessed: 0,
-          inserted: 0,
-          updated: 0,
-          skipped: 0,
-          errors: ['Синхронизация не выполнена из-за ошибки защитного механизма'],
-          duration_ms: 0
-        },
-        'syncAllModelsToDatamart',
-        this.SYNC_TIMEOUT
-      )
+      const result = await this.biDatamartService.syncAllModelsToDatamart()
 
       if (result.success) {
         this.logger.log(`✅ Ежедневная синхронизация завершена успешно`)
@@ -138,8 +120,10 @@ export class BiDatamartSchedulerService
       }
     } catch (error) {
       this.logger.error(
-        `💥 Неожиданная критическая ошибка (прошла через safe wrapper): ${error.message}`,
-        error.stack
+        `💥 Критическая ошибка синхронизации: ${
+          error instanceof Error ? error.message : error
+        }`,
+        error instanceof Error ? error.stack : undefined
       )
       this.logger.warn('⚠️ Основное приложение продолжает работать')
     } finally {

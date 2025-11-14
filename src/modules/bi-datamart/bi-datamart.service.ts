@@ -68,13 +68,7 @@ export class BiDatamartService {
         return result
       }
 
-      this.logger.log('📊 Получение данных из ModelsService...')
-
       const startGetModels = Date.now()
-      this.logger.log(
-        '🔍 Вызываем modelsService.getModels({ ignoreModeFilter: true })'
-      )
-
       const models = await this.modelsService.getModels({
         ignoreModeFilter: true
       })
@@ -96,12 +90,6 @@ export class BiDatamartService {
       const batchSize = 100
       for (let i = 0; i < models.length; i += batchSize) {
         const batch = models.slice(i, i + batchSize)
-
-        this.logger.log(
-          `🔄 Обрабатываем батч ${Math.floor(i / batchSize) + 1} из ${Math.ceil(
-            models.length / batchSize
-          )} (модели ${i + 1}-${Math.min(i + batchSize, models.length)})`
-        )
 
         for (const model of batch) {
           try {
@@ -137,9 +125,11 @@ export class BiDatamartService {
           (avgTimePerModel * remainingModels) / 1000
         )
 
-        this.logger.log(
-          `📈 Прогресс: ${processed}/${models.length} (${percentage}%) | Вставлено: ${result.inserted}, Обновлено: ${result.updated}, Пропущено: ${result.skipped} | Осталось ~${estimatedTimeRemaining}сек`
-        )
+        if (percentage % 25 === 0 || processed === models.length) {
+          this.logger.log(
+            `📈 Прогресс: ${processed}/${models.length} (${percentage}%) | Осталось ~${estimatedTimeRemaining}сек`
+          )
+        }
       }
 
       result.success = true

@@ -5,8 +5,6 @@ import {
   OnModuleDestroy
 } from '@nestjs/common'
 import { TasksDatamartService } from './tasks-datamart.service'
-import { BiDatamartSafeWrapperService } from './bi-datamart-safe-wrapper.service'
-
 @Injectable()
 export class TasksDatamartSchedulerService
   implements OnModuleInit, OnModuleDestroy
@@ -22,18 +20,15 @@ export class TasksDatamartSchedulerService
     process.env.BI_DATAMART_TASKS_SYNC_MINUTE,
     0
   )
-  private readonly SYNC_TIMEOUT = 
-    parseInt(process.env.BI_DATAMART_SYNC_TIMEOUT_MS || '1800000')
   private readonly isEnabled: boolean
 
   constructor(
-    private readonly tasksDatamartService: TasksDatamartService,
-    private readonly safeWrapper: BiDatamartSafeWrapperService
+    private readonly tasksDatamartService: TasksDatamartService
   ) {
     this.isEnabled = process.env.BI_DATAMART_ENABLED !== 'false'
     
     this.logger.log(
-      `🔧 TasksDatamartSchedulerService constructor: BI_DATAMART_ENABLED=${process.env.BI_DATAMART_ENABLED}, isEnabled=${this.isEnabled}, SYNC_TIMEOUT=${this.SYNC_TIMEOUT}ms`
+      `🔧 TasksDatamartSchedulerService constructor: BI_DATAMART_ENABLED=${process.env.BI_DATAMART_ENABLED}, isEnabled=${this.isEnabled}`
     )
   }
 
@@ -105,19 +100,7 @@ export class TasksDatamartSchedulerService
     this.logger.log('🌅 Начало ежедневной синхронизации Tasks BI витрины')
 
     try {
-      const result = await this.safeWrapper.safeExecute(
-        () => this.tasksDatamartService.syncAllTasksToDatamart(),
-        {
-          success: false,
-          totalProcessed: 0,
-          inserted: 0,
-          deleted: 0,
-          errors: ['Синхронизация Tasks не выполнена из-за ошибки защитного механизма'],
-          duration_ms: 0
-        },
-        'syncAllTasksToDatamart',
-        this.SYNC_TIMEOUT
-      )
+      const result = await this.tasksDatamartService.syncAllTasksToDatamart()
 
       if (result.success) {
         this.logger.log(`✅ Ежедневная синхронизация Tasks завершена успешно`)
@@ -139,8 +122,10 @@ export class TasksDatamartSchedulerService
       }
     } catch (error) {
       this.logger.error(
-        `💥 Неожиданная критическая ошибка (прошла через safe wrapper): ${error.message}`,
-        error.stack
+        `💥 Критическая ошибка синхронизации Tasks: ${
+          error instanceof Error ? error.message : error
+        }`,
+        error instanceof Error ? error.stack : undefined
       )
       this.logger.warn('⚠️ Основное приложение продолжает работать')
     } finally {
