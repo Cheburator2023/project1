@@ -131,7 +131,9 @@ ON m.model_id = allocation_data.allocation_model_id
 LEFT JOIN (
     SELECT
         ar.model_id as artefacts_model_id,
-        STRING_AGG((CASE WHEN ar.artefact_id = 2032 THEN av.artefact_value ELSE NULL END)::Varchar, ',' ORDER BY ar.artefact_value_id) AS business_customer_departament
+        STRING_AGG((CASE WHEN ar.artefact_id = 2032 THEN av.artefact_value ELSE NULL END)::Varchar, ',' ORDER BY ar.artefact_value_id) AS business_customer_departament,
+        STRING_AGG((CASE WHEN ar.artefact_id = 2664 THEN av.artefact_value ELSE NULL END)::Varchar, ',' ORDER BY ar.artefact_value_id) AS dev_team,
+        STRING_AGG((CASE WHEN ar.artefact_id = 2665 THEN av.artefact_value ELSE NULL END)::Varchar, ',' ORDER BY ar.artefact_value_id) AS deploy_team
     FROM artefact_realizations_new ar
     INNER JOIN artefact_values av ON ar.artefact_value_id = av.artefact_value_id AND av.is_active_flg = '1'
     WHERE ar.effective_to = TO_TIMESTAMP('9999-12-31 23:59:59', 'YYYY-MM-DD HH24:MI:SS')
@@ -259,8 +261,11 @@ LEFT JOIN (
         MAX(CASE WHEN artefact_id = 2659 THEN artefact_string_value ELSE NULL END) AS model_desc,
         MAX(CASE WHEN artefact_id = 2660 THEN artefact_string_value ELSE NULL END) AS output_table,
         MAX(CASE WHEN artefact_id = 2661 THEN artefact_string_value ELSE NULL END) AS allocation_assessment_class,
-        MAX(CASE WHEN artefact_id = 2662 THEN artefact_string_value ELSE NULL END) AS allocation_assessment_parameters
-
+        MAX(CASE WHEN artefact_id = 2662 THEN artefact_string_value ELSE NULL END) AS allocation_assessment_parameters,
+        MAX(CASE WHEN artefact_id = 2663 THEN artefact_string_value ELSE NULL END) AS project_ref,
+        MAX(CASE WHEN artefact_id = 2666 THEN artefact_string_value ELSE NULL END) AS runtime_subsystem,
+        MAX(CASE WHEN artefact_id = 2667 THEN artefact_string_value ELSE NULL END) AS buiseness_process_name,
+        MAX(CASE WHEN artefact_id = 2668 THEN artefact_string_value ELSE NULL END) AS prom_datamart_name
     FROM (
         SELECT
             artefact_realizations_new.model_id,

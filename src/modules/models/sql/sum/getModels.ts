@@ -6,6 +6,8 @@ SELECT m_.model_id                                                              
        CAST('model' || m_.root_model_id AS Varchar(4000)) || '-v' || CAST(m_.model_version AS Varchar(4000)) AS model_id,
        clsf_.group_company,
        clsf_.business_customer_departament,
+       clsf_.dev_team,
+       clsf_.deploy_team,
        m_.model_name,
        m_.model_name                                                                                             AS model_name_validation,
        m_.create_date,
@@ -53,6 +55,10 @@ SELECT m_.model_id                                                              
        dm_.output_table,
        dm_.allocation_assessment_class,
        dm_.allocation_assessment_parameters,
+       dm_.project_ref,
+       dm_.runtime_subsystem,
+       dm_.buiseness_process_name,
+       dm_.prom_datamart_name,
        m_.model_status                                                                               AS camunda_model_status,
        m_.model_stage                                                                                AS camunda_model_stage,
        activeBpmnInstance.bpmn_instance_name                                                                 AS model_status,
@@ -206,10 +212,14 @@ ON m_.model_id = allocation_data.allocation_model_id
                            STRING_AGG((CASE WHEN ar_.artefact_id = 73 THEN av_.artefact_value ELSE NULL END)::Varchar, ','
                                       ORDER BY ar_.artefact_value_id)                           AS group_company,
                            STRING_AGG((CASE WHEN ar_.artefact_id = 6 THEN av_.artefact_value ELSE NULL END)::Varchar, ','
-                                      ORDER BY ar_.artefact_value_id)                           AS business_customer_departament
+                                      ORDER BY ar_.artefact_value_id)                           AS business_customer_departament,
+                           STRING_AGG((CASE WHEN ar_.artefact_id = 918 THEN av_.artefact_value ELSE NULL END)::Varchar, ','
+                                      ORDER BY ar_.artefact_value_id)                           AS dev_team,
+                           STRING_AGG((CASE WHEN ar_.artefact_id = 919 THEN av_.artefact_value ELSE NULL END)::Varchar, ','
+                                      ORDER BY ar_.artefact_value_id)                           AS deploy_team
                     FROM artefact_realizations ar_
                              INNER JOIN artefact_values av_ ON ar_.artefact_value_id = av_.artefact_value_id AND av_.is_active_flg = '1'
-                    WHERE ar_.artefact_id IN (173, 6, 67, 73)
+                    WHERE ar_.artefact_id IN (173, 6, 67, 73, 918, 919)
                       AND ar_.effective_to = TO_TIMESTAMP('9999-12-31 23:59:59', 'YYYY-MM-DD HH24:MI:SS')
                     GROUP BY ar_.model_id) clsf_ ON m_.model_id = clsf_.model_id
          LEFT JOIN
@@ -389,13 +399,17 @@ ON m_.model_id = allocation_data.allocation_model_id
                            MAX(CASE WHEN ARTEFACT_ID = 905 THEN ARTEFACT_STRING_VALUE ELSE NULL END) AS model_desc,
                            MAX(CASE WHEN ARTEFACT_ID = 914 THEN ARTEFACT_STRING_VALUE ELSE NULL END) AS output_table,
                            MAX(CASE WHEN ARTEFACT_ID = 915 THEN ARTEFACT_STRING_VALUE ELSE NULL END) AS allocation_assessment_class,
-                           MAX(CASE WHEN ARTEFACT_ID = 916 THEN ARTEFACT_STRING_VALUE ELSE NULL END) AS allocation_assessment_parameters
+                           MAX(CASE WHEN ARTEFACT_ID = 916 THEN ARTEFACT_STRING_VALUE ELSE NULL END) AS allocation_assessment_parameters,
+                           MAX(CASE WHEN ARTEFACT_ID = 917 THEN ARTEFACT_STRING_VALUE ELSE NULL END) AS project_ref,
+                           MAX(CASE WHEN ARTEFACT_ID = 920 THEN ARTEFACT_STRING_VALUE ELSE NULL END) AS runtime_subsystem,
+                           MAX(CASE WHEN ARTEFACT_ID = 59 THEN ARTEFACT_STRING_VALUE ELSE NULL END) AS buiseness_process_name,
+                           MAX(CASE WHEN ARTEFACT_ID = 240 THEN ARTEFACT_STRING_VALUE ELSE NULL END) AS prom_datamart_name
                      FROM artefact_realizations
                      WHERE effective_to = TO_TIMESTAMP('9999-12-31 23:59:59', 'YYYY-MM-DD HH24:MI:SS')
-                      AND artefact_id IN (7, 72, 786, 787, 788, 789, 33, 34,
+                      AND artefact_id IN (7, 72, 786, 787, 788, 789, 33, 34, 59, 240,
                                           790, 781, 788, 871, 794, 795, 796, 797,
                                           123, 888, 803, 811, 812, 820, 821, 823, 839, 840, 873,
-                                          867, 868, 869, 870, 898, 899, 900, 69, 67, 905, 914, 915, 916)
+                                          867, 868, 869, 870, 898, 899, 900, 69, 67, 905, 914, 915, 916, 917, 920)
                       AND (
                             :filter_date::Date IS NULL
                             OR DATE_TRUNC('day', effective_from)::Date <= TO_DATE(CAST(:filter_date AS Varchar(4000)), 'YYYY-MM-DD')
