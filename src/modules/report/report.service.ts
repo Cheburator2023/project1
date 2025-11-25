@@ -153,8 +153,8 @@ export class ReportService {
     if (isModelRiskReport) {
       // Только автозаполнение КМР по умолчанию (100%), без расчётов устаревания и сегмента
       filteredModels.forEach((model) => {
-        const kmr = getDefaultModelRiskForReport(model.model_risk)
-        model.model_risk = String(kmr)
+        const kmr = getDefaultModelRiskForReport(model.model_risk_coefficient)
+        model.model_risk_coefficient = String(kmr)
       })
     }
 
