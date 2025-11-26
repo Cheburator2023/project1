@@ -1,5 +1,15 @@
 # Semantic Versioning Changelog
 
+# [1.39.0](https://git.sfera.inno.local:7999/SUMD/mrms-backend/compare/v1.38.0...v1.39.0) (2025-11-26)
+
+
+### Features
+
+* защита витрины от ошибок ([cdf804f](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/cdf804f2bde7e89607bd524ffeb42b7a0f89bf23))
+* настраиваем расписание и чистим логи ([9b8b264](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/9b8b264293aa2055661d8abf16d852648dc512b3))
+* настраиваемое расписание до минут ([93ca4fc](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/93ca4fca51234b507134e587f86072273245c408))
+* убрать safe wrapper и шумные логи ([cbb9165](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/cbb91655ae5648429843d67f3cdcd228c07cf533))
+
 # [1.38.0](https://git.sfera.inno.local:7999/SUMD/mrms-backend/compare/v1.37.1...v1.38.0) (2025-11-12)
 
 
