@@ -266,7 +266,19 @@ LEFT JOIN (
         MAX(CASE WHEN artefact_id = 2666 THEN artefact_string_value ELSE NULL END) AS runtime_subsystem,
         MAX(CASE WHEN artefact_id = 2667 THEN artefact_string_value ELSE NULL END) AS buiseness_process_name,
         MAX(CASE WHEN artefact_id = 2668 THEN artefact_string_value ELSE NULL END) AS prom_datamart_name,
-        MAX(CASE WHEN artefact_id = 2669 THEN artefact_string_value ELSE NULL END) AS model_risk_coefficient
+        MAX(CASE WHEN artefact_id = 2669 THEN artefact_string_value ELSE NULL END) AS model_risk_coefficient,
+        MAX(CASE WHEN artefact_id = 2670 THEN artefact_string_value ELSE NULL END) AS operational_control_epic,
+        MAX(CASE WHEN artefact_id = 2671 THEN artefact_string_value ELSE NULL END) AS operational_control_date,
+        MAX(CASE WHEN artefact_id = 2672 THEN artefact_string_value ELSE NULL END) AS analytical_control_epic,
+        MAX(CASE WHEN artefact_id = 2673 THEN artefact_string_value ELSE NULL END) AS analytical_control_date,
+        MAX(CASE WHEN artefact_id = 2674 THEN artefact_string_value ELSE NULL END) AS model_values_control_epic,
+        MAX(CASE WHEN artefact_id = 2675 THEN artefact_string_value ELSE NULL END) AS model_values_control_date,
+        MAX(CASE WHEN artefact_id = 2676 THEN artefact_string_value ELSE NULL END) AS impact_assessment_epic,
+        MAX(CASE WHEN artefact_id = 2677 THEN artefact_string_value ELSE NULL END) AS impact_assessment_date,
+        MAX(CASE WHEN artefact_id = 2678 THEN artefact_string_value ELSE NULL END) AS model_data_07k_control,
+        MAX(CASE WHEN artefact_id = 2679 THEN artefact_string_value ELSE NULL END) AS model_data_07k_control_epic,
+        MAX(CASE WHEN artefact_id = 2680 THEN artefact_string_value ELSE NULL END) AS model_data_control_date,
+        MAX(CASE WHEN artefact_id = 2681 THEN artefact_string_value ELSE NULL END) AS check_objects_count
     FROM (
         SELECT
             artefact_realizations_new.model_id,
