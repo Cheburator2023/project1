@@ -617,6 +617,18 @@ export class ModelsService {
                   creator
                 })
                 continue
+              case 'project_ref':
+              case 'dev_team':
+              case 'deploy_team':
+              case 'runtime_subsystem':
+                if (isOriginalSumModel) {
+                  updatesBySource[MODEL_SOURCES.SUM].artefactsForUpdate.push({
+                    model_id,
+                    ...artefactItem,
+                    creator
+                  })
+                  continue
+                }
             }
 
             updates.artefactsForUpdate.push({
