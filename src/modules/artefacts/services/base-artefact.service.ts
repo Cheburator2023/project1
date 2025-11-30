@@ -920,21 +920,6 @@ export abstract class BaseArtefactService implements IArtefactService {
       return artefact_value_id
     }
 
-    const matchingValue = artefactValues.find(
-      (value) => value.artefact_value_id === artefact_value_id
-    )
-    if (matchingValue) {
-      this.logger.info(
-        'Found matching value by ID',
-        'НайденоСоответствиеПоИдентификатору',
-        {
-          artefact_value_id,
-          artefact_value: matchingValue.artefact_value
-        }
-      )
-      return artefact_value_id
-    }
-
     const valueByString = artefactValues.find(
       (value) =>
         value.artefact_value.toLowerCase() ===
