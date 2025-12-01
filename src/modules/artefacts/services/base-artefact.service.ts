@@ -849,10 +849,11 @@ export abstract class BaseArtefactService implements IArtefactService {
         ? latestArtefactRealization.artefact_value_id === null
           ? `AND artefact_value_id IS NULL`
           : `AND artefact_value_id = :artefact_value_id`
-        : `AND artefact_string_value = '${latestArtefactRealization.artefact_string_value}'`
+        : `AND artefact_string_value = :artefact_string_value`
 
       const queryParams = {
         model_id: latestArtefactRealization.model_id,
+        artefact_string_value: latestArtefactRealization.artefact_string_value,
         artefact_id: latestArtefactRealization.artefact_id,
         ...(latestArtefactRealization.artefact_value_id !== null
           ? { artefact_value_id: latestArtefactRealization.artefact_value_id }
