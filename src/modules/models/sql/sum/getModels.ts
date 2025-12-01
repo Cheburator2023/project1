@@ -422,7 +422,7 @@ AND (m_.temp_block_flag != 1 OR m_.temp_block_flag IS NULL)
 AND (
   :filter_date::Date IS NULL
   OR m_.create_date <= TO_DATE(CAST(:filter_date AS Varchar(4000)), 'YYYY-MM-DD')
-  )
+)
 `
 
 export { getModels }
