@@ -1,5 +1,26 @@
 # Semantic Versioning Changelog
 
+# [1.39.0](https://git.sfera.inno.local:7999/SUMD/mrms-backend/compare/v1.38.0...v1.39.0) (2025-12-01)
+
+
+### Bug Fixes
+
+* escape single quotes in artefact_string_value to prevent SQL errors ([2a10c47](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/2a10c470b2b93e52b782c0ba3afab3c5f19c832b))
+* rename artefact tech label from model_risk to model_risk_coefficient ([e5bd923](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/e5bd923e579b2aa9775132e8c001d24bb6c6f015))
+* saving artefacts with values ([8ef1f8b](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/8ef1f8bea2192b91d42827395a549f39d83d831c))
+
+
+### Features
+
+* add new artefacts for getModels query ([cb5d306](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/cb5d3069f65f677965e3a783b2e033f7e4358fa3))
+* add new artefacts for getModels query ([d6d86d6](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/d6d86d67b375fe5a7151e9377f8ce39916a89337))
+* update sync for buiseness_process_name artefact ([bf92332](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/bf92332614cea9fe7fbc2bbebd8e870884520a15))
+* защита витрины от ошибок ([6ae7004](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/6ae7004baeea7e1c043a8fdd03ed1974d9d4a16b))
+* настраиваем расписание и чистим логи ([e4c89e1](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/e4c89e1c4a274c97e40b7737cb365393937739df))
+* настраиваемое расписание до минут ([1d084cd](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/1d084cd3b1e490d4ecb413a38a093f7530c8c190))
+* убрать safe wrapper и шумные логи ([60634af](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/60634afa0772d36f81415f3bc4547648e1f697f9))
+* **model-risk:** add model risk calculation feature for reports ([4f4a4b4](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/4f4a4b41c76d605dc14f57cad53fa04324186bd4))
+
 # [1.39.0](https://git.sfera.inno.local:7999/SUMD/mrms-backend/compare/v1.38.0...v1.39.0) (2025-11-26)
 
 
