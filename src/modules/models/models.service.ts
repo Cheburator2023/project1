@@ -621,6 +621,7 @@ export class ModelsService {
               case 'dev_team':
               case 'deploy_team':
               case 'runtime_subsystem':
+              case 'buiseness_process_name':
                 if (isOriginalSumModel) {
                   updatesBySource[MODEL_SOURCES.SUM].artefactsForUpdate.push({
                     model_id,
