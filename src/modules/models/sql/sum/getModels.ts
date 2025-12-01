@@ -61,8 +61,8 @@ SELECT m_.model_id                                                              
        dm_.prom_datamart_name,
        m_.model_status                                                                               AS camunda_model_status,
        m_.model_stage                                                                                AS camunda_model_stage,
-       activeBpmnInstance.bpmn_instance_name                                                                 AS model_status,
-       st.status                                                                                             AS business_status,
+       activeBpmnInstance.bpmn_instance_name                                                         AS model_status,
+       st.status                                                                                     AS business_status,
        -- Используется для подсчета метрик: Динамика моделей по стримам 
        activeBpmnInstance.bpmn_instance_name                                                         AS bpmn_key,
        null                                                                                          AS model_status_assignee,
