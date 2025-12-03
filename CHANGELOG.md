@@ -1,5 +1,12 @@
 # Semantic Versioning Changelog
 
+## [1.39.3](https://git.sfera.inno.local:7999/SUMD/mrms-backend/compare/v1.39.2...v1.39.3) (2025-12-03)
+
+
+### Bug Fixes
+
+* query params processing for artefact_value saving ([692d629](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/692d629f98dab1157a5a7c9fc73856a69b501cf1))
+
 ## [1.39.2](https://git.sfera.inno.local:7999/SUMD/mrms-backend/compare/v1.39.1...v1.39.2) (2025-12-01)
 
 
