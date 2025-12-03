@@ -1,5 +1,12 @@
 # Semantic Versioning Changelog
 
+# [1.40.0](https://git.sfera.inno.local:7999/SUMD/mrms-backend/compare/v1.39.3...v1.40.0) (2025-12-03)
+
+
+### Features
+
+* add temporary constant for tech label with history stored only in sum rm ([a44cd2e](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/a44cd2ea96886c954f2f2d8cca5d6878f82b41b4))
+
 ## [1.39.3](https://git.sfera.inno.local:7999/SUMD/mrms-backend/compare/v1.39.2...v1.39.3) (2025-12-03)
 
 
