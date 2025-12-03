@@ -22,7 +22,7 @@ import {
   TemplateUpdateDto
 } from './dto/index.dto'
 
-import { sortOrder } from './constants'
+import { sortOrder, TECH_LABELS_HISTORY_ONLY_IN_SUM_RM } from './constants'
 
 interface LegacyTemplateValue {
   [key: string]: string[]
@@ -64,12 +64,12 @@ export class ApiService {
 
     let result = []
 
-    if (model_source === ModelSource.SUM) {
+    if (model_source === ModelSource.SUM && !TECH_LABELS_HISTORY_ONLY_IN_SUM_RM.includes(artefact_tech_label)) {
       result = await this.sumDatabaseService.query(getSumModelHistorySql, {
         model_id,
         artefact_tech_label
       })
-    } else if (model_source === ModelSource.SUM_RM) {
+    } else if (model_source === ModelSource.SUM_RM || TECH_LABELS_HISTORY_ONLY_IN_SUM_RM.includes(artefact_tech_label)) {
       result = await this.mrmDatabaseService.query(getSumRmModelHistorySql, {
         model_id,
         artefact_tech_label
