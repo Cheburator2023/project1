@@ -1,5 +1,12 @@
 # Semantic Versioning Changelog
 
+## [1.40.1](https://git.sfera.inno.local:7999/SUMD/mrms-backend/compare/v1.40.0...v1.40.1) (2025-12-04)
+
+
+### Bug Fixes
+
+* typo fix ([bfa0a1b](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/bfa0a1b16de2eed52c9bc7fadf255410bb4792d2))
+
 # [1.40.0](https://git.sfera.inno.local:7999/SUMD/mrms-backend/compare/v1.39.3...v1.40.0) (2025-12-03)
 
 
