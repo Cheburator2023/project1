@@ -16,11 +16,13 @@ import {
   ArtefactsController,
   ReportsController,
   BiDatamartController,
-  JsonReportController
+  JsonReportController,
+  AuthController
 } from './controllers'
 import { ApiService } from './api.service'
 import { RolesGuard } from 'src/api/guards/roles.guard'
 import { RateLimitGuard } from 'src/api/guards/rate-limit.guard'
+import { AuthModule } from './auth.module'
 
 @Module({
   controllers: [
@@ -32,7 +34,8 @@ import { RateLimitGuard } from 'src/api/guards/rate-limit.guard'
     ArtefactsController,
     ReportsController,
     BiDatamartController,
-    JsonReportController
+    JsonReportController,
+    AuthController
   ],
   providers: [ApiService, RolesGuard, RateLimitGuard],
   imports: [
@@ -43,6 +46,7 @@ import { RateLimitGuard } from 'src/api/guards/rate-limit.guard'
     MetricsModule,
     ArtefactModule,
     BiDatamartModule,
+    AuthModule,
     CacheModule.register({
       ttl: 300, // 5 minutes
       max: 100 // maximum number of items in cache

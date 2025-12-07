@@ -143,6 +143,19 @@ export class ReportService {
     date?: string,
     groups?: string[]
   ): Promise<{ [key: string]: any[] }> {
+    // Валидация template_id
+    if (template_id && ![1, 2].includes(template_id)) {
+      throw new HttpException(
+        {
+          error: {
+            code: '400',
+            message: 'Неверно указан template_id/дата'
+          }
+        },
+        HttpStatus.BAD_REQUEST
+      )
+    }
+
     // Формируем ключ для кэширования
     const cacheKey = this.getJsonReportCacheKey(template_id, date, groups)
 
@@ -187,7 +200,7 @@ export class ReportService {
 
     const formattedDate = reportDate.toISOString().split('T')[0]
 
-    // Получаем данные моделей
+    // Получаем данные моделей с учетом даты
     const models = await this.modelsService.getModels(
       {
         date: formattedDate,
@@ -198,6 +211,9 @@ export class ReportService {
 
     // Фильтруем данные в соответствии с шаблоном
     let filteredData = this.applyTemplateFilters(models, templateData, template_id)
+
+    // Применяем бизнес-логику фильтрации для ПУРС и ПУМР
+    filteredData = this.applyBusinessFilters(filteredData, template_id)
 
     // Формируем структуру ответа
     const result = {
@@ -230,11 +246,42 @@ export class ReportService {
 
       return result.rows[0].template_value
     } catch (error) {
-      console.error('Error fetching template:', error)
+      this.logger.error('Error fetching template:', error)
       return null
     }
   }
 
+  /**
+   * Применить бизнес-фильтры для отчетов
+   */
+  private applyBusinessFilters(models: any[], template_id?: number): any[] {
+    if (!template_id) {
+      return models
+    }
+
+    let filteredModels = [...models]
+
+    switch (template_id) {
+      case 1: // ПУРС
+              // Фильтр: record_id не пустой
+        filteredModels = filteredModels.filter(model =>
+          model.record_id && model.record_id.trim() !== ''
+        )
+        break
+      case 2: // ПУМР
+              // Фильтр: active_model = "1"
+        filteredModels = filteredModels.filter(model =>
+          model.active_model === '1' || model.active_model === 1
+        )
+        break
+    }
+
+    return filteredModels
+  }
+
+  /**
+   * Применить фильтры шаблона к данным
+   */
   /**
    * Применить фильтры шаблона к данным
    */
@@ -251,22 +298,9 @@ export class ReportService {
     // Получаем поля из шаблона
     const templateFields = Object.keys(templateData || {})
 
-    // Применяем специальные фильтры для шаблонов
+    // Применяем фильтры из шаблона
     let filteredModels = [...models]
 
-    if (template_id === 1) {
-      // ПУРС: фильтр record_id: ["not-null"]
-      filteredModels = filteredModels.filter(model =>
-        model.record_id && model.record_id.trim() !== ''
-      )
-    } else if (template_id === 2) {
-      // ПУМР: фильтр active_model: ["1"]
-      filteredModels = filteredModels.filter(model =>
-        model.active_model === '1'
-      )
-    }
-
-    // Применяем фильтры из шаблона
     if (templateData) {
       Object.entries(templateData).forEach(([field, filterValue]) => {
         if (Array.isArray(filterValue)) {

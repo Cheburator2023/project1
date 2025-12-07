@@ -8,6 +8,7 @@ import {
   Max,
   IsDateString,
   Validate,
+  IsIn,
   ValidationArguments,
   ValidatorConstraint,
   ValidatorConstraintInterface
@@ -30,13 +31,15 @@ export class IsValidDateFormatConstraint implements ValidatorConstraintInterface
 export class JsonReportRequestDto {
   @ApiPropertyOptional({
     example: 1,
-    description: 'Идентификатор шаблона отчета (1 - ПУРС, 2 - ПУМР)'
+    description: 'Идентификатор шаблона отчета (1 - ПУРС, 2 - ПУМР)',
+    enum: [1, 2]
   })
   @IsOptional()
   @IsNumber()
   @IsPositive()
   @Min(1)
   @Max(10)
+  @IsIn([1, 2], { message: 'template_id должен быть 1 (ПУРС) или 2 (ПУМР)' })
   @Type(() => Number)
   template_id?: number
 

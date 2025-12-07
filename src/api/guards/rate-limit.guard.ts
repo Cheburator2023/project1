@@ -3,34 +3,61 @@ import {
   CanActivate,
   ExecutionContext,
   HttpException,
-  HttpStatus
+  HttpStatus,
+  SetMetadata,
+  applyDecorators,
+  UseGuards
 } from '@nestjs/common'
+import { Reflector } from '@nestjs/core'
 
 interface RateLimitInfo {
   count: number
   windowStart: number
 }
 
+interface RateLimitOptions {
+  limit?: number
+  windowMs?: number
+}
+
+export const RATE_LIMIT_OPTIONS = 'RATE_LIMIT_OPTIONS'
+
+export function RateLimit(options?: RateLimitOptions) {
+  return applyDecorators(
+    SetMetadata(RATE_LIMIT_OPTIONS, options || {}),
+    UseGuards(RateLimitGuard)
+  )
+}
+
 @Injectable()
 export class RateLimitGuard implements CanActivate {
-  private readonly limit = 3 // 3 запроса в минуту
-  private readonly windowMs = 60 * 1000 // 1 минута
+  private defaultLimit = 3 // 3 запроса в минуту по умолчанию
+  private defaultWindowMs = 60 * 1000 // 1 минута
   private requestCounts = new Map<string, RateLimitInfo>()
 
+  constructor(private readonly reflector: Reflector) {}
+
   canActivate(context: ExecutionContext): boolean {
+    const options = this.reflector.get<RateLimitOptions>(
+      RATE_LIMIT_OPTIONS,
+      context.getHandler()
+    ) || {}
+
+    const limit = options.limit || this.defaultLimit
+    const windowMs = options.windowMs || this.defaultWindowMs
+
     const request = context.switchToHttp().getRequest()
-    const key = 'json_report_global'
+    const key = this.getRateLimitKey(request, context)
 
     const now = Date.now()
     const windowInfo = this.requestCounts.get(key)
 
-    if (!windowInfo || now - windowInfo.windowStart > this.windowMs) {
-      // Сброс окна
+    if (!windowInfo || now - windowInfo.windowStart > windowMs) {
       this.requestCounts.set(key, { count: 1, windowStart: now })
       return true
     }
 
-    if (windowInfo.count >= this.limit) {
+    if (windowInfo.count >= limit) {
       throw new HttpException(
         {
           error: {
@@ -45,5 +72,17 @@ export class RateLimitGuard implements CanActivate {
     windowInfo.count++
     this.requestCounts.set(key, windowInfo)
     return true
+  }
+
+  private getRateLimitKey(request: any, context: ExecutionContext): string {
+    const handler = context.getHandler()
+    const className = context.getClass().name
+    const methodName = handler.name
+
+    if (className === 'AuthController') {
+      return `auth_${methodName}`
+    }
+
+    return 'json_report_global'
   }
 }
