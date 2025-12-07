@@ -1,8 +1,13 @@
 import {
   BadRequestException,
   Injectable,
-  NotFoundException
+  NotFoundException,
+  Inject,
+  CACHE_MANAGER,
+  HttpException,
+  HttpStatus
 } from '@nestjs/common'
+import { Cache } from 'cache-manager'
 import { SumDatabaseService } from 'src/system/sum-database/database.service'
 import { MrmDatabaseService } from 'src/system/mrm-database/database.service'
 import { ModelsService } from 'src/modules/models/models.service'
@@ -18,7 +23,9 @@ import {
 
 import { MetricsEnum } from 'src/modules/metrics/enums'
 import { getDefaultModelRiskForReport } from 'src/modules/models/utils/model-risk.utils'
-import { isValidDate } from 'src/system/common/utils'
+import { isValidDate, parseDate } from 'src/system/common/utils'
+import * as crypto from 'crypto'
+import { LoggerService } from 'src/system/logger/logger.service'
 
 type FilterModel = {
   [key: string]: SetFilter | DateFilter
@@ -49,7 +56,9 @@ export class ReportService {
     private readonly mrmDatabaseService: MrmDatabaseService,
     private readonly modelsService: ModelsService,
     private readonly metricsAggregator: MetricsAggregator,
-    private readonly excelService: ExcelService
+    private readonly excelService: ExcelService,
+    private readonly logger: LoggerService,
+    @Inject(CACHE_MANAGER) private cacheManager: Cache
   ) {}
 
   async exportMetricToExcel(
@@ -124,6 +133,193 @@ export class ReportService {
     const xlsxBuffer: Buffer = await this.generateExcel(reportData)
 
     return xlsxBuffer
+  }
+
+  /**
+   * Получить JSON отчет
+   */
+  async getJsonReport(
+    template_id?: number,
+    date?: string,
+    groups?: string[]
+  ): Promise<{ [key: string]: any[] }> {
+    // Формируем ключ для кэширования
+    const cacheKey = this.getJsonReportCacheKey(template_id, date, groups)
+
+    this.logger.info('Executing Json report', 'Выполнение отчёта JSON')
+
+    // Проверяем кэш
+    const cachedResult = await this.cacheManager.get(cacheKey)
+    if (cachedResult) {
+      return cachedResult as { [key: string]: any[] }
+    }
+
+    // Получаем шаблон если указан template_id
+    let templateData: any = null
+    if (template_id) {
+      templateData = await this.getTemplateFromDatabase(template_id)
+      if (!templateData) {
+        throw new HttpException(
+          {
+            error: {
+              code: '400',
+              message: 'Неверно указан template_id/дата'
+            }
+          },
+          HttpStatus.BAD_REQUEST
+        )
+      }
+    }
+
+    // Формируем дату отчета
+    const reportDate = date ? parseDate(date) : new Date()
+    if (!reportDate) {
+      throw new HttpException(
+        {
+          error: {
+            code: '400',
+            message: 'Неверно указан template_id/дата'
+          }
+        },
+        HttpStatus.BAD_REQUEST
+      )
+    }
+
+    const formattedDate = reportDate.toISOString().split('T')[0]
+
+    // Получаем данные моделей
+    const models = await this.modelsService.getModels(
+      {
+        date: formattedDate,
+        mode: []
+      },
+      groups || []
+    )
+
+    // Фильтруем данные в соответствии с шаблоном
+    let filteredData = this.applyTemplateFilters(models, templateData, template_id)
+
+    // Формируем структуру ответа
+    const result = {
+      [`reports_${formattedDate}`]: filteredData
+    }
+
+    // Сохраняем в кэш на 5 минут
+    await this.cacheManager.set(cacheKey, result, 300000)
+
+    this.logger.info('Report has been sent', 'Отчёт отправлен')
+
+    return result
+  }
+
+  /**
+   * Получить шаблон из базы данных
+   */
+  private async getTemplateFromDatabase(template_id: number): Promise<any> {
+    try {
+      const query = `
+        SELECT template_value 
+        FROM templates_new 
+        WHERE template_id = $1
+      `
+      const result = await this.mrmDatabaseService.query(query, [template_id])
+
+      if (result.rows.length === 0) {
+        return null
+      }
+
+      return result.rows[0].template_value
+    } catch (error) {
+      console.error('Error fetching template:', error)
+      return null
+    }
+  }
+
+  /**
+   * Применить фильтры шаблона к данным
+   */
+  private applyTemplateFilters(
+    models: Model[],
+    templateData: any,
+    template_id?: number
+  ): any[] {
+    if (!templateData) {
+      // Общий реестр - все поля без фильтров
+      return models.map(model => ({ ...model }))
+    }
+
+    // Получаем поля из шаблона
+    const templateFields = Object.keys(templateData || {})
+
+    // Применяем специальные фильтры для шаблонов
+    let filteredModels = [...models]
+
+    if (template_id === 1) {
+      // ПУРС: фильтр record_id: ["not-null"]
+      filteredModels = filteredModels.filter(model =>
+        model.record_id && model.record_id.trim() !== ''
+      )
+    } else if (template_id === 2) {
+      // ПУМР: фильтр active_model: ["1"]
+      filteredModels = filteredModels.filter(model =>
+        model.active_model === '1'
+      )
+    }
+
+    // Применяем фильтры из шаблона
+    if (templateData) {
+      Object.entries(templateData).forEach(([field, filterValue]) => {
+        if (Array.isArray(filterValue)) {
+          if (filterValue.length === 1 && filterValue[0] === 'not-null') {
+            // Фильтр "not-null"
+            filteredModels = filteredModels.filter(model =>
+              model[field] != null && model[field] !== ''
+            )
+          } else if (filterValue.length > 0) {
+            // Обычный фильтр по значениям
+            filteredModels = filteredModels.filter(model =>
+              filterValue.includes(model[field])
+            )
+          }
+        }
+      })
+    }
+
+    // Формируем результат только с полями из шаблона
+    return filteredModels.map(model => {
+      const result: any = {}
+
+      // Добавляем system_model_id в начало для всех шаблонов
+      if (model.system_model_id) {
+        result.system_model_id = model.system_model_id
+      }
+
+      // Добавляем остальные поля из шаблона
+      templateFields.forEach(field => {
+        if (field !== 'system_model_id' && model[field] !== undefined) {
+          result[field] = model[field]
+        }
+      })
+
+      return result
+    })
+  }
+
+  /**
+   * Сгенерировать ключ для кэширования JSON отчетов
+   */
+  private getJsonReportCacheKey(
+    template_id?: number,
+    date?: string,
+    groups?: string[]
+  ): string {
+    const templateKey = template_id ? template_id.toString() : 'all'
+    const dateKey = date || 'current'
+    const groupsHash = groups && groups.length > 0
+      ? crypto.createHash('md5').update(groups.sort().join(',')).digest('hex')
+      : 'no_groups'
+
+    return `report_json:${templateKey}:${dateKey}:${groupsHash}`
   }
 
   private async generateReportData(

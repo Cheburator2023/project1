@@ -15,10 +15,12 @@ import {
   MonitoringController,
   ArtefactsController,
   ReportsController,
-  BiDatamartController
+  BiDatamartController,
+  JsonReportController
 } from './controllers'
 import { ApiService } from './api.service'
 import { RolesGuard } from 'src/api/guards/roles.guard'
+import { RateLimitGuard } from 'src/api/guards/rate-limit.guard'
 
 @Module({
   controllers: [
@@ -29,9 +31,10 @@ import { RolesGuard } from 'src/api/guards/roles.guard'
     MonitoringController,
     ArtefactsController,
     ReportsController,
-    BiDatamartController
+    BiDatamartController,
+    JsonReportController
   ],
-  providers: [ApiService, RolesGuard],
+  providers: [ApiService, RolesGuard, RateLimitGuard],
   imports: [
     SumDatabaseModule,
     MrmDatabaseModule,

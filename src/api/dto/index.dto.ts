@@ -498,3 +498,5 @@ export class MetricsDto {
   @IsString()
   dataType?: string
 }
+
+export * from './json-report-request.dto'
