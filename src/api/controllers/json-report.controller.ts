@@ -32,7 +32,7 @@ export class JsonReportController {
   constructor(private readonly reportService: ReportService) {}
 
   @Post('json')
-  @Roles('admin')
+  @Roles('model_read')
   @UseInterceptors(CacheInterceptor)
   @CacheTTL(300) // 5 минут кэширования
   @ApiOperation({
