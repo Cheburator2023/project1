@@ -4,8 +4,7 @@ import { ConfigModule } from '@nestjs/config'
 import {
   AuthGuard,
   KeycloakConnectModule,
-  ResourceGuard,
-  RoleGuard
+  ResourceGuard
 } from 'nest-keycloak-connect'
 
 import { AuthModule } from 'src/api/config/config.module'
@@ -70,16 +69,6 @@ import { LoggerModule } from 'src/system/logger/logger.module'
       useFactory: (reflector: Reflector, delegateGuard: ResourceGuard) =>
         new GodModeGuard(reflector, delegateGuard),
       inject: [Reflector, 'DELEGATE_GUARD_RESOURCE']
-    },
-    {
-      provide: 'DELEGATE_GUARD_ROLE',
-      useClass: RoleGuard
-    },
-    {
-      provide: APP_GUARD,
-      useFactory: (reflector: Reflector, delegateGuard: RoleGuard) =>
-        new GodModeGuard(reflector, delegateGuard),
-      inject: [Reflector, 'DELEGATE_GUARD_ROLE']
     }
   ]
 })
@@ -91,13 +80,5 @@ export class AppModule implements OnModuleInit {
 
   async onModuleInit(): Promise<void> {
     EmitEventDependencies.initialize(this.debounceService)
-
-    // try {
-    //   console.log('Запуск миграции шаблонов...')
-    //   await this.migrationService.migrateTemplates()
-    //   console.log('Миграцияшаблонов завершена успешно')
-    // } catch (error) {
-    //   console.error('Ошибка при миграции шаблонов:', error.message)
-    // }
   }
 }

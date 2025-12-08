@@ -28,9 +28,20 @@ export class GodModeGuard implements CanActivate {
       return true
     }
 
-    if (typeof this.delegateGuard.canActivate === 'function') {
-      return this.delegateGuard.canActivate(context) as any
+    if (this.delegateGuard && typeof this.delegateGuard.canActivate === 'function') {
+      try {
+        return await (this.delegateGuard.canActivate(context) as Promise<boolean>)
+      } catch (error) {
+        console.error('Error in delegate guard:', error.message)
+
+        if (error.message.includes('Cannot read property') || error.message.includes('length')) {
+          return false
+        }
+
+        throw error
+      }
     }
+
     return true
   }
 }

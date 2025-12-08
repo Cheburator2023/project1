@@ -2,7 +2,8 @@ import {
   Injectable,
   CanActivate,
   ExecutionContext,
-  ForbiddenException
+  ForbiddenException,
+  UnauthorizedException
 } from '@nestjs/common'
 import { Reflector } from '@nestjs/core'
 import { IS_PUBLIC_KEY } from 'src/decorators/public.decorator'
@@ -39,7 +40,7 @@ export class RolesGuard implements CanActivate {
     const user = request.user
 
     if (!user) {
-      throw new ForbiddenException('Доступ запрещен: отсутствие пользователя')
+      throw new UnauthorizedException('Доступ запрещен: отсутствие пользователя')
     }
 
     const roles: string[] = Array.isArray(user.roles) ? user.roles : []
@@ -48,13 +49,19 @@ export class RolesGuard implements CanActivate {
     // Нормализуем группы: разбиваем по '/' как в User декораторе
     const groups = groupsRaw
       .reduce((prev: string[], group: string) => {
-        const parts = group.split('/')
-        return [...prev, ...parts]
+        if (typeof group === 'string') {
+          const parts = group.split('/')
+          return [...prev, ...parts]
+        }
+        return prev
       }, [])
       .filter(Boolean)
 
+    const keycloakGroups: string[] = Array.isArray(user.keycloakGroups) ? user.keycloakGroups : []
+    const allGroups = [...groups, ...keycloakGroups]
+
     const hasRole = requiredRoles.some(
-      (role) => roles.includes(role) || groups.includes(role)
+      (role) => roles.includes(role) || allGroups.includes(role)
     )
 
     if (!hasRole) {

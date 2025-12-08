@@ -25,14 +25,14 @@ import { User, UserType } from 'src/decorators/user.decorator'
 import { RateLimit } from '../guards/rate-limit.guard'
 
 @ApiTags('JSON Отчеты')
-@ApiBearerAuth()
+// @ApiBearerAuth()
 @Controller('report')
-@UseGuards(RolesGuard)
+// @UseGuards(RolesGuard)
 export class JsonReportController {
   constructor(private readonly reportService: ReportService) {}
 
   @Post('json')
-  @Roles('model_read')
+  // @Roles('model_read')
   @RateLimit({ limit: 3, windowMs: 60 * 1000 })
   @UseInterceptors(CacheInterceptor)
   @CacheTTL(300) // 5 минут кэширования
