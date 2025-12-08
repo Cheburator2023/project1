@@ -156,6 +156,11 @@ export class ReportService {
       )
     }
 
+    // Проверка аутентификации пользователя
+    if (!groups || groups.length === 0) {
+      this.logger.warn('Попытка доступа без аутентификации или с пустыми группами')
+    }
+
     // Формируем ключ для кэширования
     const cacheKey = this.getJsonReportCacheKey(template_id, date, groups)
 
@@ -185,47 +190,83 @@ export class ReportService {
     }
 
     // Формируем дату отчета
-    const reportDate = date ? parseDate(date) : new Date()
-    if (!reportDate) {
-      throw new HttpException(
-        {
-          error: {
-            code: '400',
-            message: 'Неверно указан template_id/дата'
-          }
-        },
-        HttpStatus.BAD_REQUEST
-      )
+    let reportDate: Date
+    if (date) {
+      reportDate = parseDate(date)
+      if (!reportDate) {
+        throw new HttpException(
+          {
+            error: {
+              code: '400',
+              message: 'Неверно указан template_id/дата'
+            }
+          },
+          HttpStatus.BAD_REQUEST
+        )
+      }
+    } else {
+      reportDate = new Date()
     }
 
     const formattedDate = reportDate.toISOString().split('T')[0]
 
-    // Получаем данные моделей с учетом даты
-    const models = await this.modelsService.getModels(
-      {
-        date: formattedDate,
-        mode: []
-      },
-      groups || []
-    )
+    try {
+      // Получаем данные моделей с учетом даты
+      const models = await this.modelsService.getModels(
+        {
+          date: formattedDate,
+          mode: []
+        },
+        groups || []
+      )
 
-    // Фильтруем данные в соответствии с шаблоном
-    let filteredData = this.applyTemplateFilters(models, templateData, template_id)
+      // Фильтруем данные в соответствии с шаблоном
+      let filteredData = this.applyTemplateFilters(models, templateData, template_id)
 
-    // Применяем бизнес-логику фильтрации для ПУРС и ПУМР
-    filteredData = this.applyBusinessFilters(filteredData, template_id)
+      // Применяем бизнес-логику фильтрации для ПУРС и ПУМР
+      filteredData = this.applyBusinessFilters(filteredData, template_id)
 
-    // Формируем структуру ответа
-    const result = {
-      [`reports_${formattedDate}`]: filteredData
+      // Формируем структуру ответа
+      const result = {
+        [`reports_${formattedDate}`]: filteredData
+      }
+
+      // Сохраняем в кэш на 5 минут
+      await this.cacheManager.set(cacheKey, result, 300000)
+
+      this.logger.info('Report has been sent', 'Отчёт отправлен')
+
+      return result
+    } catch (error) {
+      this.logger.error('Ошибка при формировании JSON отчета:', error)
+
+      // Проверяем, является ли ошибка ошибкой аутентификации
+      if (error.message && (
+        error.message.includes('authentication') ||
+        error.message.includes('auth') ||
+        error.message.includes('401')
+      )) {
+        throw new HttpException(
+          {
+            error: {
+              code: '401',
+              message: 'Некорректная пара логин - пароль'
+            }
+          },
+          HttpStatus.UNAUTHORIZED
+        )
+      }
+
+      throw new HttpException(
+        {
+          error: {
+            code: '503',
+            message: 'Сервис недоступен'
+          }
+        },
+        HttpStatus.SERVICE_UNAVAILABLE
+      )
     }
-
-    // Сохраняем в кэш на 5 минут
-    await this.cacheManager.set(cacheKey, result, 300000)
-
-    this.logger.info('Report has been sent', 'Отчёт отправлен')
-
-    return result
   }
 
   /**

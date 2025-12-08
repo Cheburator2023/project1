@@ -12,7 +12,7 @@ export class TokenRequestDto {
   grant_type: string
 
   @ApiProperty({
-    example: 'surm-api',
+    example: 'frontend',
     description: 'Идентификатор клиента'
   })
   @IsString()
@@ -20,15 +20,16 @@ export class TokenRequestDto {
   client_id: string
 
   @ApiProperty({
-    example: 'CLIENT_SECRET',
-    description: 'Секрет клиента'
+    example: '',
+    description: 'Секрет клиента (опционально, для public client может быть пустым)',
+    required: false
   })
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
-  client_secret: string
+  client_secret?: string
 
   @ApiProperty({
-    example: 'api_user',
+    example: 'test_ds_lead',
     description: 'Имя пользователя'
   })
   @IsString()
@@ -36,7 +37,7 @@ export class TokenRequestDto {
   username: string
 
   @ApiProperty({
-    example: 'API_PASSWORD',
+    example: 'test_ds_lead',
     description: 'Пароль пользователя'
   })
   @IsString()
@@ -63,7 +64,7 @@ export class IntrospectRequestDto {
   token: string
 
   @ApiProperty({
-    example: 'surm-api',
+    example: 'frontend',
     description: 'Идентификатор клиента'
   })
   @IsString()
@@ -71,12 +72,13 @@ export class IntrospectRequestDto {
   client_id: string
 
   @ApiProperty({
-    example: 'CLIENT_SECRET',
-    description: 'Секрет клиента'
+    example: '',
+    description: 'Секрет клиента (опционально)',
+    required: false
   })
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
-  client_secret: string
+  client_secret?: string
 }
 
 export class TokenResponseDto {

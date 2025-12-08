@@ -10,8 +10,6 @@ export class AuthService {
   private readonly logger = new Logger(AuthService.name)
   private readonly keycloakUrl: string
   private readonly keycloakRealm: string
-  private readonly clientId: string
-  private readonly clientSecret: string
 
   constructor(
     private readonly configService: ConfigService,
@@ -19,15 +17,17 @@ export class AuthService {
   ) {
     this.keycloakUrl = this.configService.get<string>('KEYCLOAK_URL') || ''
     this.keycloakRealm = this.configService.get<string>('KEYCLOAK_REALMS') || 'test-cym'
-    this.clientId = this.configService.get<string>('KEYCLOAK_CLIENT') || 'frontend'
-    this.clientSecret = this.configService.get<string>('KEYCLOAK_SECRET') || '123'
   }
 
   async getToken(request: TokenRequestDto): Promise<TokenResponseDto> {
     const formData = new FormData()
     formData.append('grant_type', request.grant_type)
     formData.append('client_id', request.client_id)
-    formData.append('client_secret', request.client_secret)
+
+    if (request.client_secret && request.client_secret.trim() !== '') {
+      formData.append('client_secret', request.client_secret)
+    }
+
     formData.append('username', request.username)
     formData.append('password', request.password)
 
@@ -48,7 +48,7 @@ export class AuthService {
 
       return response.data
     } catch (error) {
-      this.logger.error(`Ошибка получения токена: ${error.message}`)
+      this.logger.error(`Ошибка получения токена: ${error.message}`, error.stack)
       throw error
     }
   }
@@ -57,7 +57,11 @@ export class AuthService {
     const formData = new FormData()
     formData.append('grant_type', 'refresh_token')
     formData.append('client_id', request.client_id)
-    formData.append('client_secret', request.client_secret)
+
+    if (request.client_secret && request.client_secret.trim() !== '') {
+      formData.append('client_secret', request.client_secret)
+    }
+
     formData.append('refresh_token', request.refresh_token)
 
     const url = `${this.keycloakUrl}realms/${this.keycloakRealm}/protocol/openid-connect/token`
@@ -73,7 +77,7 @@ export class AuthService {
 
       return response.data
     } catch (error) {
-      this.logger.error(`Ошибка обновления токена: ${error.message}`)
+      this.logger.error(`Ошибка обновления токена: ${error.message}`, error.stack)
       throw error
     }
   }
@@ -82,7 +86,10 @@ export class AuthService {
     const formData = new FormData()
     formData.append('token', request.token)
     formData.append('client_id', request.client_id)
-    formData.append('client_secret', request.client_secret)
+
+    if (request.client_secret && request.client_secret.trim() !== '') {
+      formData.append('client_secret', request.client_secret)
+    }
 
     const url = `${this.keycloakUrl}realms/${this.keycloakRealm}/protocol/openid-connect/token/introspect`
 
@@ -108,7 +115,7 @@ export class AuthService {
         groups: introspectData.groups || []
       }
     } catch (error) {
-      this.logger.error(`Ошибка интроспекции токена: ${error.message}`)
+      this.logger.error(`Ошибка интроспекции токена: ${error.message}`, error.stack)
       throw error
     }
   }
@@ -117,13 +124,13 @@ export class AuthService {
     try {
       const introspectData = await this.introspectToken({
         token,
-        client_id: this.clientId,
-        client_secret: this.clientSecret
+        client_id: 'frontend',
+        client_secret: ''
       })
 
       return introspectData.active === true
     } catch (error) {
-      this.logger.error(`Ошибка валидации токена: ${error.message}`)
+      this.logger.error(`Ошибка валидации токена: ${error.message}`, error.stack)
       return false
     }
   }

@@ -116,8 +116,8 @@ export class AuthController {
       type: 'object',
       properties: {
         grant_type: { type: 'string', example: 'refresh_token' },
-        client_id: { type: 'string', example: 'surm-api' },
-        client_secret: { type: 'string', example: 'CLIENT_SECRET' },
+        client_id: { type: 'string', example: 'frontend' },
+        client_secret: { type: 'string', example: '' },
         refresh_token: { type: 'string', example: 'eyJhbGciOiJIUzI1NiIsInR5cCIgOiAiSldUI...' }
       }
     }

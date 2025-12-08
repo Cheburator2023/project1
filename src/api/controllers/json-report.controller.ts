@@ -63,12 +63,12 @@ export class JsonReportController {
   })
   @ApiResponse({
     status: 401,
-    description: 'Некорректная пара логин - пароль',
+    description: 'Требуется аутентификация',
     schema: {
       example: {
         error: {
           code: '401',
-          message: 'Некорректная пара логин - пароль'
+          message: 'Требуется аутентификация'
         }
       }
     }
@@ -150,7 +150,7 @@ export class JsonReportController {
       }
 
       // Обработка внутренних ошибок
-      if (error.message?.includes('Шаблон не найден')) {
+      if (error.message?.includes('Шаблон не найден') || error.message?.includes('template_id')) {
         throw new HttpException(
           {
             error: {
@@ -159,6 +159,19 @@ export class JsonReportController {
             }
           },
           HttpStatus.BAD_REQUEST
+        )
+      }
+
+      // Обработка ошибок аутентификации Keycloak
+      if (error.response?.status === 401) {
+        throw new HttpException(
+          {
+            error: {
+              code: '401',
+              message: 'Некорректная пара логин - пароль'
+            }
+          },
+          HttpStatus.UNAUTHORIZED
         )
       }
 
