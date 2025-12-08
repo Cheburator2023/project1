@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common'
+import { Module, MiddlewareConsumer } from '@nestjs/common'
 import { ModelsModule } from 'src/modules/models/models.module'
 import { ReportModule } from 'src/modules/report/report.module'
 import { MetricsModule } from 'src/modules/metrics/metrics.module'
@@ -23,6 +23,7 @@ import { ApiService } from './api.service'
 import { RolesGuard } from 'src/api/guards/roles.guard'
 import { RateLimitGuard } from 'src/api/guards/rate-limit.guard'
 import { AuthModule } from './auth.module'
+import { SwaggerAuthMiddleware } from './middlewares/swagger-auth.middleware'
 
 @Module({
   controllers: [
@@ -53,4 +54,10 @@ import { AuthModule } from './auth.module'
     })
   ]
 })
-export class ApiModule {}
+export class ApiModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer
+      .apply(SwaggerAuthMiddleware)
+      .forRoutes('*')
+  }
+}

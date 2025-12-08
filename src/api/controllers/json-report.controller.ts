@@ -16,6 +16,7 @@ import {
   ApiResponse,
   ApiBody,
   ApiBearerAuth,
+  ApiSecurity,
 } from '@nestjs/swagger'
 import { ReportService } from 'src/modules/report/report.service'
 import { JsonReportRequestDto, JsonReportResponseDto } from '../dto/json-report-request.dto'
@@ -25,14 +26,15 @@ import { User, UserType } from 'src/decorators/user.decorator'
 import { RateLimit } from '../guards/rate-limit.guard'
 
 @ApiTags('JSON Отчеты')
-// @ApiBearerAuth()
+@ApiBearerAuth('JWT-auth')
+@ApiSecurity('JWT-auth')
 @Controller('report')
-// @UseGuards(RolesGuard)
+@UseGuards(RolesGuard)
 export class JsonReportController {
   constructor(private readonly reportService: ReportService) {}
 
   @Post('json')
-  // @Roles('model_read')
+  @Roles('model_read')
   @RateLimit({ limit: 3, windowMs: 60 * 1000 })
   @UseInterceptors(CacheInterceptor)
   @CacheTTL(300) // 5 минут кэширования
@@ -42,7 +44,21 @@ export class JsonReportController {
   })
   @ApiBody({
     type: JsonReportRequestDto,
-    description: 'Параметры для формирования отчета'
+    description: 'Параметры для формирования отчета',
+    examples: {
+      'Пример для ПУРС': {
+        value: {
+          template_id: 1,
+          date: '2025-01-01'
+        }
+      },
+      'Пример для ПУМР': {
+        value: {
+          template_id: 2,
+          date: '2025-01-01'
+        }
+      }
+    }
   })
   @ApiResponse({
     status: 200,
@@ -139,6 +155,19 @@ export class JsonReportController {
     @Headers('authorization') authHeader: string
   ): Promise<JsonReportResponseDto> {
     try {
+      // Проверка аутентификации через заголовок
+      if (!authHeader && process.env.NO_ROLES !== 'true') {
+        throw new HttpException(
+          {
+            error: {
+              code: '401',
+              message: 'Требуется аутентификация'
+            }
+          },
+          HttpStatus.UNAUTHORIZED
+        )
+      }
+
       return await this.reportService.getJsonReport(
         request.template_id,
         request.date,

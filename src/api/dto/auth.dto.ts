@@ -4,7 +4,8 @@ import { IsString, IsNotEmpty, IsOptional, IsIn } from 'class-validator'
 export class TokenRequestDto {
   @ApiProperty({
     example: 'password',
-    description: 'Тип grant_type (только password)'
+    description: 'Тип grant_type (только password)',
+    default: 'password'
   })
   @IsString()
   @IsNotEmpty()
@@ -13,7 +14,8 @@ export class TokenRequestDto {
 
   @ApiProperty({
     example: 'frontend',
-    description: 'Идентификатор клиента'
+    description: 'Идентификатор клиента',
+    default: 'frontend'
   })
   @IsString()
   @IsNotEmpty()
@@ -21,24 +23,27 @@ export class TokenRequestDto {
 
   @ApiProperty({
     example: '',
-    description: 'Секрет клиента (опционально, для public client может быть пустым)',
-    required: false
+    description: 'Секрет клиента (опционально)',
+    required: false,
+    default: ''
   })
   @IsOptional()
   @IsString()
   client_secret?: string
 
   @ApiProperty({
-    example: 'test_ds_lead',
-    description: 'Имя пользователя'
+    example: 'test_ds',
+    description: 'Имя пользователя',
+    default: 'test_ds'
   })
   @IsString()
   @IsNotEmpty()
   username: string
 
   @ApiProperty({
-    example: 'test_ds_lead',
-    description: 'Пароль пользователя'
+    example: 'test_ds',
+    description: 'Пароль пользователя',
+    default: 'test_ds'
   })
   @IsString()
   @IsNotEmpty()
@@ -47,7 +52,8 @@ export class TokenRequestDto {
   @ApiProperty({
     example: 'openid profile email',
     description: 'Области доступа',
-    required: false
+    required: false,
+    default: 'openid profile email'
   })
   @IsOptional()
   @IsString()
@@ -65,7 +71,8 @@ export class IntrospectRequestDto {
 
   @ApiProperty({
     example: 'frontend',
-    description: 'Идентификатор клиента'
+    description: 'Идентификатор клиента',
+    default: 'frontend'
   })
   @IsString()
   @IsNotEmpty()
@@ -74,7 +81,8 @@ export class IntrospectRequestDto {
   @ApiProperty({
     example: '',
     description: 'Секрет клиента (опционально)',
-    required: false
+    required: false,
+    default: ''
   })
   @IsOptional()
   @IsString()

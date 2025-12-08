@@ -48,7 +48,7 @@ async function bootstrap() {
         scheme: 'bearer',
         bearerFormat: 'JWT',
         name: 'JWT',
-        description: 'Введите JWT токен',
+        description: 'Введите JWT токен в формате: Bearer <token>',
         in: 'header'
       },
       'JWT-auth'
@@ -64,7 +64,23 @@ async function bootstrap() {
       filter: true,
       showExtensions: true,
       showCommonExtensions: true,
-    }
+      security: [{
+        'JWT-auth': []
+      }],
+      authAction: {
+        'JWT-auth': {
+          name: 'JWT-auth',
+          schema: {
+            type: 'http',
+            scheme: 'bearer',
+            bearerFormat: 'JWT'
+          },
+          value: 'Bearer <token>'
+        }
+      }
+    },
+    customSiteTitle: 'SUM RM API Documentation',
+    customfavIcon: '/favicon.ico'
   })
 
   app.getHttpAdapter().get('/api-json', (_req, res) => {
@@ -75,6 +91,7 @@ async function bootstrap() {
   const port = process.env.PORT || 3000
   await app.listen(port)
   logger.sys(`Application started successfully on port ${port}`)
+  logger.sys(`Swagger documentation available at http://localhost:${port}/api`)
 }
 
 bootstrap()

@@ -14,6 +14,7 @@ import {
   ApiResponse,
   ApiBody,
   ApiBearerAuth,
+  ApiSecurity,
 } from '@nestjs/swagger'
 import { AuthService } from '../services/auth.service'
 import { TokenRequestDto, TokenResponseDto, IntrospectRequestDto } from '../dto/auth.dto'
@@ -34,7 +35,20 @@ export class AuthController {
   })
   @ApiBody({
     type: TokenRequestDto,
-    description: 'Данные для получения токенов'
+    description: 'Данные для получения токенов',
+    examples: {
+      'Стандартный запрос': {
+        summary: 'Запрос с тестовыми данными',
+        value: {
+          grant_type: 'password',
+          client_id: 'frontend',
+          client_secret: '',
+          username: 'test_ds',
+          password: 'test_ds',
+          scope: 'openid profile email'
+        }
+      }
+    }
   })
   @ApiResponse({
     status: 200,
@@ -115,10 +129,36 @@ export class AuthController {
     schema: {
       type: 'object',
       properties: {
-        grant_type: { type: 'string', example: 'refresh_token' },
-        client_id: { type: 'string', example: 'frontend' },
-        client_secret: { type: 'string', example: '' },
-        refresh_token: { type: 'string', example: 'eyJhbGciOiJIUzI1NiIsInR5cCIgOiAiSldUI...' }
+        grant_type: {
+          type: 'string',
+          example: 'refresh_token',
+          default: 'refresh_token'
+        },
+        client_id: {
+          type: 'string',
+          example: 'frontend',
+          default: 'frontend'
+        },
+        client_secret: {
+          type: 'string',
+          example: '',
+          default: ''
+        },
+        refresh_token: {
+          type: 'string',
+          example: 'eyJhbGciOiJIUzI1NiIsInR5cCIgOiAiSldUI...'
+        }
+      },
+      required: ['grant_type', 'client_id', 'refresh_token']
+    },
+    examples: {
+      'Обновление токена': {
+        value: {
+          grant_type: 'refresh_token',
+          client_id: 'frontend',
+          client_secret: '',
+          refresh_token: 'eyJhbGciOiJIUzI1NiIsInR5cCIgOiAiSldUI...'
+        }
       }
     }
   })
@@ -199,7 +239,16 @@ export class AuthController {
   })
   @ApiBody({
     type: IntrospectRequestDto,
-    description: 'Данные для проверки токена'
+    description: 'Данные для проверки токена',
+    examples: {
+      'Проверка токена': {
+        value: {
+          token: 'eyJhbGciOiJSUzI1NiIsInR5cCIgOiAiSldUI...',
+          client_id: 'frontend',
+          client_secret: ''
+        }
+      }
+    }
   })
   @ApiResponse({
     status: 200,
