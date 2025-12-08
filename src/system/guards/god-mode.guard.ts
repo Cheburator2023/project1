@@ -5,6 +5,7 @@ import {
   Injectable
 } from '@nestjs/common'
 import { Reflector } from '@nestjs/core'
+import { IS_PUBLIC_KEY } from 'src/decorators/public.decorator'
 
 @Injectable()
 export class GodModeGuard implements CanActivate {
@@ -14,9 +15,19 @@ export class GodModeGuard implements CanActivate {
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
+    const isPublic = this.reflector.get<boolean>(
+      IS_PUBLIC_KEY,
+      context.getHandler()
+    )
+
+    if (isPublic) {
+      return true
+    }
+
     if (process.env.NO_ROLES === 'true') {
       return true
     }
+
     if (typeof this.delegateGuard.canActivate === 'function') {
       return this.delegateGuard.canActivate(context) as any
     }

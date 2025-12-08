@@ -17,6 +17,9 @@ async function bootstrap() {
     bufferLogs: true,
     logger: false
   })
+
+  app.getHttpAdapter().getInstance().set('trust proxy', process.env.TRUST_PROXY === 'true')
+
   app.use(express.json({ limit: '50mb' }))
   app.use(express.urlencoded({ limit: '50mb', extended: true }))
 
@@ -53,7 +56,16 @@ async function bootstrap() {
     .build()
   const document = SwaggerModule.createDocument(app, config)
 
-  SwaggerModule.setup('api', app, document)
+  SwaggerModule.setup('api', app, document, {
+    swaggerOptions: {
+      persistAuthorization: true,
+      displayRequestDuration: true,
+      docExpansion: 'none',
+      filter: true,
+      showExtensions: true,
+      showCommonExtensions: true,
+    }
+  })
 
   app.getHttpAdapter().get('/api-json', (_req, res) => {
     res.setHeader('Content-Type', 'application/json')

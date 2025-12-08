@@ -9,6 +9,8 @@ import {
   UseGuards
 } from '@nestjs/common'
 import { Reflector } from '@nestjs/core'
+import { Request } from 'express'
+import { IS_PUBLIC_KEY } from 'src/decorators/public.decorator'
 
 interface RateLimitInfo {
   count: number
@@ -18,6 +20,7 @@ interface RateLimitInfo {
 interface RateLimitOptions {
   limit?: number
   windowMs?: number
+  useIP?: boolean
 }
 
 export const RATE_LIMIT_OPTIONS = 'RATE_LIMIT_OPTIONS'
@@ -43,11 +46,17 @@ export class RateLimitGuard implements CanActivate {
       context.getHandler()
     ) || {}
 
+    const isPublic = this.reflector.get<boolean>(
+      IS_PUBLIC_KEY,
+      context.getHandler()
+    )
+
     const limit = options.limit || this.defaultLimit
     const windowMs = options.windowMs || this.defaultWindowMs
+    const useIP = options.useIP !== undefined ? options.useIP : isPublic
 
-    const request = context.switchToHttp().getRequest()
-    const key = this.getRateLimitKey(request, context)
+    const request = context.switchToHttp().getRequest<Request>()
+    const key = this.getRateLimitKey(request, context, useIP)
 
     const now = Date.now()
     const windowInfo = this.requestCounts.get(key)
@@ -74,15 +83,38 @@ export class RateLimitGuard implements CanActivate {
     return true
   }
 
-  private getRateLimitKey(request: any, context: ExecutionContext): string {
+  private getRateLimitKey(
+    request: Request,
+    context: ExecutionContext,
+    useIP: boolean
+  ): string {
     const handler = context.getHandler()
     const className = context.getClass().name
     const methodName = handler.name
 
     if (className === 'AuthController') {
-      return `auth_${methodName}`
+      const ip = useIP ? this.getClientIP(request) : 'global'
+      return `auth_${methodName}_${ip}`
     }
 
-    return 'json_report_global'
+    if (className === 'JsonReportController' && methodName === 'getJsonReport') {
+      return 'json_report_global'
+    }
+
+    const ip = useIP ? this.getClientIP(request) : 'global'
+    return `${className}_${methodName}_${ip}`
+  }
+
+  private getClientIP(request: Request): string {
+    // Получаем IP из заголовков или подключения
+    const forwardedFor = request.headers['x-forwarded-for']
+    if (forwardedFor) {
+      if (Array.isArray(forwardedFor)) {
+        return forwardedFor[0].split(',')[0].trim()
+      }
+      return forwardedFor.split(',')[0].trim()
+    }
+
+    return request.ip || request.connection.remoteAddress || 'unknown'
   }
 }

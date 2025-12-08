@@ -21,13 +21,12 @@ import { ReportService } from 'src/modules/report/report.service'
 import { JsonReportRequestDto, JsonReportResponseDto } from '../dto/json-report-request.dto'
 import { Roles } from 'src/decorators/roles.decorator'
 import { RolesGuard } from 'src/api/guards/roles.guard'
-import { RateLimitGuard } from 'src/api/guards/rate-limit.guard'
 import { User, UserType } from 'src/decorators/user.decorator'
 import { RateLimit } from '../guards/rate-limit.guard'
 
 @ApiTags('JSON Отчеты')
 @ApiBearerAuth()
-@Controller('api/rest/v1/report')
+@Controller('report')
 @UseGuards(RolesGuard)
 export class JsonReportController {
   constructor(private readonly reportService: ReportService) {}

@@ -18,14 +18,16 @@ import {
 import { AuthService } from '../services/auth.service'
 import { TokenRequestDto, TokenResponseDto, IntrospectRequestDto } from '../dto/auth.dto'
 import { RateLimit } from '../guards/rate-limit.guard'
+import { Public } from 'src/decorators/public.decorator'
 
 @ApiTags('Аутентификация')
-@Controller('api/rest/v1/auth')
+@Controller('auth')
+@Public()
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @Post('token')
-  @RateLimit({ limit: 10, windowMs: 60 * 1000 }) // 10 запросов в минуту для аутентификации
+  @RateLimit({ limit: 10, windowMs: 60 * 1000, useIP: true })
   @ApiOperation({
     summary: 'Получение токенов доступа',
     description: 'Получение access и refresh токенов по логину и паролю'
@@ -104,6 +106,7 @@ export class AuthController {
   }
 
   @Post('refresh')
+  @RateLimit({ limit: 10, windowMs: 60 * 1000, useIP: true })
   @ApiOperation({
     summary: 'Обновление токена доступа',
     description: 'Обновление access токена с использованием refresh токена'
@@ -189,6 +192,7 @@ export class AuthController {
   }
 
   @Post('introspect')
+  @RateLimit({ limit: 10, windowMs: 60 * 1000, useIP: true })
   @ApiOperation({
     summary: 'Интроспекция токена',
     description: 'Проверка валидности access токена'
@@ -255,6 +259,7 @@ export class AuthController {
   }
 
   @Get('status')
+  @RateLimit({ limit: 10, windowMs: 60 * 1000, useIP: true })
   @ApiOperation({
     summary: 'Проверка статуса сервиса',
     description: 'Проверка доступности сервиса аутентификации'
