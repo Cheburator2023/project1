@@ -304,7 +304,7 @@ export class ReportService {
     date: string
   ): Promise<{ [key: string]: any[] }> {
     try {
-      // Используем предоставленный SQL-запрос с подготовленным выражением
+      // Используем предоставленный SQL-запрос
       const query = `
         WITH filtered_models AS (
           SELECT
@@ -566,6 +566,9 @@ export class ReportService {
            OR $1 NOT IN (1, 2); -- Для других template_id (если понадобится в будущем)
       `
 
+      // Упрощенное логирование без объектов
+      this.logger.info(`Выполнение SQL-запроса для шаблона: template_id=${template_id}, date=${date}`)
+
       const result = await this.mrmDatabaseService.query(query, [template_id, date])
 
       // Проверка результата запроса
@@ -574,45 +577,95 @@ export class ReportService {
         throw new Error('Не удалось получить данные из базы данных')
       }
 
-      if (!result.rows) {
-        this.logger.error('SQL-запрос не содержит rows:', result)
+      // Определяем, какую структуру возвращает mrmDatabaseService.query
+      let rows: any[] = []
+
+      // Вариант 1: результат уже является массивом
+      if (Array.isArray(result)) {
+        rows = result
+        this.logger.info(`Результат - массив строк, количество строк: ${rows.length}`)
+      }
+      // Вариант 2: результат - объект с полем rows
+      else if (result && typeof result === 'object' && result.rows && Array.isArray(result.rows)) {
+        rows = result.rows
+        this.logger.info(`Результат - объект с rows, количество строк: ${rows.length}`)
+      }
+      // Вариант 3: результат - объект с другими полями
+      else if (result && typeof result === 'object') {
+        // Попробуем найти первое свойство-массив
+        const arrayKeys = Object.keys(result).filter(key => Array.isArray(result[key]))
+        if (arrayKeys.length > 0) {
+          rows = result[arrayKeys[0]]
+          this.logger.info(`Найден массив в результате по ключу: ${arrayKeys[0]}, количество строк: ${rows.length}`)
+        } else {
+          const errorMsg = `Некорректный формат ответа от базы данных, нет массива в результате. Тип результата: ${typeof result}, ключи: ${Object.keys(result).join(', ')}`
+          this.logger.error(errorMsg)
+          throw new Error('Некорректный формат ответа от базы данных')
+        }
+      } else {
+        const errorMsg = `Неизвестный формат ответа от базы данных. Тип результата: ${typeof result}`
+        this.logger.error(errorMsg)
         throw new Error('Некорректный формат ответа от базы данных')
       }
 
       // Проверка, что rows является массивом
-      if (!Array.isArray(result.rows)) {
-        this.logger.error('Rows не является массивом:', typeof result.rows)
+      if (!Array.isArray(rows)) {
+        const errorMsg = `Rows не является массивом после обработки. Тип: ${typeof rows}`
+        this.logger.error(errorMsg)
         throw new Error('Некорректный тип данных в ответе от базы данных')
       }
 
-      // Извлекаем template_value из результатов с дополнительной проверкой
-      const data = result.rows
+      this.logger.info(`Обработка строк результата, количество строк: ${rows.length}`)
+
+      // Извлекаем template_value из результатов
+      const data = rows
         .filter(row => {
-          // Проверка на существование row и его свойств
-          if (!row || row.template_json === null || row.template_json === undefined) {
+          // Проверка на существование row
+          if (!row) {
             return false
           }
-          return row.template_json.template_value !== null && row.template_json.template_value !== undefined
+
+          // Проверяем, что строка содержит template_value
+          if (row.template_value === null || row.template_value === undefined) {
+            return false
+          }
+
+          // Проверяем структуру template_value
+          if (typeof row.template_value !== 'object') {
+            return false
+          }
+
+          return true
         })
-        .map(row => row.template_json.template_value)
+        .map(row => {
+          // Возвращаем template_value напрямую, так как он уже содержит все нужные поля
+          return row.template_value
+        })
+
+      const firstItemKeys = data.length > 0 ? Object.keys(data[0]).join(', ') : 'нет'
+      this.logger.info(`Данные после фильтрации и преобразования, количество записей: ${data.length}, ключи первой записи: ${firstItemKeys}`)
 
       // Формируем структуру ответа согласно ТЗ
-      return {
+      const resultData = {
         [`reports_${date}`]: data
       }
 
+      this.logger.info(`Сформирован отчет, дата: ${date}, template_id: ${template_id}, количество записей: ${data.length}`)
+
+      return resultData
+
     } catch (error) {
-      this.logger.error('Ошибка при выполнении SQL-запроса для шаблона:', error)
+      this.logger.error(`Ошибка при выполнении SQL-запроса для шаблона: ${error.message}`)
 
       // Проверяем, является ли ошибка ошибкой синтаксиса SQL
       if (error.message && error.message.includes('syntax error') || error.message.includes('SQL')) {
-        this.logger.error('Ошибка синтаксиса SQL в запросе для шаблона:', template_id)
+        this.logger.error(`Ошибка синтаксиса SQL в запросе для шаблона: ${template_id}`)
         throw new Error('Ошибка в SQL-запросе. Пожалуйста, проверьте синтаксис запроса.')
       }
 
       // Проверяем, является ли ошибка ошибкой подключения к БД
       if (error.message && (error.message.includes('connection') || error.message.includes('database'))) {
-        this.logger.error('Ошибка подключения к базе данных для шаблона:', template_id)
+        this.logger.error(`Ошибка подключения к базе данных для шаблона: ${template_id}`)
         throw new Error('Ошибка подключения к базе данных. Сервис временно недоступен.')
       }
 
