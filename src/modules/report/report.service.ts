@@ -215,6 +215,15 @@ export class ReportService {
         }
       }
 
+      // Проверка, что результат не пустой
+      if (!result || !result[`reports_${formattedDate}`]) {
+        this.logger.warn('Отчет не содержит данных', { template_id, date: formattedDate })
+        // Возвращаем пустой отчет вместо ошибки
+        result = {
+          [`reports_${formattedDate}`]: []
+        }
+      }
+
       // Сохраняем в кэш на 5 минут
       await this.cacheManager.set(cacheKey, result, 300000)
 
@@ -238,6 +247,40 @@ export class ReportService {
             }
           },
           HttpStatus.UNAUTHORIZED
+        )
+      }
+
+      // Проверяем, является ли ошибка ошибкой шаблона
+      if (error.message && (
+        error.message.includes('template') ||
+        error.message.includes('Шаблон') ||
+        error.message.includes('template_id')
+      )) {
+        throw new HttpException(
+          {
+            error: {
+              code: '400',
+              message: 'Неверно указан template_id/дата'
+            }
+          },
+          HttpStatus.BAD_REQUEST
+        )
+      }
+
+      // Проверяем, является ли ошибка ошибкой базы данных
+      if (error.message && (
+        error.message.includes('SQL') ||
+        error.message.includes('database') ||
+        error.message.includes('базы данных')
+      )) {
+        throw new HttpException(
+          {
+            error: {
+              code: '503',
+              message: 'Сервис недоступен'
+            }
+          },
+          HttpStatus.SERVICE_UNAVAILABLE
         )
       }
 
@@ -348,15 +391,15 @@ export class ReportService {
                      artefact_realizations_new.artefact_string_value,
                      artefact_realizations_new.effective_from,
                      ROW_NUMBER() OVER (
-                  PARTITION BY artefact_realizations_new.model_id, artefact_realizations_new.artefact_id
-                  ORDER BY 
-                    CASE 
-                      WHEN $2::DATE IS NULL THEN artefact_realizations_new.effective_from
-                      WHEN DATE_TRUNC('day', artefact_realizations_new.effective_from)::DATE <= $2
-                      THEN artefact_realizations_new.effective_from
-                      ELSE TO_TIMESTAMP('1900-01-01', 'YYYY-MM-DD')
-                    END DESC
-                ) AS rn
+                PARTITION BY artefact_realizations_new.model_id, artefact_realizations_new.artefact_id
+                ORDER BY 
+                  CASE 
+                    WHEN $2::DATE IS NULL THEN artefact_realizations_new.effective_from
+                    WHEN DATE_TRUNC('day', artefact_realizations_new.effective_from)::DATE <= $2
+                    THEN artefact_realizations_new.effective_from
+                    ELSE TO_TIMESTAMP('1900-01-01', 'YYYY-MM-DD')
+                  END DESC
+              ) AS rn
                    FROM artefact_realizations_new
                    WHERE artefact_realizations_new.effective_to = TO_TIMESTAMP('9999-12-31 23:59:59', 'YYYY-MM-DD HH24:MI:SS')
                      AND (
@@ -525,9 +568,32 @@ export class ReportService {
 
       const result = await this.mrmDatabaseService.query(query, [template_id, date])
 
-      // Извлекаем template_value из результатов
+      // Проверка результата запроса
+      if (!result) {
+        this.logger.error('SQL-запрос вернул пустой результат')
+        throw new Error('Не удалось получить данные из базы данных')
+      }
+
+      if (!result.rows) {
+        this.logger.error('SQL-запрос не содержит rows:', result)
+        throw new Error('Некорректный формат ответа от базы данных')
+      }
+
+      // Проверка, что rows является массивом
+      if (!Array.isArray(result.rows)) {
+        this.logger.error('Rows не является массивом:', typeof result.rows)
+        throw new Error('Некорректный тип данных в ответе от базы данных')
+      }
+
+      // Извлекаем template_value из результатов с дополнительной проверкой
       const data = result.rows
-        .filter(row => row.template_json !== null && row.template_json.template_value !== null)
+        .filter(row => {
+          // Проверка на существование row и его свойств
+          if (!row || row.template_json === null || row.template_json === undefined) {
+            return false
+          }
+          return row.template_json.template_value !== null && row.template_json.template_value !== undefined
+        })
         .map(row => row.template_json.template_value)
 
       // Формируем структуру ответа согласно ТЗ
@@ -537,30 +603,21 @@ export class ReportService {
 
     } catch (error) {
       this.logger.error('Ошибка при выполнении SQL-запроса для шаблона:', error)
-      throw error
-    }
-  }
 
-  /**
-   * Получить шаблон из базы данных
-   */
-  private async getTemplateFromDatabase(template_id: number): Promise<any> {
-    try {
-      const query = `
-        SELECT template_value 
-        FROM templates_new 
-        WHERE template_id = $1
-      `
-      const result = await this.mrmDatabaseService.query(query, [template_id])
-
-      if (result.rows.length === 0) {
-        return null
+      // Проверяем, является ли ошибка ошибкой синтаксиса SQL
+      if (error.message && error.message.includes('syntax error') || error.message.includes('SQL')) {
+        this.logger.error('Ошибка синтаксиса SQL в запросе для шаблона:', template_id)
+        throw new Error('Ошибка в SQL-запросе. Пожалуйста, проверьте синтаксис запроса.')
       }
 
-      return result.rows[0].template_value
-    } catch (error) {
-      this.logger.error('Error fetching template:', error)
-      return null
+      // Проверяем, является ли ошибка ошибкой подключения к БД
+      if (error.message && (error.message.includes('connection') || error.message.includes('database'))) {
+        this.logger.error('Ошибка подключения к базе данных для шаблона:', template_id)
+        throw new Error('Ошибка подключения к базе данных. Сервис временно недоступен.')
+      }
+
+      // Перебрасываем ошибку дальше для обработки в getJsonReport
+      throw error
     }
   }
 
@@ -708,14 +765,6 @@ export class ReportService {
 
   private static filterByString(artefactValue, filterValues): boolean {
     return filterValues.includes(artefactValue)
-  }
-
-  private static filterByNotNull(artefactValue): boolean {
-    return (
-      artefactValue !== null &&
-      artefactValue !== undefined &&
-      artefactValue !== ''
-    )
   }
 
   private static filterByEmpty(artefactValue): boolean {
