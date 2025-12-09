@@ -566,7 +566,6 @@ export class ReportService {
            OR $1 NOT IN (1, 2); -- Для других template_id (если понадобится в будущем)
       `
 
-      // Упрощенное логирование без объектов
       this.logger.info(`Выполнение SQL-запроса для шаблона: template_id=${template_id}, date=${date}`)
 
       const result = await this.mrmDatabaseService.query(query, [template_id, date])
@@ -584,6 +583,19 @@ export class ReportService {
       if (Array.isArray(result)) {
         rows = result
         this.logger.info(`Результат - массив строк, количество строк: ${rows.length}`)
+
+        // Логируем структуру первой строки для отладки
+        if (rows.length > 0) {
+          const firstRow = rows[0]
+          this.logger.info(`Ключи первой строки: ${Object.keys(firstRow).join(', ')}`)
+          // Логируем структуру template_json, если он есть
+          if (firstRow.template_json) {
+            this.logger.info(`Тип template_json: ${typeof firstRow.template_json}`)
+            if (typeof firstRow.template_json === 'object') {
+              this.logger.info(`Ключи template_json: ${Object.keys(firstRow.template_json).join(', ')}`)
+            }
+          }
+        }
       }
       // Вариант 2: результат - объект с полем rows
       else if (result && typeof result === 'object' && result.rows && Array.isArray(result.rows)) {
@@ -617,7 +629,7 @@ export class ReportService {
 
       this.logger.info(`Обработка строк результата, количество строк: ${rows.length}`)
 
-      // Извлекаем template_value из результатов
+      // Извлекаем данные из template_json
       const data = rows
         .filter(row => {
           // Проверка на существование row
@@ -625,21 +637,35 @@ export class ReportService {
             return false
           }
 
-          // Проверяем, что строка содержит template_value
-          if (row.template_value === null || row.template_value === undefined) {
+          // Проверяем, что строка содержит template_json
+          if (row.template_json === null || row.template_json === undefined) {
+            this.logger.debug(`Пропуск строки - отсутствует template_json`)
             return false
           }
 
-          // Проверяем структуру template_value
-          if (typeof row.template_value !== 'object') {
+          // Проверяем структуру template_json
+          if (typeof row.template_json !== 'object') {
+            this.logger.debug(`Пропуск строки - template_json не объект, тип: ${typeof row.template_json}`)
+            return false
+          }
+
+          // Проверяем, что template_json содержит template_value
+          if (!row.template_json.template_value) {
+            this.logger.debug(`Пропуск строки - template_json не содержит template_value`)
+            return false
+          }
+
+          // Проверяем, что template_value является объектом
+          if (typeof row.template_json.template_value !== 'object') {
+            this.logger.debug(`Пропуск строки - template_value не объект, тип: ${typeof row.template_json.template_value}`)
             return false
           }
 
           return true
         })
         .map(row => {
-          // Возвращаем template_value напрямую, так как он уже содержит все нужные поля
-          return row.template_value
+          // Возвращаем template_value из template_json
+          return row.template_json.template_value
         })
 
       const firstItemKeys = data.length > 0 ? Object.keys(data[0]).join(', ') : 'нет'
