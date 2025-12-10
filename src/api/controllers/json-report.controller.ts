@@ -65,7 +65,7 @@ export class JsonReportController {
     }
   })
   @ApiResponse({
-    status: 200,
+    status: 201,
     description: 'Отчет успешно сформирован',
     type: JsonReportResponseDto
   })
