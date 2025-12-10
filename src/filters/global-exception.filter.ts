@@ -3,41 +3,44 @@ import {
   Catch,
   ArgumentsHost,
   HttpException,
-  HttpStatus
+  HttpStatus,
+  Logger
 } from '@nestjs/common'
 import { Response } from 'express'
+import { ErrorHandlerService } from 'src/common/services/error-handler.service'
 
 @Catch()
 export class GlobalExceptionFilter implements ExceptionFilter {
+  private readonly logger = new Logger(GlobalExceptionFilter.name)
+
+  constructor(private readonly errorHandler: ErrorHandlerService) {}
+
   catch(exception: unknown, host: ArgumentsHost) {
     const ctx = host.switchToHttp()
     const response = ctx.getResponse<Response>()
 
-    let status = HttpStatus.INTERNAL_SERVER_ERROR
-    let message = 'Внутренняя ошибка сервера'
-    let stack: string | undefined
-
+    // Если это уже HttpException, просто отправляем его
     if (exception instanceof HttpException) {
-      status = exception.getStatus()
+      const status = exception.getStatus()
       const exceptionResponse = exception.getResponse()
 
-      if (typeof exceptionResponse === 'object' && exceptionResponse !== null) {
-        message = (exceptionResponse as any).message || exception.message
-        stack = (exceptionResponse as any).stack
-      } else {
-        message = exceptionResponse as string
-      }
-    } else if (exception instanceof Error) {
-      message = exception.message || 'Внутренняя ошибка сервера'
-      stack = exception.stack
+      response.status(status).json(
+        typeof exceptionResponse === 'object'
+          ? exceptionResponse
+          : { message: exceptionResponse }
+      )
+      return
     }
 
-    const errorResponse = {
-      message,
-      statusCode: status,
-      ...(stack && { stack })
-    }
+    // Обрабатываем ошибку через единый обработчик
+    const httpException = this.errorHandler.handleError(exception)
+    const status = httpException.getStatus()
+    const exceptionResponse = httpException.getResponse()
 
-    response.status(status).json(errorResponse)
+    response.status(status).json(
+      typeof exceptionResponse === 'object'
+        ? exceptionResponse
+        : { message: exceptionResponse }
+    )
   }
 }

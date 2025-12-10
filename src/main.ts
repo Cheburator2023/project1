@@ -11,6 +11,7 @@ import { GlobalExceptionFilter } from './filters'
 import * as express from 'express'
 import { AppModule } from './app.module'
 import { LoggerService } from './system/logger/logger.service'
+import { ErrorHandlerService } from './common/services/error-handler.service'
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
@@ -24,6 +25,7 @@ async function bootstrap() {
   app.use(express.urlencoded({ limit: '50mb', extended: true }))
 
   const logger = app.get(LoggerService)
+  const errorHandler = app.get(ErrorHandlerService)
   app.useLogger(logger)
 
   logger.sys('Application starting...')
@@ -37,7 +39,7 @@ async function bootstrap() {
       forbidNonWhitelisted: true
     })
   )
-  app.useGlobalFilters(new GlobalExceptionFilter())
+  app.useGlobalFilters(new GlobalExceptionFilter(errorHandler))
 
   const config = new DocumentBuilder()
     .setTitle('SUM RM API')

@@ -2,10 +2,6 @@ import {
   Controller,
   Post,
   Body,
-  HttpException,
-  HttpStatus,
-  UseGuards,
-  Headers,
   Get
 } from '@nestjs/common'
 import {
@@ -13,19 +9,22 @@ import {
   ApiOperation,
   ApiResponse,
   ApiBody,
-  ApiBearerAuth,
-  ApiSecurity,
+
 } from '@nestjs/swagger'
 import { AuthService } from '../services/auth.service'
 import { TokenRequestDto, TokenResponseDto, IntrospectRequestDto } from '../dto/auth.dto'
 import { RateLimit } from '../guards/rate-limit.guard'
 import { Public } from 'src/decorators/public.decorator'
+import { ErrorHandlerService } from 'src/common/services/error-handler.service'
 
 @ApiTags('Аутентификация')
 @Controller('auth')
 @Public()
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly errorHandler: ErrorHandlerService
+  ) {}
 
   @Post('token')
   @RateLimit({ limit: 10, windowMs: 60 * 1000, useIP: true })
@@ -83,39 +82,7 @@ export class AuthController {
     try {
       return await this.authService.getToken(request)
     } catch (error) {
-      if (error.response?.status === 401) {
-        throw new HttpException(
-          {
-            error: {
-              code: '401',
-              message: 'Некорректная пара логин - пароль'
-            }
-          },
-          HttpStatus.UNAUTHORIZED
-        )
-      }
-
-      if (error.response?.status === 400) {
-        throw new HttpException(
-          {
-            error: {
-              code: '400',
-              message: 'Неверные параметры запроса'
-            }
-          },
-          HttpStatus.BAD_REQUEST
-        )
-      }
-
-      throw new HttpException(
-        {
-          error: {
-            code: '503',
-            message: 'Сервис недоступен'
-          }
-        },
-        HttpStatus.SERVICE_UNAVAILABLE
-      )
+      throw this.errorHandler.handleError(error)
     }
   }
 
@@ -195,39 +162,7 @@ export class AuthController {
     try {
       return await this.authService.refreshToken(request)
     } catch (error) {
-      if (error.response?.status === 401) {
-        throw new HttpException(
-          {
-            error: {
-              code: '401',
-              message: 'Недействительный refresh token'
-            }
-          },
-          HttpStatus.UNAUTHORIZED
-        )
-      }
-
-      if (error.response?.status === 400) {
-        throw new HttpException(
-          {
-            error: {
-              code: '400',
-              message: 'Неверные параметры запроса'
-            }
-          },
-          HttpStatus.BAD_REQUEST
-        )
-      }
-
-      throw new HttpException(
-        {
-          error: {
-            code: '503',
-            message: 'Сервис недоступен'
-          }
-        },
-        HttpStatus.SERVICE_UNAVAILABLE
-      )
+      throw this.errorHandler.handleError(error)
     }
   }
 
@@ -283,27 +218,7 @@ export class AuthController {
     try {
       return await this.authService.introspectToken(request)
     } catch (error) {
-      if (error.response?.status === 400) {
-        throw new HttpException(
-          {
-            error: {
-              code: '400',
-              message: 'Неверные параметры запроса'
-            }
-          },
-          HttpStatus.BAD_REQUEST
-        )
-      }
-
-      throw new HttpException(
-        {
-          error: {
-            code: '503',
-            message: 'Сервис недоступен'
-          }
-        },
-        HttpStatus.SERVICE_UNAVAILABLE
-      )
+      throw this.errorHandler.handleError(error)
     }
   }
 

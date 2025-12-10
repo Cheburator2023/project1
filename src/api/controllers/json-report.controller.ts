@@ -18,12 +18,13 @@ import {
   ApiBearerAuth,
   ApiSecurity,
 } from '@nestjs/swagger'
-import { ReportService } from 'src/modules/report/report.service'
 import { JsonReportRequestDto, JsonReportResponseDto } from '../dto/json-report-request.dto'
 import { Roles } from 'src/decorators/roles.decorator'
 import { RolesGuard } from 'src/api/guards/roles.guard'
 import { User, UserType } from 'src/decorators/user.decorator'
 import { RateLimit } from '../guards/rate-limit.guard'
+import { ErrorHandlerService } from 'src/common/services/error-handler.service'
+import { JsonReportService } from '../../modules/report/json-report.service'
 
 @ApiTags('JSON Отчеты')
 @ApiBearerAuth('JWT-auth')
@@ -31,7 +32,10 @@ import { RateLimit } from '../guards/rate-limit.guard'
 @Controller('report')
 @UseGuards(RolesGuard)
 export class JsonReportController {
-  constructor(private readonly reportService: ReportService) {}
+  constructor(
+    private readonly jsonReportService: JsonReportService,
+    private readonly errorHandler: ErrorHandlerService
+  ) {}
 
   @Post('json')
   @Roles('model_read')
@@ -168,51 +172,13 @@ export class JsonReportController {
         )
       }
 
-      return await this.reportService.getJsonReport(
+      return await this.jsonReportService.getJsonReport(
         request.template_id,
         request.date,
         user.groups
       )
     } catch (error) {
-      if (error instanceof HttpException) {
-        throw error
-      }
-
-      // Обработка внутренних ошибок
-      if (error.message?.includes('Шаблон не найден') || error.message?.includes('template_id')) {
-        throw new HttpException(
-          {
-            error: {
-              code: '400',
-              message: 'Неверно указан template_id/дата'
-            }
-          },
-          HttpStatus.BAD_REQUEST
-        )
-      }
-
-      // Обработка ошибок аутентификации Keycloak
-      if (error.response?.status === 401) {
-        throw new HttpException(
-          {
-            error: {
-              code: '401',
-              message: 'Некорректная пара логин - пароль'
-            }
-          },
-          HttpStatus.UNAUTHORIZED
-        )
-      }
-
-      throw new HttpException(
-        {
-          error: {
-            code: '503',
-            message: 'Сервис недоступен'
-          }
-        },
-        HttpStatus.SERVICE_UNAVAILABLE
-      )
+      throw this.errorHandler.handleError(error)
     }
   }
 }

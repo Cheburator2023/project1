@@ -3,6 +3,7 @@ import { HttpModule } from '@nestjs/axios'
 import { AuthController } from './controllers/auth.controller'
 import { AuthService } from './services/auth.service'
 import { RateLimitGuard } from './guards/rate-limit.guard'
+import { ErrorHandlerService } from 'src/common/services/error-handler.service'
 
 @Module({
   imports: [
@@ -12,7 +13,7 @@ import { RateLimitGuard } from './guards/rate-limit.guard'
     })
   ],
   controllers: [AuthController],
-  providers: [AuthService, RateLimitGuard],
-  exports: [AuthService]
+  providers: [AuthService, RateLimitGuard, ErrorHandlerService],
+  exports: [AuthService, ErrorHandlerService]
 })
 export class AuthModule {}

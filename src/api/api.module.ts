@@ -24,6 +24,7 @@ import { RolesGuard } from 'src/api/guards/roles.guard'
 import { RateLimitGuard } from 'src/api/guards/rate-limit.guard'
 import { AuthModule } from './auth.module'
 import { SwaggerAuthMiddleware } from './middlewares/swagger-auth.middleware'
+import { ErrorHandlerService } from 'src/common/services/error-handler.service'
 
 @Module({
   controllers: [
@@ -38,7 +39,7 @@ import { SwaggerAuthMiddleware } from './middlewares/swagger-auth.middleware'
     JsonReportController,
     AuthController
   ],
-  providers: [ApiService, RolesGuard, RateLimitGuard],
+  providers: [ApiService, RolesGuard, RateLimitGuard, ErrorHandlerService],
   imports: [
     SumDatabaseModule,
     MrmDatabaseModule,
