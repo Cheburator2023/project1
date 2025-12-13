@@ -22,7 +22,7 @@ import {
   TemplateUpdateDto
 } from './dto/index.dto'
 
-import { sortOrder } from './constants'
+import { sortOrder, TECH_LABELS_HISTORY_ONLY_IN_SUM_RM } from './constants'
 
 interface LegacyTemplateValue {
   [key: string]: string[]
@@ -56,7 +56,8 @@ export class ApiService {
     private readonly sumDatabaseService: SumDatabaseService,
     private readonly mrmDatabaseService: MrmDatabaseService,
     private readonly modelsCacheService: ModelsCacheService
-  ) {}
+  ) {
+  }
 
   async getModelHistory(query: ModelArtefactHistoryDto) {
     const { model_id, artefact_tech_label } = query
@@ -64,12 +65,12 @@ export class ApiService {
 
     let result = []
 
-    if (model_source === ModelSource.SUM) {
+    if (model_source === ModelSource.SUM && !TECH_LABELS_HISTORY_ONLY_IN_SUM_RM.includes(artefact_tech_label)) {
       result = await this.sumDatabaseService.query(getSumModelHistorySql, {
         model_id,
         artefact_tech_label
       })
-    } else if (model_source === ModelSource.SUM_RM) {
+    } else if (model_source === ModelSource.SUM_RM || TECH_LABELS_HISTORY_ONLY_IN_SUM_RM.includes(artefact_tech_label)) {
       result = await this.mrmDatabaseService.query(getSumRmModelHistorySql, {
         model_id,
         artefact_tech_label
@@ -180,13 +181,13 @@ export class ApiService {
     if (
       templateUpdateDto.template_name &&
       templateUpdateDto.template_name.trim().toLowerCase() !==
-        targetTemplate.template_name.trim().toLowerCase()
+      targetTemplate.template_name.trim().toLowerCase()
     ) {
       const templatesWithSameName = templates.find((template) => {
         return (
           template.template_id !== templateUpdateDto.template_id &&
           template.template_name.trim().toLowerCase() ===
-            templateUpdateDto.template_name.trim().toLowerCase()
+          templateUpdateDto.template_name.trim().toLowerCase()
         )
       })
 
@@ -202,11 +203,11 @@ export class ApiService {
         templateUpdateDto.columnState ||
         templateUpdateDto.selectedIds
           ? {
-              filterModel: templateUpdateDto.filterModel,
-              sortState: templateUpdateDto.sortState,
-              columnState: templateUpdateDto.columnState,
-              selectedIds: templateUpdateDto.selectedIds
-            }
+            filterModel: templateUpdateDto.filterModel,
+            sortState: templateUpdateDto.sortState,
+            columnState: templateUpdateDto.columnState,
+            selectedIds: templateUpdateDto.selectedIds
+          }
           : null
 
       const updatedTemplate = await this.mrmDatabaseService.query(
@@ -265,7 +266,7 @@ export class ApiService {
               )
             } catch (error) {
               console.warn(
-                `Не удалось получить значения для колонки ${key}:`,
+                `Не удалось получить значения для колонки ${ key }:`,
                 error
               )
               processedValues = []
@@ -313,7 +314,7 @@ export class ApiService {
       return values
     } catch (error) {
       console.error(
-        `Ошибка при получении значений для колонки -- ${columnName}:`,
+        `Ошибка при получении значений для колонки -- ${ columnName }:`,
         error
       )
       return []
@@ -330,11 +331,11 @@ export class ApiService {
         })
         .map(
           async ({
-            user_id,
-            public: is_public,
-            template_value,
-            ...template
-          }) => {
+                   user_id,
+                   public: is_public,
+                   template_value,
+                   ...template
+                 }) => {
             let processedTemplateValue = template_value
 
             if (this.isLegacyTemplateValue(template_value)) {

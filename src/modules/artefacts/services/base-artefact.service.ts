@@ -853,11 +853,13 @@ export abstract class BaseArtefactService implements IArtefactService {
 
       const queryParams = {
         model_id: latestArtefactRealization.model_id,
-        artefact_string_value: latestArtefactRealization.artefact_string_value,
         artefact_id: latestArtefactRealization.artefact_id,
         ...(latestArtefactRealization.artefact_value_id !== null
           ? { artefact_value_id: latestArtefactRealization.artefact_value_id }
-          : {})
+          : {}),
+        ...(isSelectType
+          ? {}
+          : { artefact_string_value: latestArtefactRealization.artefact_string_value })
       }
 
       await this.databaseService.query(
