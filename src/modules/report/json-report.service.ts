@@ -2,15 +2,13 @@ import { Injectable } from '@nestjs/common'
 import { ReportGenerationError } from 'src/common/errors'
 import { ReportValidationService } from './report-validation.service'
 import { ReportCacheService } from './report-cache.service'
-import { MrmDatabaseService } from 'src/system/mrm-database/database.service'
-import { ModelsService } from 'src/modules/models/models.service'
+import { ModelFetcherService } from './model-fetcher.service'
 import { LoggerService } from '../../system/logger/logger.service'
 
 @Injectable()
 export class JsonReportService {
   constructor(
-    private readonly mrmDatabaseService: MrmDatabaseService,
-    private readonly modelsService: ModelsService,
+    private readonly modelFetcherService: ModelFetcherService,
     private readonly validationService: ReportValidationService,
     private readonly cacheService: ReportCacheService,
     private readonly logger: LoggerService,
@@ -44,22 +42,28 @@ export class JsonReportService {
 
     try {
       let result: { [key: string]: any[] }
-
-      const models = await this.modelsService.getModels(
-        {
-          date: formattedDate,
-          mode: []
-        },
-        groups || []
-      )
+      let models: any[]
 
       if (template_id) {
-        // Применяем фильтры шаблона к уже отфильтрованным по группам моделям
-        const filteredModels = this.applyTemplateFilter(models, template_id)
+        models = await this.modelFetcherService.fetchModelsWithTemplateFilter(
+          template_id,
+          formattedDate,
+          groups,
+          []
+        )
+      } else {
+        models = await this.modelFetcherService.fetchModels(
+          formattedDate,
+          groups,
+          [],
+          false
+        )
+      }
 
-        // Формируем структуру ответа в соответствии с template_id
+      // Форматируем результат в соответствии с template_id
+      if (template_id) {
         result = {
-          [`reports_${formattedDate}`]: this.formatModelsForTemplate(filteredModels, template_id)
+          [`reports_${formattedDate}`]: this.formatModelsForTemplate(models, template_id)
         }
       } else {
         // Для общего реестра используем все модели
@@ -85,26 +89,6 @@ export class JsonReportService {
     } catch (error) {
       this.logger.error(`Ошибка при формировании JSON отчета: ${error.message}`, error.stack)
       throw new ReportGenerationError('Ошибка при формировании отчета')
-    }
-  }
-
-  /**
-   * Применяет фильтры шаблона к списку моделей
-   */
-  private applyTemplateFilter(models: any[], template_id: number): any[] {
-    switch (template_id) {
-      case 1: // ПУРС
-              // Фильтр: record_id IS NOT NULL
-        return models.filter(model =>
-          model.record_id !== null &&
-          model.record_id !== undefined &&
-          model.record_id !== ''
-        )
-      case 2: // ПУМР
-              // Фильтр: active_model = '1'
-        return models.filter(model => model.active_model === '1')
-      default:
-        return models
     }
   }
 

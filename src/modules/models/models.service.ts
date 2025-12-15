@@ -365,6 +365,12 @@ export class ModelsService {
       const isCreationError = business_status === MODEL_STATUS.CREATION_ERROR
       const isPendingDelete = business_status === MODEL_STATUS.PENDING_DELETE
 
+      if (!mode || mode.length === 0) {
+        if (isArchive) return false
+        if (isCreationError) return false
+        if (isPendingDelete) return false
+      }
+
       // 1. Показываем архивные модели из SUM, если включен режим Архив
       if (model_source === MODEL_SOURCES.SUM && isArchive && isArchiveMode)
         return true
