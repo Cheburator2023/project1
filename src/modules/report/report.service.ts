@@ -136,32 +136,19 @@ export class ReportService {
       throw new BadRequestException(
         'Bad Request',
         'filter object cannot be empty'
-      )
+      );
     }
 
-    const artefacts: Artefact[] = await this.modelsService.getArtefactLabels()
+    const artefacts: Artefact[] = await this.modelsService.getArtefactLabels();
+    const headers = this.generateReportHeaders(artefacts);
+    const sortedHeaders = this.sortHeadersByFilters(headers, filters);
 
-    const headers = this.generateReportHeaders(artefacts)
-    const sortedHeaders = this.sortHeadersByFilters(headers, filters)
-
-    const models: Model[] = await this.modelsService.getModels({ mode }, groups)
-    const filteredModels = this.filterModels(models, artefacts, filters)
-
-    // Проверяем, является ли это отчётом "Расчёт модельного риска"
-    const isModelRiskReport = mode?.includes('model_risk_calculation')
-
-    if (isModelRiskReport) {
-      // Только автозаполнение КМР по умолчанию (100%), без расчётов устаревания и сегмента
-      filteredModels.forEach((model) => {
-        const kmr = getDefaultModelRiskForReport(model.model_risk_coefficient)
-        model.model_risk_coefficient = String(kmr)
-      })
-    }
+    const filteredModels = await this.getReportModels(filters, groups, mode, reportDate);
 
     return {
       headers: sortedHeaders,
       body: filteredModels
-    }
+    };
   }
 
   private filterModels(
@@ -337,5 +324,34 @@ export class ReportService {
     )
 
     return artefactHeaders
+  }
+
+  private async getReportModels(
+    filters: { [key: string]: string[] },
+    groups?: [],
+    mode?: string[],
+    reportDate?: string
+  ): Promise<Model[]> {
+    // Получаем модели через ModelsService
+    const models: Model[] = await this.modelsService.getModels({ mode }, groups);
+
+    // Получаем артефакты для фильтрации
+    const artefacts: Artefact[] = await this.modelsService.getArtefactLabels();
+
+    // Применяем фильтры
+    const filteredModels = this.filterModels(models, artefacts, filters);
+
+    // Проверяем, является ли это отчётом "Расчёт модельного риска"
+    const isModelRiskReport = mode?.includes('model_risk_calculation');
+
+    if (isModelRiskReport) {
+      // Только автозаполнение КМР по умолчанию (100%), без расчётов устаревания и сегмента
+      filteredModels.forEach((model) => {
+        const kmr = getDefaultModelRiskForReport(model.model_risk_coefficient);
+        model.model_risk_coefficient = String(kmr);
+      });
+    }
+
+    return filteredModels;
   }
 }

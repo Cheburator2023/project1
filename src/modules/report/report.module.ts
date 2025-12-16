@@ -10,14 +10,14 @@ import { LoggerModule } from 'src/system/logger/logger.module'
 import { ReportCacheService } from './report-cache.service'
 import { ReportValidationService } from './report-validation.service'
 import { JsonReportService } from './json-report.service'
-import { ModelFetcherService } from './model-fetcher.service'
+import { ReportDataService } from './report-data.service'
 
 @Module({
   providers: [
     ReportService,
     ReportCacheService,
     ReportValidationService,
-    ModelFetcherService,
+    ReportDataService,
     JsonReportService
   ],
   imports: [
@@ -34,7 +34,7 @@ import { ModelFetcherService } from './model-fetcher.service'
   ],
   exports: [
     ReportService,
-    ModelFetcherService,
+    ReportDataService,
     JsonReportService
   ]
 })
