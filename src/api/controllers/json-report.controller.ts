@@ -38,7 +38,7 @@ export class JsonReportController {
   ) {}
 
   @Post('json')
-  @Roles('admin')
+  @Roles('model_read')
   @RateLimit({ limit: 3, windowMs: 60 * 1000 })
   @UseInterceptors(CacheInterceptor)
   @CacheTTL(300) // 5 минут кэширования
