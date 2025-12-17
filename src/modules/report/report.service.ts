@@ -126,9 +126,12 @@ export class ReportService {
     // Преобразуем фильтры в legacy формат
     const legacyFilters = this.convertFiltersToLegacyFormat(filters)
 
-    // Генерируем данные отчета
+    // Для Excel отчета также используем mode:[] если не задан явно
+    const reportMode = mode || []
+
+    // Генерируем данные отчета через унифицированный метод
     const reportData: { headers: Preset[]; body: Model[] } =
-      await this.generateReportData(legacyFilters, groups, mode, reportDate)
+      await this.generateReportData(legacyFilters, groups, reportMode, reportDate)
 
     // Генерируем Excel файл
     const xlsxBuffer: Buffer = await this.generateExcel(reportData)
@@ -152,27 +155,26 @@ export class ReportService {
       )
     }
 
-
     // Получаем артефакты для заголовков
     const artefacts: Artefact[] = await this.modelsService.getArtefactLabels()
     const headers = this.generateReportHeaders(artefacts)
     const sortedHeaders = this.sortHeadersByFilters(headers, filters)
 
-    const reportDataDto = new ReportDataDto({
-      groups: groups,
-      mode: mode || [],
-      reportDate: reportDate,
-      filters: filters
-    })
-
-    // Получаем модели
-    const models = await this.reportDataService.getReportModels(reportDataDto)
+    // Используем унифицированный метод получения моделей
+    const models = await this.reportDataService.getUnifiedReportModels(
+      undefined, // template_id не указан для Excel отчета
+      reportDate,
+      groups,
+      mode || [],
+      filters
+    )
 
     return {
       headers: sortedHeaders,
       body: models
     }
   }
+
 
   /**
    * Фильтрация моделей по артефактам

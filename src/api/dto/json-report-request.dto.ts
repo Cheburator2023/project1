@@ -11,7 +11,8 @@ import {
   IsIn,
   ValidationArguments,
   ValidatorConstraint,
-  ValidatorConstraintInterface
+  ValidatorConstraintInterface,
+  IsObject
 } from 'class-validator'
 import { Transform, Type } from 'class-transformer'
 import { parseDate, isValidDate } from 'src/system/common/utils'
@@ -56,6 +57,14 @@ export class JsonReportRequestDto {
     return date ? date.toISOString().split('T')[0] : value
   })
   date?: string
+
+  @ApiPropertyOptional({
+    example: { record_id: { values: ['not-null'], filterType: 'set' } },
+    description: 'Фильтры для отчета (опционально)'
+  })
+  @IsOptional()
+  @IsObject()
+  filters?: any
 }
 
 export class JsonReportResponseDto {

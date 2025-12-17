@@ -38,7 +38,7 @@ export class JsonReportController {
   ) {}
 
   @Post('json')
-  @Roles('model_read')
+  @Roles('admin')
   @RateLimit({ limit: 3, windowMs: 60 * 1000 })
   @UseInterceptors(CacheInterceptor)
   @CacheTTL(300) // 5 минут кэширования
@@ -172,10 +172,18 @@ export class JsonReportController {
         )
       }
 
+      // Для JSON отчета всегда используем mode:[] - только актуальные модели
+      const mode = []
+
+      // Извлекаем фильтры из запроса, если они есть
+      const filters = request.filters || {}
+
       return await this.jsonReportService.getJsonReport(
         request.template_id,
         request.date,
-        user.groups
+        user.groups,
+        mode,
+        filters
       )
     } catch (error) {
       throw this.errorHandler.handleError(error)

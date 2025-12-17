@@ -15,7 +15,6 @@ export class ReportDataService {
 
   /**
    * Унифицированный метод получения моделей для отчетов
-   * Использует DTO для передачи параметров, что соответствует DRY и KISS
    */
   async getReportModels(reportData: ReportDataDto): Promise<any[]> {
     const { date, groups, mode, reportDate, filters } = reportData
@@ -24,7 +23,7 @@ export class ReportDataService {
       const models = await this.modelsService.getModels(
         {
           date: date || null,
-          mode: mode, // Явно передаем mode (даже если пустой массив)
+          mode: mode,
           ignoreModeFilter: false,
         },
         groups || []
@@ -51,8 +50,41 @@ export class ReportDataService {
   }
 
   /**
+   * Получение моделей с учетом всех параметров, включая фильтры из шаблонов
+   */
+  async getUnifiedReportModels(
+    template_id?: number,
+    date?: string,
+    groups?: string[],
+    mode: string[] = [],
+    filters?: any
+  ): Promise<any[]> {
+    try {
+      // Создаем DTO с учетом всех параметров
+      const reportDataDto = new ReportDataDto({
+        date: date || null,
+        groups: groups || [],
+        mode: mode,
+        reportDate: date || null,
+        template_id: template_id,
+        filters: filters
+      })
+
+      // Получаем базовые модели
+      const models = await this.getReportModels(reportDataDto)
+
+      // Применяем фильтры шаблона, если указан template_id
+      const filteredModels = this.applyTemplateFilter(models, template_id)
+
+      return filteredModels
+    } catch (error) {
+      this.logger.error('Ошибка при получении унифицированных данных отчета:', error)
+      throw error
+    }
+  }
+
+  /**
    * Расчет устаревания коэффициента модельного риска (КМР)
-   * Соответствует принципу единственной ответственности (SOLID)
    */
   private async calculateModelRiskAging(
     models: any[],

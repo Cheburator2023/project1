@@ -18,7 +18,9 @@ export class JsonReportService {
   async getJsonReport(
     template_id?: number,
     date?: string,
-    groups?: string[]
+    groups?: string[],
+    mode?: string[],
+    filters?: any
   ): Promise<{ [key: string]: any[] }> {
     // Валидация входных параметров
     this.validationService.validateJsonReportRequest(template_id, date, groups)
@@ -33,8 +35,20 @@ export class JsonReportService {
 
     const formattedDate = reportDate.toISOString().split('T')[0]
 
-    // Проверяем кэш
-    const cacheKey = this.cacheService.generateJsonReportCacheKey(template_id, formattedDate, groups)
+    const reportMode = mode || []
+
+    // Используем переданные фильтры или пустой объект
+    const reportFilters = filters || {}
+
+    // Генерируем ключ кэша с учетом всех параметров
+    const cacheKey = this.cacheService.generateJsonReportCacheKey(
+      template_id,
+      formattedDate,
+      groups,
+      reportMode,
+      reportFilters
+    )
+
     const cachedResult = await this.cacheService.get(cacheKey)
     if (cachedResult) {
       this.logger.info('Используется кэшированный результат JSON отчета')
@@ -45,9 +59,10 @@ export class JsonReportService {
       const reportDataDto = new ReportDataDto({
         date: formattedDate,
         groups: groups,
-        mode: [],
+        mode: reportMode,
         reportDate: formattedDate,
-        template_id: template_id
+        template_id: template_id,
+        filters: reportFilters
       })
 
       // Получаем модели
