@@ -129,9 +129,12 @@ export class ReportService {
     // Для Excel отчета также используем mode:[] если не задан явно
     const reportMode = mode || []
 
+    // Если reportDate не указан, используем текущую дату
+    const effectiveReportDate = reportDate || new Date().toISOString().split('T')[0]
+
     // Генерируем данные отчета через унифицированный метод
     const reportData: { headers: Preset[]; body: Model[] } =
-      await this.generateReportData(legacyFilters, groups, reportMode, reportDate)
+      await this.generateReportData(legacyFilters, groups, reportMode, effectiveReportDate)
 
     // Генерируем Excel файл
     const xlsxBuffer: Buffer = await this.generateExcel(reportData)
@@ -409,10 +412,13 @@ export class ReportService {
     mode?: string[],
     reportDate?: string
   ): Promise<Model[]> {
+    const effectiveReportDate = reportDate || new Date().toISOString().split('T')[0]
+
     const reportDataDto = new ReportDataDto({
+      date: effectiveReportDate, // ← Добавляем дату
       groups: groups,
       mode: mode || [],
-      reportDate: reportDate,
+      reportDate: effectiveReportDate,
       filters: filters
     })
 
