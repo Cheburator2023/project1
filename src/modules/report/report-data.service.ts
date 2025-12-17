@@ -1,6 +1,10 @@
-import { Injectable } from '@nestjs/common';
-import { ModelsService } from 'src/modules/models/models.service';
-import { LoggerService } from '../../system/logger/logger.service';
+import { Injectable, BadRequestException } from '@nestjs/common'
+import { ModelsService } from 'src/modules/models/models.service'
+import { LoggerService } from '../../system/logger/logger.service'
+import { ReportDataDto } from './dto/report-data.dto'
+import { Artefact } from 'src/modules/models/interfaces'
+import { parseDate, isValidDate, formatDateTime } from 'src/system/common/utils'
+import { getDefaultModelRiskForReport } from 'src/modules/models/utils/model-risk.utils'
 
 @Injectable()
 export class ReportDataService {
@@ -11,38 +15,267 @@ export class ReportDataService {
 
   /**
    * Унифицированный метод получения моделей для отчетов
-   * Аналогичен логике в ReportService.getReport
+   * Использует DTO для передачи параметров, что соответствует DRY и KISS
    */
-  async getReportModels(
-    date?: string,
-    groups?: string[],
-    mode: string[] = [],
-    reportDate?: string
-  ): Promise<any[]> {
+  async getReportModels(reportData: ReportDataDto): Promise<any[]> {
+    const { date, groups, mode, reportDate, filters } = reportData
+
     try {
-      // Используем тот же метод, что и ReportService
       const models = await this.modelsService.getModels(
         {
           date: date || null,
-          mode: mode,
+          mode: mode, // Явно передаем mode (даже если пустой массив)
           ignoreModeFilter: false,
         },
         groups || []
-      );
+      )
 
-      // Применяем фильтрацию по reportDate для расчета устаревания КМР
-      // Эта логика аналогична ReportService.generateReportData
-      if (reportDate && mode?.includes('model_risk_calculation')) {
-        this.logger.debug('Применяем расчет устаревания КМР для отчета', { reportDate });
-        // Здесь должна быть логика расчета устаревания КМР
-        // которая применяется в ReportService.generateReportData
+      // Применяем расчет устаревания КМР, если указан reportDate и mode включает model_risk_calculation
+      const modelsWithRiskCalculation = await this.calculateModelRiskAging(
+        models,
+        reportDate,
+        mode
+      )
+
+      // Применяем дополнительные фильтры, если они переданы
+      const filteredModels = filters ? await this.applyCustomFilters(
+        modelsWithRiskCalculation,
+        filters
+      ) : modelsWithRiskCalculation
+
+      return filteredModels
+    } catch (error) {
+      this.logger.error('Ошибка при получении моделей для отчета:', error)
+      throw error
+    }
+  }
+
+  /**
+   * Расчет устаревания коэффициента модельного риска (КМР)
+   * Соответствует принципу единственной ответственности (SOLID)
+   */
+  private async calculateModelRiskAging(
+    models: any[],
+    reportDate?: string,
+    mode?: string[]
+  ): Promise<any[]> {
+    // Проверяем, является ли это отчетом "Расчёт модельного риска"
+    const isModelRiskReport = mode?.includes('model_risk_calculation')
+
+    if (!isModelRiskReport || !reportDate) {
+      return models
+    }
+
+    this.logger.debug('Применяем расчет устаревания КМР для отчета', {
+      reportDate,
+      totalModels: models.length
+    })
+
+    const reportDateObj = parseDate(reportDate)
+    if (!isValidDate(reportDate)) {
+      throw new BadRequestException('Неверный формат даты для расчета КМР')
+    }
+
+    // Для расчета устаревания используем следующие правила:
+    // 1. Если модель была валидирована менее года назад - КМР = 100%
+    // 2. От 1 до 2 лет - КМР = 75%
+    // 3. От 2 до 3 лет - КМР = 50%
+    // 4. Более 3 лет - КМР = 25%
+    // 5. Если дата валидации отсутствует - используем дату создания модели
+
+    return models.map(model => {
+      // Определяем дату для расчета (предпочтительно validation_result_approve_date, иначе create_date)
+      const validationDateStr = model.validation_result_approve_date || model.create_date
+      const createDateStr = model.create_date
+
+      if (!validationDateStr && !createDateStr) {
+        // Если дат нет, используем значение по умолчанию
+        model.model_risk_coefficient = String(getDefaultModelRiskForReport(model.model_risk_coefficient))
+        return model
       }
 
-      return models;
-    } catch (error) {
-      this.logger.error('Ошибка при получении моделей для отчета:', error);
-      throw error;
+      const dateForCalculation = validationDateStr || createDateStr
+      const calculationDate = parseDate(dateForCalculation)
+
+      if (!isValidDate(dateForCalculation)) {
+        model.model_risk_coefficient = String(getDefaultModelRiskForReport(model.model_risk_coefficient))
+        return model
+      }
+
+      // Вычисляем разницу в годах между датой отчета и датой валидации/создания
+      const diffYears = this.calculateYearDifference(reportDateObj, calculationDate)
+
+      // Определяем КМР в зависимости от срока
+      let kmrValue: number
+      if (diffYears < 1) {
+        kmrValue = 100 // Менее 1 года
+      } else if (diffYears >= 1 && diffYears < 2) {
+        kmrValue = 75  // От 1 до 2 лет
+      } else if (diffYears >= 2 && diffYears < 3) {
+        kmrValue = 50  // От 2 до 3 лет
+      } else {
+        kmrValue = 25  // Более 3 лет
+      }
+
+      // Сохраняем исходное значение для аудита
+      model.original_model_risk_coefficient = model.model_risk_coefficient
+      model.model_risk_coefficient = String(kmrValue)
+      model.kmr_calculation_date = formatDateTime(reportDateObj)
+      model.kmr_base_date = formatDateTime(calculationDate)
+      model.kmr_years_diff = diffYears.toFixed(2)
+
+      return model
+    })
+  }
+
+  /**
+   * Вычисление разницы в годах между двумя датами
+   * Используется для расчета устаревания КМР
+   */
+  private calculateYearDifference(date1: Date, date2: Date): number {
+    const diffTime = Math.abs(date1.getTime() - date2.getTime())
+    const diffDays = diffTime / (1000 * 60 * 60 * 24)
+    return diffDays / 365.25 // Учитываем високосные годы
+  }
+
+  /**
+   * Применение пользовательских фильтров к моделям
+   */
+  private async applyCustomFilters(
+    models: any[],
+    filters: { [key: string]: string[] }
+  ): Promise<any[]> {
+    if (!filters || Object.keys(filters).length === 0) {
+      return models
     }
+
+    // Получаем артефакты для фильтрации
+    const artefacts: Artefact[] = await this.modelsService.getArtefactLabels()
+    const artefactsMap = this.mapArtefactsByKey(artefacts)
+
+    return models.filter((model) => {
+      return Object.keys(filters).every((filterKey) => {
+        const filterValues = filters[filterKey]
+        const artefactValue = model[filterKey]
+        const artefact = artefactsMap[filterKey]
+
+        if (!filterValues || filterValues.length === 0) {
+          return true
+        }
+
+        if (!artefact) {
+          return false
+        }
+
+        return this.applyFilter(
+          artefactValue,
+          filterValues,
+          artefact.artefact_type_id
+        )
+      })
+    })
+  }
+
+  /**
+   * Применение фильтра к значению артефакта
+   */
+  private applyFilter(
+    artefactValue: any,
+    filterValues: string[],
+    artefactTypeId: number
+  ): boolean {
+    const hasNullInFilter = filterValues.includes(null)
+    const isValueEmpty = this.filterByEmpty(artefactValue)
+
+    if (!hasNullInFilter && isValueEmpty) {
+      return false
+    }
+
+    if (hasNullInFilter && isValueEmpty) {
+      return true
+    }
+
+    // Типы артефактов (из interfaces/artefact.ts)
+    const ArtefactTypeEnum = {
+      DATE: 4,
+      BOOLEAN: 6,
+      TEXT: 1,
+      DROPDOWN: 3,
+      MULTI_DROPDOWN: 5,
+      PERCENTAGE: 16,
+      QUARTERLY_DATE: 17,
+      QUARTERLY_DROPDOWN: 19
+    }
+
+    switch (artefactTypeId) {
+      case ArtefactTypeEnum.DATE:
+      case ArtefactTypeEnum.QUARTERLY_DATE:
+        return this.filterByDate(artefactValue, filterValues)
+      case ArtefactTypeEnum.BOOLEAN:
+        return this.filterByBoolean(artefactValue, filterValues)
+      case ArtefactTypeEnum.TEXT:
+      case ArtefactTypeEnum.DROPDOWN:
+      case ArtefactTypeEnum.MULTI_DROPDOWN:
+      case ArtefactTypeEnum.QUARTERLY_DROPDOWN:
+      case ArtefactTypeEnum.PERCENTAGE:
+        return this.filterByString(artefactValue, filterValues)
+      default:
+        return false
+    }
+  }
+
+  /**
+   * Фильтрация по дате
+   */
+  private filterByDate(artefactValue: string, filterValues: string[]): boolean {
+    if (!filterValues || filterValues.length !== 2) {
+      return false
+    }
+
+    if (!isValidDate(artefactValue) || !isValidDate(filterValues[0]) || !isValidDate(filterValues[1])) {
+      return false
+    }
+
+    const artefactDate = new Date(artefactValue)
+    const startDate = new Date(filterValues[0])
+    const endDate = new Date(filterValues[1])
+
+    return artefactDate >= startDate && artefactDate <= endDate
+  }
+
+  /**
+   * Фильтрация по булевым значениям
+   */
+  private filterByBoolean(artefactValue: string, filterValues: string[]): boolean {
+    return filterValues.includes(artefactValue)
+  }
+
+  /**
+   * Фильтрация по строковым значениям
+   */
+  private filterByString(artefactValue: string, filterValues: string[]): boolean {
+    return filterValues.includes(artefactValue)
+  }
+
+  /**
+   * Проверка на пустое значение
+   */
+  private filterByEmpty(artefactValue: any): boolean {
+    return (
+      artefactValue === null ||
+      artefactValue === undefined ||
+      artefactValue === ''
+    )
+  }
+
+  /**
+   * Создание карты артефактов по ключу для быстрого доступа
+   */
+  private mapArtefactsByKey(artefacts: Artefact[]): { [key: string]: Artefact } {
+    return artefacts.reduce((acc, artefact) => {
+      acc[artefact.artefact_tech_label] = artefact
+      return acc
+    }, {})
   }
 
   /**
@@ -50,7 +283,7 @@ export class ReportDataService {
    */
   applyTemplateFilter(models: any[], template_id?: number): any[] {
     if (!template_id) {
-      return models;
+      return models
     }
 
     switch (template_id) {
@@ -59,11 +292,11 @@ export class ReportDataService {
           model.record_id !== null &&
           model.record_id !== undefined &&
           model.record_id !== ''
-        );
+        )
       case 2: // ПУМР - фильтр: active_model = '1'
-        return models.filter(model => model.active_model === '1');
+        return models.filter(model => model.active_model === '1')
       default:
-        return models;
+        return models
     }
   }
 
@@ -72,7 +305,7 @@ export class ReportDataService {
    */
   formatModelsForTemplate(models: any[], template_id?: number): any[] {
     if (!template_id) {
-      return models;
+      return models
     }
 
     return models.map(model => {
@@ -82,7 +315,7 @@ export class ReportDataService {
         update_date: model.update_date,
         model_name_validation: model.model_name_validation,
         model_desc: model.model_desc,
-      };
+      }
 
       if (template_id === 1) {
         // Формат для ПУРС (template_id=1)
@@ -156,7 +389,7 @@ export class ReportDataService {
           decision_date_and_number_of_application_model: model.decision_date_and_number_of_application_model,
           notification_date_and_number_of_application_model: model.notification_date_and_number_of_application_model,
           start_date_of_application_model_approved_regulator: model.start_date_of_application_model_approved_regulator
-        };
+        }
       } else if (template_id === 2) {
         // Формат для ПУМР (template_id=2)
         return {
@@ -185,10 +418,10 @@ export class ReportDataService {
           auto_validation_result: model.auto_validation_result,
           active_model: model.active_model,
           model_risk_coefficient: model.model_risk_coefficient
-        };
+        }
       }
 
-      return model;
-    });
+      return model
+    })
   }
 }

@@ -17,7 +17,8 @@ import {
 } from 'src/modules/models/interfaces'
 
 import { MetricsEnum } from 'src/modules/metrics/enums'
-import { getDefaultModelRiskForReport } from 'src/modules/models/utils/model-risk.utils'
+import { ReportDataService } from './report-data.service'
+import { ReportDataDto } from './dto/report-data.dto'
 import { isValidDate } from 'src/system/common/utils'
 
 type FilterModel = {
@@ -49,7 +50,8 @@ export class ReportService {
     private readonly mrmDatabaseService: MrmDatabaseService,
     private readonly modelsService: ModelsService,
     private readonly metricsAggregator: MetricsAggregator,
-    private readonly excelService: ExcelService
+    private readonly excelService: ExcelService,
+    private readonly reportDataService: ReportDataService
   ) {}
 
   async exportMetricToExcel(
@@ -112,20 +114,31 @@ export class ReportService {
     return this.excelService.createExcel({ headers, body: rawData })
   }
 
+  /**
+   * Основной метод получения отчета в формате Excel
+   */
   async getReport(
     filters: FilterModel | { [key: string]: string[] },
     groups?: [],
     mode?: string[],
     reportDate?: string
   ): Promise<Buffer> {
+    // Преобразуем фильтры в legacy формат
     const legacyFilters = this.convertFiltersToLegacyFormat(filters)
+
+    // Генерируем данные отчета
     const reportData: { headers: Preset[]; body: Model[] } =
       await this.generateReportData(legacyFilters, groups, mode, reportDate)
+
+    // Генерируем Excel файл
     const xlsxBuffer: Buffer = await this.generateExcel(reportData)
 
     return xlsxBuffer
   }
 
+  /**
+   * Генерация данных отчета
+   */
   private async generateReportData(
     filters: { [key: string]: string[] },
     groups?: [],
@@ -136,21 +149,34 @@ export class ReportService {
       throw new BadRequestException(
         'Bad Request',
         'filter object cannot be empty'
-      );
+      )
     }
 
-    const artefacts: Artefact[] = await this.modelsService.getArtefactLabels();
-    const headers = this.generateReportHeaders(artefacts);
-    const sortedHeaders = this.sortHeadersByFilters(headers, filters);
 
-    const filteredModels = await this.getReportModels(filters, groups, mode, reportDate);
+    // Получаем артефакты для заголовков
+    const artefacts: Artefact[] = await this.modelsService.getArtefactLabels()
+    const headers = this.generateReportHeaders(artefacts)
+    const sortedHeaders = this.sortHeadersByFilters(headers, filters)
+
+    const reportDataDto = new ReportDataDto({
+      groups: groups,
+      mode: mode || [],
+      reportDate: reportDate,
+      filters: filters
+    })
+
+    // Получаем модели
+    const models = await this.reportDataService.getReportModels(reportDataDto)
 
     return {
       headers: sortedHeaders,
-      body: filteredModels
-    };
+      body: models
+    }
   }
 
+  /**
+   * Фильтрация моделей по артефактам
+   */
   private filterModels(
     models: Model[],
     artefacts: Artefact[],
@@ -181,9 +207,12 @@ export class ReportService {
     })
   }
 
+  /**
+   * Применение фильтра к значению артефакта
+   */
   private applyFilter(
-    artefactValue,
-    filterValues,
+    artefactValue: any,
+    filterValues: string[],
     artefactType: ArtefactTypeId
   ): boolean {
     const hasNullInFilter = filterValues.includes(null)
@@ -214,7 +243,10 @@ export class ReportService {
     }
   }
 
-  private static filterByDate(artefactValue, filterValues): boolean {
+  /**
+   * Статические методы фильтрации
+   */
+  private static filterByDate(artefactValue: string, filterValues: string[]): boolean {
     if (!filterValues || filterValues.length !== 2) {
       return false
     }
@@ -234,15 +266,15 @@ export class ReportService {
     return artefactDate >= startDate && artefactDate <= endDate
   }
 
-  private static filterByBoolean(artefactValue, filterValues): boolean {
+  private static filterByBoolean(artefactValue: string, filterValues: string[]): boolean {
     return filterValues.includes(artefactValue)
   }
 
-  private static filterByString(artefactValue, filterValues): boolean {
+  private static filterByString(artefactValue: string, filterValues: string[]): boolean {
     return filterValues.includes(artefactValue)
   }
 
-  private static filterByNotNull(artefactValue): boolean {
+  private static filterByNotNull(artefactValue: any): boolean {
     return (
       artefactValue !== null &&
       artefactValue !== undefined &&
@@ -250,7 +282,7 @@ export class ReportService {
     )
   }
 
-  private static filterByEmpty(artefactValue): boolean {
+  private static filterByEmpty(artefactValue: any): boolean {
     return (
       artefactValue === null ||
       artefactValue === undefined ||
@@ -258,6 +290,9 @@ export class ReportService {
     )
   }
 
+  /**
+   * Создание карты артефактов по ключу
+   */
   private mapArtefactsByKey(artefacts: Artefact[]): {
     [key: string]: Artefact
   } {
@@ -267,16 +302,25 @@ export class ReportService {
     }, {})
   }
 
-  async generateExcel(data): Promise<Buffer> {
+  /**
+   * Генерация Excel файла
+   */
+  async generateExcel(data: any): Promise<Buffer> {
     return this.excelService.createExcel(data)
   }
 
-  private sortHeadersByFilters(headers, filters) {
+  /**
+   * Сортировка заголовков по фильтрам
+   */
+  private sortHeadersByFilters(headers: Preset[], filters: { [key: string]: string[] }) {
     return Object.keys(filters)
       .map((filterKey) => headers.find((header) => header.key === filterKey))
       .filter(Boolean)
   }
 
+  /**
+   * Преобразование фильтров в legacy формат
+   */
   private convertFiltersToLegacyFormat(
     filters: FilterModel | { [key: string]: string[] }
   ): { [key: string]: string[] } {
@@ -304,6 +348,9 @@ export class ReportService {
     return legacyFilters
   }
 
+  /**
+   * Проверка формата фильтров
+   */
   private isLegacyFormat(
     filters: FilterModel | { [key: string]: string[] }
   ): boolean {
@@ -314,6 +361,9 @@ export class ReportService {
     return Array.isArray(firstValue)
   }
 
+  /**
+   * Генерация заголовков отчета
+   */
   private generateReportHeaders(artefacts: Artefact[]): Preset[] {
     const artefactHeaders = artefacts.map(
       ({ artefact_tech_label, artefact_label, artefact_type_desc }) => ({
@@ -326,32 +376,47 @@ export class ReportService {
     return artefactHeaders
   }
 
+  /**
+   * Получение моделей для отчета
+   */
   private async getReportModels(
     filters: { [key: string]: string[] },
     groups?: [],
     mode?: string[],
     reportDate?: string
   ): Promise<Model[]> {
-    // Получаем модели через ModelsService
-    const models: Model[] = await this.modelsService.getModels({ mode }, groups);
+    const reportDataDto = new ReportDataDto({
+      groups: groups,
+      mode: mode || [],
+      reportDate: reportDate,
+      filters: filters
+    })
 
-    // Получаем артефакты для фильтрации
-    const artefacts: Artefact[] = await this.modelsService.getArtefactLabels();
+    // Получаем модели
+    const models = await this.reportDataService.getReportModels(reportDataDto)
 
-    // Применяем фильтры
-    const filteredModels = this.filterModels(models, artefacts, filters);
+    return models
+  }
 
-    // Проверяем, является ли это отчётом "Расчёт модельного риска"
-    const isModelRiskReport = mode?.includes('model_risk_calculation');
+  /**
+   * Публичный метод для получения моделей через единый сервис
+   */
+  async getReportModelsUnified(
+    filters: { [key: string]: string[] },
+    groups?: [],
+    mode?: string[],
+    reportDate?: string
+  ): Promise<Model[]> {
+    const reportDataDto = new ReportDataDto({
+      groups: groups,
+      mode: mode || [],
+      reportDate: reportDate,
+      filters: filters
+    })
 
-    if (isModelRiskReport) {
-      // Только автозаполнение КМР по умолчанию (100%), без расчётов устаревания и сегмента
-      filteredModels.forEach((model) => {
-        const kmr = getDefaultModelRiskForReport(model.model_risk_coefficient);
-        model.model_risk_coefficient = String(kmr);
-      });
-    }
+    // Получаем базовые модели
+    const models = await this.reportDataService.getReportModels(reportDataDto)
 
-    return filteredModels;
+    return models
   }
 }
