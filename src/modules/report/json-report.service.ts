@@ -65,14 +65,11 @@ export class JsonReportService {
         filters: reportFilters
       })
 
-      // Получаем модели
+      // Получаем модели с учетом фильтрации по режиму эксплуатации
       const models = await this.reportDataService.getReportModels(reportDataDto)
 
-      // Применяем фильтры шаблона
-      const filteredModels = this.reportDataService.applyTemplateFilter(models, template_id)
-
       // Форматируем результат в соответствии с template_id
-      const formattedModels = this.reportDataService.formatModelsForTemplate(filteredModels, template_id)
+      const formattedModels = this.reportDataService.formatModelsForTemplate(models, template_id)
 
       const result = {
         [`reports_${formattedDate}`]: formattedModels

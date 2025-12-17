@@ -17,13 +17,17 @@ export class ReportDataService {
    * Унифицированный метод получения моделей для отчетов
    */
   async getReportModels(reportData: ReportDataDto): Promise<any[]> {
-    const { date, groups, mode, reportDate, filters } = reportData
+    const { date, groups, mode, reportDate, filters, template_id } = reportData
 
     try {
+      // Для всех отчетов используем mode:[] - только актуальные модели
+      const reportMode = mode || []
+
+      // Получаем модели с учетом режима эксплуатации
       const models = await this.modelsService.getModels(
         {
           date: date || null,
-          mode: mode,
+          mode: reportMode,
           ignoreModeFilter: false,
         },
         groups || []
@@ -33,14 +37,20 @@ export class ReportDataService {
       const modelsWithRiskCalculation = await this.calculateModelRiskAging(
         models,
         reportDate,
-        mode
+        reportMode
+      )
+
+      // Применяем фильтры шаблона, если указан template_id
+      const modelsAfterTemplateFilter = this.applyTemplateFilter(
+        modelsWithRiskCalculation,
+        template_id
       )
 
       // Применяем дополнительные фильтры, если они переданы
       const filteredModels = filters ? await this.applyCustomFilters(
-        modelsWithRiskCalculation,
+        modelsAfterTemplateFilter,
         filters
-      ) : modelsWithRiskCalculation
+      ) : modelsAfterTemplateFilter
 
       return filteredModels
     } catch (error) {
@@ -60,11 +70,10 @@ export class ReportDataService {
     filters?: any
   ): Promise<any[]> {
     try {
-      // Создаем DTO с учетом всех параметров
       const reportDataDto = new ReportDataDto({
         date: date || null,
         groups: groups || [],
-        mode: mode,
+        mode: mode, // Используем переданный mode (может быть пустым)
         reportDate: date || null,
         template_id: template_id,
         filters: filters
@@ -73,10 +82,7 @@ export class ReportDataService {
       // Получаем базовые модели
       const models = await this.getReportModels(reportDataDto)
 
-      // Применяем фильтры шаблона, если указан template_id
-      const filteredModels = this.applyTemplateFilter(models, template_id)
-
-      return filteredModels
+      return models
     } catch (error) {
       this.logger.error('Ошибка при получении унифицированных данных отчета:', error)
       throw error
