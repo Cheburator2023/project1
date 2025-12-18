@@ -500,4 +500,3 @@ export class MetricsDto {
 }
 
 export * from './json-report-request.dto'
-export * from './auth.dto'
