@@ -27,6 +27,35 @@
 * Рефакторинг сервиса ([347e874](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/347e87456a8cdd4719d19a16423e609883b3fb55))
 * Рефакторинг сервиса ([ec43678](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/ec4367825d17926011784f0568bd450c09556420))
 * Убрал Roles ([c18e4ba](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/c18e4ba13e45b7f09cee784b928d3b51accbd144))
+* убрал лишнее ([9ec5705](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/9ec570561c85c7712ad781e51188aa548f5ccf13))
+
+# [1.41.0](https://git.sfera.inno.local:7999/SUMD/mrms-backend/compare/v1.40.1...v1.41.0) (2025-12-18)
+
+
+### Features
+
+* Добавил JsonReport ([9cb22a7](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/9cb22a77f7ee13a206f5f6abfae2860499727178))
+* Добавил ModelFetcherService ([5c0146f](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/5c0146fd70ee53a205f69dbc93a2f9296cfdf289))
+* Добавил public ([bb95b3f](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/bb95b3f0a8ad558a0b7f864768546296ca26b2b0))
+* добавил ReportDataDto ([739c7a9](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/739c7a956584cc1e4a98c7bb3822ca5c28d88803))
+* добавил ReportDataService ([3a88455](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/3a8845585e1e02fe1a015e1c25b1792a09b1a3a3))
+* Добавил обработку ошибки ([6bfdf5c](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/6bfdf5cebc151beaaa82bfb61390fc7f1beed3a8))
+* Добавил обработку ошибки ([4aed3ea](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/4aed3ead1743e35201b70129c1880dd4e25600a9))
+* Добавил фильтр по группам ([acf9d40](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/acf9d4093fadb2f70957ced9a7e443226a66cb8e))
+* Добавил эндпоинт авторизации ([98849cf](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/98849cff57ebfc31aa5247a39167dd5b43b15822))
+* Исправил поля авторизации ([b3e4ee0](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/b3e4ee0b40285853e4133e5de6eb8679edf7515c))
+* Обновил роль ([7d20ef5](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/7d20ef5b341372fb9a906044582041ff7806f623))
+* поправил ReportDataService ([6d82354](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/6d82354ac3000c0b6f653781e6e97e03b717fdac))
+* поправил ReportDataService ([d20fddc](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/d20fddcbb1b49c48f3e63359c9401126a93b2e5c))
+* Поправил конфиг Swagger ([416d06a](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/416d06ae2903289609478fac99c3cb8cbd49178e))
+* Поправил обработку ошибки ([f8836f7](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/f8836f76bd2b2cc1bad2ae8a154e6f2f0df0d99c))
+* Поправил получение отчета ([0502a02](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/0502a02c5c4631042a95d61a88cb8643073527ac))
+* поправил фильтрацию в ReportDataService ([56f3d7f](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/56f3d7fb7dfecd941319ab5206e2a436ce8a5cf5))
+* поправил фильтрацию в ReportService ([de92f2b](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/de92f2bf57756edec7804817a0e919b4ec48daad))
+* почистил ReportService ([4637650](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/463765088cb4c50df5ceca924ea60eba6aac877c))
+* Рефакторинг сервиса ([347e874](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/347e87456a8cdd4719d19a16423e609883b3fb55))
+* Рефакторинг сервиса ([ec43678](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/ec4367825d17926011784f0568bd450c09556420))
+* Убрал Roles ([c18e4ba](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/c18e4ba13e45b7f09cee784b928d3b51accbd144))
 
 ## [1.40.1](https://git.sfera.inno.local:7999/SUMD/mrms-backend/compare/v1.40.0...v1.40.1) (2025-12-04)
 
