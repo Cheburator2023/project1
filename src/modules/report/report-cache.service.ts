@@ -18,7 +18,6 @@ export class ReportCacheService {
     try {
       await this.cacheManager.set(key, value, ttlMs)
     } catch (error) {
-      // Игнорируем ошибки кэширования, чтобы не ломать основной функционал
     }
   }
 
@@ -26,7 +25,6 @@ export class ReportCacheService {
     try {
       await this.cacheManager.del(key)
     } catch (error) {
-      // Игнорируем ошибки
     }
   }
 
