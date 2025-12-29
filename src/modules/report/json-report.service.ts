@@ -33,7 +33,8 @@ export class JsonReportService {
       reportDate = new Date()
     }
 
-    const formattedDate = reportDate.toISOString().split('T')[0]
+    // Всегда используем дату из запроса или null
+    const formattedDate = date || reportDate.toISOString().split('T')[0]
 
     const reportMode = mode || []
 
@@ -43,7 +44,7 @@ export class JsonReportService {
     // Генерируем ключ кэша с учетом всех параметров
     const cacheKey = this.cacheService.generateJsonReportCacheKey(
       template_id,
-      formattedDate,
+      formattedDate, // Используем дату из запроса
       groups,
       reportMode,
       reportFilters
@@ -57,10 +58,10 @@ export class JsonReportService {
 
     try {
       const reportDataDto = new ReportDataDto({
-        date: formattedDate,
+        date: formattedDate, // Используем дату из запроса
         groups: groups,
         mode: reportMode,
-        reportDate: formattedDate,
+        reportDate: formattedDate, // Используем дату из запроса
         template_id: template_id,
         filters: reportFilters
       })
@@ -71,15 +72,17 @@ export class JsonReportService {
       // Форматируем результат в соответствии с template_id
       const formattedModels = this.reportDataService.formatModelsForTemplate(models, template_id)
 
+      // Всегда используем дату из запроса в ключе ответа
+      const resultKey = date ? `reports_${date}` : `reports_${formattedDate}`
       const result = {
-        [`reports_${formattedDate}`]: formattedModels
+        [resultKey]: formattedModels
       }
 
       // Проверка, что результат не пустой
-      if (!result || !result[`reports_${formattedDate}`]) {
+      if (!result || !result[resultKey]) {
         this.logger.warn('Отчет не содержит данных', { template_id, date: formattedDate })
         // Возвращаем пустой отчет вместо ошибки
-        result[`reports_${formattedDate}`] = []
+        result[resultKey] = []
       }
 
       // Сохраняем в кэш
