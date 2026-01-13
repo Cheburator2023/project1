@@ -20,7 +20,7 @@ export class ReportDataService {
     const { date, groups, mode, reportDate, filters, template_id } = reportData
 
     try {
-      // Для всех отчетов используем mode:[] - только актуальные модели
+      // Используем переданный mode (может быть из .env или UI)
       const reportMode = mode || []
 
       // Получаем модели с учетом режима эксплуатации

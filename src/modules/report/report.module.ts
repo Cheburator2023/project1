@@ -11,6 +11,7 @@ import { ReportCacheService } from './report-cache.service'
 import { ReportValidationService } from './report-validation.service'
 import { JsonReportService } from './json-report.service'
 import { ReportDataService } from './report-data.service'
+import { ModelStatusConfigService } from './model-status-config.service'
 
 @Module({
   providers: [
@@ -18,7 +19,8 @@ import { ReportDataService } from './report-data.service'
     ReportCacheService,
     ReportValidationService,
     ReportDataService,
-    JsonReportService
+    JsonReportService,
+    ModelStatusConfigService
   ],
   imports: [
     SumDatabaseModule,
@@ -35,7 +37,8 @@ import { ReportDataService } from './report-data.service'
   exports: [
     ReportService,
     ReportDataService,
-    JsonReportService
+    JsonReportService,
+    ModelStatusConfigService
   ]
 })
 export class ReportModule {}
