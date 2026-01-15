@@ -8,7 +8,8 @@ import {
   UseInterceptors,
   CacheInterceptor,
   CacheTTL,
-  Headers
+  Headers,
+  Inject
 } from '@nestjs/common'
 import {
   ApiTags,
@@ -25,6 +26,7 @@ import { User, UserType } from 'src/decorators/user.decorator'
 import { RateLimit } from '../guards/rate-limit.guard'
 import { ErrorHandlerService } from 'src/common/services/error-handler.service'
 import { JsonReportService } from '../../modules/report/json-report.service'
+import { ModelStatusConfigService } from '../../modules/report/model-status-config.service'
 
 @ApiTags('JSON Отчеты')
 @ApiBearerAuth('JWT-auth')
@@ -34,7 +36,9 @@ import { JsonReportService } from '../../modules/report/json-report.service'
 export class JsonReportController {
   constructor(
     private readonly jsonReportService: JsonReportService,
-    private readonly errorHandler: ErrorHandlerService
+    private readonly errorHandler: ErrorHandlerService,
+    @Inject(ModelStatusConfigService)
+    private readonly modelStatusConfigService: ModelStatusConfigService
   ) {}
 
   @Post('json')
@@ -172,8 +176,8 @@ export class JsonReportController {
         )
       }
 
-      // Для JSON отчета всегда используем mode:[] - только актуальные модели
-      const mode = []
+      // Для JSON отчета используем mode из конфигурации (.env)
+      const mode = this.modelStatusConfigService.getEnabledStatuses()
 
       // Извлекаем фильтры из запроса, если они есть
       const filters = request.filters || {}
