@@ -346,46 +346,56 @@ export class ModelsService {
     models: Model[],
     mode: string[] | null
   ): Model[] {
-    // Определяем активные режимы эксплуатации (Архив, Ошибка заведения, Ожидает удаления)
-    const activeModes = new Set(mode ?? [])
-    const isArchiveMode = activeModes.has(MODEL_DISPLAY_MODES.ARCHIVE)
-    const isCreationErrorMode = activeModes.has(
-      MODEL_DISPLAY_MODES.CREATION_ERROR
-    )
-    const isPendingDeleteMode = activeModes.has(
-      MODEL_DISPLAY_MODES.PENDING_DELETE
-    )
+    // Условие: если ничего не выбрано — возвращаем пустой список
+    const selected = new Set(mode ?? [])
+    if (selected.size === 0) return []
+
+    // Флаги выбранных режимов
+    const showActive = selected.has(MODEL_DISPLAY_MODES.ACTIVE)
+    const showArchive = selected.has(MODEL_DISPLAY_MODES.ARCHIVE)
+    const showPendingDelete = selected.has(MODEL_DISPLAY_MODES.PENDING_DELETE)
+    const showCreationError = selected.has(MODEL_DISPLAY_MODES.CREATION_ERROR)
 
     return models.filter((model) => {
-      const { model_source, models_is_active_flg, business_status } = model
+      const { model_source, business_status } = model
 
-      // Вычисляем статус модели
-      const isArchive =
-        models_is_active_flg === '0' || business_status === MODEL_STATUS.ARCHIVE
-      const isCreationError = business_status === MODEL_STATUS.CREATION_ERROR
-      const isPendingDelete = business_status === MODEL_STATUS.PENDING_DELETE
+      // Источник истины: только business_status
+      const isArchiveStatus =
+        business_status === MODEL_STATUS.ARCHIVE ||
+        business_status === MODEL_STATUS.REMOVED_FROM_OPERATION
 
-      if (!mode || mode.length === 0) {
-        if (isArchive) return false
-        if (isCreationError) return false
-        if (isPendingDelete) return false
-      }
+      const isPendingDeleteStatus =
+        business_status === MODEL_STATUS.PENDING_DELETE
 
-      // 1. Показываем архивные модели из SUM, если включен режим Архив
-      if (model_source === MODEL_SOURCES.SUM && isArchive && isArchiveMode)
+      const isCreationErrorStatus =
+        business_status === MODEL_STATUS.CREATION_ERROR
+
+      const isActiveStatus =
+        business_status !== MODEL_STATUS.ARCHIVE &&
+        business_status !== MODEL_STATUS.REMOVED_FROM_OPERATION &&
+        business_status !== MODEL_STATUS.PENDING_DELETE &&
+        business_status !== MODEL_STATUS.CREATION_ERROR
+
+      // Мультиселект (OR): модель показываем, если попала хотя бы в один выбранный режим
+      if (showArchive && isArchiveStatus) return true
+
+      if (
+        showPendingDelete &&
+        model_source === MODEL_SOURCES.MRM &&
+        isPendingDeleteStatus
+      )
         return true
 
-      // 2. Показываем модели с ошибкой заведения и ожидающие удаления из MRM, если соответствующие режимы включены
-      if (model_source === MODEL_SOURCES.MRM) {
-        if (isCreationError && isCreationErrorMode) return true
-        if (isPendingDelete && isPendingDeleteMode) return true
-      }
+      if (
+        showCreationError &&
+        model_source === MODEL_SOURCES.MRM &&
+        isCreationErrorStatus
+      )
+        return true
 
-      // 3. По-умолчанию: показываем, если модели активны и не находятся в статусах ошибка заведения и ожидает удаления
-      const isActive = model_source === MODEL_SOURCES.SUM ? !isArchive : true // для моделей MRM активность не проверяется
-      const isValidStatus = !isCreationError && !isPendingDelete
+      if (showActive && isActiveStatus) return true
 
-      return isActive && isValidStatus
+      return false
     })
   }
 
