@@ -670,7 +670,7 @@ export abstract class BaseArtefactService implements IArtefactService {
     try {
       const artefactValues = await this.databaseService.query(
         `
-        SELECT * FROM ${this.artefactValuesTableName} WHERE artefact_id = :artefact_id
+        SELECT * FROM ${this.artefactValuesTableName} WHERE artefact_id = :artefact_id AND is_active_flg = '1'
         `,
         {
           artefact_id
