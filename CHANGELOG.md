@@ -1,5 +1,12 @@
 # Semantic Versioning Changelog
 
+# [1.42.0](https://git.sfera.inno.local:7999/SUMD/mrms-backend/compare/v1.41.1...v1.42.0) (2026-01-15)
+
+
+### Features
+
+* refactor model filtering by exploitation modes ([73c9bdb](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/73c9bdb2f34bb226286b642152784aae06c7a88f))
+
 # [1.41.0](https://git.sfera.inno.local:7999/SUMD/mrms-backend/compare/v1.40.1...v1.41.0) (2025-12-29)
 
 

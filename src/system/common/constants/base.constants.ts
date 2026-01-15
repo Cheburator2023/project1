@@ -4,6 +4,7 @@ export enum API_PREFIX {
 }
 
 export const MODEL_DISPLAY_MODES = {
+  ACTIVE: 'Активные',
   ARCHIVE: 'Архив',
   CREATION_ERROR: 'Ошибка заведения',
   PENDING_DELETE: 'Ожидает удаления'
