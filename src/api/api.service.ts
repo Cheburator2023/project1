@@ -244,7 +244,8 @@ export class ApiService {
   }
 
   private async convertLegacyToNewFormat(
-    legacyValue: LegacyTemplateValue
+    legacyValue: LegacyTemplateValue,
+    mode?: string[]
   ): Promise<NewTemplateValue> {
     const filterModel: FilterModel = {}
 
@@ -262,7 +263,7 @@ export class ApiService {
           // Если остался только 'not-null', то получаем все непустые значения из базы
           if (processedValues.length === 0) {
             try {
-              const allValues = await this.getAllValuesForColumn(key)
+              const allValues = await this.getAllValuesForColumn(key, mode)
               console.log(
                 '🐸 Pepe said >> ApiService >> convertLegacyToNewFormat >> allValues:',
                 allValues
@@ -319,11 +320,14 @@ export class ApiService {
     }
   }
 
-  private async getAllValuesForColumn(columnName: string): Promise<string[]> {
+  private async getAllValuesForColumn(
+    columnName: string,
+    mode?: string[]
+  ): Promise<string[]> {
     try {
-      const models = await this.modelsService.getModels({
-        ignoreModeFilter: true
-      })
+      const models = await this.modelsService.getModels(
+        mode?.length ? { mode } : { ignoreModeFilter: true }
+      )
 
       const values = models.map((model) => {
         return model[columnName]
@@ -339,7 +343,7 @@ export class ApiService {
     }
   }
 
-  async getTemplates(user) {
+  async getTemplates(user: any, mode?: string[]) {
     const result = await this.mrmDatabaseService.query(getTemplatesSql, [])
 
     const templatesWithProcessedValues = await Promise.all(
@@ -358,7 +362,8 @@ export class ApiService {
 
             if (this.isLegacyTemplateValue(template_value)) {
               processedTemplateValue = await this.convertLegacyToNewFormat(
-                template_value
+                template_value,
+                mode
               )
 
               return {
@@ -398,7 +403,7 @@ export class ApiService {
     return filteredTemplates
   }
 
-  async getTemplate(id, user) {
+  async getTemplate(id: number, user: any, mode?: string[]) {
     const result = await this.mrmDatabaseService.query(getTemplateSql, {
       template_id: id
     })
@@ -412,8 +417,9 @@ export class ApiService {
       let processedTemplateValue = filteredTemplate.template_value
 
       if (this.isLegacyTemplateValue(filteredTemplate.template_value)) {
-        processedTemplateValue = this.convertLegacyToNewFormat(
-          filteredTemplate.template_value
+        processedTemplateValue = await this.convertLegacyToNewFormat(
+          filteredTemplate.template_value,
+          mode
         )
       }
 
