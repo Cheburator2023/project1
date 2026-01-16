@@ -49,7 +49,9 @@ export class ModelsCacheService implements OnModuleInit, OnModuleDestroy {
 
     // try {
     //   this.isUpdating = true
-    //   const models = await this.modelsService.getModels()
+    //   const models = await this.modelsService.getModels({
+    //     ignoreModeFilter: true
+    //   })
     //   await this.cacheManager.set(this.CACHE_KEY, models, 300000) // 5 minutes TTL
     //   this.logger.log(`✅ Кеш моделей обновлен: ${models.length} моделей`)
     // } catch (error) {
@@ -78,7 +80,9 @@ export class ModelsCacheService implements OnModuleInit, OnModuleDestroy {
   async getCachedModels(): Promise<Model[]> {
     // if (!this.isCacheEnabled()) {
     // Если кеш отключен, возвращаем данные напрямую из базы
-    return await this.modelsService.getModels()
+    return await this.modelsService.getModels({
+      ignoreModeFilter: true
+    })
     // }
 
     const models = await this.cacheManager.get<Model[]>(this.CACHE_KEY)

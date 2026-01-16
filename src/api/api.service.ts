@@ -23,6 +23,7 @@ import {
 } from './dto/index.dto'
 
 import { sortOrder, TECH_LABELS_HISTORY_ONLY_IN_SUM_RM } from './constants'
+import { ModelsService } from '../modules/models/models.service'
 
 interface LegacyTemplateValue {
   [key: string]: string[]
@@ -55,9 +56,9 @@ export class ApiService {
     @Inject(REQUEST) private readonly request: Request,
     private readonly sumDatabaseService: SumDatabaseService,
     private readonly mrmDatabaseService: MrmDatabaseService,
-    private readonly modelsCacheService: ModelsCacheService
-  ) {
-  }
+    private readonly modelsCacheService: ModelsCacheService,
+    private readonly modelsService: ModelsService
+  ) {}
 
   async getModelHistory(query: ModelArtefactHistoryDto) {
     const { model_id, artefact_tech_label } = query
@@ -65,12 +66,18 @@ export class ApiService {
 
     let result = []
 
-    if (model_source === ModelSource.SUM && !TECH_LABELS_HISTORY_ONLY_IN_SUM_RM.includes(artefact_tech_label)) {
+    if (
+      model_source === ModelSource.SUM &&
+      !TECH_LABELS_HISTORY_ONLY_IN_SUM_RM.includes(artefact_tech_label)
+    ) {
       result = await this.sumDatabaseService.query(getSumModelHistorySql, {
         model_id,
         artefact_tech_label
       })
-    } else if (model_source === ModelSource.SUM_RM || TECH_LABELS_HISTORY_ONLY_IN_SUM_RM.includes(artefact_tech_label)) {
+    } else if (
+      model_source === ModelSource.SUM_RM ||
+      TECH_LABELS_HISTORY_ONLY_IN_SUM_RM.includes(artefact_tech_label)
+    ) {
       result = await this.mrmDatabaseService.query(getSumRmModelHistorySql, {
         model_id,
         artefact_tech_label
@@ -181,13 +188,13 @@ export class ApiService {
     if (
       templateUpdateDto.template_name &&
       templateUpdateDto.template_name.trim().toLowerCase() !==
-      targetTemplate.template_name.trim().toLowerCase()
+        targetTemplate.template_name.trim().toLowerCase()
     ) {
       const templatesWithSameName = templates.find((template) => {
         return (
           template.template_id !== templateUpdateDto.template_id &&
           template.template_name.trim().toLowerCase() ===
-          templateUpdateDto.template_name.trim().toLowerCase()
+            templateUpdateDto.template_name.trim().toLowerCase()
         )
       })
 
@@ -203,11 +210,11 @@ export class ApiService {
         templateUpdateDto.columnState ||
         templateUpdateDto.selectedIds
           ? {
-            filterModel: templateUpdateDto.filterModel,
-            sortState: templateUpdateDto.sortState,
-            columnState: templateUpdateDto.columnState,
-            selectedIds: templateUpdateDto.selectedIds
-          }
+              filterModel: templateUpdateDto.filterModel,
+              sortState: templateUpdateDto.sortState,
+              columnState: templateUpdateDto.columnState,
+              selectedIds: templateUpdateDto.selectedIds
+            }
           : null
 
       const updatedTemplate = await this.mrmDatabaseService.query(
@@ -256,6 +263,11 @@ export class ApiService {
           if (processedValues.length === 0) {
             try {
               const allValues = await this.getAllValuesForColumn(key)
+              console.log(
+                '🐸 Pepe said >> ApiService >> convertLegacyToNewFormat >> allValues:',
+                allValues
+              )
+
               // Фильтруем null/undefined значения для 'not-null' фильтра
               processedValues = allValues.filter(
                 (value) =>
@@ -266,7 +278,7 @@ export class ApiService {
               )
             } catch (error) {
               console.warn(
-                `Не удалось получить значения для колонки ${ key }:`,
+                `Не удалось получить значения для колонки ${key}:`,
                 error
               )
               processedValues = []
@@ -309,12 +321,18 @@ export class ApiService {
 
   private async getAllValuesForColumn(columnName: string): Promise<string[]> {
     try {
-      const values = this.modelsCacheService.getColumnValues(columnName)
+      const models = await this.modelsService.getModels({
+        ignoreModeFilter: true
+      })
+
+      const values = models.map((model) => {
+        return model[columnName]
+      })
 
       return values
     } catch (error) {
       console.error(
-        `Ошибка при получении значений для колонки -- ${ columnName }:`,
+        `Ошибка при получении значений для колонки -- ${columnName}:`,
         error
       )
       return []
@@ -331,11 +349,11 @@ export class ApiService {
         })
         .map(
           async ({
-                   user_id,
-                   public: is_public,
-                   template_value,
-                   ...template
-                 }) => {
+            user_id,
+            public: is_public,
+            template_value,
+            ...template
+          }) => {
             let processedTemplateValue = template_value
 
             if (this.isLegacyTemplateValue(template_value)) {
