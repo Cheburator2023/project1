@@ -1,13 +1,16 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { MODEL_STATUS, MODEL_STATUS_KEYS } from 'src/system/common/constants/model-status';
+import { MODEL_DISPLAY_MODES } from 'src/system/common/constants/base.constants';
 
 @Injectable()
 export class ModelStatusConfigService {
   private enabledStatuses: string[] = [];
+  private enabledGroups: string[] = [];
 
   constructor(private readonly configService: ConfigService) {
     this.loadEnabledStatuses();
+    this.loadEnabledGroups();
   }
 
   private loadEnabledStatuses(): void {
@@ -34,8 +37,36 @@ export class ModelStatusConfigService {
     }
   }
 
+  private loadEnabledGroups(): void {
+    this.enabledGroups = [];
+
+    // Проходим по всем группам из MODEL_DISPLAY_MODES
+    Object.keys(MODEL_DISPLAY_MODES).forEach((key) => {
+      const envKey = `MODEL_GROUP_${key}`;
+      const isEnabled = this.configService.get<string>(envKey);
+
+      if (isEnabled === 'true') {
+        this.enabledGroups.push(MODEL_DISPLAY_MODES[key]);
+      }
+    });
+
+    // Если не настроена ни одна группа, добавляем группу 'Активные' по умолчанию
+    if (this.enabledGroups.length === 0) {
+      this.enabledGroups.push(MODEL_DISPLAY_MODES.ACTIVE);
+    }
+  }
+
   getEnabledStatuses(): string[] {
     return [...this.enabledStatuses];
+  }
+
+  getEnabledGroups(): string[] {
+    return [...this.enabledGroups];
+  }
+
+  getCombinedMode(): string[] {
+    // Объединяем статусы и группы в один массив
+    return [...this.enabledStatuses, ...this.enabledGroups];
   }
 
   isStatusEnabled(status: string): boolean {
@@ -44,5 +75,6 @@ export class ModelStatusConfigService {
 
   reload(): void {
     this.loadEnabledStatuses();
+    this.loadEnabledGroups();
   }
 }

@@ -15,6 +15,39 @@ export class JsonReportService {
     private readonly logger: LoggerService,
   ) {}
 
+  /**
+   * Форматирует детали запроса для логирования
+   */
+  private formatRequestDetails(
+    template_id?: number,
+    date?: string,
+    groups?: string[],
+    mode?: string[],
+    filters?: any
+  ): string {
+    const templateInfo = template_id !== undefined && template_id !== null
+      ? `шаблон: ${template_id}`
+      : 'без шаблона'
+
+    const dateInfo = date
+      ? `дата: ${date}`
+      : 'дата не передана'
+
+    const modeInfo = mode && mode.length > 0
+      ? `режим обслуживания: [${mode.join(', ')}]`
+      : 'режим обслуживания не задан'
+
+    const filtersInfo = filters && Object.keys(filters).length > 0
+      ? `фильтры: ${JSON.stringify(filters)}`
+      : 'фильтры не заданы'
+
+    const groupsInfo = groups && groups.length > 0
+      ? `группы пользователя: [${groups.join(', ')}]`
+      : 'группы пользователя не заданы'
+
+    return `Детали запроса: ${templateInfo}, ${dateInfo}, ${modeInfo}, ${filtersInfo}, ${groupsInfo}`
+  }
+
   async getJsonReport(
     template_id?: number,
     date?: string,
@@ -22,6 +55,8 @@ export class JsonReportService {
     mode?: string[],
     filters?: any
   ): Promise<{ [key: string]: any[] }> {
+    const requestDetails = this.formatRequestDetails(template_id, date, groups, mode, filters)
+
     // Валидация входных параметров
     this.validationService.validateJsonReportRequest(template_id, date, groups)
 
@@ -52,7 +87,7 @@ export class JsonReportService {
 
     const cachedResult = await this.cacheService.get(cacheKey)
     if (cachedResult) {
-      this.logger.info('Используется кэшированный результат JSON отчета')
+      this.logger.info(`Используется кэшированный результат JSON отчета. ${requestDetails}`)
       return cachedResult as { [key: string]: any[] }
     }
 
@@ -80,7 +115,7 @@ export class JsonReportService {
 
       // Проверка, что результат не пустой
       if (!result || !result[resultKey]) {
-        this.logger.warn('Отчет не содержит данных', { template_id, date: formattedDate })
+        this.logger.warn(`Отчет не содержит данных. ${requestDetails}`, { template_id, date: formattedDate })
         // Возвращаем пустой отчет вместо ошибки
         result[resultKey] = []
       }
@@ -88,10 +123,10 @@ export class JsonReportService {
       // Сохраняем в кэш
       await this.cacheService.set(cacheKey, result, 300000)
 
-      this.logger.info('JSON отчет успешно сформирован и закэширован')
+      this.logger.info(`JSON отчет успешно сформирован и закэширован. ${requestDetails}`)
       return result
     } catch (error) {
-      this.logger.error(`Ошибка при формировании JSON отчета: ${error.message}`, error.stack)
+      this.logger.error(`Ошибка при формировании JSON отчета: ${error.message}. ${requestDetails}`, error.stack)
       throw new ReportGenerationError('Ошибка при формировании отчета')
     }
   }

@@ -177,7 +177,7 @@ export class JsonReportController {
       }
 
       // Для JSON отчета используем mode из конфигурации (.env)
-      const mode = this.modelStatusConfigService.getEnabledStatuses()
+      const mode = this.modelStatusConfigService.getCombinedMode()
 
       // Извлекаем фильтры из запроса, если они есть
       const filters = request.filters || {}
