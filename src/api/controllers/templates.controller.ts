@@ -2,6 +2,7 @@ import {
   Controller,
   Body,
   Param,
+  Query,
   Get,
   Post,
   Put,
@@ -20,7 +21,11 @@ import {
   ApiBody
 } from '@nestjs/swagger'
 import { ApiService } from '../api.service'
-import { TemplateCreateDto, TemplateUpdateDto } from '../dto/index.dto'
+import {
+  ModelsDto,
+  TemplateCreateDto,
+  TemplateUpdateDto
+} from '../dto/index.dto'
 
 @ApiTags('Шаблоны')
 @Controller('templates')
@@ -34,8 +39,8 @@ export class TemplatesController {
   })
   @ApiResponse({ status: 202, description: 'Список шаблонов успешно получен' })
   @Get('/')
-  async getTemplates(@Res() response, @Req() req) {
-    const result = await this.apiService.getTemplates(req.user)
+  async getTemplates(@Query() query: ModelsDto, @Res() response, @Req() req) {
+    const result = await this.apiService.getTemplates(req.user, query.mode)
 
     return response.status(HttpStatus.ACCEPTED).json(result)
   }
@@ -53,8 +58,13 @@ export class TemplatesController {
   @ApiResponse({ status: 200, description: 'Шаблон найден и возвращен' })
   @ApiResponse({ status: 404, description: 'Шаблон не найден' })
   @Get('/:id')
-  async getTemplate(@Param('id') id: number, @Res() response, @Req() req) {
-    const result = await this.apiService.getTemplate(id, req.user)
+  async getTemplate(
+    @Param('id') id: number,
+    @Query() query: ModelsDto,
+    @Res() response,
+    @Req() req
+  ) {
+    const result = await this.apiService.getTemplate(id, req.user, query.mode)
 
     if (result.length) {
       return response.status(HttpStatus.OK).json(result[0])
