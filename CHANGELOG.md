@@ -1,5 +1,13 @@
 # Semantic Versioning Changelog
 
+## [1.42.2](https://git.sfera.inno.local:7999/SUMD/mrms-backend/compare/v1.42.1...v1.42.2) (2026-01-19)
+
+
+### Bug Fixes
+
+* getmodels prop added ([bb5812b](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/bb5812bc187a542ab3e746620dee3b7da8c0708e))
+* Добавил группы ([46c853d](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/46c853dfe2691065f9db25499264d34a2a97aaa7))
+
 ## [1.42.1](https://git.sfera.inno.local:7999/SUMD/mrms-backend/compare/v1.42.0...v1.42.1) (2026-01-15)
 
 
