@@ -1,5 +1,12 @@
 # Semantic Versioning Changelog
 
+## [1.42.3](https://git.sfera.inno.local:7999/SUMD/mrms-backend/compare/v1.42.2...v1.42.3) (2026-01-19)
+
+
+### Bug Fixes
+
+* template mode prop added ([4731175](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/473117522334209fb51eaac648e3741e499245a3))
+
 ## [1.42.2](https://git.sfera.inno.local:7999/SUMD/mrms-backend/compare/v1.42.1...v1.42.2) (2026-01-19)
 
 
