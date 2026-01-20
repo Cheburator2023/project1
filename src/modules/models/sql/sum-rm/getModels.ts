@@ -4,7 +4,6 @@ SELECT
     m.model_name,
     m.model_version,
     m.create_date,
-    m.update_date,
     m.model_creator,
     -- Столбцы всех артефактов
     artefact_data.*,
@@ -134,10 +133,21 @@ LEFT JOIN (
         ar.model_id as artefacts_model_id,
         STRING_AGG((CASE WHEN ar.artefact_id = 2032 THEN av.artefact_value ELSE NULL END)::Varchar, ',' ORDER BY ar.artefact_value_id) AS business_customer_departament,
         STRING_AGG((CASE WHEN ar.artefact_id = 2664 THEN av.artefact_value ELSE NULL END)::Varchar, ',' ORDER BY ar.artefact_value_id) AS dev_team,
-        STRING_AGG((CASE WHEN ar.artefact_id = 2665 THEN av.artefact_value ELSE NULL END)::Varchar, ',' ORDER BY ar.artefact_value_id) AS deploy_team
+        STRING_AGG((CASE WHEN ar.artefact_id = 2665 THEN av.artefact_value ELSE NULL END)::Varchar, ',' ORDER BY ar.artefact_value_id) AS deploy_team,
+        STRING_AGG((CASE WHEN ar.artefact_id = 2682 THEN av.artefact_value ELSE NULL END)::Varchar, ',' ORDER BY ar.artefact_value_id) AS deploy_system
     FROM artefact_realizations_new ar
     INNER JOIN artefact_values av ON ar.artefact_value_id = av.artefact_value_id AND av.is_active_flg = '1'
-    WHERE ar.effective_to = TO_TIMESTAMP('9999-12-31 23:59:59', 'YYYY-MM-DD HH24:MI:SS')
+    WHERE
+    (
+        :filter_date::date IS NULL
+        AND ar.effective_to = TIMESTAMP '9999-12-31 23:59:59'
+    )
+    OR
+    (
+        :filter_date::date IS NOT NULL
+        AND date_trunc('day', ar.effective_from)::date
+            <= to_date(cast(:filter_date as varchar(4000)), 'YYYY-MM-DD')
+    )
     GROUP BY ar.model_id
 ) AS artefact_values_data
 ON m.model_id = artefact_values_data.artefacts_model_id
@@ -279,7 +289,8 @@ LEFT JOIN (
         MAX(CASE WHEN artefact_id = 2678 THEN artefact_string_value ELSE NULL END) AS model_data_07k_control,
         MAX(CASE WHEN artefact_id = 2679 THEN artefact_string_value ELSE NULL END) AS model_data_07k_control_epic,
         MAX(CASE WHEN artefact_id = 2680 THEN artefact_string_value ELSE NULL END) AS model_data_control_date,
-        MAX(CASE WHEN artefact_id = 2681 THEN artefact_string_value ELSE NULL END) AS check_objects_count
+        MAX(CASE WHEN artefact_id = 2681 THEN artefact_string_value ELSE NULL END) AS check_objects_count,
+        MAX(CASE WHEN artefact_id = 2683 THEN artefact_string_value ELSE NULL END) AS update_date
     FROM (
         SELECT
             artefact_realizations_new.model_id,
@@ -297,10 +308,16 @@ LEFT JOIN (
                     END DESC
             ) AS rn
         FROM artefact_realizations_new
-        WHERE artefact_realizations_new.effective_to = TO_TIMESTAMP('9999-12-31 23:59:59', 'YYYY-MM-DD HH24:MI:SS')
-        AND (
-            :filter_date::DATE IS NULL
-            OR DATE_TRUNC('day', artefact_realizations_new.effective_from)::DATE <= TO_DATE(CAST(:filter_date AS VARCHAR(4000)), 'YYYY-MM-DD')
+        WHERE 
+        (
+            :filter_date::date IS NULL
+            AND artefact_realizations_new.effective_to = TIMESTAMP '9999-12-31 23:59:59'
+        )
+        OR
+        (
+            :filter_date::date IS NOT NULL
+            AND date_trunc('day', artefact_realizations_new.effective_from)::date
+                <= to_date(cast(:filter_date as varchar(4000)), 'YYYY-MM-DD')
         )
     ) ar
     WHERE ar.rn = 1

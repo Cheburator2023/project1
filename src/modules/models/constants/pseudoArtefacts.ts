@@ -42,17 +42,6 @@ const pseudoArtefacts: Artefact[] = [
     values: []
   },
   {
-    artefact_id: 2120,
-    artefact_tech_label: 'update_date',
-    artefact_label:
-      'Отчетная дата / дата последних изменений информации о Модели',
-    is_edit_flg: '0',
-    artefact_desc: '',
-    artefact_type_id: ArtefactTypeEnum.DATE,
-    artefact_type_desc: artefactTypeDescMap[ArtefactTypeEnum.DATE],
-    values: []
-  },
-  {
     artefact_id: 2121,
     artefact_tech_label: 'model_source',
     artefact_label: 'Система источник данных',

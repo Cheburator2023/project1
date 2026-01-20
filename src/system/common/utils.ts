@@ -98,7 +98,7 @@ const parseDate = (dateInput: string | Date): Date | null => {
 }
 
 /**
- * Formats a Date object into a string in the format yyyy-mm-dd hh:mm:ss.
+ * Formats a Date object into a string in the format yyyy-mm-dd.
  *
  * @param {Date} date - The Date object to format.
  * @returns {string} - The formatted date string.

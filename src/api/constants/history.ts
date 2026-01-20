@@ -15,7 +15,8 @@ const TECH_LABELS_HISTORY_ONLY_IN_SUM_RM = [
   'model_data_07k_control',
   'model_data_07k_control_epic',
   'model_data_control_date',
-  'check_objects_count'
+  'check_objects_count',
+  'update_date',
 ]
 
 export { TECH_LABELS_HISTORY_ONLY_IN_SUM_RM }

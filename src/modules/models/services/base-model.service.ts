@@ -2,11 +2,13 @@ import { LoggerService } from 'src/system/logger/logger.service'
 import { ModelEntity } from '../entities'
 import { UpdateModelDto } from '../dto'
 import { IModelService } from '../interfaces'
+import { BaseArtefactService } from 'src/modules/artefacts/services'
 
 export abstract class BaseModelService implements IModelService {
   protected abstract modelsTableName: string
 
   protected constructor(
+    protected readonly artefactService: BaseArtefactService,
     protected readonly databaseService,
     protected readonly logger: LoggerService
   ) {}
@@ -90,9 +92,10 @@ export abstract class BaseModelService implements IModelService {
 
   async updateUpdateDate(
     data: Pick<UpdateModelDto, 'model_id'> &
-      Partial<Pick<UpdateModelDto, 'update_date'>>
+      Partial<Pick<UpdateModelDto, 'update_date' | 'creator'>>
   ): Promise<boolean> {
-    const { model_id, update_date = new Date() } = data
+    const { model_id, update_date = new Date(), creator } = data
+    const artefact_tech_label = 'update_date'
 
     this.logger.info(
       'Updating model update date',
@@ -115,6 +118,14 @@ export abstract class BaseModelService implements IModelService {
         )
         return false
       }
+
+      await this.artefactService.handleUpdateArtefact({
+        model_id,
+        artefact_tech_label,
+        artefact_string_value: this.formatDateTime(new Date()),
+        artefact_value_id: null,
+        creator
+      })
 
       await this.databaseService.query(
         `
@@ -189,5 +200,17 @@ export abstract class BaseModelService implements IModelService {
       )
       throw error
     }
+  }
+
+  private formatDateTime(date: Date): string {
+    const pad = (n: number) => n.toString().padStart(2, '0')
+
+    const YYYY = date.getFullYear()
+    const MM = pad(date.getMonth() + 1)
+    const DD = pad(date.getDate())
+    const hh = pad(date.getHours())
+    const mm = pad(date.getMinutes())
+
+    return `${DD}.${MM}.${YYYY} ${hh}:${mm}`
   }
 }

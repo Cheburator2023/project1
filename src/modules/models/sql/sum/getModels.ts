@@ -8,6 +8,7 @@ SELECT m_.model_id                                                              
        clsf_.business_customer_departament,
        clsf_.dev_team,
        clsf_.deploy_team,
+       clsf_.deploy_system,
        m_.model_name,
        m_.model_name                                                                                             AS model_name_validation,
        m_.create_date,
@@ -216,10 +217,12 @@ ON m_.model_id = allocation_data.allocation_model_id
                            STRING_AGG((CASE WHEN ar_.artefact_id = 918 THEN av_.artefact_value ELSE NULL END)::Varchar, ','
                                       ORDER BY ar_.artefact_value_id)                           AS dev_team,
                            STRING_AGG((CASE WHEN ar_.artefact_id = 919 THEN av_.artefact_value ELSE NULL END)::Varchar, ','
-                                      ORDER BY ar_.artefact_value_id)                           AS deploy_team
+                                      ORDER BY ar_.artefact_value_id)                           AS deploy_team,
+                           STRING_AGG((CASE WHEN ar_.artefact_id = 921 THEN av_.artefact_value ELSE NULL END)::Varchar, ','
+                                      ORDER BY ar_.artefact_value_id)                           AS deploy_system
                     FROM artefact_realizations ar_
                              INNER JOIN artefact_values av_ ON ar_.artefact_value_id = av_.artefact_value_id AND av_.is_active_flg = '1'
-                    WHERE ar_.artefact_id IN (173, 6, 67, 73, 918, 919)
+                    WHERE ar_.artefact_id IN (173, 6, 67, 73, 918, 919, 921)
                       AND ar_.effective_to = TO_TIMESTAMP('9999-12-31 23:59:59', 'YYYY-MM-DD HH24:MI:SS')
                     GROUP BY ar_.model_id) clsf_ ON m_.model_id = clsf_.model_id
          LEFT JOIN

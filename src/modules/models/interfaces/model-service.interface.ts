@@ -7,6 +7,6 @@ export interface IModelService {
 
   updateUpdateDate(
     data: Pick<UpdateModelDto, 'model_id'> &
-      Partial<Pick<UpdateModelDto, 'update_date'>>
+      Partial<Pick<UpdateModelDto, 'update_date' | 'creator'>>
   ): Promise<boolean>
 }

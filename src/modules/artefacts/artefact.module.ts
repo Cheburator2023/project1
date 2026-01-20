@@ -31,7 +31,7 @@ import { artefactHandlersProvider } from './handlers'
       inject: artefactHandlersProvider
     }
   ],
-  exports: [ArtefactService],
+  exports: [ArtefactService, MrmArtefactService, SumArtefactService],
   controllers: [ArtefactRealizationsController]
 })
 export class ArtefactModule {}
