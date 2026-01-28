@@ -55,8 +55,8 @@ const parseDate = (dateInput: string | Date): Date | null => {
 
   let date: Date | null = null
 
-  // Формат "2023-02-22 14:51:23+00:00" (дата с часовым поясом)
-  if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}[+-]\d{2}:\d{2}$/.test(dateInput)) {
+  // Формат "2023-02-22 14:51:23+00:00" (дата с опциональным часовым поясом)
+  if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}([+-]\d{2}:\d{2})?$/.test(dateInput)) {
     date = new Date(dateInput.replace(' ', 'T')) // Заменяем пробел на "T", чтобы сделать строку совместимой с ISO
   }
   // Формат "dd.mm.yyyy hh:mm"
@@ -104,11 +104,18 @@ const parseDate = (dateInput: string | Date): Date | null => {
  * @returns {string} - The formatted date string.
  */
 const formatDateTime = (date: Date): string => {
+  if (!(date instanceof Date) || isNaN(date.getTime())) {
+    throw new TypeError('Invalid Date')
+  }
+
   const yyyy = date.getFullYear()
   const MM = pad(date.getMonth() + 1)
   const dd = pad(date.getDate())
+  const hh = pad(date.getHours())
+  const mm = pad(date.getMinutes())
+  const ss = pad(date.getSeconds())
 
-  return `${yyyy}-${MM}-${dd}`
+  return `${yyyy}-${MM}-${dd} ${hh}:${mm}:${ss}`
 }
 
 /**

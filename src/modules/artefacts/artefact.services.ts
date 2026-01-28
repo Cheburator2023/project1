@@ -24,17 +24,22 @@ export class ArtefactService {
   ): Promise<boolean> {
     const artefactService = this.artefactServiceFactory.getService(source)
 
-    await this.artefactExecutionContextService.runWithContext(
+    const results = await this.artefactExecutionContextService.runWithContext(
       { artefactsBatch: artefacts, modelSource: source },
       async () => {
+        const results: boolean[] = []
         for (const artefact of artefacts) {
-          await artefactService.handleUpdateArtefact(artefact)
+          results.push(await artefactService.handleUpdateArtefact(artefact))
         }
+        return results
       }
     )
 
-    const modelsService = this.modelsServiceFactory.getService(source)
-    await modelsService.updateUpdateDate({ model_id: artefacts[0].model_id, creator: artefacts[0].creator  })
+    const hasChanges = results.some(Boolean)
+    if (hasChanges) {
+      const modelsService = this.modelsServiceFactory.getService(source)
+      await modelsService.updateUpdateDate({ model_id: artefacts[0].model_id, creator: artefacts[0].creator  })
+    }
 
     // Force cache update to ensure fresh data is available immediately
     // await this.modelsCacheService.forceUpdateCache()

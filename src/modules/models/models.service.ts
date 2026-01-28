@@ -464,6 +464,7 @@ export class ModelsService {
       'model_version',
       'model_alias',
       'model_status',
+      'update_date',
       'create_date'
     ].includes(label)
   }
@@ -570,12 +571,14 @@ export class ModelsService {
           if (this.isNameArtefact(artefact_tech_label)) {
             updates.namesForUpdate.push({
               model_id,
-              model_name: artefact_string_value
+              model_name: artefact_string_value,
+              creator
             })
             if (isOriginalSumModel) {
               updatesBySource[MODEL_SOURCES.MRM].namesForUpdate.push({
                 model_id,
-                model_name: artefact_string_value
+                model_name: artefact_string_value,
+                creator
               })
             }
           } else if (this.isAllocationUsageArtefact(artefact_tech_label)) {
@@ -638,6 +641,7 @@ export class ModelsService {
               case 'deploy_team':
               case 'runtime_subsystem':
               case 'buiseness_process_name':
+              case 'deploy_system':
                 if (isOriginalSumModel) {
                   updatesBySource[MODEL_SOURCES.SUM].artefactsForUpdate.push({
                     model_id,

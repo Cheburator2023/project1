@@ -249,6 +249,7 @@ LEFT JOIN (
         MAX(CASE WHEN artefact_id = 2092 THEN artefact_string_value ELSE NULL END) AS pvr,
         MAX(CASE WHEN artefact_id = 2094 THEN artefact_string_value ELSE NULL END) AS validity_approve_date,
         MAX(CASE WHEN artefact_id = 2095 THEN artefact_string_value ELSE NULL END) AS validation_result,
+        MAX(CASE WHEN artefact_id = 2556 THEN artefact_string_value ELSE NULL END) AS update_date,
         MAX(CASE WHEN artefact_id = 2557 THEN artefact_string_value ELSE NULL END) AS model_name_validation,
         MAX(CASE WHEN artefact_id = 2097 THEN artefact_string_value ELSE NULL END) AS decision_date_and_number_of_application_model_for_segment,
         MAX(CASE WHEN artefact_id = 2098 THEN artefact_string_value ELSE NULL END) AS notification_date_and_number_of_application_model_for_segment,
@@ -289,8 +290,7 @@ LEFT JOIN (
         MAX(CASE WHEN artefact_id = 2678 THEN artefact_string_value ELSE NULL END) AS model_data_07k_control,
         MAX(CASE WHEN artefact_id = 2679 THEN artefact_string_value ELSE NULL END) AS model_data_07k_control_epic,
         MAX(CASE WHEN artefact_id = 2680 THEN artefact_string_value ELSE NULL END) AS model_data_control_date,
-        MAX(CASE WHEN artefact_id = 2681 THEN artefact_string_value ELSE NULL END) AS check_objects_count,
-        MAX(CASE WHEN artefact_id = 2683 THEN artefact_string_value ELSE NULL END) AS update_date
+        MAX(CASE WHEN artefact_id = 2681 THEN artefact_string_value ELSE NULL END) AS check_objects_count
     FROM (
         SELECT
             artefact_realizations_new.model_id,

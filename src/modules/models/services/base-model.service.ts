@@ -3,6 +3,7 @@ import { ModelEntity } from '../entities'
 import { UpdateModelDto } from '../dto'
 import { IModelService } from '../interfaces'
 import { BaseArtefactService } from 'src/modules/artefacts/services'
+import { formatDateTime } from 'src/system/common'
 
 export abstract class BaseModelService implements IModelService {
   protected abstract modelsTableName: string
@@ -14,14 +15,14 @@ export abstract class BaseModelService implements IModelService {
   ) {}
 
   async updateModelName(
-    data: Pick<UpdateModelDto, 'model_id' | 'model_name'>
+    data: Pick<UpdateModelDto, 'model_id' | 'model_name' | 'creator'>
   ): Promise<boolean> {
     this.logger.info('Updating model name', 'ОбновлениеНазванияМодели', {
       model_id: data.model_id,
       new_model_name: data.model_name
     })
 
-    const { model_id, model_name } = data
+    const { model_id, model_name, creator } = data
 
     try {
       const model: ModelEntity | null = await this.getModelById(model_id)
@@ -62,7 +63,8 @@ export abstract class BaseModelService implements IModelService {
 
       await this.updateUpdateDate({
         update_date: new Date(),
-        model_id
+        model_id,
+        creator
       })
 
       this.logger.info(
@@ -122,7 +124,7 @@ export abstract class BaseModelService implements IModelService {
       await this.artefactService.handleUpdateArtefact({
         model_id,
         artefact_tech_label,
-        artefact_string_value: this.formatDateTime(new Date()),
+        artefact_string_value: formatDateTime(new Date()),
         artefact_value_id: null,
         creator
       })
@@ -200,17 +202,5 @@ export abstract class BaseModelService implements IModelService {
       )
       throw error
     }
-  }
-
-  private formatDateTime(date: Date): string {
-    const pad = (n: number) => n.toString().padStart(2, '0')
-
-    const YYYY = date.getFullYear()
-    const MM = pad(date.getMonth() + 1)
-    const DD = pad(date.getDate())
-    const hh = pad(date.getHours())
-    const mm = pad(date.getMinutes())
-
-    return `${DD}.${MM}.${YYYY} ${hh}:${mm}`
   }
 }
