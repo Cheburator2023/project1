@@ -1,5 +1,12 @@
 # Semantic Versioning Changelog
 
+# [1.44.0](https://git.sfera.inno.local:7999/SUMD/mrms-backend/compare/v1.43.0...v1.44.0) (2026-01-28)
+
+
+### Features
+
+* improve processing update date artefact ([2883703](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/28837034cbba6102a2741053e454af84bc6a69c1))
+
 # [1.43.0](https://git.sfera.inno.local:7999/SUMD/mrms-backend/compare/v1.42.3...v1.43.0) (2026-01-20)
 
 
