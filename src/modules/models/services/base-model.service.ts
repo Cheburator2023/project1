@@ -3,7 +3,7 @@ import { ModelEntity } from '../entities'
 import { UpdateModelDto } from '../dto'
 import { IModelService } from '../interfaces'
 import { BaseArtefactService } from 'src/modules/artefacts/services'
-import { formatDateTime } from 'src/system/common'
+import { formatDateTime } from '../utils/date.utils'
 
 export abstract class BaseModelService implements IModelService {
   protected abstract modelsTableName: string
