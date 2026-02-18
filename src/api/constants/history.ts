@@ -17,6 +17,7 @@ const TECH_LABELS_HISTORY_ONLY_IN_SUM_RM = [
   'model_data_control_date',
   'check_objects_count',
   'update_date',
+  'active_model',
 ]
 
 export { TECH_LABELS_HISTORY_ONLY_IN_SUM_RM }
