@@ -1,5 +1,12 @@
 # Semantic Versioning Changelog
 
+## [1.44.2](https://git.sfera.inno.local:7999/SUMD/mrms-backend/compare/v1.44.1...v1.44.2) (2026-02-18)
+
+
+### Bug Fixes
+
+* history fetching for active model artefact ([5d79570](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/5d795708d97546e6f5c79281eb57ba1aac05e80d))
+
 ## [1.44.1](https://git.sfera.inno.local:7999/SUMD/mrms-backend/compare/v1.44.0...v1.44.1) (2026-01-29)
 
 
