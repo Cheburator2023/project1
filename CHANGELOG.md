@@ -1,5 +1,12 @@
 # Semantic Versioning Changelog
 
+# [1.45.0](https://git.sfera.inno.local:7999/SUMD/mrms-backend/compare/v1.44.2...v1.45.0) (2026-03-04)
+
+
+### Features
+
+* update assignment contractor artefact processing ([82471b7](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/82471b784c44f403fff4942a0e89127db07fe13c))
+
 ## [1.44.2](https://git.sfera.inno.local:7999/SUMD/mrms-backend/compare/v1.44.1...v1.44.2) (2026-02-18)
 
 
