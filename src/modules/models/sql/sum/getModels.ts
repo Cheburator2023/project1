@@ -60,6 +60,7 @@ SELECT m_.model_id                                                              
        dm_.runtime_subsystem,
        dm_.buiseness_process_name,
        dm_.prom_datamart_name,
+       dm_.assignment_contractor,
        m_.model_status                                                                               AS camunda_model_status,
        m_.model_stage                                                                                AS camunda_model_stage,
        activeBpmnInstance.bpmn_instance_name                                                         AS model_status,
@@ -93,28 +94,8 @@ SELECT m_.model_id                                                              
         allocation_data.allocation_other_comment,
         
         -- Столбец business_customer
-        assignee_hist_data.business_customer AS business_customer,
-        
-        -- Столбец assignment_contractor
-        tasks_operations_logs_data.user_name AS assignment_contractor
+        assignee_hist_data.business_customer AS business_customer
 FROM models m_
-
-LEFT JOIN (
-    SELECT * FROM (
-        SELECT model_id,
-            user_name,
-            ROW_NUMBER() OVER (
-                PARTITION BY model_id, operation
-                ORDER BY
-                    create_date DESC
-                ) AS rn
-        FROM tasks_operations_logs
-        WHERE task_id = 'development_results_approving'
-        AND operation = 'complete'
-    ) AS dummy
-    WHERE rn = 1
-) AS tasks_operations_logs_data
-ON m_.model_id = tasks_operations_logs_data.model_id
 
 LEFT JOIN (
     SELECT 
@@ -362,6 +343,7 @@ ON m_.model_id = allocation_data.allocation_model_id
          LEFT JOIN (SELECT model_id,
                            MAX(CASE WHEN ARTEFACT_ID = 7 THEN ARTEFACT_STRING_VALUE ELSE NULL END)   AS DS_DEPARTMENT,
                            MAX(CASE WHEN ARTEFACT_ID = 72 THEN ARTEFACT_STRING_VALUE ELSE NULL END)  AS model_type,
+                           MAX(CASE WHEN ARTEFACT_ID = 687 THEN ARTEFACT_STRING_VALUE ELSE NULL END) AS assignment_contractor,
                            MAX(CASE WHEN ARTEFACT_ID = 786 THEN ARTEFACT_STRING_VALUE ELSE NULL END) AS implementation_validity,
                            MAX(CASE WHEN ARTEFACT_ID = 787 THEN ARTEFACT_STRING_VALUE ELSE NULL END) AS validity_approve,
                            MAX(CASE WHEN ARTEFACT_ID = 788 THEN ARTEFACT_STRING_VALUE ELSE NULL END) AS validity_approve_date,
@@ -409,7 +391,7 @@ ON m_.model_id = allocation_data.allocation_model_id
                            MAX(CASE WHEN ARTEFACT_ID = 240 THEN ARTEFACT_STRING_VALUE ELSE NULL END) AS prom_datamart_name
                      FROM artefact_realizations
                      WHERE effective_to = TO_TIMESTAMP('9999-12-31 23:59:59', 'YYYY-MM-DD HH24:MI:SS')
-                      AND artefact_id IN (7, 72, 786, 787, 788, 789, 33, 34, 59, 240,
+                      AND artefact_id IN (7, 72, 786, 787, 788, 789, 33, 34, 59, 240, 687,
                                           790, 781, 788, 871, 794, 795, 796, 797,
                                           123, 888, 803, 811, 812, 820, 821, 823, 839, 840, 873,
                                           867, 868, 869, 870, 898, 899, 900, 69, 67, 905, 914, 915, 916, 917, 920)
