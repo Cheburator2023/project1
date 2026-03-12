@@ -69,4 +69,11 @@ export class ArtefactService {
     )
     return await artefactService.getArtefactWithPermissions(user)
   }
+
+  async getBlockListByModel(modelId: string): Promise<{ data: string[] }> {
+    const artefactService = this.artefactServiceFactory.getService(
+      MODEL_SOURCES.SUM
+    )
+    return await artefactService.getBlockListByModel(modelId)
+  }
 }
