@@ -1243,4 +1243,8 @@ export abstract class BaseArtefactService implements IArtefactService {
 
     return artefact_string_value
   }
+
+  async getBlockListByModel(modelId: string): Promise<{ data: string[] }> {
+    return { data: [] }
+  }
 }
