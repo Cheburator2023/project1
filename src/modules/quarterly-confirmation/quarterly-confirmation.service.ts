@@ -1,0 +1,452 @@
+import { Injectable } from '@nestjs/common'
+import { MrmDatabaseService } from 'src/system/mrm-database/database.service'
+import { LoggerService } from 'src/system/logger/logger.service'
+import { canEditQuarter } from 'src/system/common/utils'
+import {
+  QUARTER_EDIT_PERIOD_MONTHS,
+  QUARTER_EDIT_PERIOD_DAYS
+} from 'src/system/common/constants'
+import { MODEL_STATUS } from 'src/system/common/constants/model-status'
+import { PimUsageService } from 'src/modules/pim-usage/pim-usage.service'
+import { UsageService } from 'src/modules/usage/usage.service'
+import { MODEL_SOURCES } from 'src/system/common/constants/models.constants'
+import {
+  QuarterInfoDto,
+  ConfirmationModelRow,
+  SaveQuarterlyConfirmationDto,
+  GetModelsQueryDto
+} from './dto/quarterly-confirmation.dto'
+
+@Injectable()
+export class QuarterlyConfirmationService {
+  constructor(
+    private readonly databaseService: MrmDatabaseService,
+    private readonly logger: LoggerService,
+    private readonly pimUsageService: PimUsageService,
+    private readonly usageService: UsageService
+  ) {}
+
+  getActiveQuarter(): QuarterInfoDto | null {
+    const now = new Date()
+    const currentYear = now.getFullYear()
+
+    const editableQuarters: {
+      quarter: number
+      year: number
+      daysLeft: number
+    }[] = []
+
+    for (let q = 1; q <= 4; q++) {
+      // Проверяем текущий год
+      if (canEditQuarter(q, currentYear)) {
+        const endOfQuarter = new Date(currentYear, q * 3, 0, 23, 59, 59, 999)
+        const gracePeriodEnd = this.addMonthsAndDays(
+          endOfQuarter,
+          QUARTER_EDIT_PERIOD_MONTHS,
+          QUARTER_EDIT_PERIOD_DAYS
+        )
+        const daysLeft = Math.ceil(
+          (gracePeriodEnd.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
+        )
+        editableQuarters.push({ quarter: q, year: currentYear, daysLeft })
+      }
+
+      // Проверяем предыдущий год (для Q4)
+      if (q === 4 && canEditQuarter(4, currentYear - 1)) {
+        const endOfQuarter = new Date(currentYear - 1, 12, 0, 23, 59, 59, 999)
+        const gracePeriodEnd = this.addMonthsAndDays(
+          endOfQuarter,
+          QUARTER_EDIT_PERIOD_MONTHS,
+          QUARTER_EDIT_PERIOD_DAYS
+        )
+        const daysLeft = Math.ceil(
+          (gracePeriodEnd.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
+        )
+        editableQuarters.push({
+          quarter: 4,
+          year: currentYear - 1,
+          daysLeft
+        })
+      }
+    }
+
+    if (editableQuarters.length === 0) {
+      this.logger.warn(
+        'No editable quarters found',
+        'НетДоступныхКварталов',
+        {}
+      )
+      return null
+    }
+
+    // Выбираем квартал с наименьшим количеством оставшихся дней
+    editableQuarters.sort((a, b) => a.daysLeft - b.daysLeft)
+    const activeQuarter = editableQuarters[0]
+
+    const startDate = new Date(
+      activeQuarter.year,
+      (activeQuarter.quarter - 1) * 3,
+      1
+    )
+    const endDate = new Date(activeQuarter.year, activeQuarter.quarter * 3, 0)
+    // Конец квартала + 1 месяц для ограничения выбора даты
+    const maxDate = new Date(
+      activeQuarter.year,
+      activeQuarter.quarter * 3 + 1,
+      0
+    )
+
+    return {
+      quarter: activeQuarter.quarter,
+      year: activeQuarter.year,
+      startDate: startDate.toISOString().split('T')[0],
+      endDate: endDate.toISOString().split('T')[0],
+      maxDate: maxDate.toISOString().split('T')[0]
+    }
+  }
+
+  async getModelsForConfirmation(
+    userFullName: string,
+    userDepartment: string,
+    filters?: GetModelsQueryDto
+  ): Promise<ConfirmationModelRow[]> {
+    const quarterInfo = this.getActiveQuarter()
+
+    if (!quarterInfo) {
+      return []
+    }
+
+    this.logger.info(
+      'Getting models for quarterly confirmation',
+      'ПолучениеМоделейДляПодтвержденияКвартала',
+      {
+        userFullName,
+        userDepartment,
+        quarter: quarterInfo.quarter,
+        year: quarterInfo.year
+      }
+    )
+
+    try {
+      // Строим динамический SQL запрос с фильтрами
+      const whereClauses = [
+        'm.business_customer_departament = :user_department',
+        'm.business_customer ILIKE :user_name_pattern',
+        "COALESCE(m.business_status, '') NOT IN (:status_archive, :status_creation_error)"
+      ]
+      const queryParams: any = {
+        user_department: userDepartment,
+        user_name_pattern: `%${userFullName}%`,
+        status_archive: MODEL_STATUS.ARCHIVE,
+        status_creation_error: MODEL_STATUS.CREATION_ERROR
+      }
+
+      // Добавляем текстовый поиск
+      if (filters?.search) {
+        whereClauses.push(
+          `(
+            m.model_id ILIKE :search
+            OR m.model_alias ILIKE :search
+            OR m.model_name ILIKE :search
+            OR m.model_name_dadm ILIKE :search
+          )`
+        )
+        queryParams.search = `%${filters.search}%`
+      }
+
+      // Добавляем фильтры по атрибутам
+      if (filters?.model_alias) {
+        whereClauses.push('m.model_alias ILIKE :model_alias')
+        queryParams.model_alias = `%${filters.model_alias}%`
+      }
+
+      if (filters?.model_name) {
+        whereClauses.push('m.model_name ILIKE :model_name')
+        queryParams.model_name = `%${filters.model_name}%`
+      }
+
+      if (filters?.model_name_dadm) {
+        whereClauses.push('m.model_name_dadm ILIKE :model_name_dadm')
+        queryParams.model_name_dadm = `%${filters.model_name_dadm}%`
+      }
+
+      if (filters?.business_customer) {
+        whereClauses.push('m.business_customer ILIKE :business_customer')
+        queryParams.business_customer = `%${filters.business_customer}%`
+      }
+
+      if (filters?.business_customer_departament) {
+        whereClauses.push(
+          'm.business_customer_departament ILIKE :business_customer_departament'
+        )
+        queryParams.business_customer_departament = `%${filters.business_customer_departament}%`
+      }
+
+      const sqlQuery = `
+        SELECT DISTINCT
+          m.model_id,
+          m.model_alias,
+          m.model_name,
+          m.model_name_dadm,
+          m.business_customer,
+          m.business_customer_departament
+        FROM models m
+        WHERE ${whereClauses.join(' AND ')}
+        ORDER BY m.model_id
+      `
+
+      const models = await this.databaseService.query(sqlQuery, queryParams)
+
+      if (models.length === 0) {
+        return []
+      }
+
+      const modelIds = models.map((m) => m.model_id)
+
+      // Получаем данные из ПИМ
+      const pimUsages = await this.pimUsageService.getPimUsageForModels(
+        modelIds,
+        quarterInfo.quarter,
+        quarterInfo.year
+      )
+      const pimUsageMap = new Map(pimUsages.map((p) => [p.model_id, p]))
+
+      // Получаем данные из предыдущего квартала
+      const prevQuarter =
+        quarterInfo.quarter === 1
+          ? { quarter: 4, year: quarterInfo.year - 1 }
+          : { quarter: quarterInfo.quarter - 1, year: quarterInfo.year }
+
+      const prevUsages: {
+        model_id: string
+        is_used: boolean
+        confirmation_date: string
+      }[] = await this.databaseService.query(
+        `
+          SELECT model_id, is_used, confirmation_date
+          FROM models_usage
+          WHERE model_id = ANY(:model_ids)
+            AND confirmation_quarter = :quarter
+            AND confirmation_year = :year
+          `,
+        {
+          model_ids: modelIds,
+          quarter: prevQuarter.quarter,
+          year: prevQuarter.year
+        }
+      )
+      const prevUsageMap = new Map(prevUsages.map((u) => [u.model_id, u]))
+
+      // Получаем текущие данные за активный квартал
+      const currentUsages: {
+        model_id: string
+        is_used: boolean
+        confirmation_date: string
+      }[] = await this.databaseService.query(
+        `
+          SELECT model_id, is_used, confirmation_date
+          FROM models_usage
+          WHERE model_id = ANY(:model_ids)
+            AND confirmation_quarter = :quarter
+            AND confirmation_year = :year
+          `,
+        {
+          model_ids: modelIds,
+          quarter: quarterInfo.quarter,
+          year: quarterInfo.year
+        }
+      )
+      const currentUsageMap = new Map(currentUsages.map((u) => [u.model_id, u]))
+
+      const today = new Date().toISOString().split('T')[0]
+
+      let results = models.map((model) => {
+        const currentUsage = currentUsageMap.get(model.model_id)
+        const pimUsage = pimUsageMap.get(model.model_id)
+        const prevUsage = prevUsageMap.get(model.model_id)
+
+        // Если уже есть данные за текущий квартал, используем их
+        if (currentUsage) {
+          let prefillSource: 'pim' | 'previous_quarter' | null = null
+          if (pimUsage) prefillSource = 'pim'
+          else if (prevUsage) prefillSource = 'previous_quarter'
+
+          return {
+            model_id: model.model_id,
+            model_alias: model.model_alias,
+            model_name: model.model_name,
+            model_name_dadm: model.model_name_dadm,
+            business_customer: model.business_customer,
+            business_customer_departament: model.business_customer_departament,
+            confirmation_date: currentUsage.confirmation_date
+              ? new Date(currentUsage.confirmation_date)
+                  .toISOString()
+                  .split('T')[0]
+              : today,
+            is_used: currentUsage.is_used,
+            prefill_source: prefillSource
+          }
+        }
+
+        // Приоритет предзаполнения: ПИМ > предыдущий квартал > пусто
+        if (pimUsage) {
+          return {
+            model_id: model.model_id,
+            model_alias: model.model_alias,
+            model_name: model.model_name,
+            model_name_dadm: model.model_name_dadm,
+            business_customer: model.business_customer,
+            business_customer_departament: model.business_customer_departament,
+            confirmation_date: today,
+            is_used: pimUsage.is_used,
+            prefill_source: 'pim' as const
+          }
+        }
+
+        if (prevUsage) {
+          return {
+            model_id: model.model_id,
+            model_alias: model.model_alias,
+            model_name: model.model_name,
+            model_name_dadm: model.model_name_dadm,
+            business_customer: model.business_customer,
+            business_customer_departament: model.business_customer_departament,
+            confirmation_date: today,
+            is_used: prevUsage.is_used,
+            prefill_source: 'previous_quarter' as const
+          }
+        }
+
+        return {
+          model_id: model.model_id,
+          model_alias: model.model_alias,
+          model_name: model.model_name,
+          model_name_dadm: model.model_name_dadm,
+          business_customer: model.business_customer,
+          business_customer_departament: model.business_customer_departament,
+          confirmation_date: today,
+          is_used: null,
+          prefill_source: null
+        }
+      })
+
+      // Применяем фильтры на стороне приложения для полей, которые не в models_registry
+      if (filters?.prefill_source) {
+        if (filters.prefill_source === 'none') {
+          results = results.filter((r) => r.prefill_source === null)
+        } else {
+          results = results.filter(
+            (r) => r.prefill_source === filters.prefill_source
+          )
+        }
+      }
+
+      if (filters?.is_used !== undefined) {
+        results = results.filter((r) => r.is_used === filters.is_used)
+      }
+
+      return results
+    } catch (error) {
+      this.logger.error(
+        'Error getting models for confirmation',
+        'ОшибкаПолученияМоделейДляПодтверждения',
+        error,
+        { userFullName, userDepartment }
+      )
+      throw error
+    }
+  }
+
+  async saveConfirmation(
+    data: SaveQuarterlyConfirmationDto,
+    creator: string
+  ): Promise<boolean> {
+    this.logger.info(
+      'Saving quarterly confirmation',
+      'СохранениеПодтвержденияКвартала',
+      {
+        quarter: data.quarter,
+        year: data.year,
+        modelsCount: data.models.length
+      }
+    )
+
+    try {
+      const modelsToSave = data.models.filter(
+        (m) => m.is_used !== null && m.is_used !== undefined
+      )
+
+      for (const model of modelsToSave) {
+        await this.usageService.updateUsage(
+          [
+            {
+              model_id: model.model_id,
+              artefact_tech_label: `usage_confirm_date_q${data.quarter}`,
+              artefact_string_value: model.confirmation_date
+                ? this.formatDateToDDMMYYYY(model.confirmation_date)
+                : this.formatDateToDDMMYYYY(
+                    new Date().toISOString().split('T')[0]
+                  ),
+              artefact_value_id: null,
+              creator
+            },
+            {
+              model_id: model.model_id,
+              artefact_tech_label: `usage_confirm_flag_q${data.quarter}`,
+              artefact_string_value: model.is_used ? 'Да' : 'Нет',
+              artefact_value_id: null,
+              creator
+            }
+          ],
+          MODEL_SOURCES.MRM
+        )
+      }
+
+      this.logger.info(
+        'Quarterly confirmation saved successfully',
+        'ПодтверждениеКварталаУспешноСохранено',
+        {
+          quarter: data.quarter,
+          year: data.year,
+          savedCount: modelsToSave.length
+        }
+      )
+
+      return true
+    } catch (error) {
+      this.logger.error(
+        'Error saving quarterly confirmation',
+        'ОшибкаСохраненияПодтвержденияКвартала',
+        error,
+        { quarter: data.quarter, year: data.year }
+      )
+      throw error
+    }
+  }
+
+  private formatDateToDDMMYYYY(dateStr: string): string {
+    const [year, month, day] = dateStr.split('-')
+    return `${day}.${month}.${year}`
+  }
+
+  private addMonthsAndDays(date: Date, months: number, days: number): Date {
+    const base = new Date(date.getTime())
+    const targetMonth = base.getMonth() + months
+    const targetYear = base.getFullYear() + Math.floor(targetMonth / 12)
+    const newMonth = targetMonth % 12
+    const currentDay = base.getDate()
+    const daysInTargetMonth = new Date(targetYear, newMonth + 1, 0).getDate()
+    const day = Math.min(currentDay, daysInTargetMonth)
+    const shiftedDate = new Date(
+      targetYear,
+      newMonth,
+      day,
+      base.getHours(),
+      base.getMinutes(),
+      base.getSeconds(),
+      base.getMilliseconds()
+    )
+    shiftedDate.setTime(shiftedDate.getTime() + days * 24 * 60 * 60 * 1000)
+    return shiftedDate
+  }
+}

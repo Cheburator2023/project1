@@ -22,11 +22,9 @@ export class BiDatamartSchedulerService
   )
   private readonly isEnabled: boolean
 
-  constructor(
-    private readonly biDatamartService: BiDatamartService
-  ) {
+  constructor(private readonly biDatamartService: BiDatamartService) {
     this.isEnabled = process.env.BI_DATAMART_ENABLED !== 'false'
-    
+
     this.logger.log(
       `🔧 BiDatamartSchedulerService constructor: BI_DATAMART_ENABLED=${process.env.BI_DATAMART_ENABLED}, isEnabled=${this.isEnabled}`
     )

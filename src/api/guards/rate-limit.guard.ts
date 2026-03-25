@@ -41,10 +41,11 @@ export class RateLimitGuard implements CanActivate {
   constructor(private readonly reflector: Reflector) {}
 
   canActivate(context: ExecutionContext): boolean {
-    const options = this.reflector.get<RateLimitOptions>(
-      RATE_LIMIT_OPTIONS,
-      context.getHandler()
-    ) || {}
+    const options =
+      this.reflector.get<RateLimitOptions>(
+        RATE_LIMIT_OPTIONS,
+        context.getHandler()
+      ) || {}
 
     const isPublic = this.reflector.get<boolean>(
       IS_PUBLIC_KEY,
@@ -97,7 +98,10 @@ export class RateLimitGuard implements CanActivate {
       return `auth_${methodName}_${ip}`
     }
 
-    if (className === 'JsonReportController' && methodName === 'getJsonReport') {
+    if (
+      className === 'JsonReportController' &&
+      methodName === 'getJsonReport'
+    ) {
       return 'json_report_global'
     }
 

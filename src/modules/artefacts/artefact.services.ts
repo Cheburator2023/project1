@@ -38,7 +38,10 @@ export class ArtefactService {
     const hasChanges = results.some(Boolean)
     if (hasChanges) {
       const modelsService = this.modelsServiceFactory.getService(source)
-      await modelsService.updateUpdateDate({ model_id: artefacts[0].model_id, creator: artefacts[0].creator  })
+      await modelsService.updateUpdateDate({
+        model_id: artefacts[0].model_id,
+        creator: artefacts[0].creator
+      })
     }
 
     // Force cache update to ensure fresh data is available immediately

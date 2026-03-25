@@ -495,7 +495,10 @@ export abstract class BaseArtefactService implements IArtefactService {
 
         if (allActiveRealizations && allActiveRealizations.length > 0) {
           for (const realization of allActiveRealizations) {
-            await this.setEffectiveToArtefactRealization(realization, isSelectType)
+            await this.setEffectiveToArtefactRealization(
+              realization,
+              isSelectType
+            )
           }
         }
       } else if (
@@ -859,7 +862,10 @@ export abstract class BaseArtefactService implements IArtefactService {
           : {}),
         ...(isSelectType
           ? {}
-          : { artefact_string_value: latestArtefactRealization.artefact_string_value })
+          : {
+              artefact_string_value:
+                latestArtefactRealization.artefact_string_value
+            })
       }
 
       await this.databaseService.query(

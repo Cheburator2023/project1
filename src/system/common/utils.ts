@@ -56,7 +56,9 @@ const parseDate = (dateInput: string | Date): Date | null => {
   let date: Date | null = null
 
   // Формат "2023-02-22 14:51:23+00:00" (дата с опциональным часовым поясом)
-  if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}([+-]\d{2}:\d{2})?$/.test(dateInput)) {
+  if (
+    /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}([+-]\d{2}:\d{2})?$/.test(dateInput)
+  ) {
     date = new Date(dateInput.replace(' ', 'T')) // Заменяем пробел на "T", чтобы сделать строку совместимой с ISO
   }
   // Формат "dd.mm.yyyy hh:mm"
