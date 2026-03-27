@@ -99,7 +99,7 @@ export class SumArtefactService
           const rolledBackIndex = completedTasksList.findIndex(
             (el) => el === operation.task_id
           )
-          if (rolledBackIndex > 0) {
+          if (rolledBackIndex >= 0) {
             completedTasksList = completedTasksList.slice(0, rolledBackIndex)
           }
         }

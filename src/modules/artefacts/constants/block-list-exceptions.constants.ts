@@ -1,5 +1,19 @@
 export const ALWAYS_ALLOWED_ARTEFACTS = [
-  'significance_validity'
+  'significance_validity',
+  'group_company',
+  'validation_result_approve_date',
+  'model_id',
+  'data_source_description',
+  'auto_validation_result',
+  'significance_validity',
+  'rating_system_name',
+  'responsible_for_significance_validity',
+  'validation_department',
+  'validation_period',
+  'plan_validation_type',
+  'model_changes_info',
+  'validation_result',
+  'psi_protocol'
 ]
 
 export const ALWAYS_ALLOWED_TASKS = [
