@@ -22,13 +22,17 @@ import {
 } from './sql/sum-rm'
 
 import {
-  LIFE_CYCLE_STAGES,
-  LIFE_CYCLE_STAGES_DESCRIPTION,
   MODEL_SOURCES,
   MODEL_STATUS,
   MODEL_DISPLAY_MODES,
   applyArtefactTypeOverrides
 } from 'src/system/common/constants'
+import {
+  isActiveModelForDisplay,
+  isArchivedModel,
+  isCreationErrorModel,
+  isPendingDeleteModel
+} from './utils/display-mode.utils'
 import {
   BUSINESS_CUSTOMER_DEPARTMENT_MAPPING,
   DEPARTMENT_TO_STREAM_MAPPING,
@@ -347,54 +351,27 @@ export class ModelsService {
     models: Model[],
     mode: string[] | null
   ): Model[] {
-    // Условие: если ничего не выбрано — возвращаем пустой список
     const selected = new Set(mode ?? [])
     if (selected.size === 0) return []
 
-    // Флаги выбранных режимов
     const showActive = selected.has(MODEL_DISPLAY_MODES.ACTIVE)
     const showArchive = selected.has(MODEL_DISPLAY_MODES.ARCHIVE)
     const showPendingDelete = selected.has(MODEL_DISPLAY_MODES.PENDING_DELETE)
     const showCreationError = selected.has(MODEL_DISPLAY_MODES.CREATION_ERROR)
 
     return models.filter((model) => {
-      const { model_source, business_status } = model
+      const isArchiveStatus = isArchivedModel(model)
+      const isPendingDeleteStatus = isPendingDeleteModel(model)
+      const isCreationErrorStatus = isCreationErrorModel(model)
+      const isActiveStatus = isActiveModelForDisplay(model)
 
-      // Источник истины: только business_status
-      const isArchiveStatus =
-        business_status === MODEL_STATUS.ARCHIVE ||
-        business_status === MODEL_STATUS.REMOVED_FROM_OPERATION
+      if (isCreationErrorStatus) return showCreationError
 
-      const isPendingDeleteStatus =
-        business_status === MODEL_STATUS.PENDING_DELETE
+      if (isPendingDeleteStatus) return showPendingDelete
 
-      const isCreationErrorStatus =
-        business_status === MODEL_STATUS.CREATION_ERROR
+      if (isArchiveStatus) return showArchive
 
-      const isActiveStatus =
-        business_status !== MODEL_STATUS.ARCHIVE &&
-        business_status !== MODEL_STATUS.REMOVED_FROM_OPERATION &&
-        business_status !== MODEL_STATUS.PENDING_DELETE &&
-        business_status !== MODEL_STATUS.CREATION_ERROR
-
-      // Мультиселект (OR): модель показываем, если попала хотя бы в один выбранный режим
-      if (showArchive && isArchiveStatus) return true
-
-      if (
-        showPendingDelete &&
-        model_source === MODEL_SOURCES.MRM &&
-        isPendingDeleteStatus
-      )
-        return true
-
-      if (
-        showCreationError &&
-        model_source === MODEL_SOURCES.MRM &&
-        isCreationErrorStatus
-      )
-        return true
-
-      if (showActive && isActiveStatus) return true
+      if (isActiveStatus) return showActive
 
       return false
     })
@@ -937,36 +914,10 @@ export class ModelsService {
             }
           }
 
-          if (artefactTechLabel === 'model_status') {
-            if (
-              Object.values(LIFE_CYCLE_STAGES).includes(value) ||
-              model.camunda_model_stage?.includes(
-                MODEL_STATUS.REMOVED_FROM_OPERATION
-              ) ||
-              model.camunda_model_status?.includes(MODEL_STATUS.ARCHIVE)
-            ) {
-              const businessStatus = model.business_status
-              const bpmnInstanceName = value
-
-              const modelStage = ModelsService.formatModelStatus(
-                businessStatus,
-                bpmnInstanceName,
-                model.camunda_model_stage,
-                model.camunda_model_status
-              )
-
-              model['model_status'] = modelStage
-            }
-
-            model['business_status_uncut'] = model.business_status
-            const modelStatus = ModelsService.formatModelBusinessStatus(
-              model.camunda_model_stage,
-              model.camunda_model_status || model.business_status
-            )
-            model['business_status'] = modelStatus
-          }
         }
       })
+
+      this.applyDisplayedDeleteStatus(model)
 
       return model
     })
@@ -989,144 +940,18 @@ export class ModelsService {
     return String(value)
   }
 
-  private static getLastActiveStatus = (activeStatuses) => {
-    const activeStatusesList = activeStatuses?.split(';')
-
-    if (activeStatusesList?.includes(MODEL_STATUS.REMOVED_FROM_OPERATION)) {
-      return MODEL_STATUS.REMOVED_FROM_OPERATION
-    }
-
-    if (activeStatusesList?.includes(MODEL_STATUS.DEVELOPED_NOT_IMPLEMENTED)) {
-      return MODEL_STATUS.DEVELOPED_NOT_IMPLEMENTED
-    }
-
-    return activeStatusesList?.[0]
-  }
-
-  private static determineLifecycleStage = (businessStatus, modelStatus) => {
-    switch (businessStatus) {
-      case LIFE_CYCLE_STAGES_DESCRIPTION[LIFE_CYCLE_STAGES.FAST_MODEL_PROCESS]:
-        if (
-          modelStatus === MODEL_STATUS.IMPLEMENTED_IN_PIM ||
-          modelStatus === MODEL_STATUS.VALIDATED_OUTSIDE_PIM ||
-          modelStatus === MODEL_STATUS.IMPLEMENTED_OUTSIDE_PIM
-        ) {
-          return LIFE_CYCLE_STAGES_DESCRIPTION[LIFE_CYCLE_STAGES.VALIDATION]
-        }
-        break
-
-      case LIFE_CYCLE_STAGES_DESCRIPTION[LIFE_CYCLE_STAGES.MODEL]:
-        if (
-          modelStatus === MODEL_STATUS.VALIDATED_OUTSIDE_PIM ||
-          modelStatus === MODEL_STATUS.IMPLEMENTED_OUTSIDE_PIM
-        ) {
-          return LIFE_CYCLE_STAGES_DESCRIPTION[LIFE_CYCLE_STAGES.VALIDATION]
-        }
-        break
-
-      case LIFE_CYCLE_STAGES_DESCRIPTION[LIFE_CYCLE_STAGES.INTEGRATION_MODEL]:
-        if (
-          modelStatus === MODEL_STATUS.VALIDATED_OUTSIDE_PIM ||
-          modelStatus === MODEL_STATUS.IMPLEMENTED_OUTSIDE_PIM
-        ) {
-          return LIFE_CYCLE_STAGES_DESCRIPTION[LIFE_CYCLE_STAGES.VALIDATION]
-        }
-        break
-
-      case LIFE_CYCLE_STAGES_DESCRIPTION[
-        LIFE_CYCLE_STAGES.TEST_PREPROD_TRANSFER_PROD
-      ]:
-        if (
-          modelStatus === MODEL_STATUS.IMPLEMENTED_IN_PIM ||
-          modelStatus === MODEL_STATUS.VALIDATED_IN_PIM
-        ) {
-          return LIFE_CYCLE_STAGES_DESCRIPTION[LIFE_CYCLE_STAGES.VALIDATION]
-        }
-        break
-
-      default:
-        return businessStatus
-    }
-
-    return businessStatus
-  }
-
-  private static formatModelStatus(
-    status,
-    bpmn_instance_name,
-    camunda_model_stage: string | null,
-    camunda_model_status: string | null
-  ) {
-    if (bpmn_instance_name === null) return null
-
-    const lastActiveStatus = ModelsService.getLastActiveStatus(
-      status || camunda_model_status
+  private isMrmDeleteStatusForDisplay(deleteStatus?: string | null): boolean {
+    return (
+      deleteStatus === MODEL_STATUS.PENDING_DELETE ||
+      deleteStatus === MODEL_STATUS.CREATION_ERROR
     )
-
-    const stageIncludesRemoval = camunda_model_stage
-      ?.split(';')
-      .map((s) => s.trim())
-      .includes(LIFE_CYCLE_STAGES_DESCRIPTION[LIFE_CYCLE_STAGES.REMOVAL])
-
-    if (
-      camunda_model_status?.includes(MODEL_STATUS.ARCHIVE) ||
-      stageIncludesRemoval
-    ) {
-      if (
-        lastActiveStatus === MODEL_STATUS.DEVELOPED_NOT_IMPLEMENTED ||
-        lastActiveStatus === MODEL_STATUS.INEFFECTIVE_FOR_BUSINESS
-      ) {
-        return LIFE_CYCLE_STAGES_DESCRIPTION[
-          LIFE_CYCLE_STAGES.DEVELOPED_NOT_IMPLEMENTED
-        ]
-      } else {
-        return LIFE_CYCLE_STAGES_DESCRIPTION[LIFE_CYCLE_STAGES.REMOVAL]
-      }
-    }
-
-    let currentBusinessStatus =
-      LIFE_CYCLE_STAGES_DESCRIPTION?.[bpmn_instance_name.trim()]
-
-    currentBusinessStatus = ModelsService.determineLifecycleStage(
-      currentBusinessStatus,
-      lastActiveStatus
-    )
-
-    // фикс "транзита состояния модели"
-    if (
-      bpmn_instance_name === LIFE_CYCLE_STAGES.MODEL_STATE_TRANSITION &&
-      (camunda_model_status || camunda_model_stage)
-    ) {
-      currentBusinessStatus = camunda_model_stage
-    }
-
-    switch (lastActiveStatus) {
-      case MODEL_STATUS.DEVELOPED_NOT_IMPLEMENTED:
-        return lastActiveStatus
-      case MODEL_STATUS.REMOVED_FROM_OPERATION:
-        return lastActiveStatus
-      case MODEL_STATUS.CREATION_ERROR:
-        return null
-      default:
-        return currentBusinessStatus
-    }
   }
 
-  private static formatModelBusinessStatus(
-    stage: string | null,
-    status: string | null
-  ) {
-    const lastActiveStatus = ModelsService.getLastActiveStatus(status || '')
+  private applyDisplayedDeleteStatus(model: Model): void {
+    if (model.model_source !== MODEL_SOURCES.MRM) return
+    if (!this.isMrmDeleteStatusForDisplay(model.delete_status)) return
 
-    if (!stage) return lastActiveStatus
-
-    const stageList = stage.split(';').map((s) => s.trim())
-
-    // if (stageList.includes(MODEL_STATUS.REMOVED_FROM_OPERATION)) {
-    //   return MODEL_STATUS.ARCHIVE
-    // }
-
-    return lastActiveStatus
+    model.model_status = model.delete_status
   }
 
   private groupResultsByModelIdAndSource(

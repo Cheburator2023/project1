@@ -7,7 +7,7 @@ export class DistributionByLifecycleStageMetric extends IndependentMetric<Distri
 
   calculate(): DistributionByLifecycleStageModelsMetricResult {
     this.filteredModels = []
-    // Use a Map to dynamically count occurrences of each model_status
+    // Use a Map to dynamically count occurrences of each lifecycle stage.
     this.lifecycleStages = new Map<string, number>()
     const filteredModels = this.filterModels(
       this.models,
@@ -15,10 +15,10 @@ export class DistributionByLifecycleStageMetric extends IndependentMetric<Distri
       this.endDate
     )
 
-    // Iterate through all models to count model_status occurrences
+    // Iterate through all models to count lifecycle stage occurrences.
     filteredModels.forEach((model) => {
-      const stage = model.model_status
-      const status = model.business_status
+      const stage = model.model_stage
+      const status = model.model_status
 
       if (!stage) {
         return
@@ -73,8 +73,8 @@ export class DistributionByLifecycleStageMetric extends IndependentMetric<Distri
   public getFilteredRowData() {
     return this.filteredModels.map((model) => ({
       system_model_id: model.system_model_id,
-      status: model.business_status,
-      stage: model.model_status,
+      status: model.model_status,
+      stage: model.model_stage,
       normalized_stage: model.calculated_status
     }))
   }

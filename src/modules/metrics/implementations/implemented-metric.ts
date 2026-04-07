@@ -83,9 +83,8 @@ export class ImplementedMetric extends IndependentMetric<MetricResult> {
   public getFilteredRowData() {
     return this.filteredModels.map((model) => ({
       system_model_id: model.system_model_id,
-      status: model.business_status,
-      stage: model.model_status,
-      status_uncut: model.business_status_uncut
+      status: model.model_status,
+      stage: model.model_stage
     }))
   }
 
@@ -115,8 +114,8 @@ export class ImplementedMetric extends IndependentMetric<MetricResult> {
     result.push(
       ...currentRangeModels.map((model) => ({
         system_model_id: model.system_model_id,
-        status: model.business_status,
-        stage: model.model_status,
+        status: model.model_status,
+        stage: model.model_stage,
         date_of_introduction_into_operation:
           model.date_of_introduction_into_operation,
         period: 'current'
@@ -127,8 +126,8 @@ export class ImplementedMetric extends IndependentMetric<MetricResult> {
     result.push(
       ...deltaRangeModels.map((model) => ({
         system_model_id: model.system_model_id,
-        status: model.business_status,
-        stage: model.model_status,
+        status: model.model_status,
+        stage: model.model_stage,
         date_of_introduction_into_operation:
           model.date_of_introduction_into_operation,
         period: 'past'
@@ -178,10 +177,10 @@ export class ImplementedMetric extends IndependentMetric<MetricResult> {
      * «Модель внедряется вне ПИМ» ИЛИ «Разработана, внедрена вне ПИМ» ИЛИ «Внедрена вне ПИМ»
      */
     let result = false
-    const business_status_array = model.business_status_uncut
-      ? model.business_status_uncut.split(';')
+    const modelStatusArray = model.model_status
+      ? model.model_status.split(';')
       : []
-    business_status_array.forEach((statusItem) => {
+    modelStatusArray.forEach((statusItem) => {
       result =
         result ||
         [
@@ -201,17 +200,19 @@ export class ImplementedMetric extends IndependentMetric<MetricResult> {
      * или «Внедрена в ПИМ»))
      */
     if (
-      model.model_status !==
-      LIFE_CYCLE_STAGES_DESCRIPTION[LIFE_CYCLE_STAGES.VALIDATION]
+      !this.hasModelStage(
+        model,
+        LIFE_CYCLE_STAGES_DESCRIPTION[LIFE_CYCLE_STAGES.VALIDATION]
+      )
     ) {
       return false
     }
 
     let result = false
-    const business_status_array = model.business_status
-      ? model.business_status.split(';')
+    const modelStatusArray = model.model_status
+      ? model.model_status.split(';')
       : []
-    business_status_array.forEach((statusItem) => {
+    modelStatusArray.forEach((statusItem) => {
       result =
         result ||
         [
@@ -233,17 +234,19 @@ export class ImplementedMetric extends IndependentMetric<MetricResult> {
      * эксплуатации» или «Архив»))
      */
     if (
-      model.model_status !==
-      LIFE_CYCLE_STAGES_DESCRIPTION[LIFE_CYCLE_STAGES.REMOVAL]
+      !this.hasModelStage(
+        model,
+        LIFE_CYCLE_STAGES_DESCRIPTION[LIFE_CYCLE_STAGES.REMOVAL]
+      )
     ) {
       return false
     }
 
     let result = false
-    const business_status_array = model.business_status
-      ? model.business_status.split(';')
+    const modelStatusArray = model.model_status
+      ? model.model_status.split(';')
       : []
-    business_status_array.forEach((statusItem) => {
+    modelStatusArray.forEach((statusItem) => {
       result =
         result ||
         [
@@ -257,5 +260,14 @@ export class ImplementedMetric extends IndependentMetric<MetricResult> {
     })
 
     return result
+  }
+
+  private hasModelStage(model, stage: string): boolean {
+    return typeof model.model_stage === 'string'
+      ? model.model_stage
+          .split(';')
+          .map((stageItem) => stageItem.trim())
+          .includes(stage)
+      : false
   }
 }

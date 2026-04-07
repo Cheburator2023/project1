@@ -3,7 +3,10 @@ import { ModelsService } from 'src/modules/models/models.service'
 import { Model as AppModel } from 'src/modules/models/interfaces'
 import { Task } from 'src/modules/tasks/interfaces'
 import { UsersTasksService } from 'src/modules/tasks/services/users-tasks.service'
-import { MODEL_STATUS } from 'src/system/common/constants'
+import {
+  isCreationErrorModel,
+  isPendingDeleteModel
+} from 'src/modules/models/utils/display-mode.utils'
 import {
   BiDatamartService,
   TasksDatamartService
@@ -140,9 +143,7 @@ export class DataAggregator {
 
   private filterModelsForMetrics(models: AppModel[]): AppModel[] {
     return models.filter(
-      (model) =>
-        model.business_status !== MODEL_STATUS.CREATION_ERROR &&
-        model.business_status !== MODEL_STATUS.PENDING_DELETE
+      (model) => !isCreationErrorModel(model) && !isPendingDeleteModel(model)
     )
   }
 }

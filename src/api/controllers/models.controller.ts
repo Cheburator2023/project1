@@ -24,8 +24,12 @@ import {
   ModelArtefactHistoryDto
 } from '../dto/index.dto'
 import { MODEL_DISPLAY_MODES } from 'src/system/common/constants/base.constants'
-import { MODEL_STATUS } from 'src/system/common/constants/model-status'
-import { MODEL_SOURCES } from 'src/system/common/constants/models.constants'
+import {
+  isActiveModelForDisplay,
+  isArchivedModel,
+  isCreationErrorModel,
+  isPendingDeleteModel
+} from 'src/modules/models/utils/display-mode.utils'
 
 @ApiTags('Модели')
 @Controller('models')
@@ -73,50 +77,26 @@ export class ModelsController {
       )
 
       filteredModels = filteredModels.filter((model) => {
-        const { model_source, models_is_active_flg, business_status } = model
+        const isArchive = isArchivedModel(model)
+        const isCreationError = isCreationErrorModel(model)
+        const isPendingDelete = isPendingDeleteModel(model)
 
-        const isArchive =
-          models_is_active_flg === '0' ||
-          business_status === MODEL_STATUS.ARCHIVE
-
-        const isCreationError = business_status === MODEL_STATUS.CREATION_ERROR
-        const isPendingDelete = business_status === MODEL_STATUS.PENDING_DELETE
-
-        // Проверяем соответствие модели запрошенным режимам
-        let matchesRequestedModes = false
-
-        // Проверка архивного режима
-        if (isArchiveMode && model_source === MODEL_SOURCES.SUM && isArchive) {
-          matchesRequestedModes = true
+        // Спец-режимы взаимоисключающие: если модель в "Ошибка заведения"
+        // или "Ожидает удаления", она показывается только при выборе
+        // соответствующего режима.
+        if (isCreationError) {
+          return isCreationErrorMode
         }
 
-        // Проверка режима ошибки создания
-        if (
-          isCreationErrorMode &&
-          model_source === MODEL_SOURCES.MRM &&
-          isCreationError
-        ) {
-          matchesRequestedModes = true
+        if (isPendingDelete) {
+          return isPendingDeleteMode
         }
 
-        // Проверка режима ожидания удаления
-        if (
-          isPendingDeleteMode &&
-          model_source === MODEL_SOURCES.MRM &&
-          isPendingDelete
-        ) {
-          matchesRequestedModes = true
+        if (isArchive) {
+          return isArchiveMode
         }
 
-        // Если не запрошены специальные режимы, показываем активные модели
-        if (!isArchiveMode && !isCreationErrorMode && !isPendingDeleteMode) {
-          const isActive =
-            model_source === MODEL_SOURCES.SUM ? !isArchive : true
-          const isValidStatus = !isCreationError && !isPendingDelete
-          matchesRequestedModes = isActive && isValidStatus
-        }
-
-        return matchesRequestedModes
+        return isActiveModelForDisplay(model)
       })
     }
 
