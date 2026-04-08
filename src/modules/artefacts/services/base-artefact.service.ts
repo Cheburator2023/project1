@@ -103,7 +103,11 @@ export abstract class BaseArtefactService implements IArtefactService {
       >()
 
       for (const row of roles) {
-        const modelSource = row.model_source as 'sum' | 'sum_rm'
+        const rawModelSource = String(row.model_source || '').toLowerCase()
+        const modelSource =
+          rawModelSource === 'sum-rm' || rawModelSource === 'sum_rm' || rawModelSource === 'rm'
+            ? 'sum_rm'
+            : 'sum'
         if (!artefactRolesMap.has(row.artefact_id)) {
           artefactRolesMap.set(row.artefact_id, { sum: [], sum_rm: [] })
         }
@@ -1036,7 +1040,7 @@ export abstract class BaseArtefactService implements IArtefactService {
           MAX(EFFECTIVE_FROM) AT TIME ZONE 'UTC' AT TIME ZONE 'Europe/Moscow',
           'YYYY-MM-DD HH24:MI:SS'
         ) AS update_date
-        FROM artefact_realizations
+        FROM ${this.artefactRealizationsTableName}
         WHERE model_id = :model_id
         `,
         { model_id }
@@ -1066,7 +1070,7 @@ export abstract class BaseArtefactService implements IArtefactService {
   }
 
   canEditArtefact(artefact: ArtefactEntity): boolean {
-    const canEdit = false
+    const canEdit = artefact.is_edit_flg !== '0'
 
     this.logger.info(
       'Checking if artefact can be edited',
