@@ -13,7 +13,8 @@ export const ALWAYS_ALLOWED_ARTEFACTS = [
   'plan_validation_type',
   'model_changes_info',
   'validation_result',
-  'psi_protocol'
+  'psi_protocol',
+  'implementation_segment'
 ]
 
 export const ALWAYS_ALLOWED_TASKS = [
