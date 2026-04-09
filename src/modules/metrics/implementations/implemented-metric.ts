@@ -1,11 +1,10 @@
-import {
-  LIFE_CYCLE_STAGES,
-  LIFE_CYCLE_STAGES_DESCRIPTION
-} from 'src/system/common/constants'
 import { IndependentMetric } from '../base'
 import { MetricResult } from '../interfaces'
 
 export class ImplementedMetric extends IndependentMetric<MetricResult> {
+  private readonly implementedInPimStatus = 'Внедрена в ПИМ'
+  private readonly archiveStatus = 'Архив'
+
   private filteredModels: any[] = []
 
   calculate() {
@@ -69,9 +68,7 @@ export class ImplementedMetric extends IndependentMetric<MetricResult> {
        */
       if (
         this.isWithinDateRange(releaseDate, startDate, endDate) &&
-        this.checkNotOutsidePim(model) &&
-        (this.checkImplementedStatuses(model) ||
-          this.checkRemovedStatuses(model))
+        this.hasImplementedInPimStatus(model)
       ) {
         return true
       }
@@ -84,7 +81,10 @@ export class ImplementedMetric extends IndependentMetric<MetricResult> {
     return this.filteredModels.map((model) => ({
       system_model_id: model.system_model_id,
       status: model.model_status,
-      stage: model.model_stage
+      stage: model.model_stage,
+      status_history: this.formatStatusHistory(model),
+      date_of_introduction_into_operation:
+        model.date_of_introduction_into_operation
     }))
   }
 
@@ -116,6 +116,7 @@ export class ImplementedMetric extends IndependentMetric<MetricResult> {
         system_model_id: model.system_model_id,
         status: model.model_status,
         stage: model.model_stage,
+        status_history: this.formatStatusHistory(model),
         date_of_introduction_into_operation:
           model.date_of_introduction_into_operation,
         period: 'current'
@@ -128,6 +129,7 @@ export class ImplementedMetric extends IndependentMetric<MetricResult> {
         system_model_id: model.system_model_id,
         status: model.model_status,
         stage: model.model_stage,
+        status_history: this.formatStatusHistory(model),
         date_of_introduction_into_operation:
           model.date_of_introduction_into_operation,
         period: 'past'
@@ -160,9 +162,7 @@ export class ImplementedMetric extends IndependentMetric<MetricResult> {
        */
       if (
         this.isWithinDateRange(releaseDate, actualStartDate, actualEndDate) &&
-        this.checkNotOutsidePim(model) &&
-        (this.checkImplementedStatuses(model) ||
-          this.checkRemovedStatuses(model))
+        this.hasImplementedInPimStatus(model)
       ) {
         return true
       }
@@ -171,103 +171,56 @@ export class ImplementedMetric extends IndependentMetric<MetricResult> {
     })
   }
 
-  private checkNotOutsidePim(model) {
-    /**
-     * Исключаем модели со статусом "вне ПИМ":
-     * «Модель внедряется вне ПИМ» ИЛИ «Разработана, внедрена вне ПИМ» ИЛИ «Внедрена вне ПИМ»
-     */
-    let result = false
-    const modelStatusArray = model.model_status
-      ? model.model_status.split(';')
-      : []
-    modelStatusArray.forEach((statusItem) => {
-      result =
-        result ||
-        [
-          'Модель внедряется вне ПИМ',
-          'Разработана, внедрена вне ПИМ',
-          'Внедрена вне ПИМ'
-        ].includes(statusItem)
-    })
+  private hasImplementedInPimStatus(model): boolean {
+    const currentStatus = typeof model.model_status === 'string'
+      ? model.model_status.trim()
+      : ''
 
-    return !result
-  }
+    if (currentStatus === this.implementedInPimStatus) {
+      return true
+    }
 
-  private checkImplementedStatuses(model) {
-    /**
-     * ((Этап ЖЦМ равен значению «Внедрена») И (Статус модели равен одному из значений: «Модель была
-     * внедрена в ПИМ (старая модель)» или «Модель внедряется в ПИМ» или «Разработана, внедрена в ПИМ»
-     * или «Внедрена в ПИМ»))
-     */
-    if (
-      !this.hasModelStage(
-        model,
-        LIFE_CYCLE_STAGES_DESCRIPTION[LIFE_CYCLE_STAGES.VALIDATION]
-      )
-    ) {
+    if (currentStatus !== this.archiveStatus) {
       return false
     }
 
-    let result = false
-    const modelStatusArray = model.model_status
-      ? model.model_status.split(';')
-      : []
-    modelStatusArray.forEach((statusItem) => {
-      result =
-        result ||
-        [
-          'Модель была внедрена в ПИМ (старая модель)',
-          'Модель внедряется в ПИМ',
-          'Разработана, внедрена в ПИМ',
-          'Внедрена в ПИМ'
-        ].includes(statusItem)
-    })
-
-    return result
+    return this.getStatusHistory(model).some(
+      (historyItem) => this.getStatusHistoryName(historyItem) === this.implementedInPimStatus
+    )
   }
 
-  private checkRemovedStatuses(model) {
-    /**
-     * ((Этап ЖЦМ равен значению «Вывод модели из эксплуатации») И (Статус
-     * модели равен одному из значений: «Модель была внедрена в ПИМ (старая модель)» или «Модель
-     * внедряется в ПИМ» или «Разработана, внедрена в ПИМ» или «Внедрена в ПИМ» или «Вывод модели из
-     * эксплуатации» или «Архив»))
-     */
-    if (
-      !this.hasModelStage(
-        model,
-        LIFE_CYCLE_STAGES_DESCRIPTION[LIFE_CYCLE_STAGES.REMOVAL]
-      )
-    ) {
-      return false
+  private getStatusHistory(model): any[] {
+    const history = model.model_status_history ?? model.status_history
+
+    if (Array.isArray(history)) {
+      return history
     }
 
-    let result = false
-    const modelStatusArray = model.model_status
-      ? model.model_status.split(';')
-      : []
-    modelStatusArray.forEach((statusItem) => {
-      result =
-        result ||
-        [
-          'Модель была внедрена в ПИМ (старая модель)',
-          'Модель внедряется в ПИМ',
-          'Разработана, внедрена в ПИМ',
-          'Внедрена в ПИМ',
-          'Вывод модели из эксплуатации',
-          'Архив'
-        ].includes(statusItem)
-    })
+    if (typeof history !== 'string') {
+      return []
+    }
 
-    return result
+    try {
+      const parsed = JSON.parse(history)
+      return Array.isArray(parsed) ? parsed : []
+    } catch {
+      return []
+    }
   }
 
-  private hasModelStage(model, stage: string): boolean {
-    return typeof model.model_stage === 'string'
-      ? model.model_stage
-          .split(';')
-          .map((stageItem) => stageItem.trim())
-          .includes(stage)
-      : false
+  private getStatusHistoryName(historyItem): string {
+    return historyItem?.status ?? historyItem?.status_name ?? ''
+  }
+
+  private formatStatusHistory(model): string {
+    return this.getStatusHistory(model)
+      .map((historyItem) => {
+        const status = this.getStatusHistoryName(historyItem)
+        const effectiveFrom = historyItem?.effective_from ?? ''
+
+        return effectiveFrom ? `${status} (${effectiveFrom})` : status
+      })
+      .filter(Boolean)
+      .join('; ')
   }
 }

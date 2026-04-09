@@ -4,7 +4,12 @@ import {
   Inject,
   forwardRef
 } from '@nestjs/common'
-import { MrmModelService, SumModelService } from './services'
+import {
+  ModelDisplayModeService,
+  ModelVisibilityService,
+  MrmModelService,
+  SumModelService
+} from './services'
 import { AllocationService } from 'src/modules/allocation/allocation.service'
 import { UsageService } from 'src/modules/usage/usage.service'
 import { ArtefactService } from 'src/modules/artefacts/artefact.services'
@@ -27,12 +32,6 @@ import {
   MODEL_DISPLAY_MODES,
   applyArtefactTypeOverrides
 } from 'src/system/common/constants'
-import {
-  isActiveModelForDisplay,
-  isArchivedModel,
-  isCreationErrorModel,
-  isPendingDeleteModel
-} from './utils/display-mode.utils'
 import {
   BUSINESS_CUSTOMER_DEPARTMENT_MAPPING,
   DEPARTMENT_TO_STREAM_MAPPING,
@@ -83,6 +82,8 @@ export class ModelsService {
     private readonly artefactService: ArtefactService,
     private readonly allocationService: AllocationService,
     private readonly usageService: UsageService,
+    private readonly modelDisplayModeService: ModelDisplayModeService,
+    private readonly modelVisibilityService: ModelVisibilityService,
     private readonly sumDatabaseService: SumDatabaseService,
     private readonly mrmDatabaseService: MrmDatabaseService,
     @Inject(forwardRef(() => ModelsCacheService))
@@ -108,10 +109,14 @@ export class ModelsService {
       rawResults.map((model) => ({ ...model }))
     )
 
+    const catalogModels = this.modelVisibilityService.filterCatalogModels(
+      resultsWithFormatting
+    )
+
     // 3. Фильтрация по режиму эксплуатации (если не отключена)
     const filteredByMode = ignoreModeFilter
-      ? resultsWithFormatting
-      : this.filterModelsByDisplayMode(resultsWithFormatting, mode)
+      ? catalogModels
+      : this.modelDisplayModeService.filterModels(catalogModels, mode)
 
     // 4. Фильтрация по группам пользователя
     const filteredByGroups = groups?.length
@@ -142,9 +147,18 @@ export class ModelsService {
       filteredSecondDateResults
     )
 
+    const firstDateCatalogModels =
+      this.modelVisibilityService.filterCatalogModels(
+        formattedFirstDateResults
+      )
+    const secondDateCatalogModels =
+      this.modelVisibilityService.filterCatalogModels(
+        formattedSecondDateResults
+      )
+
     const groupedResults = this.groupResultsByModelIdAndSource(
-      formattedFirstDateResults,
-      formattedSecondDateResults
+      firstDateCatalogModels,
+      secondDateCatalogModels
     )
 
     return {
@@ -345,36 +359,6 @@ export class ModelsService {
     )
 
     return newModel
-  }
-
-  private filterModelsByDisplayMode(
-    models: Model[],
-    mode: string[] | null
-  ): Model[] {
-    const selected = new Set(mode ?? [])
-    if (selected.size === 0) return []
-
-    const showActive = selected.has(MODEL_DISPLAY_MODES.ACTIVE)
-    const showArchive = selected.has(MODEL_DISPLAY_MODES.ARCHIVE)
-    const showPendingDelete = selected.has(MODEL_DISPLAY_MODES.PENDING_DELETE)
-    const showCreationError = selected.has(MODEL_DISPLAY_MODES.CREATION_ERROR)
-
-    return models.filter((model) => {
-      const isArchiveStatus = isArchivedModel(model)
-      const isPendingDeleteStatus = isPendingDeleteModel(model)
-      const isCreationErrorStatus = isCreationErrorModel(model)
-      const isActiveStatus = isActiveModelForDisplay(model)
-
-      if (isCreationErrorStatus) return showCreationError
-
-      if (isPendingDeleteStatus) return showPendingDelete
-
-      if (isArchiveStatus) return showArchive
-
-      if (isActiveStatus) return showActive
-
-      return false
-    })
   }
 
   // Фильтрация моделей в зависимости от групп пользователя

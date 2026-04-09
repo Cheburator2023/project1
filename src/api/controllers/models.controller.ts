@@ -13,6 +13,7 @@ import {
 import { ApiTags, ApiOperation, ApiResponse, ApiBody } from '@nestjs/swagger'
 import { ModelsService } from 'src/modules/models/models.service'
 import { ModelsCacheService } from 'src/modules/models/models-cache.service'
+import { ModelDisplayModeService } from 'src/modules/models/services'
 import { ApiService } from '../api.service'
 import { User } from 'src/decorators'
 import {
@@ -23,19 +24,13 @@ import {
   ModelsUpdateDto,
   ModelArtefactHistoryDto
 } from '../dto/index.dto'
-import { MODEL_DISPLAY_MODES } from 'src/system/common/constants/base.constants'
-import {
-  isActiveModelForDisplay,
-  isArchivedModel,
-  isCreationErrorModel,
-  isPendingDeleteModel
-} from 'src/modules/models/utils/display-mode.utils'
 
 @ApiTags('Модели')
 @Controller('models')
 export class ModelsController {
   constructor(
     private readonly modelsService: ModelsService,
+    private readonly modelDisplayModeService: ModelDisplayModeService,
     private readonly modelsCacheService: ModelsCacheService,
     private readonly apiService: ApiService
   ) {}
@@ -67,37 +62,10 @@ export class ModelsController {
 
     // Фильтрация по режиму
     if (query.mode && query.mode.length > 0) {
-      const activeModes = new Set(query.mode)
-      const isArchiveMode = activeModes.has(MODEL_DISPLAY_MODES.ARCHIVE)
-      const isCreationErrorMode = activeModes.has(
-        MODEL_DISPLAY_MODES.CREATION_ERROR
+      filteredModels = this.modelDisplayModeService.filterModels(
+        filteredModels,
+        query.mode
       )
-      const isPendingDeleteMode = activeModes.has(
-        MODEL_DISPLAY_MODES.PENDING_DELETE
-      )
-
-      filteredModels = filteredModels.filter((model) => {
-        const isArchive = isArchivedModel(model)
-        const isCreationError = isCreationErrorModel(model)
-        const isPendingDelete = isPendingDeleteModel(model)
-
-        // Спец-режимы взаимоисключающие: если модель в "Ошибка заведения"
-        // или "Ожидает удаления", она показывается только при выборе
-        // соответствующего режима.
-        if (isCreationError) {
-          return isCreationErrorMode
-        }
-
-        if (isPendingDelete) {
-          return isPendingDeleteMode
-        }
-
-        if (isArchive) {
-          return isArchiveMode
-        }
-
-        return isActiveModelForDisplay(model)
-      })
     }
 
     // Фильтрация по группам пользователя
