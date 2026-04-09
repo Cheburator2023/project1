@@ -3,7 +3,7 @@ LEFT JOIN (
     SELECT
         model_id,
         ARRAY_TO_STRING(ARRAY_AGG(stage ORDER BY effective_from DESC), ';') AS active_stage
-    FROM sumd.model_stage
+    FROM model_stage
     WHERE effective_to = TO_TIMESTAMP('9999-12-31 23:59:59', 'YYYY-MM-DD HH24:MI:SS')
     GROUP BY model_id
 ) AS model_stage_hist
@@ -21,7 +21,7 @@ LEFT JOIN (
                 'effective_to', effective_to
             ) ORDER BY effective_from DESC
         ) AS history
-    FROM sumd.model_stage
+    FROM model_stage
     GROUP BY model_id
 ) AS model_stage_history
   ON m_.model_id = model_stage_history.model_id
