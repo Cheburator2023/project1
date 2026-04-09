@@ -1,11 +1,4 @@
--- Приведение матрицы редактирования атрибутов к фактическим требованиям из ручной проверки.
--- Контур: SUM / RM(sum_rm), роли: business_customer, ds_lead, validator_lead.
--- Стенд sumd: схема МРМ = mrms (см. RM_PG_SCHEMA в .env.sumd).
---
--- Перед запуском:
---   SET search_path TO mrms, public;
--- Либо префиксы: mrms.artefacts, mrms.roles, mrms.artefact_source_roles.
---
+
 -- Проверка чисел JOIN без INSERT: fix_edit_permissions_matrix_2026_04_08_verify_counts.sql
 --
 -- Без временных таблиц — чтобы SQL-валидаторы/линтеры не ругались на «table not found».
@@ -144,3 +137,105 @@ FROM (
 JOIN artefacts AS a ON a.artefact_label = am.artefact_label
 JOIN roles AS r ON r.role_name = am.role_name
 ON CONFLICT (artefact_id, role_id, model_source) DO NOTHING;
+
+-- ------------------------------------------------------------------
+-- Hotfix: guarantee rm/sum-rm deny for business customer epic fields.
+-- Context: some stands may keep stale rows with is_editable=1 for rm.
+-- This block is idempotent and safe for repeated runs.
+-- ------------------------------------------------------------------
+WITH target_fields AS (
+  SELECT unnest(
+    ARRAY[
+      'model_epic_04',
+      'model_epic_04_date',
+      'model_epic_05',
+      'model_epic_05a',
+      'model_epic_05_date',
+      'model_epic_07',
+      'model_epic_07_date',
+      'release',
+      'model_epic_09',
+      'model_epic_11',
+      'model_epic_11_date',
+      'model_epic_12',
+      'model_epic_12_date',
+      'developing_end_date',
+      'remove_date_validation',
+      'date_of_introduction_into_operation',
+      'data_completion_of_stage_05a',
+      'customer_model_id'
+    ]::text[]
+  ) AS artefact_tech_label
+),
+target_roles AS (
+  SELECT role_id
+  FROM roles
+  WHERE role_name IN ('business_customer', 'test_business_customer')
+)
+DELETE FROM artefact_source_roles AS asr
+USING artefacts AS a, target_fields AS tf, target_roles AS tr
+WHERE asr.artefact_id = a.artefact_id
+  AND asr.role_id = tr.role_id
+  AND a.artefact_tech_label = tf.artefact_tech_label
+  AND asr.model_source IN ('sum_rm', 'sum-rm', 'rm');
+
+-- ------------------------------------------------------------------
+-- Post-check (run manually after migration):
+-- Expected result: 0 rows for rm/sum-rm on the listed fields.
+--
+WITH target_fields AS (
+  SELECT unnest(
+    ARRAY[
+      'model_epic_04',
+      'model_epic_04_date',
+      'model_epic_05',
+      'model_epic_05a',
+      'model_epic_05_date',
+      'model_epic_07',
+      'model_epic_07_date',
+      'release',
+      'model_epic_09',
+      'model_epic_11',
+      'model_epic_11_date',
+      'model_epic_12',
+      'model_epic_12_date',
+      'developing_end_date',
+      'remove_date_validation',
+      'date_of_introduction_into_operation',
+      'data_completion_of_stage_05a',
+      'customer_model_id'
+    ]::text[]
+  ) AS artefact_tech_label
+)
+SELECT
+  r.role_name,
+  a.artefact_tech_label,
+  asr.model_source
+FROM artefact_source_roles AS asr
+JOIN roles AS r ON r.role_id = asr.role_id
+JOIN artefacts AS a ON a.artefact_id = asr.artefact_id
+JOIN target_fields AS tf ON tf.artefact_tech_label = a.artefact_tech_label
+WHERE r.role_name IN ('business_customer', 'test_business_customer')
+  AND asr.model_source IN ('sum_rm', 'sum-rm', 'rm')
+ORDER BY r.role_name, a.artefact_tech_label, asr.model_source;
+
+-- ------------------------------------------------------------------
+-- Final safeguard for stands where 3 fields can be reintroduced by
+-- previous label-based rules. Keep this at the very end.
+-- ------------------------------------------------------------------
+DELETE FROM artefact_source_roles AS asr
+WHERE asr.artefact_id IN (
+  SELECT a.artefact_id
+  FROM artefacts AS a
+  WHERE a.artefact_tech_label IN (
+    'customer_model_id',
+    'data_completion_of_stage_05a',
+    'date_of_introduction_into_operation'
+  )
+)
+AND asr.role_id IN (
+  SELECT r.role_id
+  FROM roles AS r
+  WHERE r.role_name IN ('business_customer', 'test_business_customer')
+)
+AND asr.model_source IN ('sum_rm', 'sum-rm', 'rm');
