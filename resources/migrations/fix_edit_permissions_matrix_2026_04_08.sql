@@ -180,6 +180,27 @@ WHERE asr.artefact_id = a.artefact_id
   AND asr.model_source IN ('sum_rm', 'sum-rm', 'rm');
 
 -- ------------------------------------------------------------------
+-- Final safeguard for stands where 3 fields can be reintroduced by
+-- previous label-based rules. Keep this at the very end.
+-- ------------------------------------------------------------------
+DELETE FROM artefact_source_roles AS asr
+WHERE asr.artefact_id IN (
+  SELECT a.artefact_id
+  FROM artefacts AS a
+  WHERE a.artefact_tech_label IN (
+    'customer_model_id',
+    'data_completion_of_stage_05a',
+    'date_of_introduction_into_operation'
+  )
+)
+AND asr.role_id IN (
+  SELECT r.role_id
+  FROM roles AS r
+  WHERE r.role_name IN ('business_customer', 'test_business_customer')
+)
+AND asr.model_source IN ('sum_rm', 'sum-rm', 'rm');
+
+-- ------------------------------------------------------------------
 -- Post-check (run manually after migration):
 -- Expected result: 0 rows for rm/sum-rm on the listed fields.
 --
@@ -218,24 +239,3 @@ JOIN target_fields AS tf ON tf.artefact_tech_label = a.artefact_tech_label
 WHERE r.role_name IN ('business_customer', 'test_business_customer')
   AND asr.model_source IN ('sum_rm', 'sum-rm', 'rm')
 ORDER BY r.role_name, a.artefact_tech_label, asr.model_source;
-
--- ------------------------------------------------------------------
--- Final safeguard for stands where 3 fields can be reintroduced by
--- previous label-based rules. Keep this at the very end.
--- ------------------------------------------------------------------
-DELETE FROM artefact_source_roles AS asr
-WHERE asr.artefact_id IN (
-  SELECT a.artefact_id
-  FROM artefacts AS a
-  WHERE a.artefact_tech_label IN (
-    'customer_model_id',
-    'data_completion_of_stage_05a',
-    'date_of_introduction_into_operation'
-  )
-)
-AND asr.role_id IN (
-  SELECT r.role_id
-  FROM roles AS r
-  WHERE r.role_name IN ('business_customer', 'test_business_customer')
-)
-AND asr.model_source IN ('sum_rm', 'sum-rm', 'rm');
