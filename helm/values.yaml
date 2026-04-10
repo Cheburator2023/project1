@@ -9,6 +9,17 @@ image:
   tag: v1.0.0
   pullPolicy: Always
 
+auditSidecar:
+  enabled: false
+  name: audit-proxy
+  image:
+    repository: docker.repo-ci.sfera.inno.local/sumd-docker-lib/audit-proxy
+    tag: v1.0.2
+    pullPolicy: Always
+  env:
+    SPRING_PROFILES_ACTIVE: dev
+  resources: {}
+
 resources:
   requests:
     cpu: "300m"
