@@ -26,6 +26,15 @@ WHERE NOT EXISTS (
   SELECT 1 FROM roles r WHERE r.role_name = x.role_name
 );
 
+-- Без роли business_customer все INSERT ниже с JOIN roles для BC дадут 0 строк без ошибки.
+DO $$
+BEGIN
+  IF (SELECT COUNT(*)::int FROM roles WHERE role_name = 'business_customer') = 0 THEN
+    RAISE EXCEPTION
+      'fix_edit_permissions_matrix: в roles нет role_name=business_customer после INSERT — проверьте DDL roles (обязательные колонки) или search_path';
+  END IF;
+END $$;
+
 DELETE FROM artefact_source_roles AS asr
 WHERE EXISTS (
   SELECT 1
@@ -199,17 +208,16 @@ ON CONFLICT (artefact_id, role_id, model_source) DO NOTHING;
 
 -- Догрузка business_customer для developing_end_date и remove_date_validation: все строки artefacts с этим label
 -- × sum, sum_rm, rm, sum-rm (дубли с основным INSERT гасятся ON CONFLICT). Бэкенд rm/sum-rm сводит к одному bucket.
+-- Один role_id на имя (MIN), чтобы при дубликатах role_name не размножать строки.
 INSERT INTO artefact_source_roles (artefact_id, model_source, role_id)
 SELECT a.artefact_id, ms.model_source, r.role_id
 FROM artefacts a
-INNER JOIN roles r ON r.role_name = 'business_customer'
 CROSS JOIN (
-  VALUES
-    ('sum'::text),
-    ('sum_rm'::text),
-    ('rm'::text),
-    ('sum-rm'::text)
+  VALUES ('sum'::text), ('sum_rm'::text), ('rm'::text), ('sum-rm'::text)
 ) AS ms(model_source)
+INNER JOIN (
+  SELECT MIN(role_id) AS role_id FROM roles WHERE role_name = 'business_customer'
+) r ON r.role_id IS NOT NULL
 WHERE a.artefact_tech_label IN ('developing_end_date', 'remove_date_validation')
 ON CONFLICT (artefact_id, role_id, model_source) DO NOTHING;
 
@@ -317,6 +325,22 @@ WHERE asr.role_id IN (
       'deploy_system'
     )
   );
+
+-- Повтор догрузки BC для дат (после всех DELETE): на случай частичного отката клиента или гонки.
+-- Ниже — тот же фрагмент, что можно выполнять отдельно (с явным search_path).
+SET search_path TO mrms, public;
+
+INSERT INTO artefact_source_roles (artefact_id, model_source, role_id)
+SELECT a.artefact_id, ms.model_source, r.role_id
+FROM artefacts a
+CROSS JOIN (
+  VALUES ('sum'::text), ('sum_rm'::text), ('rm'::text), ('sum-rm'::text)
+) AS ms(model_source)
+INNER JOIN (
+  SELECT MIN(role_id) AS role_id FROM roles WHERE role_name = 'business_customer'
+) r ON r.role_id IS NOT NULL
+WHERE a.artefact_tech_label IN ('developing_end_date', 'remove_date_validation')
+ON CONFLICT (artefact_id, role_id, model_source) DO NOTHING;
 
 -- =============================================================================
 -- ПРОВЕРКИ (только SELECT; данные не меняют). Выполняются после миграции выше.
