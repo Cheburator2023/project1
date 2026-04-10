@@ -1,4 +1,6 @@
 -- Проверка матрицы БЕЗ изменения данных.
+-- Ожидаемо: rows_in_matrix = after_artefacts = after_roles_join = distinct_pk = 63
+-- (только production-роли в VALUES; test_* в миграции добавляются отдельным JOIN).
 -- DBeaver: схема mrms — выполнить весь файл (Ctrl+Enter «скриптом» или выделить всё и Execute).
 SET search_path TO mrms, public;
 
@@ -37,6 +39,9 @@ WITH am(role_name, model_source, artefact_label) AS (
     ('business_customer', 'sum_rm', 'Подразделение разработки и вендор'),
     ('business_customer', 'sum_rm', 'Отчет по разработке'),
     ('business_customer', 'sum_rm', 'Модель входит в рейтинговую систему?'),
+    ('business_customer', 'sum_rm', 'Дата окончания разработки Модели'),
+    ('business_customer', 'sum_rm', 'Дата выведения РС / Модели из эксплуатации'),
+    ('business_customer', 'sum_rm', 'Реквизиты решения о выведении из эксплуатации'),
     ('validator_lead', 'sum', 'Сегмент применения Модели / Рейтинговой системы / Алгоритма'),
     ('validator_lead', 'sum', 'Реквизиты решения о выведении из эксплуатации'),
     ('validator_lead', 'sum', 'Целевой сегмент Модели / Алгоритма'),
