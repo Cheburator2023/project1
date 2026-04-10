@@ -1,87 +1,66 @@
+-- Идемпотентный ремонт матрицы artefact_source_roles без «полного обнуления» первого
+-- DELETE из fix_edit_permissions_matrix_2026_04_08.sql (который снимает все источники).
+--
+-- Сопоставление подписей UI → artefact_tech_label (InitialCollumns name) по обратной связи:
+--
+-- business_customer (пользователь без префикса test_ — та же роль Keycloak):
+--   developing_end_date              — «Дата окончания разработки Модели»
+--   remove_date_validation          — «Дата выведения РС / Модели из эксплуатации» (нужен grant на RM: sum_rm/rm)
+--   implementation_segment         — «Сегмент применения Модели / Рейтинговой системы / Алгоритма» (SUM: sum)
+--   remove_decision                — «Реквизиты решения о выведении из эксплуатации» (SUM: sum)
+--   segment_name                   — «Целевой сегмент Модели / Алгоритма» (SUM: sum; RM: sum_rm в матрице)
+--
+-- validator_lead:
+--   те же три поля, что у business_customer для сценария SUM, плюс
+--   validation_report_approve_date — «Дата утверждения отчета валидации»
+--
+-- ds_lead (редактирование эпиков — только SUM; на RM строки удаляются блоком DELETE ниже):
+--   model_epic_04_date             — «Дата решения 04»
+--   model_epic_05a                 — «Этап 05А»
+--   model_epic_07                  — «Этап 07»
+--   customer_model_id              — «CustomModelId»
+--   model_epic_09                  — «Эпик 09»
+--   model_epic_11_date             — «Дата решения для эпика 11»
+--   output_table                   — «Выходная таблица»
+--   allocation_assessment_parameters — «Параметры оценки аллокаций»
+--   runtime_subsystem              — «Подсистема реализации модели»
+--   developing_end_date            — «Дата окончания разработки Модели»
+--   rs_model_decommiss_date        — «Дата выведения Модели из ПИМ»
+--   developing_start_date          — «Дата начала разработки Модели»
+--   model_epic_04                  — «Этап 04»
+--   model_epic_05                  — «Модельный эпик 05»
+--   data_completion_of_stage_05a   — «Дата завершения разработки пилота»
+--   model_epic_07_date             — «Дата решения для 07 этапа»
+--   release                        — «Релиз»
+--   model_epic_11                  — «Эпик 11»
+--   date_of_introduction_into_operation — «Дата релиза»
+--   allocation_assessment_class    — «Класс оценки аллокаций»
+--   deploy_team                    — «Команда, которая внедряла модель»
+--   buiseness_process_name         — «Бизнес-процесс»
+--   deploy_system                  — «Система внедрения»
+--   model_epic_12                  — «Этап 12»
+--   model_epic_12_date             — «Дата решения для эпика 12»
+--   model_desc                     — «Описание модели»
+--   dev_team                       — «Название команды, ответственной за разработку»
+--   project_ref                    — «Проект, в рамках которого реализуется задача по построению модели»
+--
+-- Назначение:
+-- 1) Добавить недостающие строки матрицы (INSERT … ON CONFLICT DO NOTHING) — 86 ожидаемых пар
+--    role × model_source × artefact (см. fix_edit_permissions_matrix_2026_04_08_verify_counts.sql).
+-- 2) Снять ds_lead с RM (sum_rm / rm / sum-rm) по полям, где по требованиям редактирование только на SUM.
+-- 3) Снять business_customer с RM по «эпик»-полям, оставив developing_end_date и remove_date_validation.
+-- 4) Страховочный DELETE для трёх полей, которые не должны быть у BC на RM.
+--
+-- Роли в Keycloak / приложении (без префикса test_): business_customer, validator_lead, ds_lead.
+-- Подписи UI ↔ artefact_tech_label — из src/shared/constants/InitialCollumns.ts (name).
+--
+-- Сводка по сценариям из обратной связи (какой bucket использует бэкенд):
+-- • Модель SUM  → флаг is_editable_by_role_sum  (нужна строка model_source = sum).
+-- • Модель RM   → is_editable_by_role_sum_rm    (нужна строка rm / sum_rm / sum-rm; в коде сводится к sum_rm).
 
--- Проверка чисел JOIN без INSERT: fix_edit_permissions_matrix_2026_04_08_verify_counts.sql
---
--- Матрица сопоставляется с artefacts по artefact_tech_label (стабильный ключ), не по русской подписи.
---
--- Без временных таблиц — чтобы SQL-валидаторы/линтеры не ругались на «table not found».
---
--- ON CONFLICT: повторный запуск / гонка / строка не удалена первым шагом — без ошибки 23505.
---
--- Первый DELETE: ts включает rm / sum-rm — иначе строки с model_source=rm не сбрасываются,
--- остаётся лишний ds_lead на RM и «пропадают» гранты business_customer на даты.
-
-DELETE FROM artefact_source_roles AS asr
-WHERE EXISTS (
-  SELECT 1
-  FROM artefacts AS a
-  INNER JOIN (
-    VALUES
-      ('model_epic_04_date'),
-      ('model_epic_05a'),
-      ('model_epic_07'),
-      ('customer_model_id'),
-      ('model_epic_09'),
-      ('model_epic_11_date'),
-      ('model_epic_12_date'),
-      ('operational_control_date'),
-      ('analytical_control_date'),
-      ('model_values_control_date'),
-      ('impact_assessment_date'),
-      ('model_data_07k_control_epic'),
-      ('check_objects_count'),
-      ('model_epic_04'),
-      ('model_epic_05'),
-      ('data_completion_of_stage_05a'),
-      ('model_epic_07_date'),
-      ('release'),
-      ('model_epic_11'),
-      ('model_epic_12'),
-      ('date_of_introduction_into_operation'),
-      ('operational_control_epic'),
-      ('analytical_control_epic'),
-      ('model_values_control_epic'),
-      ('impact_assessment_epic'),
-      ('model_data_07k_control'),
-      ('model_data_control_date'),
-      ('implementation_segment'),
-      ('remove_decision'),
-      ('segment_name'),
-      ('validation_report_approve_date'),
-      ('remove_date_validation'),
-      ('ds_department'),
-      ('developing_report'),
-      ('rating_model'),
-      ('output_table'),
-      ('allocation_assessment_parameters'),
-      ('dev_team'),
-      ('runtime_subsystem'),
-      ('model_desc'),
-      ('allocation_assessment_class'),
-      ('project_ref'),
-      ('deploy_team'),
-      ('buiseness_process_name'),
-      ('developing_end_date'),
-      ('rs_model_decommiss_date'),
-      ('developing_start_date'),
-      ('deploy_system')
-  ) AS lf(artefact_tech_label) ON lf.artefact_tech_label = a.artefact_tech_label
-  INNER JOIN roles AS r ON r.role_name IN (
-    'business_customer',
-    'ds_lead',
-    'validator_lead'
-  )
-  CROSS JOIN (
-    VALUES
-      ('sum'::text),
-      ('sum_rm'::text),
-      ('rm'::text),
-      ('sum-rm'::text)
-  ) AS ts(model_source)
-  WHERE asr.artefact_id = a.artefact_id
-    AND asr.role_id = r.role_id
-    AND asr.model_source = ts.model_source
-);
-
+-- ------------------------------------------------------------------
+-- INSERT: полная ожидаемая матрица (86 строк логики; после JOIN — по одной строке на PK).
+-- ------------------------------------------------------------------
 INSERT INTO artefact_source_roles (artefact_id, model_source, role_id)
 SELECT DISTINCT
   a.artefact_id,
@@ -101,8 +80,17 @@ FROM (
     ('business_customer', 'sum_rm', 'impact_assessment_epic'),
     ('business_customer', 'sum_rm', 'model_data_07k_control'),
     ('business_customer', 'sum_rm', 'model_data_control_date'),
-    ('business_customer', 'sum', 'implementation_segment'),
     ('business_customer', 'sum_rm', 'implementation_segment'),
+    ('business_customer', 'sum_rm', 'segment_name'),
+    ('business_customer', 'sum_rm', 'ds_department'),
+    ('business_customer', 'sum_rm', 'developing_report'),
+    ('business_customer', 'sum_rm', 'rating_model'),
+    ('business_customer', 'sum_rm', 'developing_end_date'),
+    ('business_customer', 'sum_rm', 'remove_date_validation'),
+    ('business_customer', 'sum_rm', 'remove_decision'),
+    ('business_customer', 'sum_rm', 'model_desc'),
+    ('business_customer', 'sum_rm', 'developing_start_date'),
+    ('business_customer', 'sum', 'implementation_segment'),
     ('business_customer', 'sum', 'remove_decision'),
     ('business_customer', 'sum', 'operational_control_date'),
     ('business_customer', 'sum', 'analytical_control_date'),
@@ -111,7 +99,6 @@ FROM (
     ('business_customer', 'sum', 'model_data_07k_control_epic'),
     ('business_customer', 'sum', 'check_objects_count'),
     ('business_customer', 'sum', 'segment_name'),
-    ('business_customer', 'sum_rm', 'segment_name'),
     ('business_customer', 'sum', 'operational_control_epic'),
     ('business_customer', 'sum', 'analytical_control_epic'),
     ('business_customer', 'sum', 'model_values_control_epic'),
@@ -120,16 +107,8 @@ FROM (
     ('business_customer', 'sum', 'model_data_control_date'),
     ('business_customer', 'sum', 'ds_department'),
     ('business_customer', 'sum', 'rating_model'),
-    ('business_customer', 'sum_rm', 'ds_department'),
-    ('business_customer', 'sum_rm', 'developing_report'),
-    ('business_customer', 'sum_rm', 'rating_model'),
-    ('business_customer', 'sum_rm', 'developing_end_date'),
     ('business_customer', 'sum', 'remove_date_validation'),
-    ('business_customer', 'sum_rm', 'remove_date_validation'),
-    ('business_customer', 'sum_rm', 'remove_decision'),
     ('business_customer', 'sum', 'model_desc'),
-    ('business_customer', 'sum_rm', 'model_desc'),
-    ('business_customer', 'sum_rm', 'developing_start_date'),
     ('validator_lead', 'sum', 'implementation_segment'),
     ('validator_lead', 'sum_rm', 'implementation_segment'),
     ('validator_lead', 'sum', 'remove_decision'),
@@ -181,11 +160,7 @@ JOIN roles AS r ON r.role_name = am.role_name
 ON CONFLICT (artefact_id, role_id, model_source) DO NOTHING;
 
 -- ------------------------------------------------------------------
--- Hotfix: guarantee rm/sum-rm deny for business customer epic fields.
--- developing_end_date / remove_date_validation intentionally excluded:
--- business customer must edit these on RM (decommission / dev end date).
--- Context: some stands may keep stale rows with is_editable=1 for rm.
--- This block is idempotent and safe for repeated runs.
+-- business_customer: убрать RM-доступ к эпик-полям (developing_end_date / remove_date_validation не трогаем).
 -- ------------------------------------------------------------------
 WITH target_fields AS (
   SELECT unnest(
@@ -221,10 +196,6 @@ WHERE asr.artefact_id = a.artefact_id
   AND a.artefact_tech_label = tf.artefact_tech_label
   AND asr.model_source IN ('sum_rm', 'sum-rm', 'rm');
 
--- ------------------------------------------------------------------
--- Final safeguard for stands where 3 fields can be reintroduced by
--- previous rules. Keep this at the very end.
--- ------------------------------------------------------------------
 DELETE FROM artefact_source_roles AS asr
 WHERE asr.artefact_id IN (
   SELECT a.artefact_id
@@ -243,7 +214,7 @@ AND asr.role_id IN (
 AND asr.model_source IN ('sum_rm', 'sum-rm', 'rm');
 
 -- ------------------------------------------------------------------
--- ds_lead: права только на SUM; снять любые строки на RM (в т.ч. после старых данных).
+-- ds_lead: только SUM; снять любые строки на RM.
 -- ------------------------------------------------------------------
 DELETE FROM artefact_source_roles AS asr
 WHERE asr.role_id IN (
@@ -284,10 +255,3 @@ WHERE asr.role_id IN (
       'deploy_system'
     )
   );
-
--- ------------------------------------------------------------------
--- Post-check (run manually after migration):
--- Expected: 0 rows for business_customer on rm
--- for the epic / pilot fields above — not for developing_end_date or
--- remove_date_validation (those should remain granted on RM).
--- ------------------------------------------------------------------
