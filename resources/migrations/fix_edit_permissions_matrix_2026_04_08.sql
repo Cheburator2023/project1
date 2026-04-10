@@ -1,13 +1,16 @@
--- Матрица прав редактирования: artefact_source_roles + роли business_customer / validator_lead / ds_lead.
--- Ключ сопоставления — artefacts.artefact_tech_label (не русская подпись).
--- ON CONFLICT DO NOTHING — идемпотентный повторный запуск.
+-- fix_edit_permissions_matrix_2026_04_08.sql
 --
--- В конце файла — только чтение: проверка счётчиков (ожидаемо 87 строк матрицы) и аудит tech в artefacts.
--- Если схема не mrms — поправьте SET search_path ниже.
+-- Одним прогоном: довести roles (при необходимости), затем artefact_source_roles до целевой матрицы прав.
+-- DevOps: выполнить файл целиком в целевой БД/схеме. Повторный запуск безопасен (ON CONFLICT DO NOTHING).
+-- Ключ в artefacts — artefact_tech_label; гранты вешаются на каждый artefact_id с этим label (в т.ч. developing_end_date = 2041 из liquibase).
 --
--- Важно: в таблице roles должны быть строки business_customer, validator_lead, ds_lead (колонка role_name).
--- Если SELECT role_name FROM roles WHERE role_name = 'business_customer' пустой — все INSERT ниже дадут 0 строк,
--- пока роли не появятся. Блок ниже пытается вставить недостающие роли; при ошибке NOT NULL — добавьте роли вручную.
+-- Порядок: INSERT недостающих ролей → DELETE старых грантов по списку полей → INSERT матрицы
+-- → догрузка business_customer для developing_end_date и remove_date_validation (JOIN artefacts, без фиксированного artefact_id)
+-- → hotfix DELETE для business_customer (эпики на RM) и ds_lead (только SUM) → проверочные SELECT в конце.
+--
+-- В конце — только чтение (счётчики, аудит, key_checks). Можно не выполнять в CI, если инструмент не поддерживает несколько результатов.
+-- Если схема не mrms — изменить SET search_path ниже.
+-- Если INSERT INTO roles падает из‑за обязательных колонок: на стенде другая схема roles — согласовать миграцию с DBA (не отдельный ручной SQL в приложении).
 
 SET search_path TO mrms, public;
 
@@ -194,9 +197,8 @@ JOIN artefacts AS a ON a.artefact_tech_label = am.artefact_tech_label
 JOIN roles AS r ON r.role_name = am.role_name
 ON CONFLICT (artefact_id, role_id, model_source) DO NOTHING;
 
--- Явная догрузка грантов business_customer для дат заказчика (developing_end_date, remove_date_validation).
--- На части стендов основной INSERT не создаёт строки (нет строки в artefacts, рассинхрон и т.п.) — проверка 3 ловит missing_role_grant.
--- sum / sum_rm / rm / sum-rm — как в artefact_source_roles; бэкенд rm и sum-rm сводит к одному bucket.
+-- Догрузка business_customer для developing_end_date и remove_date_validation: все строки artefacts с этим label
+-- × sum, sum_rm, rm, sum-rm (дубли с основным INSERT гасятся ON CONFLICT). Бэкенд rm/sum-rm сводит к одному bucket.
 INSERT INTO artefact_source_roles (artefact_id, model_source, role_id)
 SELECT a.artefact_id, ms.model_source, r.role_id
 FROM artefacts a
@@ -323,6 +325,11 @@ WHERE asr.role_id IN (
 -- Проверка 2: пустой результат — нет tech из миграции без строки в artefacts и нет дубликатов tech.
 -- Проверка 3: ключевые поля (см. key_checks) — для каждой роли есть ожидаемый грант в sum / «RM»-bucket
 --             и у артефакта is_edit_flg = '1'. Иначе строки missing_role_grant / artefact_not_editable.
+-- Соответствие сценариям теста (подпись UI → artefact_tech_label):
+--   RM + business_customer: developing_end_date, remove_date_validation (нужны sum и sum_rm в матрице).
+--   SUM + business_customer: implementation_segment, remove_decision, segment_name.
+--   SUM + validator_lead: те же + validation_report_approve_date.
+--   SUM + ds_lead: эпики/даты из key_checks ds_lead — только bucket sum; на RM у ds_lead эти поля должны быть сняты (DELETE выше).
 -- Проверка 4: в roles есть business_customer, validator_lead, ds_lead — иначе missing_role_definition.
 -- Пустые результаты у 2–4 при отсутствии ошибок — ожидаемо. В конце — всегда одна строка script_status (контроль «скрипт дошёл до конца»).
 -- =============================================================================
@@ -545,7 +552,33 @@ WITH key_checks(role_name, artefact_tech_label, expected_bucket) AS (
     ('validator_lead', 'remove_date_validation', 'sum'),
     ('validator_lead', 'remove_date_validation', 'sum_rm'),
     ('validator_lead', 'developing_end_date', 'sum_rm'),
-    ('validator_lead', 'developing_start_date', 'sum_rm')
+    ('validator_lead', 'developing_start_date', 'sum_rm'),
+    ('ds_lead', 'model_epic_04_date', 'sum'),
+    ('ds_lead', 'model_epic_05a', 'sum'),
+    ('ds_lead', 'model_epic_07', 'sum'),
+    ('ds_lead', 'customer_model_id', 'sum'),
+    ('ds_lead', 'model_epic_09', 'sum'),
+    ('ds_lead', 'model_epic_11_date', 'sum'),
+    ('ds_lead', 'output_table', 'sum'),
+    ('ds_lead', 'allocation_assessment_parameters', 'sum'),
+    ('ds_lead', 'runtime_subsystem', 'sum'),
+    ('ds_lead', 'developing_end_date', 'sum'),
+    ('ds_lead', 'rs_model_decommiss_date', 'sum'),
+    ('ds_lead', 'developing_start_date', 'sum'),
+    ('ds_lead', 'model_epic_04', 'sum'),
+    ('ds_lead', 'model_epic_05', 'sum'),
+    ('ds_lead', 'data_completion_of_stage_05a', 'sum'),
+    ('ds_lead', 'model_epic_07_date', 'sum'),
+    ('ds_lead', 'release', 'sum'),
+    ('ds_lead', 'model_epic_11', 'sum'),
+    ('ds_lead', 'date_of_introduction_into_operation', 'sum'),
+    ('ds_lead', 'allocation_assessment_class', 'sum'),
+    ('ds_lead', 'deploy_team', 'sum'),
+    ('ds_lead', 'buiseness_process_name', 'sum'),
+    ('ds_lead', 'deploy_system', 'sum'),
+    ('ds_lead', 'model_desc', 'sum'),
+    ('ds_lead', 'model_epic_12', 'sum'),
+    ('ds_lead', 'model_epic_12_date', 'sum')
   ) AS v(role_name, artefact_tech_label, expected_bucket)
 ),
 missing_grants AS (
