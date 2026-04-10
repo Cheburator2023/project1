@@ -16,6 +16,7 @@ import {
 } from '../dto'
 import { IArtefactService } from '../interfaces'
 import { UserType } from 'src/decorators'
+import { userGroupsMatchMatrixRoles } from 'src/system/common/constants/matrix-role-aliases'
 
 export abstract class BaseArtefactService implements IArtefactService {
   protected abstract modelsTableName: string
@@ -502,7 +503,10 @@ export abstract class BaseArtefactService implements IArtefactService {
 
         if (allActiveRealizations && allActiveRealizations.length > 0) {
           for (const realization of allActiveRealizations) {
-            await this.setEffectiveToArtefactRealization(realization, isSelectType)
+            await this.setEffectiveToArtefactRealization(
+              realization,
+              isSelectType
+            )
           }
         }
       } else if (
@@ -866,7 +870,10 @@ export abstract class BaseArtefactService implements IArtefactService {
           : {}),
         ...(isSelectType
           ? {}
-          : { artefact_string_value: latestArtefactRealization.artefact_string_value })
+          : {
+              artefact_string_value:
+                latestArtefactRealization.artefact_string_value
+            })
       }
 
       await this.databaseService.query(
@@ -1123,10 +1130,10 @@ export abstract class BaseArtefactService implements IArtefactService {
 
     const isEditableSum =
       rolesForArtefact.sum.length > 0 &&
-      user.groups.some((role) => rolesForArtefact.sum.includes(role))
+      userGroupsMatchMatrixRoles(user.groups, rolesForArtefact.sum)
     const isEditableSumRm =
       rolesForArtefact.sum_rm.length > 0 &&
-      user.groups.some((role) => rolesForArtefact.sum_rm.includes(role))
+      userGroupsMatchMatrixRoles(user.groups, rolesForArtefact.sum_rm)
 
     const result = {
       is_editable_by_role_sum: isEditableSum ? '1' : '0',
@@ -1249,5 +1256,9 @@ export abstract class BaseArtefactService implements IArtefactService {
     )
 
     return artefact_string_value
+  }
+
+  async getBlockListByModel(modelId: string): Promise<{ data: string[] }> {
+    return { data: [] }
   }
 }
