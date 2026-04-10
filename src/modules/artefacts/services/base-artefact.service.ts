@@ -111,7 +111,10 @@ export abstract class BaseArtefactService implements IArtefactService {
         if (!artefactRolesMap.has(row.artefact_id)) {
           artefactRolesMap.set(row.artefact_id, { sum: [], sum_rm: [] })
         }
-        artefactRolesMap.get(row.artefact_id)![modelSource] = row.roles
+        const existing = artefactRolesMap.get(row.artefact_id)![modelSource]
+        artefactRolesMap.get(row.artefact_id)![modelSource] = [
+          ...new Set([...existing, ...row.roles])
+        ]
       }
 
       for (const pseudoArtefactSourcesRole of pseudoArtefactsSourcesRoles) {

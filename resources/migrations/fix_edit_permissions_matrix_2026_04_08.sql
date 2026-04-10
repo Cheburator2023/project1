@@ -4,6 +4,9 @@
 -- Без временных таблиц — чтобы SQL-валидаторы/линтеры не ругались на «table not found».
 --
 -- ON CONFLICT: повторный запуск / гонка / строка не удалена первым шагом — без ошибки 23505.
+--
+-- Первый DELETE: ts включает rm / sum-rm — иначе строки с model_source=rm не сбрасываются,
+-- остаётся лишний ds_lead на RM и «пропадают» гранты business_customer на даты.
 
 DELETE FROM artefact_source_roles AS asr
 WHERE EXISTS (
@@ -67,7 +70,13 @@ WHERE EXISTS (
     'validator_lead',
     'test_validator_lead'
   )
-  CROSS JOIN (VALUES ('sum'::text), ('sum_rm'::text)) AS ts(model_source)
+  CROSS JOIN (
+    VALUES
+      ('sum'::text),
+      ('sum_rm'::text),
+      ('rm'::text),
+      ('sum-rm'::text)
+  ) AS ts(model_source)
   WHERE asr.artefact_id = a.artefact_id
     AND asr.role_id = r.role_id
     AND asr.model_source = ts.model_source
@@ -108,7 +117,6 @@ FROM (
     ('business_customer', 'sum', 'Контроль модельных данных (07К)'),
     ('business_customer', 'sum', 'Дата (реализации) контроля модельных данных'),
     ('business_customer', 'sum', 'Подразделение разработки и вендор'),
-    ('business_customer', 'sum', 'Отчет по разработке'),
     ('business_customer', 'sum', 'Модель входит в рейтинговую систему?'),
     ('business_customer', 'sum_rm', 'Подразделение разработки и вендор'),
     ('business_customer', 'sum_rm', 'Отчет по разработке'),
