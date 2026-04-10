@@ -1,5 +1,13 @@
 # Semantic Versioning Changelog
 
+## [1.45.1](https://git.sfera.inno.local:7999/SUMD/mrms-backend/compare/v1.45.0...v1.45.1) (2026-04-10)
+
+
+### Bug Fixes
+
+* add-deployment-sidecar-audit ([02292f7](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/02292f7c321818e32079733e24b3132102427fde))
+* add-values-audit ([adea457](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/adea45766497cbdaaafd16f67c6bc2401534498e))
+
 # [1.45.0](https://git.sfera.inno.local:7999/SUMD/mrms-backend/compare/v1.44.2...v1.45.0) (2026-03-04)
 
 
