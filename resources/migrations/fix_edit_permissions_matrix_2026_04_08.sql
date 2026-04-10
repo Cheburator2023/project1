@@ -1,6 +1,8 @@
 
 -- Проверка чисел JOIN без INSERT: fix_edit_permissions_matrix_2026_04_08_verify_counts.sql
 --
+-- Матрица сопоставляется с artefacts по artefact_tech_label (стабильный ключ), не по русской подписи.
+--
 -- Без временных таблиц — чтобы SQL-валидаторы/линтеры не ругались на «table not found».
 --
 -- ON CONFLICT: повторный запуск / гонка / строка не удалена первым шагом — без ошибки 23505.
@@ -14,61 +16,59 @@ WHERE EXISTS (
   FROM artefacts AS a
   INNER JOIN (
     VALUES
-      ('Дата решения 04'),
-      ('Этап 05А'),
-      ('Этап 07'),
-      ('CustomModelId'),
-      ('Эпик 09'),
-      ('Дата решения для эпика 11'),
-      ('Дата решения для эпика 12'),
-      ('Дата (реализации) оперативного контроля'),
-      ('Дата (реализации) аналитического контроля'),
-      ('Дата (реализации) контроля модельных значений'),
-      ('Дата (реализации) оценки влияния'),
-      ('Эпик/фича для контроля модельных данных (07К)'),
-      ('Количество объектов проверки'),
-      ('Этап 04'),
-      ('Модельный эпик 05'),
-      ('Дата завершения разработки пилота'),
-      ('Дата решения для 07 этапа'),
-      ('Релиз'),
-      ('Эпик 11'),
-      ('Этап 12'),
-      ('Дата релиза'),
-      ('Эпик/фича Оперативного контроля'),
-      ('Эпик/фича Аналитического контроля'),
-      ('Эпик/фича для контроля модельных значений'),
-      ('Эпик/фича для оценки влияния'),
-      ('Контроль модельных данных (07К)'),
-      ('Дата (реализации) контроля модельных данных'),
-      ('Сегмент применения Модели / Рейтинговой системы / Алгоритма'),
-      ('Реквизиты решения о выведении из эксплуатации'),
-      ('Целевой сегмент Модели / Алгоритма'),
-      ('Дата утверждения отчета валидации'),
-      ('Подразделение разработки и вендор'),
-      ('Отчет по разработке'),
-      ('Модель входит в рейтинговую систему?'),
-      ('Выходная таблица'),
-      ('Параметры оценки аллокаций'),
-      ('Название команды, ответственной за разработку'),
-      ('Подсистема реализации модели'),
-      ('Описание модели'),
-      ('Класс оценки аллокаций'),
-      ('Проект, в рамках которого реализуется задача по построению модели'),
-      ('Команда, которая внедряла модель'),
-      ('Бизнес-процесс'),
-      ('Дата окончания разработки Модели'),
-      ('Дата выведения Модели из ПИМ'),
-      ('Дата начала разработки Модели'),
-      ('Система внедрения')
-  ) AS lf(artefact_label) ON lf.artefact_label = a.artefact_label
+      ('model_epic_04_date'),
+      ('model_epic_05a'),
+      ('model_epic_07'),
+      ('customer_model_id'),
+      ('model_epic_09'),
+      ('model_epic_11_date'),
+      ('model_epic_12_date'),
+      ('operational_control_date'),
+      ('analytical_control_date'),
+      ('model_values_control_date'),
+      ('impact_assessment_date'),
+      ('model_data_07k_control_epic'),
+      ('check_objects_count'),
+      ('model_epic_04'),
+      ('model_epic_05'),
+      ('data_completion_of_stage_05a'),
+      ('model_epic_07_date'),
+      ('release'),
+      ('model_epic_11'),
+      ('model_epic_12'),
+      ('date_of_introduction_into_operation'),
+      ('operational_control_epic'),
+      ('analytical_control_epic'),
+      ('model_values_control_epic'),
+      ('impact_assessment_epic'),
+      ('model_data_07k_control'),
+      ('model_data_control_date'),
+      ('implementation_segment'),
+      ('remove_decision'),
+      ('segment_name'),
+      ('validation_report_approve_date'),
+      ('remove_date_validation'),
+      ('ds_department'),
+      ('developing_report'),
+      ('rating_model'),
+      ('output_table'),
+      ('allocation_assessment_parameters'),
+      ('dev_team'),
+      ('runtime_subsystem'),
+      ('model_desc'),
+      ('allocation_assessment_class'),
+      ('project_ref'),
+      ('deploy_team'),
+      ('buiseness_process_name'),
+      ('developing_end_date'),
+      ('rs_model_decommiss_date'),
+      ('developing_start_date'),
+      ('deploy_system')
+  ) AS lf(artefact_tech_label) ON lf.artefact_tech_label = a.artefact_tech_label
   INNER JOIN roles AS r ON r.role_name IN (
     'business_customer',
-    'test_business_customer',
     'ds_lead',
-    'test_ds_lead',
-    'validator_lead',
-    'test_validator_lead'
+    'validator_lead'
   )
   CROSS JOIN (
     VALUES
@@ -89,78 +89,80 @@ SELECT DISTINCT
   r.role_id
 FROM (
   VALUES
-    ('business_customer', 'sum_rm', 'Дата (реализации) оперативного контроля'),
-    ('business_customer', 'sum_rm', 'Дата (реализации) аналитического контроля'),
-    ('business_customer', 'sum_rm', 'Дата (реализации) контроля модельных значений'),
-    ('business_customer', 'sum_rm', 'Дата (реализации) оценки влияния'),
-    ('business_customer', 'sum_rm', 'Эпик/фича для контроля модельных данных (07К)'),
-    ('business_customer', 'sum_rm', 'Количество объектов проверки'),
-    ('business_customer', 'sum_rm', 'Эпик/фича Оперативного контроля'),
-    ('business_customer', 'sum_rm', 'Эпик/фича Аналитического контроля'),
-    ('business_customer', 'sum_rm', 'Эпик/фича для контроля модельных значений'),
-    ('business_customer', 'sum_rm', 'Эпик/фича для оценки влияния'),
-    ('business_customer', 'sum_rm', 'Контроль модельных данных (07К)'),
-    ('business_customer', 'sum_rm', 'Дата (реализации) контроля модельных данных'),
-    ('business_customer', 'sum', 'Сегмент применения Модели / Рейтинговой системы / Алгоритма'),
-    ('business_customer', 'sum', 'Реквизиты решения о выведении из эксплуатации'),
-    ('business_customer', 'sum', 'Дата (реализации) оперативного контроля'),
-    ('business_customer', 'sum', 'Дата (реализации) аналитического контроля'),
-    ('business_customer', 'sum', 'Дата (реализации) контроля модельных значений'),
-    ('business_customer', 'sum', 'Дата (реализации) оценки влияния'),
-    ('business_customer', 'sum', 'Эпик/фича для контроля модельных данных (07К)'),
-    ('business_customer', 'sum', 'Количество объектов проверки'),
-    ('business_customer', 'sum', 'Целевой сегмент Модели / Алгоритма'),
-    ('business_customer', 'sum', 'Эпик/фича Оперативного контроля'),
-    ('business_customer', 'sum', 'Эпик/фича Аналитического контроля'),
-    ('business_customer', 'sum', 'Эпик/фича для контроля модельных значений'),
-    ('business_customer', 'sum', 'Эпик/фича для оценки влияния'),
-    ('business_customer', 'sum', 'Контроль модельных данных (07К)'),
-    ('business_customer', 'sum', 'Дата (реализации) контроля модельных данных'),
-    ('business_customer', 'sum', 'Подразделение разработки и вендор'),
-    ('business_customer', 'sum', 'Модель входит в рейтинговую систему?'),
-    ('business_customer', 'sum_rm', 'Подразделение разработки и вендор'),
-    ('business_customer', 'sum_rm', 'Отчет по разработке'),
-    ('business_customer', 'sum_rm', 'Модель входит в рейтинговую систему?'),
-    ('business_customer', 'sum_rm', 'Дата окончания разработки Модели'),
-    ('business_customer', 'sum_rm', 'Дата выведения РС / Модели из эксплуатации'),
-    ('business_customer', 'sum_rm', 'Реквизиты решения о выведении из эксплуатации'),
-    ('validator_lead', 'sum', 'Сегмент применения Модели / Рейтинговой системы / Алгоритма'),
-    ('validator_lead', 'sum', 'Реквизиты решения о выведении из эксплуатации'),
-    ('validator_lead', 'sum', 'Целевой сегмент Модели / Алгоритма'),
-    ('validator_lead', 'sum', 'Дата утверждения отчета валидации'),
-    ('ds_lead', 'sum', 'Дата решения 04'),
-    ('ds_lead', 'sum', 'Этап 05А'),
-    ('ds_lead', 'sum', 'Этап 07'),
-    ('ds_lead', 'sum', 'CustomModelId'),
-    ('ds_lead', 'sum', 'Эпик 09'),
-    ('ds_lead', 'sum', 'Дата решения для эпика 11'),
-    ('ds_lead', 'sum', 'Выходная таблица'),
-    ('ds_lead', 'sum', 'Параметры оценки аллокаций'),
-    ('ds_lead', 'sum', 'Подсистема реализации модели'),
-    ('ds_lead', 'sum', 'Дата окончания разработки Модели'),
-    ('ds_lead', 'sum', 'Дата выведения Модели из ПИМ'),
-    ('ds_lead', 'sum', 'Дата начала разработки Модели'),
-    ('ds_lead', 'sum', 'Этап 04'),
-    ('ds_lead', 'sum', 'Модельный эпик 05'),
-    ('ds_lead', 'sum', 'Дата завершения разработки пилота'),
-    ('ds_lead', 'sum', 'Дата решения для 07 этапа'),
-    ('ds_lead', 'sum', 'Релиз'),
-    ('ds_lead', 'sum', 'Эпик 11'),
-    ('ds_lead', 'sum', 'Дата релиза'),
-    ('ds_lead', 'sum', 'Класс оценки аллокаций'),
-    ('ds_lead', 'sum', 'Команда, которая внедряла модель'),
-    ('ds_lead', 'sum', 'Бизнес-процесс'),
-    ('ds_lead', 'sum', 'Система внедрения')
-) AS am(role_name, model_source, artefact_label)
-JOIN artefacts AS a ON a.artefact_label = am.artefact_label
-JOIN roles AS r ON r.role_name IN (
-  am.role_name,
-  CASE am.role_name
-    WHEN 'business_customer' THEN 'test_business_customer'
-    WHEN 'validator_lead' THEN 'test_validator_lead'
-    WHEN 'ds_lead' THEN 'test_ds_lead'
-  END
-)
+    ('business_customer', 'sum_rm', 'operational_control_date'),
+    ('business_customer', 'sum_rm', 'analytical_control_date'),
+    ('business_customer', 'sum_rm', 'model_values_control_date'),
+    ('business_customer', 'sum_rm', 'impact_assessment_date'),
+    ('business_customer', 'sum_rm', 'model_data_07k_control_epic'),
+    ('business_customer', 'sum_rm', 'check_objects_count'),
+    ('business_customer', 'sum_rm', 'operational_control_epic'),
+    ('business_customer', 'sum_rm', 'analytical_control_epic'),
+    ('business_customer', 'sum_rm', 'model_values_control_epic'),
+    ('business_customer', 'sum_rm', 'impact_assessment_epic'),
+    ('business_customer', 'sum_rm', 'model_data_07k_control'),
+    ('business_customer', 'sum_rm', 'model_data_control_date'),
+    ('business_customer', 'sum', 'implementation_segment'),
+    ('business_customer', 'sum_rm', 'implementation_segment'),
+    ('business_customer', 'sum', 'remove_decision'),
+    ('business_customer', 'sum', 'operational_control_date'),
+    ('business_customer', 'sum', 'analytical_control_date'),
+    ('business_customer', 'sum', 'model_values_control_date'),
+    ('business_customer', 'sum', 'impact_assessment_date'),
+    ('business_customer', 'sum', 'model_data_07k_control_epic'),
+    ('business_customer', 'sum', 'check_objects_count'),
+    ('business_customer', 'sum', 'segment_name'),
+    ('business_customer', 'sum_rm', 'segment_name'),
+    ('business_customer', 'sum', 'operational_control_epic'),
+    ('business_customer', 'sum', 'analytical_control_epic'),
+    ('business_customer', 'sum', 'model_values_control_epic'),
+    ('business_customer', 'sum', 'impact_assessment_epic'),
+    ('business_customer', 'sum', 'model_data_07k_control'),
+    ('business_customer', 'sum', 'model_data_control_date'),
+    ('business_customer', 'sum', 'ds_department'),
+    ('business_customer', 'sum', 'rating_model'),
+    ('business_customer', 'sum_rm', 'ds_department'),
+    ('business_customer', 'sum_rm', 'developing_report'),
+    ('business_customer', 'sum_rm', 'rating_model'),
+    ('business_customer', 'sum_rm', 'developing_end_date'),
+    ('business_customer', 'sum', 'remove_date_validation'),
+    ('business_customer', 'sum_rm', 'remove_date_validation'),
+    ('business_customer', 'sum_rm', 'remove_decision'),
+    ('validator_lead', 'sum', 'implementation_segment'),
+    ('validator_lead', 'sum_rm', 'implementation_segment'),
+    ('validator_lead', 'sum', 'remove_decision'),
+    ('validator_lead', 'sum_rm', 'remove_decision'),
+    ('validator_lead', 'sum', 'segment_name'),
+    ('validator_lead', 'sum_rm', 'segment_name'),
+    ('validator_lead', 'sum', 'validation_report_approve_date'),
+    ('validator_lead', 'sum_rm', 'validation_report_approve_date'),
+    ('validator_lead', 'sum', 'remove_date_validation'),
+    ('validator_lead', 'sum_rm', 'remove_date_validation'),
+    ('ds_lead', 'sum', 'model_epic_04_date'),
+    ('ds_lead', 'sum', 'model_epic_05a'),
+    ('ds_lead', 'sum', 'model_epic_07'),
+    ('ds_lead', 'sum', 'customer_model_id'),
+    ('ds_lead', 'sum', 'model_epic_09'),
+    ('ds_lead', 'sum', 'model_epic_11_date'),
+    ('ds_lead', 'sum', 'output_table'),
+    ('ds_lead', 'sum', 'allocation_assessment_parameters'),
+    ('ds_lead', 'sum', 'runtime_subsystem'),
+    ('ds_lead', 'sum', 'developing_end_date'),
+    ('ds_lead', 'sum', 'rs_model_decommiss_date'),
+    ('ds_lead', 'sum', 'developing_start_date'),
+    ('ds_lead', 'sum', 'model_epic_04'),
+    ('ds_lead', 'sum', 'model_epic_05'),
+    ('ds_lead', 'sum', 'data_completion_of_stage_05a'),
+    ('ds_lead', 'sum', 'model_epic_07_date'),
+    ('ds_lead', 'sum', 'release'),
+    ('ds_lead', 'sum', 'model_epic_11'),
+    ('ds_lead', 'sum', 'date_of_introduction_into_operation'),
+    ('ds_lead', 'sum', 'allocation_assessment_class'),
+    ('ds_lead', 'sum', 'deploy_team'),
+    ('ds_lead', 'sum', 'buiseness_process_name'),
+    ('ds_lead', 'sum', 'deploy_system')
+) AS am(role_name, model_source, artefact_tech_label)
+JOIN artefacts AS a ON a.artefact_tech_label = am.artefact_tech_label
+JOIN roles AS r ON r.role_name = am.role_name
 ON CONFLICT (artefact_id, role_id, model_source) DO NOTHING;
 
 -- ------------------------------------------------------------------
@@ -195,7 +197,7 @@ WITH target_fields AS (
 target_roles AS (
   SELECT role_id
   FROM roles
-  WHERE role_name IN ('business_customer', 'test_business_customer')
+  WHERE role_name = 'business_customer'
 )
 DELETE FROM artefact_source_roles AS asr
 USING artefacts AS a, target_fields AS tf, target_roles AS tr
@@ -206,7 +208,7 @@ WHERE asr.artefact_id = a.artefact_id
 
 -- ------------------------------------------------------------------
 -- Final safeguard for stands where 3 fields can be reintroduced by
--- previous label-based rules. Keep this at the very end.
+-- previous rules. Keep this at the very end.
 -- ------------------------------------------------------------------
 DELETE FROM artefact_source_roles AS asr
 WHERE asr.artefact_id IN (
@@ -221,7 +223,7 @@ WHERE asr.artefact_id IN (
 AND asr.role_id IN (
   SELECT r.role_id
   FROM roles AS r
-  WHERE r.role_name IN ('business_customer', 'test_business_customer')
+  WHERE r.role_name = 'business_customer'
 )
 AND asr.model_source IN ('sum_rm', 'sum-rm', 'rm');
 
@@ -230,47 +232,46 @@ AND asr.model_source IN ('sum_rm', 'sum-rm', 'rm');
 -- ------------------------------------------------------------------
 DELETE FROM artefact_source_roles AS asr
 WHERE asr.role_id IN (
-    SELECT role_id FROM roles WHERE role_name IN ('ds_lead', 'test_ds_lead')
+    SELECT role_id FROM roles WHERE role_name = 'ds_lead'
   )
   AND asr.model_source IN ('sum_rm', 'sum-rm', 'rm')
   AND asr.artefact_id IN (
     SELECT a.artefact_id
     FROM artefacts AS a
-    WHERE a.artefact_label IN (
-      'Дата решения 04',
-      'Этап 05А',
-      'Этап 07',
-      'CustomModelId',
-      'Эпик 09',
-      'Дата решения для эпика 11',
-      'Дата решения для эпика 12',
-      'Выходная таблица',
-      'Параметры оценки аллокаций',
-      'Название команды, ответственной за разработку',
-      'Подсистема реализации модели',
-      'Описание модели',
-      'Этап 04',
-      'Модельный эпик 05',
-      'Дата завершения разработки пилота',
-      'Дата решения для 07 этапа',
-      'Релиз',
-      'Эпик 11',
-      'Этап 12',
-      'Дата релиза',
-      'Класс оценки аллокаций',
-      'Проект, в рамках которого реализуется задача по построению модели',
-      'Команда, которая внедряла модель',
-      'Бизнес-процесс',
-      'Дата окончания разработки Модели',
-      'Дата выведения Модели из ПИМ',
-      'Дата начала разработки Модели',
-      'Система внедрения'
+    WHERE a.artefact_tech_label IN (
+      'model_epic_04_date',
+      'model_epic_05a',
+      'model_epic_07',
+      'customer_model_id',
+      'model_epic_09',
+      'model_epic_11_date',
+      'output_table',
+      'allocation_assessment_parameters',
+      'dev_team',
+      'runtime_subsystem',
+      'model_desc',
+      'model_epic_04',
+      'model_epic_05',
+      'data_completion_of_stage_05a',
+      'model_epic_07_date',
+      'release',
+      'model_epic_11',
+      'model_epic_12',
+      'date_of_introduction_into_operation',
+      'allocation_assessment_class',
+      'project_ref',
+      'deploy_team',
+      'buiseness_process_name',
+      'developing_end_date',
+      'rs_model_decommiss_date',
+      'developing_start_date',
+      'deploy_system'
     )
   );
 
 -- ------------------------------------------------------------------
 -- Post-check (run manually after migration):
--- Expected: 0 rows for business_customer / test_business_customer on rm
+-- Expected: 0 rows for business_customer on rm
 -- for the epic / pilot fields above — not for developing_end_date or
 -- remove_date_validation (those should remain granted on RM).
 -- ------------------------------------------------------------------
