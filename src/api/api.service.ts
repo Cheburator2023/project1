@@ -24,6 +24,7 @@ import {
 
 import { sortOrder, TECH_LABELS_HISTORY_ONLY_IN_SUM_RM } from './constants'
 import { ModelsService } from '../modules/models/models.service'
+import { Model } from 'src/modules/models/interfaces'
 
 interface LegacyTemplateValue {
   [key: string]: string[]
@@ -83,16 +84,17 @@ export class ApiService {
         artefact_tech_label
       })
     } else {
-      result = await Promise.all([
-        ...(await this.sumDatabaseService.query(getSumModelHistorySql, {
+      const [sumResult, mrmResult] = await Promise.all([
+        this.sumDatabaseService.query(getSumModelHistorySql, {
           model_id,
           artefact_tech_label
-        })),
-        ...(await this.mrmDatabaseService.query(getSumRmModelHistorySql, {
+        }),
+        this.mrmDatabaseService.query(getSumRmModelHistorySql, {
           model_id,
           artefact_tech_label
-        }))
+        })
       ])
+      result = [...sumResult, ...mrmResult]
     }
 
     function filterAndSortData(data: any[]) {
@@ -243,10 +245,14 @@ export class ApiService {
     return Object.values(value).every((v) => Array.isArray(v))
   }
 
-  private async convertLegacyToNewFormat(
+  /**
+   * Один снимок моделей на запрос шаблонов — иначе для каждой колонки с not-null
+   * вызывался полный getModels() (десятки тяжёлых запросов и 504 на шлюзе).
+   */
+  private convertLegacyToNewFormat(
     legacyValue: LegacyTemplateValue,
-    mode?: string[]
-  ): Promise<NewTemplateValue> {
+    allModels: Model[]
+  ): NewTemplateValue {
     const filterModel: FilterModel = {}
 
     for (const [key, values] of Object.entries(legacyValue)) {
@@ -256,48 +262,28 @@ export class ApiService {
         const hasNotNull = values.includes('not-null')
 
         if (hasNotNull) {
-          // Удаляем 'not-null' из значений, так как это специальный маркер
-          processedValues = processedValues.filter((v) => v !== 'not-null')
-
-          // Если после удаления 'not-null' остались другие значения, используем их
-          // Если остался только 'not-null', то получаем все непустые значения из базы
-          if (processedValues.length === 0) {
-            try {
-              const allValues = await this.getAllValuesForColumn(key, mode)
-              console.log(
-                '🐸 Pepe said >> ApiService >> convertLegacyToNewFormat >> allValues:',
-                allValues
-              )
-
-              // Фильтруем null/undefined значения для 'not-null' фильтра
-              processedValues = allValues.filter(
-                (value) =>
-                  value !== null &&
-                  value !== undefined &&
-                  value !== '' &&
-                  value.toString().trim() !== ''
-              )
-            } catch (error) {
-              console.warn(
-                `Не удалось получить значения для колонки ${key}:`,
-                error
-              )
-              processedValues = []
-            }
-          }
+          // AG Grid API: маркер 'not-null' в легаси — это «все непустые»; в ответе должны
+          // быть явные значения, а не строка 'not-null'.
+          const explicit = processedValues.filter((v) => v !== 'not-null')
+          const fromDataset = this.distinctNonEmptyColumnValues(key, allModels)
+          processedValues = Array.from(
+            new Set([...fromDataset, ...explicit.map(String)])
+          )
         }
 
         if (key.includes('date')) {
+          const sortedDates = [...new Set(processedValues.map(String))].sort()
+          const dateFrom = sortedDates[0] ?? null
+          const dateTo =
+            sortedDates.length > 1
+              ? sortedDates[sortedDates.length - 1]
+              : sortedDates[0] ?? null
           filterModel[key] = {
             filterType: 'date',
             type:
-              processedValues[0] &&
-              processedValues[1] &&
-              !(processedValues[0] === processedValues[1])
-                ? 'inRange'
-                : 'equals',
-            dateFrom: processedValues[0] || null,
-            dateTo: processedValues[1] || null
+              dateFrom && dateTo && dateFrom !== dateTo ? 'inRange' : 'equals',
+            dateFrom,
+            dateTo
           }
         } else {
           filterModel[key] = {
@@ -320,71 +306,73 @@ export class ApiService {
     }
   }
 
-  private async getAllValuesForColumn(
+  /** Уникальные непустые значения колонки для set-фильтра AG Grid (после trim). */
+  private distinctNonEmptyColumnValues(
     columnName: string,
-    mode?: string[]
-  ): Promise<string[]> {
-    try {
-      const models = await this.modelsService.getModels(
-        mode?.length ? { mode } : { ignoreModeFilter: true }
-      )
+    models: Model[]
+  ): string[] {
+    const seen = new Set<string>()
+    const out: string[] = []
 
-      const values = models.map((model) => {
-        return model[columnName]
-      })
-
-      return values
-    } catch (error) {
-      console.error(
-        `Ошибка при получении значений для колонки -- ${columnName}:`,
-        error
-      )
-      return []
+    for (const model of models) {
+      const raw = model[columnName]
+      if (raw === null || raw === undefined) {
+        continue
+      }
+      const str = typeof raw === 'string' ? raw : String(raw)
+      const trimmed = str.trim()
+      if (trimmed === '') {
+        continue
+      }
+      if (seen.has(trimmed)) {
+        continue
+      }
+      seen.add(trimmed)
+      out.push(trimmed)
     }
+
+    return out
+  }
+
+  private modelsQueryOptionsForTemplates(mode?: string[]) {
+    return mode?.length ? { mode } : { ignoreModeFilter: true as const }
   }
 
   async getTemplates(user: any, mode?: string[]) {
     const result = await this.mrmDatabaseService.query(getTemplatesSql, [])
-
-    const templatesWithProcessedValues = await Promise.all(
-      result
-        .filter(({ user_id, public: is_public }) => {
-          return user_id === user?.preferred_username || is_public
-        })
-        .map(
-          async ({
-            user_id,
-            public: is_public,
-            template_value,
-            ...template
-          }) => {
-            let processedTemplateValue = template_value
-
-            if (this.isLegacyTemplateValue(template_value)) {
-              processedTemplateValue = await this.convertLegacyToNewFormat(
-                template_value,
-                mode
-              )
-
-              return {
-                user_id,
-                isOwner: user_id === user?.preferred_username,
-                public: is_public,
-                ...processedTemplateValue,
-                ...template
-              }
-            }
-
-            return {
-              user_id,
-              isOwner: user_id === user?.preferred_username,
-              public: is_public,
-              ...processedTemplateValue,
-              ...template
-            }
-          }
-        )
+    const allModels = await this.modelsService.getModels(
+      this.modelsQueryOptionsForTemplates(mode)
     )
+
+    const templatesWithProcessedValues = result
+      .filter(({ user_id, public: is_public }) => {
+        return user_id === user?.preferred_username || is_public
+      })
+      .map(
+        ({
+          user_id,
+          public: is_public,
+          template_value,
+          ...template
+        }) => {
+          let processedTemplateValue = template_value
+
+          if (this.isLegacyTemplateValue(template_value)) {
+            processedTemplateValue = this.convertLegacyToNewFormat(
+              template_value,
+              allModels
+            )
+          }
+
+          return {
+            user_id,
+            isOwner: user_id === user?.preferred_username,
+            public: is_public,
+            ...processedTemplateValue,
+            ...template
+          }
+        }
+      )
 
     const filteredTemplates = templatesWithProcessedValues
       .sort((a, b) => {
@@ -417,9 +405,12 @@ export class ApiService {
       let processedTemplateValue = filteredTemplate.template_value
 
       if (this.isLegacyTemplateValue(filteredTemplate.template_value)) {
-        processedTemplateValue = await this.convertLegacyToNewFormat(
+        const allModels = await this.modelsService.getModels(
+          this.modelsQueryOptionsForTemplates(mode)
+        )
+        processedTemplateValue = this.convertLegacyToNewFormat(
           filteredTemplate.template_value,
-          mode
+          allModels
         )
       }
 
