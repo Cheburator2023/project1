@@ -1,5 +1,30 @@
 # Semantic Versioning Changelog
 
+# [1.46.0](https://git.sfera.inno.local:7999/SUMD/mrms-backend/compare/v1.45.1...v1.46.0) (2026-04-14)
+
+
+### Bug Fixes
+
+* add final safeguard to SQL migration for artefact source roles ([58f7ae8](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/58f7ae8a7eec2bc2128f96a71a80b8b51066601e))
+* enhance artefact role permissions and introduce user group matching ([d063593](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/d0635939dea07055394afc09a42f716489fafd4a))
+* enhance SQL migration for artefact permissions and roles ([360501a](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/360501a8bc67641ef1fd187f403d1f10c5c18599))
+* enhance SQL migration for business customer artefact roles ([d858c6d](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/d858c6dea92a45653115fa6d834fd2bb4cfff191))
+* enhance SQL migration for business_customer role handling ([f72df29](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/f72df29ca62e6d279fe10ad94b971dca5fa380c4))
+* update model alias in JSON configuration ([03120d1](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/03120d12754a42ac855f12032981f7114aed6164))
+* update SQL migration for artefact roles and permissions ([6dd2028](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/6dd20284c254cb147657472597f39910466eaa5c))
+* update SQL migration for artefact roles and permissions ([8dae244](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/8dae244d1400139fe696ce7e7b9c8e05a0541c67))
+* update SQL migration to enforce deny permissions for business customer epic fields ([351f553](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/351f5538ccc7dbd4c1a9469d8ad9d5c77737b6db))
+* update SQL migration to include additional business customer artefact roles ([6e25661](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/6e25661dbfb2026e627ec1476d4cb47fa629cbd0))
+* оптимизация загрузки шаблонов и улучшение обработки ошибок ([9726ffb](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/9726ffb20372911871f8e8f51c4c54068bd82b9f))
+* улучшение обработки ошибок при загрузке шаблонов ([85b6c7a](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/85b6c7aceb866158bdea44bfe450d00354331c77))
+
+
+### Features
+
+* add new CSV and SQL migration for artefact permissions and role verification ([50eb131](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/50eb13122e8fa7bd18f64559c7b31e0ff7e524a8))
+* add SQL migration for business customer artefact roles ([8db0a3d](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/8db0a3d10f7ac0639206eb809be7758942b224a1))
+* enhance artefact rating model handler with value checking logic ([10dd824](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/10dd8242f21b59d5d13cf84d233678710e16bcba))
+
 ## [1.45.1](https://git.sfera.inno.local:7999/SUMD/mrms-backend/compare/v1.45.0...v1.45.1) (2026-04-10)
 
 
