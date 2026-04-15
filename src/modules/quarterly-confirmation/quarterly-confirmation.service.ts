@@ -151,14 +151,20 @@ export class QuarterlyConfirmationService {
       // Поля business_customer (artefact_id=2031), business_customer_departament (artefact_id=2032),
       // business_status (artefact_id=2656), model_alias вычисляется из root_model_id+version
       // model_name_dadm = rating_system_name (artefact_id=2003)
+      this.logger.info(
+        '[ALLOC_DEBUG] getModelsForConfirmation filter params',
+        'ОтладкаПараметровФильтрации',
+        { userFullName, userDepartment }
+      )
+
       const whereClauses = [
-        "a.business_customer_departament = :user_department",
+        'a.business_customer_departament ILIKE :user_department',
         'a.business_customer ILIKE :user_name_pattern',
         "COALESCE(a.business_status, '') NOT IN (:status_archive, :status_creation_error)",
         '(m.temp_block_flag != 1 OR m.temp_block_flag IS NULL)'
       ]
       const queryParams: any = {
-        user_department: userDepartment,
+        user_department: `%${userDepartment}%`,
         user_name_pattern: `%${userFullName}%`,
         status_archive: MODEL_STATUS.ARCHIVE,
         status_creation_error: MODEL_STATUS.CREATION_ERROR
@@ -216,15 +222,16 @@ export class QuarterlyConfirmationService {
         FROM models_new m
         LEFT JOIN (
           SELECT
-            m2.model_id                                                                          AS system_model_id,
-            MAX(CASE WHEN ar.artefact_id = 2001 THEN ar.artefact_string_value ELSE NULL END)    AS model_id,
-            CAST('model' || m2.root_model_id AS varchar) || '-v' || CAST(m2.model_version AS varchar) AS model_alias,
-            MAX(CASE WHEN ar.artefact_id = 2003 THEN ar.artefact_string_value ELSE NULL END)    AS model_name_dadm,
-            MAX(CASE WHEN ar.artefact_id = 2031 THEN ar.artefact_string_value ELSE NULL END)    AS business_customer,
-            MAX(CASE WHEN ar.artefact_id = 2032 THEN ar.artefact_string_value ELSE NULL END)    AS business_customer_departament,
-            MAX(CASE WHEN ar.artefact_id = 2656 THEN ar.artefact_string_value ELSE NULL END)    AS business_status
+            m2.model_id                                                                                        AS system_model_id,
+            MAX(CASE WHEN ar.artefact_id = 2001 THEN ar.artefact_string_value ELSE NULL END)                  AS model_id,
+            CAST('model' || m2.root_model_id AS varchar) || '-v' || CAST(m2.model_version AS varchar)         AS model_alias,
+            MAX(CASE WHEN ar.artefact_id = 2003 THEN ar.artefact_string_value ELSE NULL END)                  AS model_name_dadm,
+            MAX(CASE WHEN ar.artefact_id = 2031 THEN ar.artefact_string_value ELSE NULL END)                  AS business_customer,
+            STRING_AGG(CASE WHEN ar.artefact_id = 2032 THEN av.artefact_value ELSE NULL END, ',' ORDER BY ar.artefact_value_id) AS business_customer_departament,
+            MAX(CASE WHEN ar.artefact_id = 2656 THEN ar.artefact_string_value ELSE NULL END)                  AS business_status
           FROM artefact_realizations_new ar
           INNER JOIN models_new m2 ON ar.model_id = m2.model_id
+          LEFT JOIN artefact_values av ON ar.artefact_value_id = av.artefact_value_id AND av.is_active_flg = '1'
           WHERE ar.effective_to = TIMESTAMP '9999-12-31 23:59:59'
           GROUP BY m2.model_id, m2.root_model_id, m2.model_version
         ) a ON m.model_id = a.system_model_id

@@ -62,6 +62,15 @@ export class QuarterlyConfirmationController {
     const userDepartment =
       user.groups && user.groups.length > 0 ? user.groups[0] : ''
 
+    console.log('[ALLOC_DEBUG] /models user info:', JSON.stringify({
+      userFullName,
+      userDepartment,
+      family_name: user.family_name,
+      given_name: user.given_name,
+      groups: user.groups,
+      preferred_username: user.preferred_username
+    }))
+
     const models =
       await this.quarterlyConfirmationService.getModelsForConfirmation(
         userFullName,
