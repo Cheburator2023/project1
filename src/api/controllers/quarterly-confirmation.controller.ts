@@ -58,22 +58,28 @@ export class QuarterlyConfirmationController {
     @Res() response,
     @User() user: UserType
   ) {
-    const userFullName = `${user.family_name} ${user.given_name}`.trim()
-    const userDepartment =
-      user.groups && user.groups.length > 0 ? user.groups[0] : ''
+    const userFamilyName = user.family_name || ''
+    const userGivenName = user.given_name || ''
+    // Подразделение хранится в группе вида /departament_business_customer/НАЗВАНИЕ
+    const deptGroup = (user.keycloakGroups || []).find((g) =>
+      g.startsWith('/departament_business_customer/')
+    )
+    const userDepartment = deptGroup
+      ? deptGroup.split('/').pop() || ''
+      : ''
 
     console.log('[ALLOC_DEBUG] /models user info:', JSON.stringify({
-      userFullName,
+      userFamilyName,
+      userGivenName,
       userDepartment,
-      family_name: user.family_name,
-      given_name: user.given_name,
-      groups: user.groups,
+      keycloakGroups: user.keycloakGroups,
       preferred_username: user.preferred_username
     }))
 
     const models =
       await this.quarterlyConfirmationService.getModelsForConfirmation(
-        userFullName,
+        userFamilyName,
+        userGivenName,
         userDepartment,
         query
       )
@@ -81,7 +87,7 @@ export class QuarterlyConfirmationController {
     return response.status(HttpStatus.OK).json({
       data: {
         models,
-        _debug: { userFullName, userDepartment, modelsCount: models.length }
+        _debug: { userFamilyName, userGivenName, userDepartment, modelsCount: models.length }
       }
     })
   }

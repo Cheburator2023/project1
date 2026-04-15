@@ -125,7 +125,8 @@ export class QuarterlyConfirmationService {
   }
 
   async getModelsForConfirmation(
-    userFullName: string,
+    userFamilyName: string,
+    userGivenName: string,
     userDepartment: string,
     filters?: GetModelsQueryDto
   ): Promise<ConfirmationModelRow[]> {
@@ -139,7 +140,8 @@ export class QuarterlyConfirmationService {
       'Getting models for quarterly confirmation',
       'ПолучениеМоделейДляПодтвержденияКвартала',
       {
-        userFullName,
+        userFamilyName,
+        userGivenName,
         userDepartment,
         quarter: quarterInfo.quarter,
         year: quarterInfo.year
@@ -154,21 +156,33 @@ export class QuarterlyConfirmationService {
       this.logger.info(
         '[ALLOC_DEBUG] getModelsForConfirmation filter params',
         'ОтладкаПараметровФильтрации',
-        { userFullName, userDepartment }
+        { userFamilyName, userGivenName, userDepartment }
       )
 
-      const whereClauses = [
-        'a.business_customer_departament ILIKE :user_department',
-        'a.business_customer ILIKE :user_name_pattern',
-        "COALESCE(a.business_status, '') NOT IN (:status_archive, :status_creation_error)",
-        '(m.temp_block_flag != 1 OR m.temp_block_flag IS NULL)'
-      ]
+      // Матчим business_customer по обоим частям имени раздельно —
+      // работает независимо от порядка ("Мазур Елена" или "Елена Мазур")
+      const whereClauses: string[] = []
       const queryParams: any = {
-        user_department: `%${userDepartment}%`,
-        user_name_pattern: `%${userFullName}%`,
         status_archive: MODEL_STATUS.ARCHIVE,
         status_creation_error: MODEL_STATUS.CREATION_ERROR
       }
+
+      if (userFamilyName) {
+        whereClauses.push('a.business_customer ILIKE :family_name_pattern')
+        queryParams.family_name_pattern = `%${userFamilyName}%`
+      }
+      if (userGivenName) {
+        whereClauses.push('a.business_customer ILIKE :given_name_pattern')
+        queryParams.given_name_pattern = `%${userGivenName}%`
+      }
+      if (userDepartment) {
+        whereClauses.push('a.business_customer_departament ILIKE :user_department')
+        queryParams.user_department = `%${userDepartment}%`
+      }
+      whereClauses.push(
+        "COALESCE(a.business_status, '') NOT IN (:status_archive, :status_creation_error)",
+        '(m.temp_block_flag != 1 OR m.temp_block_flag IS NULL)'
+      )
 
       // Добавляем текстовый поиск
       if (filters?.search) {
@@ -459,7 +473,7 @@ export class QuarterlyConfirmationService {
         'Error getting models for confirmation',
         'ОшибкаПолученияМоделейДляПодтверждения',
         error,
-        { userFullName, userDepartment }
+        { userFamilyName, userGivenName, userDepartment }
       )
       throw error
     }
