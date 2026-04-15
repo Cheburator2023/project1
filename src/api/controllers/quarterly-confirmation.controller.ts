@@ -78,7 +78,12 @@ export class QuarterlyConfirmationController {
         query
       )
 
-    return response.status(HttpStatus.OK).json({ data: { models } })
+    return response.status(HttpStatus.OK).json({
+      data: {
+        models,
+        _debug: { userFullName, userDepartment, modelsCount: models.length }
+      }
+    })
   }
 
   @ApiOperation({
