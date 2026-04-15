@@ -70,6 +70,17 @@ export class QuarterlyConfirmationService {
       }
     }
 
+    this.logger.info(
+      '[ALLOC_DEBUG] Editable quarters computed',
+      'ОтладкаДоступныхКварталов',
+      {
+        now: now.toISOString(),
+        editableQuarters,
+        QUARTER_EDIT_PERIOD_MONTHS,
+        QUARTER_EDIT_PERIOD_DAYS
+      }
+    )
+
     if (editableQuarters.length === 0) {
       this.logger.warn(
         'No editable quarters found',
@@ -96,13 +107,21 @@ export class QuarterlyConfirmationService {
       0
     )
 
-    return {
+    const result = {
       quarter: activeQuarter.quarter,
       year: activeQuarter.year,
       startDate: startDate.toISOString().split('T')[0],
       endDate: endDate.toISOString().split('T')[0],
       maxDate: maxDate.toISOString().split('T')[0]
     }
+
+    this.logger.info(
+      '[ALLOC_DEBUG] Active quarter selected',
+      'ОтладкаВыбранногоАктивногоКвартала',
+      result
+    )
+
+    return result
   }
 
   async getModelsForConfirmation(
@@ -203,6 +222,15 @@ export class QuarterlyConfirmationService {
 
       const modelIds = models.map((m) => m.model_id)
 
+      this.logger.info(
+        '[ALLOC_DEBUG] Models fetched from DB (before prefill)',
+        'ОтладкаМоделиИзБД',
+        {
+          totalModels: models.length,
+          sampleModelIds: modelIds.slice(0, 5)
+        }
+      )
+
       // Получаем данные из ПИМ
       const pimUsages = await this.pimUsageService.getPimUsageForModels(
         modelIds,
@@ -210,6 +238,17 @@ export class QuarterlyConfirmationService {
         quarterInfo.year
       )
       const pimUsageMap = new Map(pimUsages.map((p) => [p.model_id, p]))
+
+      this.logger.info(
+        '[ALLOC_DEBUG] PIM usage data loaded',
+        'ОтладкаДанныхПИМ',
+        {
+          pimUsageCount: pimUsages.length,
+          pimModelIds: pimUsages.map((p) => p.model_id),
+          quarter: quarterInfo.quarter,
+          year: quarterInfo.year
+        }
+      )
 
       // Получаем данные из предыдущего квартала
       const prevQuarter =
@@ -237,6 +276,17 @@ export class QuarterlyConfirmationService {
       )
       const prevUsageMap = new Map(prevUsages.map((u) => [u.model_id, u]))
 
+      this.logger.info(
+        '[ALLOC_DEBUG] Previous quarter usage data loaded',
+        'ОтладкаДанныхПредыдущегоКвартала',
+        {
+          prevUsageCount: prevUsages.length,
+          prevModelIds: prevUsages.map((u) => u.model_id),
+          prevQuarter: prevQuarter.quarter,
+          prevYear: prevQuarter.year
+        }
+      )
+
       // Получаем текущие данные за активный квартал
       const currentUsages: {
         model_id: string
@@ -257,6 +307,15 @@ export class QuarterlyConfirmationService {
         }
       )
       const currentUsageMap = new Map(currentUsages.map((u) => [u.model_id, u]))
+
+      this.logger.info(
+        '[ALLOC_DEBUG] Current quarter usage data loaded',
+        'ОтладкаДанныхТекущегоКвартала',
+        {
+          currentUsageCount: currentUsages.length,
+          currentModelIds: currentUsages.map((u) => u.model_id)
+        }
+      )
 
       const today = new Date().toISOString().split('T')[0]
 
@@ -330,6 +389,29 @@ export class QuarterlyConfirmationService {
         }
       })
 
+      const prefillStats = {
+        pim: results.filter((r) => r.prefill_source === 'pim').length,
+        previous_quarter: results.filter(
+          (r) => r.prefill_source === 'previous_quarter'
+        ).length,
+        no_data: results.filter((r) => r.prefill_source === null).length
+      }
+
+      this.logger.info(
+        '[ALLOC_DEBUG] Prefill priority results',
+        'ОтладкаРезультатовПриоритетовПредзаполнения',
+        {
+          total: results.length,
+          prefillStats,
+          sampleResults: results.slice(0, 3).map((r) => ({
+            model_id: r.model_id,
+            prefill_source: r.prefill_source,
+            is_used: r.is_used,
+            confirmation_date: r.confirmation_date
+          }))
+        }
+      )
+
       // Применяем фильтры на стороне приложения для полей, которые не в models_registry
       if (filters?.prefill_source) {
         if (filters.prefill_source === 'none') {
@@ -376,7 +458,34 @@ export class QuarterlyConfirmationService {
         (m) => m.is_used !== null && m.is_used !== undefined
       )
 
+      this.logger.info(
+        '[ALLOC_DEBUG] Models to save (filtered non-null is_used)',
+        'ОтладкаМоделейДляСохранения',
+        {
+          totalInPayload: data.models.length,
+          filteredToSave: modelsToSave.length,
+          models: modelsToSave.map((m) => ({
+            model_id: m.model_id,
+            confirmation_date: m.confirmation_date,
+            is_used: m.is_used
+          }))
+        }
+      )
+
       for (const model of modelsToSave) {
+        this.logger.info(
+          '[ALLOC_DEBUG] Saving model usage via artefact flow',
+          'ОтладкаСохраненияМоделиЧерезАртефакты',
+          {
+            model_id: model.model_id,
+            quarter: data.quarter,
+            year: data.year,
+            confirmation_date: model.confirmation_date,
+            is_used: model.is_used,
+            creator
+          }
+        )
+
         await this.usageService.updateUsage(
           [
             {
@@ -403,7 +512,7 @@ export class QuarterlyConfirmationService {
       }
 
       this.logger.info(
-        'Quarterly confirmation saved successfully',
+        '[ALLOC_DEBUG] Quarterly confirmation saved successfully',
         'ПодтверждениеКварталаУспешноСохранено',
         {
           quarter: data.quarter,

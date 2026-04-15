@@ -79,4 +79,46 @@ export class PimUsageService {
       throw error
     }
   }
+
+  async insertPimUsage(
+    model_id: string,
+    quarter: number,
+    year: number,
+    is_used: boolean
+  ): Promise<PimUsageEntity | null> {
+    this.logger.info(
+      'Inserting PIM usage record',
+      'ДобавлениеЗаписиПИМИспользования',
+      { model_id, quarter, year, is_used }
+    )
+
+    try {
+      const [result] = await this.databaseService.query(
+        `
+        INSERT INTO models_pim_usage (model_id, confirmation_quarter, confirmation_year, is_used, source_system)
+        VALUES (:model_id, :quarter, :year, :is_used, 'PIM')
+        ON CONFLICT (model_id, confirmation_quarter, confirmation_year)
+        DO UPDATE SET is_used = :is_used, update_date = NOW()
+        RETURNING *
+        `,
+        { model_id, quarter, year, is_used }
+      )
+
+      this.logger.info(
+        'PIM usage record inserted/updated',
+        'ЗаписьПИМИспользованияДобавлена',
+        { model_id, quarter, year, pim_usage_id: result?.pim_usage_id }
+      )
+
+      return result || null
+    } catch (error) {
+      this.logger.error(
+        'Error inserting PIM usage',
+        'ОшибкаДобавленияДанныхПИМ',
+        error,
+        { model_id, quarter, year }
+      )
+      throw error
+    }
+  }
 }

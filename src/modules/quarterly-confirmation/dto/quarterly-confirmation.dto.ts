@@ -137,6 +137,53 @@ export class SaveQuarterlyConfirmationDto {
   models: QuarterlyConfirmationModelDto[]
 }
 
+export class SeedPimUsageItemDto {
+  @ApiProperty({
+    description: 'Идентификатор модели',
+    example: 'MODEL_123'
+  })
+  @IsString()
+  model_id: string
+
+  @ApiProperty({
+    description: 'Модель используется',
+    example: true
+  })
+  @IsBoolean()
+  is_used: boolean
+}
+
+export class SeedPimUsageDto {
+  @ApiProperty({
+    description: 'Номер квартала (1-4)',
+    example: 1,
+    minimum: 1,
+    maximum: 4
+  })
+  @IsInt()
+  @Min(1)
+  @Max(4)
+  quarter: number
+
+  @ApiProperty({
+    description: 'Год',
+    example: 2026
+  })
+  @IsInt()
+  @Min(2020)
+  @Max(2100)
+  year: number
+
+  @ApiProperty({
+    description: 'Список моделей с данными ПИМ',
+    type: [SeedPimUsageItemDto]
+  })
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => SeedPimUsageItemDto)
+  models: SeedPimUsageItemDto[]
+}
+
 export type QuarterInfoDto = {
   quarter: number
   year: number

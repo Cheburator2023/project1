@@ -12,14 +12,17 @@ import { User, UserType } from 'src/decorators'
 import { QuarterlyConfirmationService } from 'src/modules/quarterly-confirmation/quarterly-confirmation.service'
 import {
   SaveQuarterlyConfirmationDto,
-  GetModelsQueryDto
+  GetModelsQueryDto,
+  SeedPimUsageDto
 } from 'src/modules/quarterly-confirmation/dto/quarterly-confirmation.dto'
+import { PimUsageService } from 'src/modules/pim-usage/pim-usage.service'
 
 @ApiTags('Подтверждение аллокации за квартал')
 @Controller('quarterly-confirmation')
 export class QuarterlyConfirmationController {
   constructor(
-    private readonly quarterlyConfirmationService: QuarterlyConfirmationService
+    private readonly quarterlyConfirmationService: QuarterlyConfirmationService,
+    private readonly pimUsageService: PimUsageService
   ) {}
 
   @ApiOperation({
@@ -34,6 +37,8 @@ export class QuarterlyConfirmationController {
   @Get('/active-quarter')
   async getActiveQuarter(@Res() response) {
     const quarterInfo = this.quarterlyConfirmationService.getActiveQuarter()
+
+    console.log('[ALLOC_DEBUG] /active-quarter response:', JSON.stringify(quarterInfo))
 
     return response.status(HttpStatus.OK).json({ data: quarterInfo })
   }
@@ -88,5 +93,45 @@ export class QuarterlyConfirmationController {
     )
 
     return response.status(HttpStatus.OK).json({ data: { success: result } })
+  }
+
+  @ApiOperation({
+    summary: 'Засеять данные об использовании модели из ПИМ',
+    description:
+      'Добавляет/обновляет записи в таблицу models_pim_usage для тестирования логики приоритетов предзаполнения'
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Данные ПИМ успешно добавлены'
+  })
+  @Post('/seed-pim-usage')
+  async seedPimUsage(
+    @Body() data: SeedPimUsageDto,
+    @Res() response
+  ) {
+    const results = []
+
+    for (const model of data.models) {
+      const result = await this.pimUsageService.insertPimUsage(
+        model.model_id,
+        data.quarter,
+        data.year,
+        model.is_used
+      )
+      results.push({
+        model_id: model.model_id,
+        pim_usage_id: result?.pim_usage_id ?? null,
+        is_used: model.is_used
+      })
+    }
+
+    return response.status(HttpStatus.OK).json({
+      data: {
+        success: true,
+        quarter: data.quarter,
+        year: data.year,
+        seeded: results
+      }
+    })
   }
 }

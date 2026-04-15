@@ -7,6 +7,6 @@ import { QuarterlyConfirmationService } from './quarterly-confirmation.service'
 @Module({
   imports: [MrmDatabaseModule, PimUsageModule, forwardRef(() => UsageModule)],
   providers: [QuarterlyConfirmationService],
-  exports: [QuarterlyConfirmationService]
+  exports: [QuarterlyConfirmationService, PimUsageModule]
 })
 export class QuarterlyConfirmationModule {}
