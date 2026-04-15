@@ -148,10 +148,14 @@ export class QuarterlyConfirmationService {
 
     try {
       // Строим динамический SQL запрос с фильтрами
+      // Поля business_customer (artefact_id=2031), business_customer_departament (artefact_id=2032),
+      // business_status (artefact_id=2656), model_alias вычисляется из root_model_id+version
+      // model_name_dadm = rating_system_name (artefact_id=2003)
       const whereClauses = [
-        'm.business_customer_departament = :user_department',
-        'm.business_customer ILIKE :user_name_pattern',
-        "COALESCE(m.business_status, '') NOT IN (:status_archive, :status_creation_error)"
+        "a.business_customer_departament = :user_department",
+        'a.business_customer ILIKE :user_name_pattern',
+        "COALESCE(a.business_status, '') NOT IN (:status_archive, :status_creation_error)",
+        '(m.temp_block_flag != 1 OR m.temp_block_flag IS NULL)'
       ]
       const queryParams: any = {
         user_department: userDepartment,
@@ -164,10 +168,10 @@ export class QuarterlyConfirmationService {
       if (filters?.search) {
         whereClauses.push(
           `(
-            m.model_id ILIKE :search
-            OR m.model_alias ILIKE :search
+            a.model_id ILIKE :search
+            OR a.model_alias ILIKE :search
             OR m.model_name ILIKE :search
-            OR m.model_name_dadm ILIKE :search
+            OR a.model_name_dadm ILIKE :search
           )`
         )
         queryParams.search = `%${filters.search}%`
@@ -175,7 +179,7 @@ export class QuarterlyConfirmationService {
 
       // Добавляем фильтры по атрибутам
       if (filters?.model_alias) {
-        whereClauses.push('m.model_alias ILIKE :model_alias')
+        whereClauses.push('a.model_alias ILIKE :model_alias')
         queryParams.model_alias = `%${filters.model_alias}%`
       }
 
@@ -185,33 +189,48 @@ export class QuarterlyConfirmationService {
       }
 
       if (filters?.model_name_dadm) {
-        whereClauses.push('m.model_name_dadm ILIKE :model_name_dadm')
+        whereClauses.push('a.model_name_dadm ILIKE :model_name_dadm')
         queryParams.model_name_dadm = `%${filters.model_name_dadm}%`
       }
 
       if (filters?.business_customer) {
-        whereClauses.push('m.business_customer ILIKE :business_customer')
+        whereClauses.push('a.business_customer ILIKE :business_customer')
         queryParams.business_customer = `%${filters.business_customer}%`
       }
 
       if (filters?.business_customer_departament) {
         whereClauses.push(
-          'm.business_customer_departament ILIKE :business_customer_departament'
+          'a.business_customer_departament ILIKE :business_customer_departament'
         )
         queryParams.business_customer_departament = `%${filters.business_customer_departament}%`
       }
 
       const sqlQuery = `
         SELECT DISTINCT
-          m.model_id,
-          m.model_alias,
+          a.model_id,
+          a.model_alias,
           m.model_name,
-          m.model_name_dadm,
-          m.business_customer,
-          m.business_customer_departament
-        FROM models m
+          a.model_name_dadm,
+          a.business_customer,
+          a.business_customer_departament
+        FROM models_new m
+        LEFT JOIN (
+          SELECT
+            m2.model_id                                                                          AS system_model_id,
+            MAX(CASE WHEN ar.artefact_id = 2001 THEN ar.artefact_string_value ELSE NULL END)    AS model_id,
+            CAST('model' || m2.root_model_id AS varchar) || '-v' || CAST(m2.model_version AS varchar) AS model_alias,
+            MAX(CASE WHEN ar.artefact_id = 2003 THEN ar.artefact_string_value ELSE NULL END)    AS model_name_dadm,
+            MAX(CASE WHEN ar.artefact_id = 2031 THEN ar.artefact_string_value ELSE NULL END)    AS business_customer,
+            MAX(CASE WHEN ar.artefact_id = 2032 THEN ar.artefact_string_value ELSE NULL END)    AS business_customer_departament,
+            MAX(CASE WHEN ar.artefact_id = 2656 THEN ar.artefact_string_value ELSE NULL END)    AS business_status
+          FROM artefact_realizations_new ar
+          INNER JOIN models_new m2 ON ar.model_id = m2.model_id
+          WHERE ar.effective_to = TIMESTAMP '9999-12-31 23:59:59'
+          GROUP BY m2.model_id, m2.root_model_id, m2.model_version
+        ) a ON m.model_id = a.system_model_id
         WHERE ${whereClauses.join(' AND ')}
-        ORDER BY m.model_id
+          AND a.model_id IS NOT NULL
+        ORDER BY a.model_id
       `
 
       const models = await this.databaseService.query(sqlQuery, queryParams)
