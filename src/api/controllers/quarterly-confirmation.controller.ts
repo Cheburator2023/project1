@@ -112,7 +112,7 @@ export class QuarterlyConfirmationController {
       user.preferred_username
     )
 
-    return response.status(HttpStatus.OK).json({ data: { success: result } })
+    return response.status(HttpStatus.OK).json({ data: result })
   }
 
   @ApiOperation({

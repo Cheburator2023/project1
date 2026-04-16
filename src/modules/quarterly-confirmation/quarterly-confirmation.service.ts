@@ -482,7 +482,22 @@ export class QuarterlyConfirmationService {
   async saveConfirmation(
     data: SaveQuarterlyConfirmationDto,
     creator: string
-  ): Promise<boolean> {
+  ): Promise<{
+    success: boolean
+    quarter: number
+    year: number
+    totalInPayload: number
+    savedToMrm: number
+    syncedToSum: number
+    sumSyncErrors: { model_id: string; error: string }[]
+    models: {
+      model_id: string
+      is_used: boolean | null
+      confirmation_date: string | null
+      mrm: boolean
+      sum: boolean | null
+    }[]
+  }> {
     this.logger.info(
       'Saving quarterly confirmation',
       'СохранениеПодтвержденияКвартала',
@@ -512,6 +527,16 @@ export class QuarterlyConfirmationService {
         }
       )
 
+      const saveResults: {
+        model_id: string
+        is_used: boolean | null
+        confirmation_date: string | null
+        mrm: boolean
+        sum: boolean | null
+      }[] = []
+      const sumSyncErrors: { model_id: string; error: string }[] = []
+      let syncedToSum = 0
+
       for (const model of modelsToSave) {
         this.logger.info(
           '[ALLOC_DEBUG] Saving model usage via artefact flow',
@@ -526,29 +551,71 @@ export class QuarterlyConfirmationService {
           }
         )
 
-        await this.usageService.updateUsage(
-          [
+        const usageArtefacts = [
+          {
+            model_id: model.model_id,
+            artefact_tech_label: `usage_confirm_date_q${data.quarter}`,
+            artefact_string_value: model.confirmation_date
+              ? this.formatDateToDDMMYYYY(model.confirmation_date)
+              : this.formatDateToDDMMYYYY(
+                  new Date().toISOString().split('T')[0]
+                ),
+            artefact_value_id: null,
+            creator
+          },
+          {
+            model_id: model.model_id,
+            artefact_tech_label: `usage_confirm_flag_q${data.quarter}`,
+            artefact_string_value: model.is_used ? 'Да' : 'Нет',
+            artefact_value_id: null,
+            creator
+          }
+        ]
+
+        await this.usageService.updateUsage(usageArtefacts, MODEL_SOURCES.MRM)
+
+        // Синхронизация в СУМ: для моделей, созданных в СУМ, записываем usage
+        // и историю изменений в БД СУМ. SumUsageService сам проверит
+        // существование модели — если её нет в СУМ, вернёт false (no-op).
+        let sumSynced: boolean | null = null
+        try {
+          const sumResult = await this.usageService.updateUsage(
+            usageArtefacts,
+            MODEL_SOURCES.SUM
+          )
+          sumSynced = sumResult
+
+          if (sumResult) {
+            syncedToSum++
+            this.logger.info(
+              'Usage synced to SUM for model',
+              'ИспользованиеСинхронизированоВСУМ',
+              { model_id: model.model_id, quarter: data.quarter }
+            )
+          }
+        } catch (sumError) {
+          // Ошибка синхронизации в СУМ не должна блокировать основное сохранение
+          const errMsg =
+            sumError instanceof Error ? sumError.message : String(sumError)
+          sumSyncErrors.push({ model_id: model.model_id, error: errMsg })
+          this.logger.warn(
+            'Failed to sync usage to SUM, MRM save succeeded',
+            'ОшибкаСинхронизацииВСУМСохранениеВМРМУспешно',
             {
               model_id: model.model_id,
-              artefact_tech_label: `usage_confirm_date_q${data.quarter}`,
-              artefact_string_value: model.confirmation_date
-                ? this.formatDateToDDMMYYYY(model.confirmation_date)
-                : this.formatDateToDDMMYYYY(
-                    new Date().toISOString().split('T')[0]
-                  ),
-              artefact_value_id: null,
-              creator
-            },
-            {
-              model_id: model.model_id,
-              artefact_tech_label: `usage_confirm_flag_q${data.quarter}`,
-              artefact_string_value: model.is_used ? 'Да' : 'Нет',
-              artefact_value_id: null,
-              creator
+              quarter: data.quarter,
+              error: errMsg
             }
-          ],
-          MODEL_SOURCES.MRM
-        )
+          )
+        }
+
+        saveResults.push({
+          model_id: model.model_id,
+          is_used: model.is_used,
+          confirmation_date: model.confirmation_date,
+          mrm: true,
+          sum: sumSynced
+        })
       }
 
       this.logger.info(
@@ -557,11 +624,22 @@ export class QuarterlyConfirmationService {
         {
           quarter: data.quarter,
           year: data.year,
-          savedCount: modelsToSave.length
+          savedCount: modelsToSave.length,
+          syncedToSum,
+          sumSyncErrors: sumSyncErrors.length
         }
       )
 
-      return true
+      return {
+        success: true,
+        quarter: data.quarter,
+        year: data.year,
+        totalInPayload: data.models.length,
+        savedToMrm: modelsToSave.length,
+        syncedToSum,
+        sumSyncErrors,
+        models: saveResults
+      }
     } catch (error) {
       this.logger.error(
         'Error saving quarterly confirmation',
