@@ -110,10 +110,14 @@ export class SumArtefactService
 
       // Получаем все атрибуты, которые не встречаются в вычисленных complete задачах, и пропускаем исключения
       const artefactsQueryResult = await this.databaseService.query(
-        `select distinct on (a.artefact_id) ta.task_id, a.artefact_id, a.artefact_tech_label from tasks_artefacts ta 
-          join artefacts a on a.artefact_id = ta.artefact_id 
-          where ta.task_id <> all (:task_ids::text[]) 
-            and a.artefact_tech_label <> all (:artefact_tech_labels::text[]) 
+        `with allowed_list as (
+          select taa.artefact_id from tasks_artefacts taa
+          where taa.task_id = any (:task_ids::text[]) 
+            and taa.deployment_id = :deployment_id
+        ) select distinct a.artefact_tech_label from artefacts a 
+          join tasks_artefacts ta on ta.artefact_id = a.artefact_id
+          where a.artefact_id <> all (select * from allowed_list) 
+            and a.artefact_tech_label <> all (:artefact_tech_labels::text[])
             and ta.deployment_id = :deployment_id`,
         {
           task_ids: completedTasksList,
