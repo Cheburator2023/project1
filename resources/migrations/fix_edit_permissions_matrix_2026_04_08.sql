@@ -35,6 +35,10 @@ BEGIN
   END IF;
 END $$;
 
+UPDATE artefacts
+SET is_edit_flg = '1'
+WHERE artefact_tech_label = 'data_source_description';
+
 DELETE FROM artefact_source_roles AS asr
 WHERE EXISTS (
   SELECT 1
@@ -74,6 +78,7 @@ WHERE EXISTS (
       ('validation_report_approve_date'),
       ('remove_date_validation'),
       ('ds_department'),
+      ('data_source_description'),
       ('developing_report'),
       ('rating_model'),
       ('output_table'),
@@ -146,10 +151,10 @@ FROM (
     ('business_customer', 'sum', 'ds_department'),
     ('business_customer', 'sum', 'rating_model'),
     ('business_customer', 'sum_rm', 'ds_department'),
+    ('business_customer', 'sum_rm', 'data_source_description'),
     ('business_customer', 'sum_rm', 'developing_report'),
     ('business_customer', 'sum_rm', 'rating_model'),
     ('business_customer', 'sum_rm', 'developing_end_date'),
-    ('business_customer', 'sum', 'developing_end_date'),
     ('business_customer', 'sum', 'remove_date_validation'),
     ('business_customer', 'sum_rm', 'remove_date_validation'),
     ('business_customer', 'sum_rm', 'remove_decision'),
@@ -168,6 +173,7 @@ FROM (
     ('validator_lead', 'sum_rm', 'remove_date_validation'),
     ('validator_lead', 'sum', 'ds_department'),
     ('validator_lead', 'sum_rm', 'ds_department'),
+    ('validator_lead', 'sum_rm', 'data_source_description'),
     ('validator_lead', 'sum_rm', 'developing_report'),
     ('validator_lead', 'sum', 'rating_model'),
     ('validator_lead', 'sum_rm', 'rating_model'),
@@ -183,6 +189,23 @@ FROM (
     ('ds_lead', 'sum', 'model_epic_11_date'),
     ('ds_lead', 'sum', 'output_table'),
     ('ds_lead', 'sum', 'allocation_assessment_parameters'),
+    ('ds_lead', 'sum', 'operational_control_date'),
+    ('ds_lead', 'sum_rm', 'operational_control_date'),
+    ('ds_lead', 'sum', 'analytical_control_date'),
+    ('ds_lead', 'sum_rm', 'analytical_control_date'),
+    ('ds_lead', 'sum', 'model_values_control_date'),
+    ('ds_lead', 'sum_rm', 'model_values_control_date'),
+    ('ds_lead', 'sum', 'impact_assessment_date'),
+    ('ds_lead', 'sum_rm', 'impact_assessment_date'),
+    ('ds_lead', 'sum', 'model_data_07k_control_epic'),
+    ('ds_lead', 'sum_rm', 'model_data_07k_control_epic'),
+    ('ds_lead', 'sum', 'check_objects_count'),
+    ('ds_lead', 'sum_rm', 'check_objects_count'),
+    ('ds_lead', 'sum', 'model_data_07k_control'),
+    ('ds_lead', 'sum_rm', 'model_data_07k_control'),
+    ('ds_lead', 'sum', 'model_data_control_date'),
+    ('ds_lead', 'sum_rm', 'model_data_control_date'),
+    ('ds_lead', 'sum', 'dev_team'),
     ('ds_lead', 'sum', 'runtime_subsystem'),
     ('ds_lead', 'sum', 'developing_end_date'),
     ('ds_lead', 'sum', 'rs_model_decommiss_date'),
@@ -195,6 +218,7 @@ FROM (
     ('ds_lead', 'sum', 'model_epic_11'),
     ('ds_lead', 'sum', 'date_of_introduction_into_operation'),
     ('ds_lead', 'sum', 'allocation_assessment_class'),
+    ('ds_lead', 'sum', 'project_ref'),
     ('ds_lead', 'sum', 'deploy_team'),
     ('ds_lead', 'sum', 'buiseness_process_name'),
     ('ds_lead', 'sum', 'deploy_system'),
@@ -218,7 +242,19 @@ CROSS JOIN (
 INNER JOIN (
   SELECT MIN(role_id) AS role_id FROM roles WHERE role_name = 'business_customer'
 ) r ON r.role_id IS NOT NULL
-WHERE a.artefact_tech_label IN ('developing_end_date', 'remove_date_validation')
+WHERE a.artefact_tech_label = 'remove_date_validation'
+ON CONFLICT (artefact_id, role_id, model_source) DO NOTHING;
+
+INSERT INTO artefact_source_roles (artefact_id, model_source, role_id)
+SELECT a.artefact_id, ms.model_source, r.role_id
+FROM artefacts a
+CROSS JOIN (
+  VALUES ('sum_rm'::text), ('rm'::text), ('sum-rm'::text)
+) AS ms(model_source)
+INNER JOIN (
+  SELECT MIN(role_id) AS role_id FROM roles WHERE role_name = 'business_customer'
+) r ON r.role_id IS NOT NULL
+WHERE a.artefact_tech_label = 'developing_end_date'
 ON CONFLICT (artefact_id, role_id, model_source) DO NOTHING;
 
 -- ------------------------------------------------------------------
@@ -334,26 +370,38 @@ INSERT INTO artefact_source_roles (artefact_id, model_source, role_id)
 SELECT a.artefact_id, ms.model_source, r.role_id
 FROM artefacts a
 CROSS JOIN (
+  VALUES ('sum_rm'::text), ('rm'::text), ('sum-rm'::text)
+) AS ms(model_source)
+INNER JOIN (
+  SELECT MIN(role_id) AS role_id FROM roles WHERE role_name = 'business_customer'
+) r ON r.role_id IS NOT NULL
+WHERE a.artefact_tech_label = 'developing_end_date'
+ON CONFLICT (artefact_id, role_id, model_source) DO NOTHING;
+
+INSERT INTO artefact_source_roles (artefact_id, model_source, role_id)
+SELECT a.artefact_id, ms.model_source, r.role_id
+FROM artefacts a
+CROSS JOIN (
   VALUES ('sum'::text), ('sum_rm'::text), ('rm'::text), ('sum-rm'::text)
 ) AS ms(model_source)
 INNER JOIN (
   SELECT MIN(role_id) AS role_id FROM roles WHERE role_name = 'business_customer'
 ) r ON r.role_id IS NOT NULL
-WHERE a.artefact_tech_label IN ('developing_end_date', 'remove_date_validation')
+WHERE a.artefact_tech_label = 'remove_date_validation'
 ON CONFLICT (artefact_id, role_id, model_source) DO NOTHING;
 
 -- =============================================================================
 -- ПРОВЕРКИ (только SELECT; данные не меняют). Выполняются после миграции выше.
--- Проверка 1: rows_in_matrix = after_artefacts = after_roles_join = distinct_pk = 87;
+-- Проверка 1: rows_in_matrix = after_artefacts = after_roles_join = distinct_pk = 106;
 --             блок missing_tech должен быть пуст (все tech из матрицы есть в artefacts).
 -- Проверка 2: пустой результат — нет tech из миграции без строки в artefacts и нет дубликатов tech.
 -- Проверка 3: ключевые поля (см. key_checks) — для каждой роли есть ожидаемый грант в sum / «RM»-bucket
 --             и у артефакта is_edit_flg = '1'. Иначе строки missing_role_grant / artefact_not_editable.
 -- Соответствие сценариям теста (подпись UI → artefact_tech_label):
---   RM + business_customer: developing_end_date, remove_date_validation (нужны sum и sum_rm в матрице).
+--   RM + business_customer: developing_end_date, remove_date_validation, data_source_description (нужен RM-bucket).
 --   SUM + business_customer: implementation_segment, remove_decision, segment_name.
---   SUM + validator_lead: те же + validation_report_approve_date.
---   SUM + ds_lead: эпики/даты из key_checks ds_lead — только bucket sum; на RM у ds_lead эти поля должны быть сняты (DELETE выше).
+--   RM + validator_lead: data_source_description; SUM + validator_lead: implementation_segment/remove_decision/segment_name/validation_report_approve_date.
+--   DS Lead: control-даты/07К на sum и RM, dev_team/project_ref — на sum.
 -- Проверка 4: в roles есть business_customer, validator_lead, ds_lead — иначе missing_role_definition.
 -- Пустые результаты у 2–4 при отсутствии ошибок — ожидаемо. В конце — всегда одна строка script_status (контроль «скрипт дошёл до конца»).
 -- =============================================================================
@@ -375,6 +423,7 @@ WITH am(role_name, model_source, artefact_tech_label) AS (
     ('business_customer', 'sum_rm', 'implementation_segment'),
     ('business_customer', 'sum_rm', 'segment_name'),
     ('business_customer', 'sum_rm', 'ds_department'),
+    ('business_customer', 'sum_rm', 'data_source_description'),
     ('business_customer', 'sum_rm', 'developing_report'),
     ('business_customer', 'sum_rm', 'rating_model'),
     ('business_customer', 'sum_rm', 'developing_end_date'),
@@ -400,7 +449,6 @@ WITH am(role_name, model_source, artefact_tech_label) AS (
     ('business_customer', 'sum', 'ds_department'),
     ('business_customer', 'sum', 'rating_model'),
     ('business_customer', 'sum', 'remove_date_validation'),
-    ('business_customer', 'sum', 'developing_end_date'),
     ('business_customer', 'sum', 'model_desc'),
     ('validator_lead', 'sum', 'implementation_segment'),
     ('validator_lead', 'sum_rm', 'implementation_segment'),
@@ -414,6 +462,7 @@ WITH am(role_name, model_source, artefact_tech_label) AS (
     ('validator_lead', 'sum_rm', 'remove_date_validation'),
     ('validator_lead', 'sum', 'ds_department'),
     ('validator_lead', 'sum_rm', 'ds_department'),
+    ('validator_lead', 'sum_rm', 'data_source_description'),
     ('validator_lead', 'sum_rm', 'developing_report'),
     ('validator_lead', 'sum', 'rating_model'),
     ('validator_lead', 'sum_rm', 'rating_model'),
@@ -429,6 +478,23 @@ WITH am(role_name, model_source, artefact_tech_label) AS (
     ('ds_lead', 'sum', 'model_epic_11_date'),
     ('ds_lead', 'sum', 'output_table'),
     ('ds_lead', 'sum', 'allocation_assessment_parameters'),
+    ('ds_lead', 'sum', 'operational_control_date'),
+    ('ds_lead', 'sum_rm', 'operational_control_date'),
+    ('ds_lead', 'sum', 'analytical_control_date'),
+    ('ds_lead', 'sum_rm', 'analytical_control_date'),
+    ('ds_lead', 'sum', 'model_values_control_date'),
+    ('ds_lead', 'sum_rm', 'model_values_control_date'),
+    ('ds_lead', 'sum', 'impact_assessment_date'),
+    ('ds_lead', 'sum_rm', 'impact_assessment_date'),
+    ('ds_lead', 'sum', 'model_data_07k_control_epic'),
+    ('ds_lead', 'sum_rm', 'model_data_07k_control_epic'),
+    ('ds_lead', 'sum', 'check_objects_count'),
+    ('ds_lead', 'sum_rm', 'check_objects_count'),
+    ('ds_lead', 'sum', 'model_data_07k_control'),
+    ('ds_lead', 'sum_rm', 'model_data_07k_control'),
+    ('ds_lead', 'sum', 'model_data_control_date'),
+    ('ds_lead', 'sum_rm', 'model_data_control_date'),
+    ('ds_lead', 'sum', 'dev_team'),
     ('ds_lead', 'sum', 'runtime_subsystem'),
     ('ds_lead', 'sum', 'developing_end_date'),
     ('ds_lead', 'sum', 'rs_model_decommiss_date'),
@@ -441,6 +507,7 @@ WITH am(role_name, model_source, artefact_tech_label) AS (
     ('ds_lead', 'sum', 'model_epic_11'),
     ('ds_lead', 'sum', 'date_of_introduction_into_operation'),
     ('ds_lead', 'sum', 'allocation_assessment_class'),
+    ('ds_lead', 'sum', 'project_ref'),
     ('ds_lead', 'sum', 'deploy_team'),
     ('ds_lead', 'sum', 'buiseness_process_name'),
     ('ds_lead', 'sum', 'deploy_system'),
@@ -516,6 +583,7 @@ WITH migration_matrix_tech(artefact_tech_label) AS (
     ('validation_report_approve_date'),
     ('remove_date_validation'),
     ('ds_department'),
+    ('data_source_description'),
     ('developing_report'),
     ('rating_model'),
     ('output_table'),
@@ -556,7 +624,6 @@ ORDER BY check_id, detail;
 
 WITH key_checks(role_name, artefact_tech_label, expected_bucket) AS (
   SELECT * FROM (VALUES
-    ('business_customer', 'developing_end_date', 'sum'::text),
     ('business_customer', 'developing_end_date', 'sum_rm'),
     ('business_customer', 'remove_date_validation', 'sum'),
     ('business_customer', 'remove_date_validation', 'sum_rm'),
@@ -575,6 +642,8 @@ WITH key_checks(role_name, artefact_tech_label, expected_bucket) AS (
     ('validator_lead', 'validation_report_approve_date', 'sum_rm'),
     ('validator_lead', 'remove_date_validation', 'sum'),
     ('validator_lead', 'remove_date_validation', 'sum_rm'),
+    ('business_customer', 'data_source_description', 'sum_rm'),
+    ('validator_lead', 'data_source_description', 'sum_rm'),
     ('validator_lead', 'developing_end_date', 'sum_rm'),
     ('validator_lead', 'developing_start_date', 'sum_rm'),
     ('ds_lead', 'model_epic_04_date', 'sum'),
@@ -585,6 +654,23 @@ WITH key_checks(role_name, artefact_tech_label, expected_bucket) AS (
     ('ds_lead', 'model_epic_11_date', 'sum'),
     ('ds_lead', 'output_table', 'sum'),
     ('ds_lead', 'allocation_assessment_parameters', 'sum'),
+    ('ds_lead', 'operational_control_date', 'sum'),
+    ('ds_lead', 'operational_control_date', 'sum_rm'),
+    ('ds_lead', 'analytical_control_date', 'sum'),
+    ('ds_lead', 'analytical_control_date', 'sum_rm'),
+    ('ds_lead', 'model_values_control_date', 'sum'),
+    ('ds_lead', 'model_values_control_date', 'sum_rm'),
+    ('ds_lead', 'impact_assessment_date', 'sum'),
+    ('ds_lead', 'impact_assessment_date', 'sum_rm'),
+    ('ds_lead', 'model_data_07k_control_epic', 'sum'),
+    ('ds_lead', 'model_data_07k_control_epic', 'sum_rm'),
+    ('ds_lead', 'check_objects_count', 'sum'),
+    ('ds_lead', 'check_objects_count', 'sum_rm'),
+    ('ds_lead', 'model_data_07k_control', 'sum'),
+    ('ds_lead', 'model_data_07k_control', 'sum_rm'),
+    ('ds_lead', 'model_data_control_date', 'sum'),
+    ('ds_lead', 'model_data_control_date', 'sum_rm'),
+    ('ds_lead', 'dev_team', 'sum'),
     ('ds_lead', 'runtime_subsystem', 'sum'),
     ('ds_lead', 'developing_end_date', 'sum'),
     ('ds_lead', 'rs_model_decommiss_date', 'sum'),
@@ -597,6 +683,7 @@ WITH key_checks(role_name, artefact_tech_label, expected_bucket) AS (
     ('ds_lead', 'model_epic_11', 'sum'),
     ('ds_lead', 'date_of_introduction_into_operation', 'sum'),
     ('ds_lead', 'allocation_assessment_class', 'sum'),
+    ('ds_lead', 'project_ref', 'sum'),
     ('ds_lead', 'deploy_team', 'sum'),
     ('ds_lead', 'buiseness_process_name', 'sum'),
     ('ds_lead', 'deploy_system', 'sum'),
