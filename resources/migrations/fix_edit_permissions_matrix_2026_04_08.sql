@@ -1,19 +1,3 @@
--- fix_edit_permissions_matrix_2026_04_08.sql
---
--- Одним прогоном: довести roles (при необходимости), затем artefact_source_roles до целевой матрицы прав.
--- DevOps: выполнить файл целиком в целевой БД/схеме. Повторный запуск безопасен (ON CONFLICT DO NOTHING).
--- Ключ в artefacts — artefact_tech_label; гранты вешаются на каждый artefact_id с этим label (в т.ч. developing_end_date = 2041 из liquibase).
---
--- Порядок: INSERT недостающих ролей → DELETE старых грантов по списку полей → INSERT матрицы
--- → догрузка business_customer для developing_end_date и remove_date_validation (JOIN artefacts, без фиксированного artefact_id)
--- → hotfix DELETE для business_customer (эпики на RM) и ds_lead (только SUM) → проверочные SELECT в конце.
---
--- В конце — только чтение (счётчики, аудит, key_checks). Можно не выполнять в CI, если инструмент не поддерживает несколько результатов.
--- Если схема не mrms — изменить SET search_path ниже.
--- Если INSERT INTO roles падает из‑за обязательных колонок: на стенде другая схема roles — согласовать миграцию с DBA (не отдельный ручной SQL в приложении).
-
-SET search_path TO mrms, public;
-
 INSERT INTO roles (role_name)
 SELECT x.role_name
 FROM (
@@ -38,6 +22,30 @@ END $$;
 UPDATE artefacts
 SET is_edit_flg = '1'
 WHERE artefact_tech_label = 'data_source_description';
+
+-- ---------------------------------------------------------------------------
+-- Гарантируем уникальность (artefact_id, role_id, model_source) в artefact_source_roles.
+-- Без этого `ON CONFLICT (artefact_id, role_id, model_source)` ниже падает с ошибкой
+-- `there is no unique or exclusion constraint matching the ON CONFLICT specification`,
+-- и основные INSERT роли откатываются целиком — симптом: фронт показывает поля
+-- как НЕдоступные даже после прогона миграции.
+-- 1) Сначала удаляем возможные дубли (оставляем строку с минимальным ctid).
+-- 2) Потом создаём UNIQUE INDEX IF NOT EXISTS.
+-- Оба шага идемпотентны.
+-- ---------------------------------------------------------------------------
+DELETE FROM artefact_source_roles AS asr
+USING (
+  SELECT ctid,
+         ROW_NUMBER() OVER (
+           PARTITION BY artefact_id, role_id, model_source
+           ORDER BY ctid
+         ) AS rn
+  FROM artefact_source_roles
+) AS dup
+WHERE asr.ctid = dup.ctid AND dup.rn > 1;
+
+CREATE UNIQUE INDEX IF NOT EXISTS artefact_source_roles_uk
+  ON artefact_source_roles (artefact_id, role_id, model_source);
 
 DELETE FROM artefact_source_roles AS asr
 WHERE EXISTS (
