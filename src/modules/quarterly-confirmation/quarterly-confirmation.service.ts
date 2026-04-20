@@ -231,7 +231,7 @@ export class QuarterlyConfirmationService {
           a.model_id,
           a.model_alias,
           m.model_name,
-          NULL AS model_source,
+          COALESCE(a.model_source, '${MODEL_SOURCES.MRM}') AS model_source,
           a.model_name_dadm,
           a.business_customer,
           a.business_customer_departament
@@ -244,7 +244,8 @@ export class QuarterlyConfirmationService {
             MAX(CASE WHEN ar.artefact_id = 2003 THEN ar.artefact_string_value ELSE NULL END)                  AS model_name_dadm,
             MAX(CASE WHEN ar.artefact_id = 2031 THEN ar.artefact_string_value ELSE NULL END)                  AS business_customer,
             STRING_AGG(CASE WHEN ar.artefact_id = 2032 THEN av.artefact_value ELSE NULL END, ',' ORDER BY ar.artefact_value_id) AS business_customer_departament,
-            MAX(CASE WHEN ar.artefact_id = 2656 THEN ar.artefact_string_value ELSE NULL END)                  AS business_status
+            MAX(CASE WHEN ar.artefact_id = 2656 THEN ar.artefact_string_value ELSE NULL END)                  AS business_status,
+            MAX(CASE WHEN ar.artefact_id = 2121 THEN ar.artefact_string_value ELSE NULL END)                  AS model_source
           FROM artefact_realizations_new ar
           INNER JOIN models_new m2 ON ar.model_id = m2.model_id
           LEFT JOIN artefact_values av ON ar.artefact_value_id = av.artefact_value_id AND av.is_active_flg = '1'
