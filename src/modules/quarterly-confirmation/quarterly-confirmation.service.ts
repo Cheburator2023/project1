@@ -231,7 +231,14 @@ export class QuarterlyConfirmationService {
           a.model_id,
           a.model_alias,
           m.model_name,
-          COALESCE(a.model_source, '${MODEL_SOURCES.MRM}') AS model_source,
+          CASE lower(trim(COALESCE(a.model_source_raw, '')))
+            WHEN '' THEN '${MODEL_SOURCES.MRM}'
+            WHEN 'sum_rm' THEN '${MODEL_SOURCES.MRM}'
+            WHEN 'rm' THEN '${MODEL_SOURCES.MRM}'
+            WHEN 'sum' THEN '${MODEL_SOURCES.SUM}'
+            WHEN 'sum-rm' THEN '${MODEL_SOURCES.MRM}'
+            ELSE trim(COALESCE(a.model_source_raw, '${MODEL_SOURCES.MRM}'))
+          END AS model_source,
           a.model_name_dadm,
           a.business_customer,
           a.business_customer_departament
@@ -245,7 +252,21 @@ export class QuarterlyConfirmationService {
             MAX(CASE WHEN ar.artefact_id = 2031 THEN ar.artefact_string_value ELSE NULL END)                  AS business_customer,
             STRING_AGG(CASE WHEN ar.artefact_id = 2032 THEN av.artefact_value ELSE NULL END, ',' ORDER BY ar.artefact_value_id) AS business_customer_departament,
             MAX(CASE WHEN ar.artefact_id = 2656 THEN ar.artefact_string_value ELSE NULL END)                  AS business_status,
-            MAX(CASE WHEN ar.artefact_id = 2121 THEN ar.artefact_string_value ELSE NULL END)                  AS model_source
+            MAX(
+              CASE
+                WHEN ar.artefact_id = (
+                  SELECT a_ms.artefact_id
+                  FROM artefacts a_ms
+                  WHERE a_ms.artefact_tech_label = 'model_source'
+                  ORDER BY a_ms.artefact_id
+                  LIMIT 1
+                )
+                THEN COALESCE(
+                  NULLIF(TRIM(ar.artefact_string_value), ''),
+                  NULLIF(TRIM(av.artefact_value::text), '')
+                )
+              END
+            ) AS model_source_raw
           FROM artefact_realizations_new ar
           INNER JOIN models_new m2 ON ar.model_id = m2.model_id
           LEFT JOIN artefact_values av ON ar.artefact_value_id = av.artefact_value_id AND av.is_active_flg = '1'
