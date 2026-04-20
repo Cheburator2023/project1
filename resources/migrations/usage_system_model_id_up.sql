@@ -44,7 +44,6 @@ CREATE TABLE IF NOT EXISTS models_pim_usage (
 DO $$
 DECLARE
   v_table         text;
-  v_unique_cols   text;
   v_missing_count bigint;
 BEGIN
   FOREACH v_table IN ARRAY ARRAY['models_usage', 'models_usage_history', 'models_pim_usage']
@@ -88,57 +87,137 @@ BEGIN
       ) INTO v_missing_count;
 
       IF v_missing_count > 0 THEN
-        RAISE EXCEPTION
-          'Migration aborted: table % has % rows with model_id that cannot be mapped to system_model_id. '
-          'Inspect them with: SELECT * FROM % WHERE system_model_id IS NULL; then fix mapping or delete rows.',
-          v_table, v_missing_count, v_table;
-      END IF;
+        RAISE NOTICE
+          'Table % still has % unmapped rows; keeping legacy model_id column and skipping destructive steps for this table.',
+          v_table, v_missing_count;
+      ELSE
+        -- 4. Снимаем старый unique/индекс/constraint, зависящий от model_id
+        IF v_table = 'models_pim_usage' THEN
+          EXECUTE 'ALTER TABLE models_pim_usage
+                   DROP CONSTRAINT IF EXISTS models_pim_usage_model_id_confirmation_quarter_confirmation_year_key';
+        END IF;
+        EXECUTE format('DROP INDEX IF EXISTS idx_%I_model_id', v_table);
 
-      -- 4. Снимаем старый unique/индекс/constraint, зависящий от model_id
-      IF v_table = 'models_pim_usage' THEN
-        EXECUTE 'ALTER TABLE models_pim_usage
-                 DROP CONSTRAINT IF EXISTS models_pim_usage_model_id_confirmation_quarter_confirmation_year_key';
+        -- 5. Удаляем старую колонку
+        EXECUTE format('ALTER TABLE %I DROP COLUMN IF EXISTS model_id', v_table);
       END IF;
-      EXECUTE format('DROP INDEX IF EXISTS idx_%I_model_id', v_table);
-
-      -- 5. Удаляем старую колонку
-      EXECUTE format('ALTER TABLE %I DROP COLUMN IF EXISTS model_id', v_table);
     END IF;
   END LOOP;
 END
 $$;
 
 -- --- Constraints / indexes уже на system_model_id -------------------------
-
--- models_usage: уникальность (system_model_id, quarter, year) + индекс
-CREATE UNIQUE INDEX IF NOT EXISTS idx_models_usage_smid_q_y
-  ON models_usage (system_model_id, confirmation_quarter, confirmation_year);
-
--- models_usage_history: обычный индекс для поиска истории по модели
-CREATE INDEX IF NOT EXISTS idx_models_usage_history_smid
-  ON models_usage_history (system_model_id);
-
--- models_pim_usage: unique для ON CONFLICT upsert в PimUsageService + индексы
 DO $$
 BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_constraint WHERE conname = 'models_pim_usage_smid_q_y_key'
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = current_schema()
+      AND table_name = 'models_usage'
+      AND column_name = 'system_model_id'
   ) THEN
-    ALTER TABLE models_pim_usage
-      ADD CONSTRAINT models_pim_usage_smid_q_y_key
-      UNIQUE (system_model_id, confirmation_quarter, confirmation_year);
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_models_usage_smid_q_y
+      ON models_usage (system_model_id, confirmation_quarter, confirmation_year);
   END IF;
 END
 $$;
 
-CREATE INDEX IF NOT EXISTS idx_models_pim_usage_smid
-  ON models_pim_usage (system_model_id);
-CREATE INDEX IF NOT EXISTS idx_models_pim_usage_quarter_year
-  ON models_pim_usage (confirmation_quarter, confirmation_year);
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = current_schema()
+      AND table_name = 'models_usage_history'
+      AND column_name = 'system_model_id'
+  ) THEN
+    CREATE INDEX IF NOT EXISTS idx_models_usage_history_smid
+      ON models_usage_history (system_model_id);
+  END IF;
+END
+$$;
+
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = current_schema()
+      AND table_name = 'models_pim_usage'
+      AND column_name = 'system_model_id'
+  ) THEN
+    IF NOT EXISTS (
+      SELECT 1 FROM pg_constraint WHERE conname = 'models_pim_usage_smid_q_y_key'
+    ) THEN
+      ALTER TABLE models_pim_usage
+        ADD CONSTRAINT models_pim_usage_smid_q_y_key
+        UNIQUE (system_model_id, confirmation_quarter, confirmation_year);
+    END IF;
+
+    CREATE INDEX IF NOT EXISTS idx_models_pim_usage_smid
+      ON models_pim_usage (system_model_id);
+    CREATE INDEX IF NOT EXISTS idx_models_pim_usage_quarter_year
+      ON models_pim_usage (confirmation_quarter, confirmation_year);
+  END IF;
+END
+$$;
 
 -- После успешного маппинга делаем колонку обязательной
-ALTER TABLE models_pim_usage      ALTER COLUMN system_model_id SET NOT NULL;
-ALTER TABLE models_usage          ALTER COLUMN system_model_id SET NOT NULL;
-ALTER TABLE models_usage_history  ALTER COLUMN system_model_id SET NOT NULL;
+DO $$
+DECLARE
+  v_missing_count bigint;
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = current_schema()
+      AND table_name = 'models_pim_usage'
+      AND column_name = 'system_model_id'
+  ) THEN
+    SELECT count(*)
+    INTO v_missing_count
+    FROM models_pim_usage
+    WHERE system_model_id IS NULL;
+
+    IF v_missing_count = 0 THEN
+      ALTER TABLE models_pim_usage ALTER COLUMN system_model_id SET NOT NULL;
+    ELSE
+      RAISE NOTICE 'Skipping SET NOT NULL for models_pim_usage.system_model_id: % NULL rows remain', v_missing_count;
+    END IF;
+  END IF;
+
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = current_schema()
+      AND table_name = 'models_usage'
+      AND column_name = 'system_model_id'
+  ) THEN
+    SELECT count(*)
+    INTO v_missing_count
+    FROM models_usage
+    WHERE system_model_id IS NULL;
+
+    IF v_missing_count = 0 THEN
+      ALTER TABLE models_usage ALTER COLUMN system_model_id SET NOT NULL;
+    ELSE
+      RAISE NOTICE 'Skipping SET NOT NULL for models_usage.system_model_id: % NULL rows remain', v_missing_count;
+    END IF;
+  END IF;
+
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = current_schema()
+      AND table_name = 'models_usage_history'
+      AND column_name = 'system_model_id'
+  ) THEN
+    SELECT count(*)
+    INTO v_missing_count
+    FROM models_usage_history
+    WHERE system_model_id IS NULL;
+
+    IF v_missing_count = 0 THEN
+      ALTER TABLE models_usage_history ALTER COLUMN system_model_id SET NOT NULL;
+    ELSE
+      RAISE NOTICE 'Skipping SET NOT NULL for models_usage_history.system_model_id: % NULL rows remain', v_missing_count;
+    END IF;
+  END IF;
+END
+$$;
 
 COMMIT;

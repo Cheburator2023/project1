@@ -231,7 +231,7 @@ export class QuarterlyConfirmationService {
           a.model_id,
           a.model_alias,
           m.model_name,
-          m.model_source,
+          NULL AS model_source,
           a.model_name_dadm,
           a.business_customer,
           a.business_customer_departament

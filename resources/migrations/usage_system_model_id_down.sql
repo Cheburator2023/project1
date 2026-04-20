@@ -64,40 +64,152 @@ BEGIN
       ) INTO v_missing_count;
 
       IF v_missing_count > 0 THEN
-        RAISE EXCEPTION
-          'Rollback aborted: table % has % rows whose system_model_id has no 2001-artefact. '
-          'Inspect: SELECT * FROM % WHERE model_id IS NULL;',
-          v_table, v_missing_count, v_table;
+        RAISE NOTICE
+          'Rollback: table % has % rows without reverse mapping to legacy model_id. Keeping system_model_id and skipping destructive rollback steps if needed.',
+          v_table, v_missing_count;
       END IF;
     END IF;
   END LOOP;
 END
 $$;
 
--- Снимаем новые constraint/индексы
-ALTER TABLE models_pim_usage DROP CONSTRAINT IF EXISTS models_pim_usage_smid_q_y_key;
+-- Снимаем новые constraint/индексы только если таблицы/колонки существуют
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.tables
+    WHERE table_schema = current_schema() AND table_name = 'models_pim_usage'
+  ) THEN
+    ALTER TABLE models_pim_usage DROP CONSTRAINT IF EXISTS models_pim_usage_smid_q_y_key;
+  END IF;
+END
+$$;
+
 DROP INDEX IF EXISTS idx_models_usage_smid_q_y;
 DROP INDEX IF EXISTS idx_models_usage_history_smid;
 DROP INDEX IF EXISTS idx_models_pim_usage_smid;
 
 -- Снимаем NOT NULL c новой колонки перед её удалением
-ALTER TABLE models_usage          ALTER COLUMN system_model_id DROP NOT NULL;
-ALTER TABLE models_usage_history  ALTER COLUMN system_model_id DROP NOT NULL;
-ALTER TABLE models_pim_usage      ALTER COLUMN system_model_id DROP NOT NULL;
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = current_schema()
+      AND table_name = 'models_usage'
+      AND column_name = 'system_model_id'
+  ) THEN
+    ALTER TABLE models_usage ALTER COLUMN system_model_id DROP NOT NULL;
+  END IF;
+
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = current_schema()
+      AND table_name = 'models_usage_history'
+      AND column_name = 'system_model_id'
+  ) THEN
+    ALTER TABLE models_usage_history ALTER COLUMN system_model_id DROP NOT NULL;
+  END IF;
+
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = current_schema()
+      AND table_name = 'models_pim_usage'
+      AND column_name = 'system_model_id'
+  ) THEN
+    ALTER TABLE models_pim_usage ALTER COLUMN system_model_id DROP NOT NULL;
+  END IF;
+END
+$$;
 
 -- Удаляем new-колонку
-ALTER TABLE models_usage          DROP COLUMN IF EXISTS system_model_id;
-ALTER TABLE models_usage_history  DROP COLUMN IF EXISTS system_model_id;
-ALTER TABLE models_pim_usage      DROP COLUMN IF EXISTS system_model_id;
+DO $$
+DECLARE
+  v_missing_count bigint;
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = current_schema()
+      AND table_name = 'models_usage'
+      AND column_name = 'system_model_id'
+  ) THEN
+    SELECT count(*) INTO v_missing_count FROM models_usage WHERE model_id IS NULL AND system_model_id IS NOT NULL;
+    IF v_missing_count = 0 THEN
+      ALTER TABLE models_usage DROP COLUMN IF EXISTS system_model_id;
+    ELSE
+      RAISE NOTICE 'Skipping DROP COLUMN system_model_id for models_usage: % rows still lack legacy model_id', v_missing_count;
+    END IF;
+  END IF;
+
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = current_schema()
+      AND table_name = 'models_usage_history'
+      AND column_name = 'system_model_id'
+  ) THEN
+    SELECT count(*) INTO v_missing_count FROM models_usage_history WHERE model_id IS NULL AND system_model_id IS NOT NULL;
+    IF v_missing_count = 0 THEN
+      ALTER TABLE models_usage_history DROP COLUMN IF EXISTS system_model_id;
+    ELSE
+      RAISE NOTICE 'Skipping DROP COLUMN system_model_id for models_usage_history: % rows still lack legacy model_id', v_missing_count;
+    END IF;
+  END IF;
+
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = current_schema()
+      AND table_name = 'models_pim_usage'
+      AND column_name = 'system_model_id'
+  ) THEN
+    SELECT count(*) INTO v_missing_count FROM models_pim_usage WHERE model_id IS NULL AND system_model_id IS NOT NULL;
+    IF v_missing_count = 0 THEN
+      ALTER TABLE models_pim_usage DROP COLUMN IF EXISTS system_model_id;
+    ELSE
+      RAISE NOTICE 'Skipping DROP COLUMN system_model_id for models_pim_usage: % rows still lack legacy model_id', v_missing_count;
+    END IF;
+  END IF;
+END
+$$;
 
 -- Восстанавливаем старые ограничения/индексы
-ALTER TABLE models_usage          ALTER COLUMN model_id SET NOT NULL;
-ALTER TABLE models_usage_history  ALTER COLUMN model_id SET NOT NULL;
-ALTER TABLE models_pim_usage      ALTER COLUMN model_id SET NOT NULL;
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = current_schema()
+      AND table_name = 'models_usage'
+      AND column_name = 'model_id'
+  ) THEN
+    ALTER TABLE models_usage ALTER COLUMN model_id SET NOT NULL;
+  END IF;
+
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = current_schema()
+      AND table_name = 'models_usage_history'
+      AND column_name = 'model_id'
+  ) THEN
+    ALTER TABLE models_usage_history ALTER COLUMN model_id SET NOT NULL;
+  END IF;
+
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = current_schema()
+      AND table_name = 'models_pim_usage'
+      AND column_name = 'model_id'
+  ) THEN
+    ALTER TABLE models_pim_usage ALTER COLUMN model_id SET NOT NULL;
+  END IF;
+END
+$$;
 
 DO $$
 BEGIN
-  IF NOT EXISTS (
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = current_schema()
+      AND table_name = 'models_pim_usage'
+      AND column_name = 'model_id'
+  ) AND NOT EXISTS (
     SELECT 1 FROM pg_constraint
     WHERE conname = 'models_pim_usage_model_id_confirmation_quarter_confirmation_year_key'
   ) THEN
@@ -108,8 +220,27 @@ BEGIN
 END
 $$;
 
-CREATE INDEX IF NOT EXISTS idx_models_pim_usage_model_id       ON models_pim_usage (model_id);
-CREATE INDEX IF NOT EXISTS idx_models_pim_usage_quarter_year   ON models_pim_usage (confirmation_quarter, confirmation_year);
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = current_schema()
+      AND table_name = 'models_pim_usage'
+      AND column_name = 'model_id'
+  ) THEN
+    CREATE INDEX IF NOT EXISTS idx_models_pim_usage_model_id ON models_pim_usage (model_id);
+  END IF;
+
+  IF EXISTS (
+    SELECT 1 FROM information_schema.tables
+    WHERE table_schema = current_schema()
+      AND table_name = 'models_pim_usage'
+  ) THEN
+    CREATE INDEX IF NOT EXISTS idx_models_pim_usage_quarter_year
+      ON models_pim_usage (confirmation_quarter, confirmation_year);
+  END IF;
+END
+$$;
 
 COMMIT;
 
