@@ -227,9 +227,11 @@ export class QuarterlyConfirmationService {
 
       const sqlQuery = `
         SELECT DISTINCT
+          a.system_model_id,
           a.model_id,
           a.model_alias,
           m.model_name,
+          m.model_source,
           a.model_name_dadm,
           a.business_customer,
           a.business_customer_departament
@@ -260,31 +262,31 @@ export class QuarterlyConfirmationService {
         return []
       }
 
-      const modelIds = models.map((m) => m.model_id)
+      const systemModelIds = models.map((m) => m.system_model_id)
 
       this.logger.info(
         '[ALLOC_DEBUG] Models fetched from DB (before prefill)',
         'ОтладкаМоделиИзБД',
         {
           totalModels: models.length,
-          sampleModelIds: modelIds.slice(0, 5)
+          sampleSystemModelIds: systemModelIds.slice(0, 5)
         }
       )
 
       // Получаем данные из ПИМ
       const pimUsages = await this.pimUsageService.getPimUsageForModels(
-        modelIds,
+        systemModelIds,
         quarterInfo.quarter,
         quarterInfo.year
       )
-      const pimUsageMap = new Map(pimUsages.map((p) => [p.model_id, p]))
+      const pimUsageMap = new Map(pimUsages.map((p) => [p.system_model_id, p]))
 
       this.logger.info(
         '[ALLOC_DEBUG] PIM usage data loaded',
         'ОтладкаДанныхПИМ',
         {
           pimUsageCount: pimUsages.length,
-          pimModelIds: pimUsages.map((p) => p.model_id),
+          pimSystemModelIds: pimUsages.map((p) => p.system_model_id),
           quarter: quarterInfo.quarter,
           year: quarterInfo.year
         }
@@ -297,31 +299,31 @@ export class QuarterlyConfirmationService {
           : { quarter: quarterInfo.quarter - 1, year: quarterInfo.year }
 
       const prevUsages: {
-        model_id: string
+        system_model_id: string
         is_used: boolean
         confirmation_date: string
       }[] = await this.databaseService.query(
         `
-          SELECT model_id, is_used, confirmation_date
+          SELECT system_model_id, is_used, confirmation_date
           FROM models_usage
-          WHERE model_id = ANY(:model_ids)
+          WHERE system_model_id = ANY(:system_model_ids)
             AND confirmation_quarter = :quarter
             AND confirmation_year = :year
           `,
         {
-          model_ids: modelIds,
+          system_model_ids: systemModelIds,
           quarter: prevQuarter.quarter,
           year: prevQuarter.year
         }
       )
-      const prevUsageMap = new Map(prevUsages.map((u) => [u.model_id, u]))
+      const prevUsageMap = new Map(prevUsages.map((u) => [u.system_model_id, u]))
 
       this.logger.info(
         '[ALLOC_DEBUG] Previous quarter usage data loaded',
         'ОтладкаДанныхПредыдущегоКвартала',
         {
           prevUsageCount: prevUsages.length,
-          prevModelIds: prevUsages.map((u) => u.model_id),
+          prevSystemModelIds: prevUsages.map((u) => u.system_model_id),
           prevQuarter: prevQuarter.quarter,
           prevYear: prevQuarter.year
         }
@@ -329,40 +331,40 @@ export class QuarterlyConfirmationService {
 
       // Получаем текущие данные за активный квартал
       const currentUsages: {
-        model_id: string
+        system_model_id: string
         is_used: boolean
         confirmation_date: string
       }[] = await this.databaseService.query(
         `
-          SELECT model_id, is_used, confirmation_date
+          SELECT system_model_id, is_used, confirmation_date
           FROM models_usage
-          WHERE model_id = ANY(:model_ids)
+          WHERE system_model_id = ANY(:system_model_ids)
             AND confirmation_quarter = :quarter
             AND confirmation_year = :year
           `,
         {
-          model_ids: modelIds,
+          system_model_ids: systemModelIds,
           quarter: quarterInfo.quarter,
           year: quarterInfo.year
         }
       )
-      const currentUsageMap = new Map(currentUsages.map((u) => [u.model_id, u]))
+      const currentUsageMap = new Map(currentUsages.map((u) => [u.system_model_id, u]))
 
       this.logger.info(
         '[ALLOC_DEBUG] Current quarter usage data loaded',
         'ОтладкаДанныхТекущегоКвартала',
         {
           currentUsageCount: currentUsages.length,
-          currentModelIds: currentUsages.map((u) => u.model_id)
+          currentSystemModelIds: currentUsages.map((u) => u.system_model_id)
         }
       )
 
       const today = new Date().toISOString().split('T')[0]
 
       let results = models.map((model) => {
-        const currentUsage = currentUsageMap.get(model.model_id)
-        const pimUsage = pimUsageMap.get(model.model_id)
-        const prevUsage = prevUsageMap.get(model.model_id)
+        const currentUsage = currentUsageMap.get(model.system_model_id)
+        const pimUsage = pimUsageMap.get(model.system_model_id)
+        const prevUsage = prevUsageMap.get(model.system_model_id)
 
         // Если уже есть данные за текущий квартал, используем их
         if (currentUsage) {
@@ -371,9 +373,11 @@ export class QuarterlyConfirmationService {
           else if (prevUsage) prefillSource = 'previous_quarter'
 
           return {
+            system_model_id: model.system_model_id,
             model_id: model.model_id,
             model_alias: model.model_alias,
             model_name: model.model_name,
+            model_source: model.model_source,
             model_name_dadm: model.model_name_dadm,
             business_customer: model.business_customer,
             business_customer_departament: model.business_customer_departament,
@@ -390,9 +394,11 @@ export class QuarterlyConfirmationService {
         // Приоритет предзаполнения: ПИМ > предыдущий квартал > пусто
         if (pimUsage) {
           return {
+            system_model_id: model.system_model_id,
             model_id: model.model_id,
             model_alias: model.model_alias,
             model_name: model.model_name,
+            model_source: model.model_source,
             model_name_dadm: model.model_name_dadm,
             business_customer: model.business_customer,
             business_customer_departament: model.business_customer_departament,
@@ -404,9 +410,11 @@ export class QuarterlyConfirmationService {
 
         if (prevUsage) {
           return {
+            system_model_id: model.system_model_id,
             model_id: model.model_id,
             model_alias: model.model_alias,
             model_name: model.model_name,
+            model_source: model.model_source,
             model_name_dadm: model.model_name_dadm,
             business_customer: model.business_customer,
             business_customer_departament: model.business_customer_departament,
@@ -417,9 +425,11 @@ export class QuarterlyConfirmationService {
         }
 
         return {
+          system_model_id: model.system_model_id,
           model_id: model.model_id,
           model_alias: model.model_alias,
           model_name: model.model_name,
+          model_source: model.model_source,
           model_name_dadm: model.model_name_dadm,
           business_customer: model.business_customer,
           business_customer_departament: model.business_customer_departament,
@@ -489,9 +499,9 @@ export class QuarterlyConfirmationService {
     totalInPayload: number
     savedToMrm: number
     syncedToSum: number
-    sumSyncErrors: { model_id: string; error: string }[]
+    sumSyncErrors: { system_model_id: string; error: string }[]
     models: {
-      model_id: string
+      system_model_id: string
       is_used: boolean | null
       confirmation_date: string | null
       mrm: boolean
@@ -520,7 +530,7 @@ export class QuarterlyConfirmationService {
           totalInPayload: data.models.length,
           filteredToSave: modelsToSave.length,
           models: modelsToSave.map((m) => ({
-            model_id: m.model_id,
+            system_model_id: m.system_model_id,
             confirmation_date: m.confirmation_date,
             is_used: m.is_used
           }))
@@ -528,13 +538,13 @@ export class QuarterlyConfirmationService {
       )
 
       const saveResults: {
-        model_id: string
+        system_model_id: string
         is_used: boolean | null
         confirmation_date: string | null
         mrm: boolean
         sum: boolean | null
       }[] = []
-      const sumSyncErrors: { model_id: string; error: string }[] = []
+      const sumSyncErrors: { system_model_id: string; error: string }[] = []
       let syncedToSum = 0
 
       for (const model of modelsToSave) {
@@ -542,7 +552,7 @@ export class QuarterlyConfirmationService {
           '[ALLOC_DEBUG] Saving model usage via artefact flow',
           'ОтладкаСохраненияМоделиЧерезАртефакты',
           {
-            model_id: model.model_id,
+            system_model_id: model.system_model_id,
             quarter: data.quarter,
             year: data.year,
             confirmation_date: model.confirmation_date,
@@ -551,9 +561,11 @@ export class QuarterlyConfirmationService {
           }
         )
 
+        // usage.service.ts ожидает поле model_id в DTO — передаём туда значение system_model_id,
+        // которое в MrmUsageService связывается с колонкой system_model_id в SQL.
         const usageArtefacts = [
           {
-            model_id: model.model_id,
+            model_id: model.system_model_id,
             artefact_tech_label: `usage_confirm_date_q${data.quarter}`,
             artefact_string_value: model.confirmation_date
               ? this.formatDateToDDMMYYYY(model.confirmation_date)
@@ -564,7 +576,7 @@ export class QuarterlyConfirmationService {
             creator
           },
           {
-            model_id: model.model_id,
+            model_id: model.system_model_id,
             artefact_tech_label: `usage_confirm_flag_q${data.quarter}`,
             artefact_string_value: model.is_used ? 'Да' : 'Нет',
             artefact_value_id: null,
@@ -590,19 +602,19 @@ export class QuarterlyConfirmationService {
             this.logger.info(
               'Usage synced to SUM for model',
               'ИспользованиеСинхронизированоВСУМ',
-              { model_id: model.model_id, quarter: data.quarter }
+              { system_model_id: model.system_model_id, quarter: data.quarter }
             )
           }
         } catch (sumError) {
           // Ошибка синхронизации в СУМ не должна блокировать основное сохранение
           const errMsg =
             sumError instanceof Error ? sumError.message : String(sumError)
-          sumSyncErrors.push({ model_id: model.model_id, error: errMsg })
+          sumSyncErrors.push({ system_model_id: model.system_model_id, error: errMsg })
           this.logger.warn(
             'Failed to sync usage to SUM, MRM save succeeded',
             'ОшибкаСинхронизацииВСУМСохранениеВМРМУспешно',
             {
-              model_id: model.model_id,
+              system_model_id: model.system_model_id,
               quarter: data.quarter,
               error: errMsg
             }
@@ -610,7 +622,7 @@ export class QuarterlyConfirmationService {
         }
 
         saveResults.push({
-          model_id: model.model_id,
+          system_model_id: model.system_model_id,
           is_used: model.is_used,
           confirmation_date: model.confirmation_date,
           mrm: true,

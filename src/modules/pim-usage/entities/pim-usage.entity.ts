@@ -1,6 +1,6 @@
 export type PimUsageEntity = {
   pim_usage_id: number
-  model_id: string
+  system_model_id: string
   confirmation_quarter: number
   confirmation_year: number
   is_used: boolean

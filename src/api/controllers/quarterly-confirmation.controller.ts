@@ -133,13 +133,13 @@ export class QuarterlyConfirmationController {
 
     for (const model of data.models) {
       const result = await this.pimUsageService.insertPimUsage(
-        model.model_id,
+        model.system_model_id,
         data.quarter,
         data.year,
         model.is_used
       )
       results.push({
-        model_id: model.model_id,
+        system_model_id: model.system_model_id,
         pim_usage_id: result?.pim_usage_id ?? null,
         is_used: model.is_used
       })

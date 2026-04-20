@@ -83,11 +83,11 @@ export class GetModelsQueryDto {
 
 export class QuarterlyConfirmationModelDto {
   @ApiProperty({
-    description: 'Идентификатор модели',
-    example: 'MODEL_123'
+    description: 'Системный идентификатор версии модели (PK models_new.model_id)',
+    example: 'SMID_123'
   })
   @IsString()
-  model_id: string
+  system_model_id: string
 
   @ApiPropertyOptional({
     description: 'Дата подтверждения использования модели (YYYY-MM-DD)',
@@ -139,11 +139,11 @@ export class SaveQuarterlyConfirmationDto {
 
 export class SeedPimUsageItemDto {
   @ApiProperty({
-    description: 'Идентификатор модели',
-    example: 'MODEL_123'
+    description: 'Системный идентификатор версии модели',
+    example: 'SMID_123'
   })
   @IsString()
-  model_id: string
+  system_model_id: string
 
   @ApiProperty({
     description: 'Модель используется',
@@ -193,9 +193,11 @@ export type QuarterInfoDto = {
 }
 
 export type ConfirmationModelRow = {
+  system_model_id: string
   model_id: string
   model_alias: string | null
   model_name: string | null
+  model_source: string | null
   model_name_dadm: string | null
   business_customer: string | null
   business_customer_departament: string | null

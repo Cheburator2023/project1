@@ -11,14 +11,14 @@ export class PimUsageService {
   ) {}
 
   async getPimUsageForModel(
-    model_id: string,
+    system_model_id: string,
     quarter: number,
     year: number
   ): Promise<PimUsageEntity | null> {
     this.logger.info(
       'Getting PIM usage for model',
       'ПолучениеДанныхПИМИспользования',
-      { model_id, quarter, year }
+      { system_model_id, quarter, year }
     )
 
     try {
@@ -26,11 +26,11 @@ export class PimUsageService {
         `
         SELECT *
         FROM models_pim_usage
-        WHERE model_id = :model_id
+        WHERE system_model_id = :system_model_id
           AND confirmation_quarter = :quarter
           AND confirmation_year = :year
         `,
-        { model_id, quarter, year }
+        { system_model_id, quarter, year }
       )
 
       return result || null
@@ -39,21 +39,21 @@ export class PimUsageService {
         'Error getting PIM usage',
         'ОшибкаПолученияДанныхПИМ',
         error,
-        { model_id, quarter, year }
+        { system_model_id, quarter, year }
       )
       throw error
     }
   }
 
   async getPimUsageForModels(
-    modelIds: string[],
+    systemModelIds: string[],
     quarter: number,
     year: number
   ): Promise<PimUsageEntity[]> {
     this.logger.info(
       'Getting PIM usage for multiple models',
       'ПолучениеДанныхПИМДляМоделей',
-      { count: modelIds.length, quarter, year }
+      { count: systemModelIds.length, quarter, year }
     )
 
     try {
@@ -61,11 +61,11 @@ export class PimUsageService {
         `
         SELECT *
         FROM models_pim_usage
-        WHERE model_id = ANY(:model_ids)
+        WHERE system_model_id = ANY(:system_model_ids)
           AND confirmation_quarter = :quarter
           AND confirmation_year = :year
         `,
-        { model_ids: modelIds, quarter, year }
+        { system_model_ids: systemModelIds, quarter, year }
       )
 
       return results
@@ -74,14 +74,14 @@ export class PimUsageService {
         'Error getting PIM usage for models',
         'ОшибкаПолученияДанныхПИМДляМоделей',
         error,
-        { count: modelIds.length, quarter, year }
+        { count: systemModelIds.length, quarter, year }
       )
       throw error
     }
   }
 
   async insertPimUsage(
-    model_id: string,
+    system_model_id: string,
     quarter: number,
     year: number,
     is_used: boolean
@@ -89,25 +89,25 @@ export class PimUsageService {
     this.logger.info(
       'Inserting PIM usage record',
       'ДобавлениеЗаписиПИМИспользования',
-      { model_id, quarter, year, is_used }
+      { system_model_id, quarter, year, is_used }
     )
 
     try {
       const [result] = await this.databaseService.query(
         `
-        INSERT INTO models_pim_usage (model_id, confirmation_quarter, confirmation_year, is_used, source_system)
-        VALUES (:model_id, :quarter, :year, :is_used, 'PIM')
-        ON CONFLICT (model_id, confirmation_quarter, confirmation_year)
+        INSERT INTO models_pim_usage (system_model_id, confirmation_quarter, confirmation_year, is_used, source_system)
+        VALUES (:system_model_id, :quarter, :year, :is_used, 'PIM')
+        ON CONFLICT (system_model_id, confirmation_quarter, confirmation_year)
         DO UPDATE SET is_used = :is_used, update_date = NOW()
         RETURNING *
         `,
-        { model_id, quarter, year, is_used }
+        { system_model_id, quarter, year, is_used }
       )
 
       this.logger.info(
         'PIM usage record inserted/updated',
         'ЗаписьПИМИспользованияДобавлена',
-        { model_id, quarter, year, pim_usage_id: result?.pim_usage_id }
+        { system_model_id, quarter, year, pim_usage_id: result?.pim_usage_id }
       )
 
       return result || null
@@ -116,7 +116,7 @@ export class PimUsageService {
         'Error inserting PIM usage',
         'ОшибкаДобавленияДанныхПИМ',
         error,
-        { model_id, quarter, year }
+        { system_model_id, quarter, year }
       )
       throw error
     }
