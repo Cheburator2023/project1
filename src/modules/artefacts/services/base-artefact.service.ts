@@ -16,6 +16,7 @@ import {
 } from '../dto'
 import { IArtefactService } from '../interfaces'
 import { UserType } from 'src/decorators'
+import { userGroupsMatchMatrixRoles } from 'src/system/common/constants/matrix-role-aliases'
 
 export abstract class BaseArtefactService implements IArtefactService {
   protected abstract modelsTableName: string
@@ -41,13 +42,18 @@ export abstract class BaseArtefactService implements IArtefactService {
     try {
       const artefacts = await this.getArtefacts()
       const artefactRolesMap = await this.getAllArtefactRoles()
+      const rolesByTechLabel = this.mergeArtefactRolesByTechLabel(
+        artefacts.data,
+        artefactRolesMap
+      )
 
       const enrichedArtefacts = artefacts.data.map(
         (artefact: ArtefactEntity) => {
           const permissions = this.canEditArtefactBySource(
             artefact,
             user,
-            artefactRolesMap
+            artefactRolesMap,
+            rolesByTechLabel
           )
           return {
             ...artefact,
@@ -103,11 +109,18 @@ export abstract class BaseArtefactService implements IArtefactService {
       >()
 
       for (const row of roles) {
-        const modelSource = row.model_source as 'sum' | 'sum_rm'
+        const rawModelSource = String(row.model_source || '').toLowerCase()
+        const modelSource =
+          rawModelSource === 'sum-rm' || rawModelSource === 'sum_rm' || rawModelSource === 'rm'
+            ? 'sum_rm'
+            : 'sum'
         if (!artefactRolesMap.has(row.artefact_id)) {
           artefactRolesMap.set(row.artefact_id, { sum: [], sum_rm: [] })
         }
-        artefactRolesMap.get(row.artefact_id)![modelSource] = row.roles
+        const existing = artefactRolesMap.get(row.artefact_id)![modelSource]
+        artefactRolesMap.get(row.artefact_id)![modelSource] = [
+          ...new Set([...existing, ...row.roles])
+        ]
       }
 
       for (const pseudoArtefactSourcesRole of pseudoArtefactsSourcesRoles) {
@@ -1042,7 +1055,7 @@ export abstract class BaseArtefactService implements IArtefactService {
           MAX(EFFECTIVE_FROM) AT TIME ZONE 'UTC' AT TIME ZONE 'Europe/Moscow',
           'YYYY-MM-DD HH24:MI:SS'
         ) AS update_date
-        FROM artefact_realizations
+        FROM ${this.artefactRealizationsTableName}
         WHERE model_id = :model_id
         `,
         { model_id }
@@ -1072,7 +1085,7 @@ export abstract class BaseArtefactService implements IArtefactService {
   }
 
   canEditArtefact(artefact: ArtefactEntity): boolean {
-    const canEdit = false
+    const canEdit = artefact.is_edit_flg !== '0'
 
     this.logger.info(
       'Checking if artefact can be edited',
@@ -1088,10 +1101,37 @@ export abstract class BaseArtefactService implements IArtefactService {
     return canEdit
   }
 
+  /**
+   * Несколько строк artefacts (в т.ч. псевдо + БД) могут иметь один artefact_tech_label
+   * и разные artefact_id; матрица artefact_source_roles привязана к id.
+   * Объединяем роли по tech_label, чтобы права не «терялись» на дубликате.
+   */
+  private mergeArtefactRolesByTechLabel(
+    artefacts: ArtefactEntity[],
+    artefactRolesMap: Map<number, { sum: string[]; sum_rm: string[] }>
+  ): Map<string, { sum: string[]; sum_rm: string[] }> {
+    const byLabel = new Map<string, { sum: string[]; sum_rm: string[] }>()
+    for (const artefact of artefacts) {
+      const label = artefact.artefact_tech_label
+      const bucket = artefactRolesMap.get(artefact.artefact_id) || {
+        sum: [],
+        sum_rm: []
+      }
+      if (!byLabel.has(label)) {
+        byLabel.set(label, { sum: [], sum_rm: [] })
+      }
+      const agg = byLabel.get(label)!
+      agg.sum = [...new Set([...agg.sum, ...bucket.sum])]
+      agg.sum_rm = [...new Set([...agg.sum_rm, ...bucket.sum_rm])]
+    }
+    return byLabel
+  }
+
   canEditArtefactBySource(
     artefact: ArtefactEntity,
     user: UserType,
-    artefactRolesMap: Map<number, { sum: string[]; sum_rm: string[] }>
+    artefactRolesMap: Map<number, { sum: string[]; sum_rm: string[] }>,
+    rolesByTechLabel?: Map<string, { sum: string[]; sum_rm: string[] }>
   ): { is_editable_by_role_sum: string; is_editable_by_role_sum_rm: string } {
     this.logger.info(
       'Checking artefact edit permissions by source',
@@ -1115,17 +1155,19 @@ export abstract class BaseArtefactService implements IArtefactService {
       return { is_editable_by_role_sum: '0', is_editable_by_role_sum_rm: '0' }
     }
 
-    const rolesForArtefact = artefactRolesMap.get(artefact.artefact_id) || {
-      sum: [],
-      sum_rm: []
-    }
+    const rolesForArtefact =
+      rolesByTechLabel?.get(artefact.artefact_tech_label) ||
+      artefactRolesMap.get(artefact.artefact_id) || {
+        sum: [],
+        sum_rm: []
+      }
 
     const isEditableSum =
       rolesForArtefact.sum.length > 0 &&
-      user.groups.some((role) => rolesForArtefact.sum.includes(role))
+      userGroupsMatchMatrixRoles(user.groups, rolesForArtefact.sum)
     const isEditableSumRm =
       rolesForArtefact.sum_rm.length > 0 &&
-      user.groups.some((role) => rolesForArtefact.sum_rm.includes(role))
+      userGroupsMatchMatrixRoles(user.groups, rolesForArtefact.sum_rm)
 
     const result = {
       is_editable_by_role_sum: isEditableSum ? '1' : '0',

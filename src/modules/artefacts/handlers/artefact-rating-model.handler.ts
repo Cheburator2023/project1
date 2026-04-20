@@ -113,6 +113,10 @@ export class ArtefactRatingModelHandler implements IArtefactHandler {
    * @param artefactData The data of the artefact to be updated.
    * @returns true if the "Да" value is present, otherwise false.
    */
+  /**
+   * Prefer the persisted realization after update so payload quirks (e.g. NaN ids)
+   * cannot block record_id assignment when the DB row is actually «Да».
+   */
   private async checkIfArtefactHasValue(
     ratingModelArtefact: ArtefactEntity,
     artefactData: UpdateArtefactDto
@@ -125,6 +129,32 @@ export class ArtefactRatingModelHandler implements IArtefactHandler {
           ratingModelArtefact.artefact_id
         )
       : null
+
+    const latest =
+      await this.artefactService.getLatestArtefactRealization(
+        artefactData.model_id,
+        ratingModelArtefact.artefact_id
+      )
+
+    if (latest && Array.isArray(artefactValues)) {
+      const matchesDaById = artefactValues.some(
+        (value) =>
+          value.artefact_value_id === latest.artefact_value_id &&
+          value.artefact_value === 'Да'
+      )
+      if (matchesDaById) {
+        return true
+      }
+    }
+
+    const normalizedString = String(
+      latest?.artefact_string_value ?? artefactData.artefact_string_value ?? ''
+    )
+      .trim()
+      .toLowerCase()
+    if (normalizedString === 'да') {
+      return true
+    }
 
     const resolvedArtefactValueId = this.artefactService.resolveArtefactValueId(
       artefactData,
