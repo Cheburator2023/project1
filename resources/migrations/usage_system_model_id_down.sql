@@ -1,5 +1,5 @@
 -- =============================================================================
--- Откат миграции usage_system_model_id_up.sql
+-- Откат миграции usage_system_model_id_01_create_pim_usage_only.sql
 --
 -- Возвращает 3 таблицы к колонке model_id (артефакт 2001):
 --   * ADD COLUMN model_id + бэкфилл из artefact_realizations_new

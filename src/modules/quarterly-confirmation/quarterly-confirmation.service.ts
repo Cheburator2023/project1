@@ -304,9 +304,11 @@ export class QuarterlyConfirmationService {
         confirmation_date: string
       }[] = await this.databaseService.query(
         `
-          SELECT system_model_id, is_used, confirmation_date
+          SELECT model_id AS system_model_id,
+                 is_used,
+                 confirmation_date
           FROM models_usage
-          WHERE system_model_id = ANY(:system_model_ids)
+          WHERE model_id::text = ANY(:system_model_ids)
             AND confirmation_quarter = :quarter
             AND confirmation_year = :year
           `,
@@ -336,9 +338,11 @@ export class QuarterlyConfirmationService {
         confirmation_date: string
       }[] = await this.databaseService.query(
         `
-          SELECT system_model_id, is_used, confirmation_date
+          SELECT model_id AS system_model_id,
+                 is_used,
+                 confirmation_date
           FROM models_usage
-          WHERE system_model_id = ANY(:system_model_ids)
+          WHERE model_id::text = ANY(:system_model_ids)
             AND confirmation_quarter = :quarter
             AND confirmation_year = :year
           `,
@@ -561,8 +565,7 @@ export class QuarterlyConfirmationService {
           }
         )
 
-        // usage.service.ts ожидает поле model_id в DTO — передаём туда значение system_model_id,
-        // которое в MrmUsageService связывается с колонкой system_model_id в SQL.
+        // usage.service.ts ожидает model_id в DTO — это UUID из models_new (как и колонка model_id в models_usage).
         const usageArtefacts = [
           {
             model_id: model.system_model_id,

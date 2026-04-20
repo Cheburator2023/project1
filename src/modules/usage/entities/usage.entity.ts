@@ -1,6 +1,6 @@
 export type MRMUsageEntity = {
   usage_id: number
-  system_model_id: string
+  model_id: string
   confirmation_date: string
   confirmation_year: number
   confirmation_quarter: number
@@ -13,7 +13,7 @@ export type MRMUsageEntity = {
 export type MRMUsageHistEntity = {
   usage_history_id: number
   usage_id: number
-  system_model_id: string
+  model_id: string
   confirmation_date: string
   is_used: boolean
   change_date: string

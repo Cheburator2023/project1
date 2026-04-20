@@ -239,7 +239,7 @@ export class MrmUsageService extends BaseUsageService implements IUsageService {
         `
         SELECT *
         FROM models_usage
-        WHERE system_model_id = :model_id
+        WHERE model_id::text = :model_id
           AND confirmation_year = :confirmation_year
           AND confirmation_quarter = :confirmation_quarter;
         `,
@@ -285,7 +285,7 @@ export class MrmUsageService extends BaseUsageService implements IUsageService {
         UPDATE models_usage
         SET confirmation_date = :confirmation_date,
             is_used           = :is_used
-        WHERE system_model_id = :model_id
+        WHERE model_id::text = :model_id
           AND confirmation_year = :confirmation_year
           AND confirmation_quarter = :confirmation_quarter
         RETURNING *;
@@ -337,8 +337,22 @@ export class MrmUsageService extends BaseUsageService implements IUsageService {
     try {
       const [usage] = await this.databaseService.query(
         `
-        INSERT INTO models_usage (system_model_id, confirmation_date, confirmation_year, confirmation_quarter, is_used, creator)
-        VALUES (:model_id, :confirmation_date, :confirmation_year, :confirmation_quarter, coalesce(:is_used, FALSE), :creator)
+        INSERT INTO models_usage (
+            model_id,
+            confirmation_date,
+            confirmation_year,
+            confirmation_quarter,
+            is_used,
+            creator
+        )
+        VALUES (
+            :model_id,
+            :confirmation_date,
+            :confirmation_year,
+            :confirmation_quarter,
+            coalesce(:is_used, FALSE),
+            :creator
+        )
         RETURNING *;
         `,
         params
@@ -394,7 +408,7 @@ export class MrmUsageService extends BaseUsageService implements IUsageService {
     try {
       const [usageHist] = await this.databaseService.query(
         `
-        INSERT INTO models_usage_history (usage_id, system_model_id, confirmation_date, is_used, changed_by)
+        INSERT INTO models_usage_history (usage_id, model_id, confirmation_date, is_used, changed_by)
         VALUES (:usage_id, :model_id, :confirmation_date, :is_used, :creator)
         RETURNING *;
         `,
