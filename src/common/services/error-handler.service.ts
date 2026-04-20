@@ -110,14 +110,25 @@ export class ErrorHandlerService {
     }
   }
 
+  /**
+   * Ошибки node-postgres: `code` вида 28P01, 3D000, 42P01 и т.д.; сетевые — ECONNREFUSED и др.
+   * Раньше часть ошибок (например «password authentication failed» без слова database)
+   * не попадала сюда и превращалась в REPORT_ERROR 503.
+   */
   private isDatabaseError(error: any): boolean {
     const networkCodes = ['ECONNREFUSED', 'ECONNABORTED', 'ETIMEDOUT', 'ECONNRESET']
+    const pgFiveCharCode =
+      typeof error?.code === 'string' && /^[0-9A-Z]{5}$/.test(error.code)
+
     return (
+      pgFiveCharCode ||
       error.message?.includes('SQL') ||
       error.message?.includes('database') ||
       error.message?.includes('базы данных') ||
       error.message?.includes('relation') ||
       error.code === '42P01' ||
+      error.message?.includes('password authentication') ||
+      error.message?.includes('authentication failed') ||
       (error.message?.includes('connection') &&
         !networkCodes.includes(error?.code)) ||
       (error.message?.includes('timeout') && !error.response?.status)
