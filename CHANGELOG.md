@@ -1,5 +1,18 @@
 # Semantic Versioning Changelog
 
+# [1.47.0](https://git.sfera.inno.local:7999/SUMD/mrms-backend/compare/v1.46.0...v1.47.0) (2026-04-20)
+
+
+### Bug Fixes
+
+* enhance SQL migration for artefact source roles uniqueness ([a2f4922](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/a2f49223660f6463a8926bcf6cc0798f4e72baa9))
+* update SQL migration to enhance artefact edit permissions ([592018e](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/592018e47626fa018d3d9e0afe1535a5a09ba73b))
+
+
+### Features
+
+* add source resolution logic to artefacts controller ([56cd5c0](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/56cd5c036310b20a98729c7067152f91b6d60306))
+
 # [1.46.0](https://git.sfera.inno.local:7999/SUMD/mrms-backend/compare/v1.45.1...v1.46.0) (2026-04-14)
 
 
