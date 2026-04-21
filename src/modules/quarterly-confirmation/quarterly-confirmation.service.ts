@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common'
 import { MrmDatabaseService } from 'src/system/mrm-database/database.service'
+import { SumDatabaseService } from 'src/system/sum-database/database.service'
 import { LoggerService } from 'src/system/logger/logger.service'
 import { canEditQuarter } from 'src/system/common/utils'
 import {
@@ -21,6 +22,7 @@ import {
 export class QuarterlyConfirmationService {
   constructor(
     private readonly databaseService: MrmDatabaseService,
+    private readonly sumDatabaseService: SumDatabaseService,
     private readonly logger: LoggerService,
     private readonly pimUsageService: PimUsageService,
     private readonly usageService: UsageService
@@ -225,20 +227,18 @@ export class QuarterlyConfirmationService {
         queryParams.business_customer_departament = `%${filters.business_customer_departament}%`
       }
 
+      // model_source не является артефактом — это признак базы данных (СУМ/СУРМ),
+      // поэтому изначально возвращаем 'sum-rm' для всех моделей из models_new
+      // (база СУРМ), а ниже по ID проверим присутствие в БД СУМ и переопределим
+      // на 'sum' для тех, которые реально заведены в СУМ (аналогично merge в
+      // ModelsService.getModels / ModelMergeService).
       const sqlQuery = `
         SELECT DISTINCT
           a.system_model_id,
           a.model_id,
           a.model_alias,
           m.model_name,
-          CASE lower(trim(COALESCE(a.model_source_raw, '')))
-            WHEN '' THEN '${MODEL_SOURCES.MRM}'
-            WHEN 'sum_rm' THEN '${MODEL_SOURCES.MRM}'
-            WHEN 'rm' THEN '${MODEL_SOURCES.MRM}'
-            WHEN 'sum' THEN '${MODEL_SOURCES.SUM}'
-            WHEN 'sum-rm' THEN '${MODEL_SOURCES.MRM}'
-            ELSE trim(COALESCE(a.model_source_raw, '${MODEL_SOURCES.MRM}'))
-          END AS model_source,
+          '${MODEL_SOURCES.MRM}' AS model_source,
           a.model_name_dadm,
           a.business_customer,
           a.business_customer_departament
@@ -251,22 +251,7 @@ export class QuarterlyConfirmationService {
             MAX(CASE WHEN ar.artefact_id = 2003 THEN ar.artefact_string_value ELSE NULL END)                  AS model_name_dadm,
             MAX(CASE WHEN ar.artefact_id = 2031 THEN ar.artefact_string_value ELSE NULL END)                  AS business_customer,
             STRING_AGG(CASE WHEN ar.artefact_id = 2032 THEN av.artefact_value ELSE NULL END, ',' ORDER BY ar.artefact_value_id) AS business_customer_departament,
-            MAX(CASE WHEN ar.artefact_id = 2656 THEN ar.artefact_string_value ELSE NULL END)                  AS business_status,
-            MAX(
-              CASE
-                WHEN ar.artefact_id = (
-                  SELECT a_ms.artefact_id
-                  FROM artefacts a_ms
-                  WHERE a_ms.artefact_tech_label = 'model_source'
-                  ORDER BY a_ms.artefact_id
-                  LIMIT 1
-                )
-                THEN COALESCE(
-                  NULLIF(TRIM(ar.artefact_string_value), ''),
-                  NULLIF(TRIM(av.artefact_value::text), '')
-                )
-              END
-            ) AS model_source_raw
+            MAX(CASE WHEN ar.artefact_id = 2656 THEN ar.artefact_string_value ELSE NULL END)                  AS business_status
           FROM artefact_realizations_new ar
           INNER JOIN models_new m2 ON ar.model_id = m2.model_id
           LEFT JOIN artefact_values av ON ar.artefact_value_id = av.artefact_value_id AND av.is_active_flg = '1'
@@ -292,6 +277,45 @@ export class QuarterlyConfirmationService {
         {
           totalModels: models.length,
           sampleSystemModelIds: systemModelIds.slice(0, 5)
+        }
+      )
+
+      // Определяем источник модели по наличию записи в БД СУМ.
+      // Логика аналогична ModelsService.getModels / ModelMergeService:
+      // если system_model_id присутствует в sum.models — считаем model_source='sum'.
+      const sumModelRows: { model_id: string }[] = await this.sumDatabaseService
+        .query(
+          `
+            SELECT model_id
+            FROM models
+            WHERE model_id::text = ANY(:system_model_ids)
+          `,
+          { system_model_ids: systemModelIds }
+        )
+        .catch((err) => {
+          this.logger.warn(
+            'Failed to resolve model_source from SUM db, defaulting to sum-rm',
+            'НеУдалосьОпределитьModelSourceИзСУМ',
+            { error: err instanceof Error ? err.message : String(err) }
+          )
+          return [] as { model_id: string }[]
+        })
+      const sumModelIdSet = new Set(
+        sumModelRows.map((r) => String(r.model_id))
+      )
+      for (const m of models) {
+        if (sumModelIdSet.has(String(m.system_model_id))) {
+          m.model_source = MODEL_SOURCES.SUM
+        }
+      }
+
+      this.logger.info(
+        '[ALLOC_DEBUG] model_source resolved via SUM db lookup',
+        'ОтладкаОпределенияИсточникаМодели',
+        {
+          totalModels: models.length,
+          sumCount: sumModelIdSet.size,
+          mrmCount: models.length - sumModelIdSet.size
         }
       )
 
