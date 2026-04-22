@@ -1,5 +1,12 @@
 # Semantic Versioning Changelog
 
+## [1.47.1](https://git.sfera.inno.local:7999/SUMD/mrms-backend/compare/v1.47.0...v1.47.1) (2026-04-22)
+
+
+### Bug Fixes
+
+* добавлены артефакты epic для роли ds_lead и удалены отладочные логи ([22d4f55](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/22d4f5539ad412b9abc1316d235f06afb9958482))
+
 # [1.47.0](https://git.sfera.inno.local:7999/SUMD/mrms-backend/compare/v1.46.0...v1.47.0) (2026-04-20)
 
 
