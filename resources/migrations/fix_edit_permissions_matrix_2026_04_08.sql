@@ -232,7 +232,11 @@ FROM (
     ('ds_lead', 'sum', 'deploy_system'),
     ('ds_lead', 'sum', 'model_desc'),
     ('ds_lead', 'sum', 'model_epic_12'),
-    ('ds_lead', 'sum', 'model_epic_12_date')
+    ('ds_lead', 'sum', 'model_epic_12_date'),
+    ('ds_lead', 'sum', 'operational_control_epic'),
+    ('ds_lead', 'sum', 'analytical_control_epic'),
+    ('ds_lead', 'sum', 'model_values_control_epic'),
+    ('ds_lead', 'sum', 'impact_assessment_epic')
 ) AS am(role_name, model_source, artefact_tech_label)
 JOIN artefacts AS a ON a.artefact_tech_label = am.artefact_tech_label
 JOIN roles AS r ON r.role_name = am.role_name
@@ -521,7 +525,11 @@ WITH am(role_name, model_source, artefact_tech_label) AS (
     ('ds_lead', 'sum', 'deploy_system'),
     ('ds_lead', 'sum', 'model_desc'),
     ('ds_lead', 'sum', 'model_epic_12'),
-    ('ds_lead', 'sum', 'model_epic_12_date')
+    ('ds_lead', 'sum', 'model_epic_12_date'),
+    ('ds_lead', 'sum', 'operational_control_epic'),
+    ('ds_lead', 'sum', 'analytical_control_epic'),
+    ('ds_lead', 'sum', 'model_values_control_epic'),
+    ('ds_lead', 'sum', 'impact_assessment_epic')
   ) AS v(role_name, model_source, artefact_tech_label)
 ),
 j AS (
@@ -697,7 +705,11 @@ WITH key_checks(role_name, artefact_tech_label, expected_bucket) AS (
     ('ds_lead', 'deploy_system', 'sum'),
     ('ds_lead', 'model_desc', 'sum'),
     ('ds_lead', 'model_epic_12', 'sum'),
-    ('ds_lead', 'model_epic_12_date', 'sum')
+    ('ds_lead', 'model_epic_12_date', 'sum'),
+    ('ds_lead', 'operational_control_epic', 'sum'),
+    ('ds_lead', 'analytical_control_epic', 'sum'),
+    ('ds_lead', 'model_values_control_epic', 'sum'),
+    ('ds_lead', 'impact_assessment_epic', 'sum')
   ) AS v(role_name, artefact_tech_label, expected_bucket)
 ),
 missing_grants AS (

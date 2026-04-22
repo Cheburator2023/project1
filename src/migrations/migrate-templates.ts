@@ -128,11 +128,6 @@ export class TemplateMigrationService {
   async migrateTemplates(): Promise<void> {
     console.log('Начинаем миграцию шаблонов...')
 
-    console.log(
-      '🐸 Pepe said >> TemplateMigrationService >> migrateTemplates >> this.databaseService:',
-      this.databaseService
-    )
-
     const templates = await this.databaseService.query(
       'SELECT template_id, template_value FROM templates_new.table WHERE template_value IS NOT NULL'
     )
