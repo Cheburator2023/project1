@@ -17,6 +17,7 @@ import {
   SaveQuarterlyConfirmationDto,
   GetModelsQueryDto
 } from './dto/quarterly-confirmation.dto'
+import { UpdateUsageResult } from 'src/modules/usage/dto'
 
 @Injectable()
 export class QuarterlyConfirmationService {
@@ -633,39 +634,41 @@ export class QuarterlyConfirmationService {
           }
         ]
 
-        await this.usageService.updateUsage(usageArtefacts, MODEL_SOURCES.MRM)
+        const usageUpdateResult: UpdateUsageResult =
+          await this.usageService.updateUsage(usageArtefacts, MODEL_SOURCES.MRM, {
+            syncLinkedSum: true
+          })
 
-        // Синхронизация в СУМ: для моделей, созданных в СУМ, записываем usage
-        // и историю изменений в БД СУМ. SumUsageService сам проверит
-        // существование модели — если её нет в СУМ, вернёт false (no-op).
-        let sumSynced: boolean | null = null
-        try {
-          const sumResult = await this.usageService.updateUsage(
-            usageArtefacts,
-            MODEL_SOURCES.SUM
+        const mrmUpdateResult = usageUpdateResult.sources[MODEL_SOURCES.MRM]
+        const sumUpdateResult = usageUpdateResult.sources[MODEL_SOURCES.SUM]
+
+        let sumSynced: boolean | null = sumUpdateResult.attempted
+          ? sumUpdateResult.updated
+          : false
+
+        if (sumUpdateResult.updated) {
+          syncedToSum++
+          this.logger.info(
+            'Usage synced to SUM for model',
+            'ИспользованиеСинхронизированоВСУМ',
+            { system_model_id: model.system_model_id, quarter: data.quarter }
           )
-          sumSynced = sumResult
+        }
 
-          if (sumResult) {
-            syncedToSum++
-            this.logger.info(
-              'Usage synced to SUM for model',
-              'ИспользованиеСинхронизированоВСУМ',
-              { system_model_id: model.system_model_id, quarter: data.quarter }
-            )
-          }
-        } catch (sumError) {
+        if (sumUpdateResult.error) {
           // Ошибка синхронизации в СУМ не должна блокировать основное сохранение
-          const errMsg =
-            sumError instanceof Error ? sumError.message : String(sumError)
-          sumSyncErrors.push({ system_model_id: model.system_model_id, error: errMsg })
+          sumSynced = null
+          sumSyncErrors.push({
+            system_model_id: model.system_model_id,
+            error: sumUpdateResult.error
+          })
           this.logger.warn(
             'Failed to sync usage to SUM, MRM save succeeded',
             'ОшибкаСинхронизацииВСУМСохранениеВМРМУспешно',
             {
               system_model_id: model.system_model_id,
               quarter: data.quarter,
-              error: errMsg
+              error: sumUpdateResult.error
             }
           )
         }
@@ -674,10 +677,12 @@ export class QuarterlyConfirmationService {
           system_model_id: model.system_model_id,
           is_used: model.is_used,
           confirmation_date: model.confirmation_date,
-          mrm: true,
+          mrm: mrmUpdateResult.updated,
           sum: sumSynced
         })
       }
+
+      const savedToMrm = saveResults.filter((result) => result.mrm).length
 
       this.logger.info(
         '[ALLOC_DEBUG] Quarterly confirmation saved successfully',
@@ -685,7 +690,7 @@ export class QuarterlyConfirmationService {
         {
           quarter: data.quarter,
           year: data.year,
-          savedCount: modelsToSave.length,
+          savedCount: savedToMrm,
           syncedToSum,
           sumSyncErrors: sumSyncErrors.length
         }
@@ -696,7 +701,7 @@ export class QuarterlyConfirmationService {
         quarter: data.quarter,
         year: data.year,
         totalInPayload: data.models.length,
-        savedToMrm: modelsToSave.length,
+        savedToMrm,
         syncedToSum,
         sumSyncErrors,
         models: saveResults

@@ -1,42 +1,79 @@
 import { Injectable, Inject, forwardRef } from '@nestjs/common'
 import { UsageServiceFactory } from './factories'
-import { UpdateUsageDto } from './dto'
+import {
+  UpdateUsageDto,
+  UpdateUsageOptions,
+  UpdateUsageResult,
+  UpdateUsageSourceResult
+} from './dto'
 import { canEditQuarter, MODEL_SOURCES } from 'src/system/common'
 import { ModelServiceFactory } from 'src/modules/models/factories'
 import { ModelsCacheService } from 'src/modules/models/models-cache.service'
+import { SumDatabaseService } from 'src/system/sum-database/database.service'
+import { LoggerService } from 'src/system/logger/logger.service'
 
 @Injectable()
 export class UsageService {
   constructor(
     private readonly usageServiceFactory: UsageServiceFactory,
     private readonly modelsServiceFactory: ModelServiceFactory,
+    private readonly sumDatabaseService: SumDatabaseService,
+    private readonly logger: LoggerService,
     @Inject(forwardRef(() => ModelsCacheService))
     private readonly modelsCacheService: ModelsCacheService
   ) {}
 
-  async updateUsage(data, source: MODEL_SOURCES): Promise<boolean> {
+  async updateUsage(
+    data,
+    source: MODEL_SOURCES,
+    options: UpdateUsageOptions = {}
+  ): Promise<UpdateUsageResult> {
     const transformedArtefacts = this.transformArtefacts(data)
-
-    const usageService = this.usageServiceFactory.getService(source)
-
-    const results = await Promise.all(
-      transformedArtefacts.map((artefact) =>
-        usageService.handleUpdateUsage(artefact)
-      )
-    )
-    const hasUpdates: boolean = results.some((results) => results === true)
-
-    if (hasUpdates) {
-      const modelService = this.modelsServiceFactory.getService(source)
-      await modelService.updateUpdateDate({
-        model_id: transformedArtefacts[0].model_id
-      })
-
-      // Force cache update to ensure fresh data is available immediately
-      // await this.modelsCacheService.forceUpdateCache()
+    const sourceResults: Record<MODEL_SOURCES, UpdateUsageSourceResult> = {
+      [MODEL_SOURCES.MRM]: this.createSourceResult(MODEL_SOURCES.MRM),
+      [MODEL_SOURCES.SUM]: this.createSourceResult(MODEL_SOURCES.SUM)
     }
 
-    return hasUpdates
+    sourceResults[source] = await this.handleUsageUpdateForSource(
+      transformedArtefacts,
+      source
+    )
+
+    if (options.syncLinkedSum && source === MODEL_SOURCES.MRM) {
+      try {
+        const sumModelIds = await this.resolveLinkedSumModelIds(
+          transformedArtefacts.map((artefact) => artefact.model_id)
+        )
+        const sumArtefacts = transformedArtefacts.filter((artefact) =>
+          sumModelIds.has(artefact.model_id)
+        )
+        sourceResults[MODEL_SOURCES.SUM] = await this.handleUsageUpdateForSource(
+          sumArtefacts,
+          MODEL_SOURCES.SUM
+        )
+      } catch (error) {
+        const errMsg = error instanceof Error ? error.message : String(error)
+        this.logger.error(
+          'Failed to prepare linked SUM usage sync',
+          'ОшибкаПодготовкиСинхронизацииUsageВСУМ',
+          error,
+          {
+            artefactsCount: transformedArtefacts.length
+          }
+        )
+        sourceResults[MODEL_SOURCES.SUM] = {
+          source: MODEL_SOURCES.SUM,
+          attempted: true,
+          updated: false,
+          error: errMsg
+        }
+      }
+    }
+
+    return {
+      hasUpdates: Object.values(sourceResults).some((result) => result.updated),
+      sources: sourceResults
+    }
   }
 
   private getCurrentDate(): Date {
@@ -84,7 +121,7 @@ export class UsageService {
           confirmation_quarter,
           currentDate
         )
-        const key = `${confirmation_year}-Q${confirmation_quarter}`
+        const key = `${model_id}:${confirmation_year}-Q${confirmation_quarter}`
 
         if (!result[key]) {
           result[key] = {
@@ -106,5 +143,107 @@ export class UsageService {
     )
 
     return Object.values(result)
+  }
+
+  private createSourceResult(
+    source: MODEL_SOURCES
+  ): UpdateUsageSourceResult {
+    return {
+      source,
+      attempted: false,
+      updated: false,
+      error: null
+    }
+  }
+
+  private async handleUsageUpdateForSource(
+    transformedArtefacts: UpdateUsageDto[],
+    source: MODEL_SOURCES
+  ): Promise<UpdateUsageSourceResult> {
+    if (transformedArtefacts.length === 0) {
+      return this.createSourceResult(source)
+    }
+
+    const usageService = this.usageServiceFactory.getService(source)
+
+    try {
+      const results = await Promise.all(
+        transformedArtefacts.map((artefact) =>
+          usageService.handleUpdateUsage(artefact)
+        )
+      )
+      const hasUpdates = results.some((result) => result === true)
+
+      if (hasUpdates) {
+        await this.updateModelsUpdateDate(
+          source,
+          transformedArtefacts.map((artefact) => artefact.model_id)
+        )
+
+        // Force cache update to ensure fresh data is available immediately
+        // await this.modelsCacheService.forceUpdateCache()
+      }
+
+      return {
+        source,
+        attempted: true,
+        updated: hasUpdates,
+        error: null
+      }
+    } catch (error) {
+      const errMsg = error instanceof Error ? error.message : String(error)
+      this.logger.error(
+        'Usage update failed for source',
+        'ОшибкаОбновленияUsageПоИсточнику',
+        error,
+        {
+          source,
+          artefactsCount: transformedArtefacts.length
+        }
+      )
+
+      return {
+        source,
+        attempted: true,
+        updated: false,
+        error: errMsg
+      }
+    }
+  }
+
+  private async updateModelsUpdateDate(
+    source: MODEL_SOURCES,
+    modelIds: string[]
+  ): Promise<void> {
+    const uniqueModelIds = [...new Set(modelIds)]
+    const modelService = this.modelsServiceFactory.getService(source)
+
+    await Promise.all(
+      uniqueModelIds.map((model_id) =>
+        modelService.updateUpdateDate({
+          model_id
+        })
+      )
+    )
+  }
+
+  private async resolveLinkedSumModelIds(
+    modelIds: string[]
+  ): Promise<Set<string>> {
+    const uniqueModelIds = [...new Set(modelIds)]
+    if (uniqueModelIds.length === 0) {
+      return new Set()
+    }
+
+    const sumModels: { model_id: string }[] = await this.sumDatabaseService.query(
+      `
+        SELECT model_id
+        FROM models
+        WHERE model_id::text = ANY(:model_ids)
+      `,
+      { model_ids: uniqueModelIds }
+    )
+
+    return new Set(sumModels.map((model) => String(model.model_id)))
   }
 }
