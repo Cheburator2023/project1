@@ -16,6 +16,7 @@ import {
 } from '../dto'
 import { IArtefactService } from '../interfaces'
 import { UserType } from 'src/decorators'
+import { applyArtefactTypeOverrides } from 'src/system/common'
 
 export abstract class BaseArtefactService implements IArtefactService {
   protected abstract modelsTableName: string
@@ -197,7 +198,10 @@ export abstract class BaseArtefactService implements IArtefactService {
           return prev
         }, [])
 
-      const artefacts = [...PSEUDO_ARTEFACTS, ...cl(queryResult)]
+      const artefacts = [
+        ...PSEUDO_ARTEFACTS,
+        ...cl(queryResult).map(applyArtefactTypeOverrides)
+      ]
 
       this.logger.info(
         'Artefacts retrieved successfully',
@@ -645,7 +649,7 @@ export abstract class BaseArtefactService implements IArtefactService {
         })
       }
 
-      return artefact || null
+      return artefact ? applyArtefactTypeOverrides(artefact) : null
     } catch (error) {
       this.logger.error(
         'Error getting artefact by technical label',
