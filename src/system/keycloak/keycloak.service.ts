@@ -45,10 +45,6 @@ export class KeycloakService {
 
   async getSubGroupsByGroupsName(groupNames: string[]): Promise<any[]> {
     const token = await this.getToken()
-    console.log(
-      '🐸 Pepe said >> KeycloakService >> getSubGroupsByGroupsName >> token:',
-      token
-    )
 
     const url = `${this.keycloakHost}admin/realms/${this.realms}/groups`
 

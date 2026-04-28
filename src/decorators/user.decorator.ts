@@ -8,11 +8,20 @@ export interface UserType {
   name: string
   username: string
   email: string
+  /** Сырой claim `groups` из JWT (Keycloak Groups). */
   keycloakGroups: string[]
   family_name: string
   given_name: string
   preferred_username: string
+  /**
+   * Keycloak Groups, разбитые по `/` и дедуплицированные — те же имена, что `roles.role_name`
+   * для матрицы `artefact_source_roles` (business_customer, ds_lead, …).
+   */
   groups: string[]
+  /**
+   * Keycloak realm/client roles из claim `roles` / realm_access (model_read, add_model_sumrm, …).
+   * На матрицу редактирования артефактов не влияют — для неё используйте `groups`.
+   */
   roles: string[]
 }
 
