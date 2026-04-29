@@ -1,5 +1,12 @@
 # Semantic Versioning Changelog
 
+# [1.48.0](https://git.sfera.inno.local:7999/SUMD/mrms-backend/compare/v1.47.1...v1.48.0) (2026-04-29)
+
+
+### Features
+
+* implement artefact type overrides for enhanced artefact processing ([a58106d](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/a58106d4177d19370b134219b2762c182dbb0877))
+
 ## [1.47.1](https://git.sfera.inno.local:7999/SUMD/mrms-backend/compare/v1.47.0...v1.47.1) (2026-04-22)
 
 
