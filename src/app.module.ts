@@ -24,6 +24,7 @@ import { MigrationModule } from 'src/modules/migration.module'
 
 import { GodModeGuard } from 'src/system/guards/god-mode.guard'
 import { LoggerModule } from 'src/system/logger/logger.module'
+import { AuditModule } from './modules/audit/audit.module';
 
 @Module({
   imports: [
@@ -44,7 +45,8 @@ import { LoggerModule } from 'src/system/logger/logger.module'
     BiDatamartModule,
     DatabaseSchemaModule,
     MigrationModule,
-    LoggerModule
+    LoggerModule,
+    AuditModule
   ],
   controllers: [],
   providers: [
