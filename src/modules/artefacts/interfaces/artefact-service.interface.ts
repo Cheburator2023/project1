@@ -60,4 +60,6 @@ export interface IArtefactService {
   getArtefactWithPermissions(
     user: UserType
   ): Promise<{ data: EnrichedArtefact[] }>
+
+  getBlockListByModel(modelId: string): Promise<{ data: string[] }>
 }

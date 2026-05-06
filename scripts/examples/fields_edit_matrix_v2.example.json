@@ -1,0 +1,29 @@
+{
+  "scenarios": [
+    {
+      "name": "business_customer_sum_edit_active",
+      "role": "business_customer",
+      "source": "sum",
+      "mode": "edit",
+      "active_model": true,
+      "expected": {
+        "update_date": false,
+        "developing_report": true,
+        "ds_department": true,
+        "rating_model": true
+      }
+    },
+    {
+      "name": "ds_lead_rm_edit",
+      "role": "ds_lead",
+      "source": "sum_rm",
+      "mode": "edit",
+      "active_model": null,
+      "expected": {
+        "model_epic_04_date": false,
+        "model_epic_05a": false
+      }
+    }
+  ]
+}
+

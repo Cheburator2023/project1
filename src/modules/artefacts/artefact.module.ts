@@ -12,9 +12,10 @@ import {
 import { ArtefactRealizationsController } from './api/artefact-realizations.controller'
 import { ArtefactServiceFactory } from './factories'
 import { artefactHandlersProvider } from './handlers'
+import { CamundaModule } from 'src/system/camunda/camunda.module'
 
 @Module({
-  imports: [forwardRef(() => ModelsModule)],
+  imports: [forwardRef(() => ModelsModule), CamundaModule],
   providers: [
     MrmDatabaseService,
     SumDatabaseService,

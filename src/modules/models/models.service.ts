@@ -26,7 +26,8 @@ import {
   LIFE_CYCLE_STAGES_DESCRIPTION,
   MODEL_SOURCES,
   MODEL_STATUS,
-  MODEL_DISPLAY_MODES
+  MODEL_DISPLAY_MODES,
+  applyArtefactTypeOverrides
 } from 'src/system/common/constants'
 import {
   BUSINESS_CUSTOMER_DEPARTMENT_MAPPING,
@@ -1181,7 +1182,7 @@ export class ModelsService {
       const lastArtefact = prev[prev.length - 1]
 
       if (!lastArtefact || lastArtefact.artefact_id !== curr.artefact_id) {
-        const newArtefact: Artefact = {
+        const newArtefact: Artefact = applyArtefactTypeOverrides({
           artefact_id: curr.artefact_id,
           artefact_tech_label: curr.artefact_tech_label,
           artefact_label: curr.artefact_label,
@@ -1190,7 +1191,7 @@ export class ModelsService {
           artefact_type_id: curr.artefact_type_id,
           artefact_type_desc: curr.artefact_type_desc,
           values: []
-        }
+        })
         prev.push(newArtefact)
       }
 
