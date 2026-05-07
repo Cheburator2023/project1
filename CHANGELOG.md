@@ -1,5 +1,12 @@
 # Semantic Versioning Changelog
 
+# [1.50.0](https://git.sfera.inno.local:7999/SUMD/mrms-backend/compare/v1.49.0...v1.50.0) (2026-05-07)
+
+
+### Features
+
+* ограничение редактирования атрибутов, список исключений ([422e2c9](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/422e2c973c20ec8ec66d105342fe9342dce046bf))
+
 # [1.49.0](https://git.sfera.inno.local:7999/SUMD/mrms-backend/compare/v1.48.0...v1.49.0) (2026-05-04)
 
 
