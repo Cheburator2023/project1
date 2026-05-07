@@ -1,5 +1,6 @@
 export * from './base.constants'
 export * from './models.constants'
+export * from './artefact-type-overrides.constants'
 export * from './user-roles.constants'
 export * from './life-cycle-stages.constants'
 export * from './model-status'

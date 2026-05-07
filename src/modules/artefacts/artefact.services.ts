@@ -55,11 +55,18 @@ export class ArtefactService {
     return await artefactService.getMaxArtefactUpdateDate(model_id)
   }
 
+  /**
+   * Артефакты (метаданные полей) едины для SUM и MRM, а флаги прав
+   * (is_editable_by_role_sum / is_editable_by_role_sum_rm) считаются
+   * одной и той же матрицей по группам пользователя. Поэтому source
+   * больше не нужен — всегда используем MRM-сервис как канонический.
+   */
   async getArtefacts(
-    source: MODEL_SOURCES,
     user: UserType
   ): Promise<{ data: EnrichedArtefact[] }> {
-    const artefactService = this.artefactServiceFactory.getService(source)
+    const artefactService = this.artefactServiceFactory.getService(
+      MODEL_SOURCES.MRM
+    )
     return await artefactService.getArtefactWithPermissions(user)
   }
 

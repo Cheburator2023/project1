@@ -118,7 +118,9 @@ export class ArtefactRealizationsController {
               artefact_id
             }
           )
-          throw new NotFoundException()
+          throw new NotFoundException(
+            `No active artefact realization for model_id=${model_id} artefact_id=${artefact_id}`
+          )
         }
         return result
       }
