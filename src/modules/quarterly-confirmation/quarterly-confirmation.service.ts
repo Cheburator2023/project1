@@ -2,11 +2,6 @@ import { Injectable } from '@nestjs/common'
 import { MrmDatabaseService } from 'src/system/mrm-database/database.service'
 import { SumDatabaseService } from 'src/system/sum-database/database.service'
 import { LoggerService } from 'src/system/logger/logger.service'
-import { canEditQuarter } from 'src/system/common/utils'
-import {
-  QUARTER_EDIT_PERIOD_MONTHS,
-  QUARTER_EDIT_PERIOD_DAYS
-} from 'src/system/common/constants'
 import { MODEL_STATUS } from 'src/system/common/constants/model-status'
 import { PimUsageService } from 'src/modules/pim-usage/pim-usage.service'
 import { UsageService } from 'src/modules/usage/usage.service'
@@ -32,70 +27,10 @@ export class QuarterlyConfirmationService {
   getActiveQuarter(): QuarterInfoDto | null {
     const now = new Date()
     const currentYear = now.getFullYear()
-
-    const editableQuarters: {
-      quarter: number
-      year: number
-      daysLeft: number
-    }[] = []
-
-    for (let q = 1; q <= 4; q++) {
-      // Проверяем текущий год
-      if (canEditQuarter(q, currentYear)) {
-        const endOfQuarter = new Date(currentYear, q * 3, 0, 23, 59, 59, 999)
-        const gracePeriodEnd = this.addMonthsAndDays(
-          endOfQuarter,
-          QUARTER_EDIT_PERIOD_MONTHS,
-          QUARTER_EDIT_PERIOD_DAYS
-        )
-        const daysLeft = Math.ceil(
-          (gracePeriodEnd.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
-        )
-        editableQuarters.push({ quarter: q, year: currentYear, daysLeft })
-      }
-
-      // Проверяем предыдущий год (для Q4)
-      if (q === 4 && canEditQuarter(4, currentYear - 1)) {
-        const endOfQuarter = new Date(currentYear - 1, 12, 0, 23, 59, 59, 999)
-        const gracePeriodEnd = this.addMonthsAndDays(
-          endOfQuarter,
-          QUARTER_EDIT_PERIOD_MONTHS,
-          QUARTER_EDIT_PERIOD_DAYS
-        )
-        const daysLeft = Math.ceil(
-          (gracePeriodEnd.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
-        )
-        editableQuarters.push({
-          quarter: 4,
-          year: currentYear - 1,
-          daysLeft
-        })
-      }
+    const activeQuarter = {
+      quarter: Math.floor(now.getMonth() / 3) + 1,
+      year: currentYear
     }
-
-    this.logger.info(
-      '[ALLOC_DEBUG] Editable quarters computed',
-      'ОтладкаДоступныхКварталов',
-      {
-        now: now.toISOString(),
-        editableQuarters,
-        QUARTER_EDIT_PERIOD_MONTHS,
-        QUARTER_EDIT_PERIOD_DAYS
-      }
-    )
-
-    if (editableQuarters.length === 0) {
-      this.logger.warn(
-        'No editable quarters found',
-        'НетДоступныхКварталов',
-        {}
-      )
-      return null
-    }
-
-    // Выбираем квартал с наименьшим количеством оставшихся дней
-    editableQuarters.sort((a, b) => a.daysLeft - b.daysLeft)
-    const activeQuarter = editableQuarters[0]
 
     const startDate = new Date(
       activeQuarter.year,
@@ -103,10 +38,9 @@ export class QuarterlyConfirmationService {
       1
     )
     const endDate = new Date(activeQuarter.year, activeQuarter.quarter * 3, 0)
-    // Конец квартала + 1 месяц для ограничения выбора даты
     const maxDate = new Date(
       activeQuarter.year,
-      activeQuarter.quarter * 3 + 1,
+      activeQuarter.quarter * 3 + 2,
       0
     )
 
@@ -720,26 +654,5 @@ export class QuarterlyConfirmationService {
   private formatDateToDDMMYYYY(dateStr: string): string {
     const [year, month, day] = dateStr.split('-')
     return `${day}.${month}.${year}`
-  }
-
-  private addMonthsAndDays(date: Date, months: number, days: number): Date {
-    const base = new Date(date.getTime())
-    const targetMonth = base.getMonth() + months
-    const targetYear = base.getFullYear() + Math.floor(targetMonth / 12)
-    const newMonth = targetMonth % 12
-    const currentDay = base.getDate()
-    const daysInTargetMonth = new Date(targetYear, newMonth + 1, 0).getDate()
-    const day = Math.min(currentDay, daysInTargetMonth)
-    const shiftedDate = new Date(
-      targetYear,
-      newMonth,
-      day,
-      base.getHours(),
-      base.getMinutes(),
-      base.getSeconds(),
-      base.getMilliseconds()
-    )
-    shiftedDate.setTime(shiftedDate.getTime() + days * 24 * 60 * 60 * 1000)
-    return shiftedDate
   }
 }

@@ -107,20 +107,53 @@ export class UsageService {
   ) {
     const currentDate = this.getCurrentDate()
     const result: Record<string, UpdateUsageDto> = {}
-
-    artefacts.forEach(
-      ({ model_id, artefact_tech_label, artefact_string_value, creator }) => {
-        const match = artefact_tech_label.match(
+    const parsedArtefacts = artefacts
+      .map((artefact) => {
+        const match = artefact.artefact_tech_label.match(
           /usage_confirm_(date|flag)_q(\d)/
         )
-        if (!match) return
+        if (!match) return null
 
         const [, type, quarterStr] = match
-        const confirmation_quarter = parseInt(quarterStr, 10)
-        const confirmation_year = this.determineYear(
-          confirmation_quarter,
-          currentDate
-        )
+        return {
+          ...artefact,
+          type,
+          confirmation_quarter: parseInt(quarterStr, 10)
+        }
+      })
+      .filter(
+        (
+          artefact
+        ): artefact is {
+          model_id: string
+          artefact_tech_label: string
+          artefact_string_value: string
+          artefact_value_id: null
+          creator: string
+          type: string
+          confirmation_quarter: number
+        } => artefact !== null
+      )
+    const dateYearByModelQuarter = new Map<string, number>()
+
+    parsedArtefacts.forEach((artefact) => {
+      if (artefact.type !== 'date' || !artefact.artefact_string_value) return
+
+      const formattedDate = this.formatDate(artefact.artefact_string_value)
+      const date = new Date(formattedDate)
+      if (Number.isNaN(date.getTime())) return
+
+      dateYearByModelQuarter.set(
+        `${artefact.model_id}:Q${artefact.confirmation_quarter}`,
+        date.getFullYear()
+      )
+    })
+
+    parsedArtefacts.forEach(
+      ({ model_id, artefact_string_value, creator, type, confirmation_quarter }) => {
+        const confirmation_year =
+          dateYearByModelQuarter.get(`${model_id}:Q${confirmation_quarter}`) ??
+          this.determineYear(confirmation_quarter, currentDate)
         const key = `${model_id}:${confirmation_year}-Q${confirmation_quarter}`
 
         if (!result[key]) {
