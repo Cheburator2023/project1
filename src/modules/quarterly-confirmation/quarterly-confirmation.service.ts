@@ -40,7 +40,7 @@ export class QuarterlyConfirmationService {
     const endDate = new Date(activeQuarter.year, activeQuarter.quarter * 3, 0)
     const maxDate = new Date(
       activeQuarter.year,
-      activeQuarter.quarter * 3 + 2,
+      activeQuarter.quarter * 3 + 1,
       0
     )
 
