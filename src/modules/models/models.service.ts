@@ -332,50 +332,6 @@ export class ModelsService {
     return this.getModels({ model_id, ignoreModeFilter: true })
   }
 
-  async surrogateModelCreate(model_id: string): Promise<ModelEntity | null> {
-    const modelSum: ModelEntity | null =
-      await this.sumModelService.getModelById(model_id)
-
-    if (!modelSum) {
-      return null
-    }
-
-    const [newModel] = await this.mrmDatabaseService.query(
-      `
-      INSERT INTO models_new (
-        root_model_id,
-        model_id,
-        model_name,
-        model_version,
-        create_date,
-        update_date,
-        model_creator
-      ) 
-      VALUES (
-        :root_model_id,
-        :model_id,
-        :model_name,
-        :model_version,
-        :create_date,
-        :update_date,
-        :model_creator
-      )
-      RETURNING *;
-      `,
-      {
-        root_model_id: modelSum.root_model_id,
-        model_id: modelSum.model_id,
-        model_name: modelSum.model_name,
-        model_version: modelSum.model_version,
-        create_date: modelSum.create_date,
-        update_date: modelSum.update_date,
-        model_creator: modelSum.model_creator
-      }
-    )
-
-    return newModel
-  }
-
   private filterModelsByDisplayMode(
     models: Model[],
     mode: string[] | null
@@ -431,6 +387,50 @@ export class ModelsService {
 
       return false
     })
+  }
+
+  async surrogateModelCreate(model_id: string): Promise<ModelEntity | null> {
+    const modelSum: ModelEntity | null =
+      await this.sumModelService.getModelById(model_id)
+
+    if (!modelSum) {
+      return null
+    }
+
+    const [newModel] = await this.mrmDatabaseService.query(
+      `
+      INSERT INTO models_new (
+        root_model_id,
+        model_id,
+        model_name,
+        model_version,
+        create_date,
+        update_date,
+        model_creator
+      ) 
+      VALUES (
+        :root_model_id,
+        :model_id,
+        :model_name,
+        :model_version,
+        :create_date,
+        :update_date,
+        :model_creator
+      )
+      RETURNING *;
+      `,
+      {
+        root_model_id: modelSum.root_model_id,
+        model_id: modelSum.model_id,
+        model_name: modelSum.model_name,
+        model_version: modelSum.model_version,
+        create_date: modelSum.create_date,
+        update_date: modelSum.update_date,
+        model_creator: modelSum.model_creator
+      }
+    )
+
+    return newModel
   }
 
   // Фильтрация моделей в зависимости от групп пользователя
