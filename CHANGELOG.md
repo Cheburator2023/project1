@@ -1,5 +1,24 @@
 # Semantic Versioning Changelog
 
+# [1.51.0](https://git.sfera.inno.local:7999/SUMD/mrms-backend/compare/v1.50.0...v1.51.0) (2026-05-13)
+
+
+### Bug Fixes
+
+* alloc bug fixes ([010fb05](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/010fb057a5de7f3a01dcdad7eb29344af67f6e58))
+* quarterly confirmation controller and service fix ([6112db7](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/6112db78f50be178f92524ba5326dd947f4b13a8))
+* update model_source handling in QuarterlyConfirmationService ([439a605](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/439a6057767db6f356e84cc3ff5c6a9a2e1c9bf5))
+* исправлена дата maxDate для активного квартала в QuarterlyConfirmationService ([4ce7f47](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/4ce7f476d51e73299cd182a0ece2c4c47c52963c))
+
+
+### Features
+
+* add quarterly confirmation module and PIM usage tracking ([6d2b7e4](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/6d2b7e4d24e3ba5e40a09f331a192f041f14a102))
+* create migration for models_pim_usage and update usage tables ([b99e6d6](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/b99e6d6763ed0c12d90ff68d231663ae17b0ec47))
+* enhance usage update logic in UsageService and QuarterlyConfirmationService ([9a3392a](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/9a3392af728f12ae92dd5d85caeacfb1c6be351b))
+* implement seed PIM usage endpoint and enhance logging ([1671f62](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/1671f622c04e2be1c8c28012fe8084159d8ad098))
+* integrate SumDatabaseModule into QuarterlyConfirmationService ([2f01cc9](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/2f01cc9aa58693395a3bd77c65bd179252db546a))
+
 # [1.50.0](https://git.sfera.inno.local:7999/SUMD/mrms-backend/compare/v1.49.0...v1.50.0) (2026-05-07)
 
 
