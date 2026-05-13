@@ -1,5 +1,12 @@
 # Semantic Versioning Changelog
 
+## [1.51.1](https://git.sfera.inno.local:7999/SUMD/mrms-backend/compare/v1.51.0...v1.51.1) (2026-05-13)
+
+
+### Bug Fixes
+
+* remove unnecessary comment from README.md ([9f2ebfe](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/9f2ebfee1c0cd4701f97d16b585d451ea51a646f))
+
 # [1.51.0](https://git.sfera.inno.local:7999/SUMD/mrms-backend/compare/v1.50.0...v1.51.0) (2026-05-13)
 
 
