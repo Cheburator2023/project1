@@ -16,6 +16,15 @@ import { UpdateUsageResult } from 'src/modules/usage/dto'
 
 @Injectable()
 export class QuarterlyConfirmationService {
+  private parseUsageFlag(raw: unknown): boolean | null {
+    if (raw == null) return null
+    const v = String(raw).trim().toLowerCase()
+    if (!v) return null
+    if (['да', 'yes', '1', 'true'].includes(v)) return true
+    if (['нет', 'no', '0', 'false'].includes(v)) return false
+    return null
+  }
+
   constructor(
     private readonly databaseService: MrmDatabaseService,
     private readonly sumDatabaseService: SumDatabaseService,
@@ -88,8 +97,8 @@ export class QuarterlyConfirmationService {
     try {
       // Строим динамический SQL запрос с фильтрами
       // Поля business_customer (artefact_id=2031), business_customer_departament (artefact_id=2032),
-      // business_status (artefact_id=2656), model_alias вычисляется из root_model_id+version
-      // model_name_dadm = rating_system_name (artefact_id=2003)
+      // business_status (artefact_id=2656), model_alias из root_model_id+version,
+      // model_name_dadm — реестр ДАДМ (artefact_id=2096, tech_label=model_name_dadm).
       this.logger.info(
         '[ALLOC_DEBUG] getModelsForConfirmation filter params',
         'ОтладкаПараметровФильтрации',
@@ -113,7 +122,9 @@ export class QuarterlyConfirmationService {
         queryParams.given_name_pattern = `%${userGivenName}%`
       }
       if (userDepartment) {
-        whereClauses.push('a.business_customer_departament ILIKE :user_department')
+        whereClauses.push(
+          'a.business_customer_departament ILIKE :user_department'
+        )
         queryParams.user_department = `%${userDepartment}%`
       }
       whereClauses.push(
@@ -183,7 +194,7 @@ export class QuarterlyConfirmationService {
             m2.model_id                                                                                        AS system_model_id,
             MAX(CASE WHEN ar.artefact_id = 2001 THEN ar.artefact_string_value ELSE NULL END)                  AS model_id,
             CAST('model' || m2.root_model_id AS varchar) || '-v' || CAST(m2.model_version AS varchar)         AS model_alias,
-            MAX(CASE WHEN ar.artefact_id = 2003 THEN ar.artefact_string_value ELSE NULL END)                  AS model_name_dadm,
+            MAX(CASE WHEN ar.artefact_id = 2096 THEN ar.artefact_string_value ELSE NULL END)                  AS model_name_dadm,
             MAX(CASE WHEN ar.artefact_id = 2031 THEN ar.artefact_string_value ELSE NULL END)                  AS business_customer,
             STRING_AGG(CASE WHEN ar.artefact_id = 2032 THEN av.artefact_value ELSE NULL END, ',' ORDER BY ar.artefact_value_id) AS business_customer_departament,
             MAX(CASE WHEN ar.artefact_id = 2656 THEN ar.artefact_string_value ELSE NULL END)                  AS business_status
@@ -235,9 +246,7 @@ export class QuarterlyConfirmationService {
           )
           return [] as { model_id: string }[]
         })
-      const sumModelIdSet = new Set(
-        sumModelRows.map((r) => String(r.model_id))
-      )
+      const sumModelIdSet = new Set(sumModelRows.map((r) => String(r.model_id)))
       for (const m of models) {
         if (sumModelIdSet.has(String(m.system_model_id))) {
           m.model_source = MODEL_SOURCES.SUM
@@ -260,7 +269,9 @@ export class QuarterlyConfirmationService {
         quarterInfo.quarter,
         quarterInfo.year
       )
-      const pimUsageMap = new Map(pimUsages.map((p) => [p.system_model_id, p]))
+      const pimUsageMap = new Map(
+        pimUsages.map((p) => [String(p.system_model_id), p])
+      )
 
       this.logger.info(
         '[ALLOC_DEBUG] PIM usage data loaded',
@@ -285,9 +296,9 @@ export class QuarterlyConfirmationService {
         confirmation_date: string
       }[] = await this.databaseService.query(
         `
-          SELECT model_id AS system_model_id,
+          SELECT model_id::text AS system_model_id,
                  is_used,
-                 confirmation_date
+                 confirmation_date::text AS confirmation_date
           FROM models_usage
           WHERE model_id::text = ANY(:system_model_ids)
             AND confirmation_quarter = :quarter
@@ -299,13 +310,61 @@ export class QuarterlyConfirmationService {
           year: prevQuarter.year
         }
       )
-      const prevUsageMap = new Map(prevUsages.map((u) => [u.system_model_id, u]))
+
+      const prevFlagLabel = `usage_confirm_flag_q${prevQuarter.quarter}`
+      const prevDateLabel = `usage_confirm_date_q${prevQuarter.quarter}`
+
+      /** Fallback: на главной usage мог сохраниться в артефактах до появления строки models_usage или при рассинхроне */
+      const prevFromArtefacts: {
+        system_model_id: string
+        flag_raw: string | null
+        confirmation_date: string | null
+      }[] = await this.databaseService.query(
+        `
+          SELECT
+            ar.model_id::text AS system_model_id,
+            MAX(
+              CASE
+                WHEN ar.artefact_tech_label = :prev_flag_label
+                THEN TRIM(ar.artefact_string_value)
+              END
+            ) AS flag_raw,
+            MAX(CASE WHEN ar.artefact_tech_label = :prev_date_label THEN TRIM(ar.artefact_string_value) END) AS confirmation_date
+          FROM artefact_realizations_new ar
+          WHERE ar.model_id::text = ANY(:system_model_ids)
+            AND ar.effective_to = TIMESTAMP '9999-12-31 23:59:59'
+            AND ar.artefact_tech_label IN (:prev_flag_label, :prev_date_label)
+          GROUP BY ar.model_id
+        `,
+        {
+          system_model_ids: systemModelIds,
+          prev_flag_label: prevFlagLabel,
+          prev_date_label: prevDateLabel
+        }
+      )
+
+      const prevUsageMap = new Map(
+        prevUsages.map((u) => [String(u.system_model_id), u])
+      )
+      const prevArtefactMap = new Map(
+        prevFromArtefacts.map((u) => {
+          const parsed = this.parseUsageFlag(u.flag_raw)
+          return [
+            String(u.system_model_id),
+            { is_used: parsed, confirmation_date: u.confirmation_date }
+          ] as [
+            string,
+            { is_used: boolean | null; confirmation_date: string | null }
+          ]
+        })
+      )
 
       this.logger.info(
         '[ALLOC_DEBUG] Previous quarter usage data loaded',
         'ОтладкаДанныхПредыдущегоКвартала',
         {
           prevUsageCount: prevUsages.length,
+          prevArtefactsCount: prevFromArtefacts.length,
           prevSystemModelIds: prevUsages.map((u) => u.system_model_id),
           prevQuarter: prevQuarter.quarter,
           prevYear: prevQuarter.year
@@ -319,9 +378,9 @@ export class QuarterlyConfirmationService {
         confirmation_date: string
       }[] = await this.databaseService.query(
         `
-          SELECT model_id AS system_model_id,
+          SELECT model_id::text AS system_model_id,
                  is_used,
-                 confirmation_date
+                 confirmation_date::text AS confirmation_date
           FROM models_usage
           WHERE model_id::text = ANY(:system_model_ids)
             AND confirmation_quarter = :quarter
@@ -333,7 +392,9 @@ export class QuarterlyConfirmationService {
           year: quarterInfo.year
         }
       )
-      const currentUsageMap = new Map(currentUsages.map((u) => [u.system_model_id, u]))
+      const currentUsageMap = new Map(
+        currentUsages.map((u) => [String(u.system_model_id), u])
+      )
 
       this.logger.info(
         '[ALLOC_DEBUG] Current quarter usage data loaded',
@@ -347,15 +408,36 @@ export class QuarterlyConfirmationService {
       const today = new Date().toISOString().split('T')[0]
 
       let results = models.map((model) => {
-        const currentUsage = currentUsageMap.get(model.system_model_id)
-        const pimUsage = pimUsageMap.get(model.system_model_id)
-        const prevUsage = prevUsageMap.get(model.system_model_id)
+        const sid = String(model.system_model_id)
+        const currentUsage = currentUsageMap.get(sid)
+        const pimUsage = pimUsageMap.get(sid)
+        const prevRow = prevUsageMap.get(sid)
+        const prevArt = prevArtefactMap.get(sid)
+        const prevUsage =
+          prevRow ??
+          (prevArt && typeof prevArt.is_used === 'boolean'
+            ? {
+                system_model_id: sid,
+                is_used: prevArt.is_used,
+                confirmation_date: prevArt.confirmation_date ?? ''
+              }
+            : null)
+
+        /** Есть сохранённые в БД признак/дата за прошлый квартал (таблица или артефакты). */
+        const hasPrevQuarterData =
+          Boolean(prevRow) ||
+          Boolean(
+            prevArt &&
+              (typeof prevArt.is_used === 'boolean' ||
+                (prevArt.confirmation_date != null &&
+                  String(prevArt.confirmation_date).trim() !== ''))
+          )
 
         // Если уже есть данные за текущий квартал, используем их
         if (currentUsage) {
           let prefillSource: 'pim' | 'previous_quarter' | null = null
           if (pimUsage) prefillSource = 'pim'
-          else if (prevUsage) prefillSource = 'previous_quarter'
+          else if (hasPrevQuarterData) prefillSource = 'previous_quarter'
 
           return {
             system_model_id: model.system_model_id,
@@ -393,7 +475,7 @@ export class QuarterlyConfirmationService {
           }
         }
 
-        if (prevUsage) {
+        if (typeof prevUsage?.is_used === 'boolean') {
           return {
             system_model_id: model.system_model_id,
             model_id: model.model_id,
@@ -569,9 +651,13 @@ export class QuarterlyConfirmationService {
         ]
 
         const usageUpdateResult: UpdateUsageResult =
-          await this.usageService.updateUsage(usageArtefacts, MODEL_SOURCES.MRM, {
-            syncLinkedSum: true
-          })
+          await this.usageService.updateUsage(
+            usageArtefacts,
+            MODEL_SOURCES.MRM,
+            {
+              syncLinkedSum: true
+            }
+          )
 
         const mrmUpdateResult = usageUpdateResult.sources[MODEL_SOURCES.MRM]
         const sumUpdateResult = usageUpdateResult.sources[MODEL_SOURCES.SUM]
