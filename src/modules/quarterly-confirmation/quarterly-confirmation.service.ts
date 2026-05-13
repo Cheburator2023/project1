@@ -325,15 +325,22 @@ export class QuarterlyConfirmationService {
             ar.model_id::text AS system_model_id,
             MAX(
               CASE
-                WHEN ar.artefact_tech_label = :prev_flag_label
+                WHEN COALESCE(a.artefact_tech_label, ar.artefact_custom_type) = :prev_flag_label
                 THEN TRIM(ar.artefact_string_value)
               END
             ) AS flag_raw,
-            MAX(CASE WHEN ar.artefact_tech_label = :prev_date_label THEN TRIM(ar.artefact_string_value) END) AS confirmation_date
+            MAX(
+              CASE
+                WHEN COALESCE(a.artefact_tech_label, ar.artefact_custom_type) = :prev_date_label
+                THEN TRIM(ar.artefact_string_value)
+              END
+            ) AS confirmation_date
           FROM artefact_realizations_new ar
+          LEFT JOIN artefacts a ON ar.artefact_id = a.artefact_id
           WHERE ar.model_id::text = ANY(:system_model_ids)
             AND ar.effective_to = TIMESTAMP '9999-12-31 23:59:59'
-            AND ar.artefact_tech_label IN (:prev_flag_label, :prev_date_label)
+            AND COALESCE(a.artefact_tech_label, ar.artefact_custom_type)
+              IN (:prev_flag_label, :prev_date_label)
           GROUP BY ar.model_id
         `,
         {
