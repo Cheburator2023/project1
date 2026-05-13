@@ -81,8 +81,7 @@ export class QuarterlyConfirmationController {
         userFamilyName,
         userGivenName,
         userDepartment,
-        query,
-        user.groups
+        query
       )
 
     return response.status(HttpStatus.OK).json({

@@ -76,8 +76,7 @@ export class QuarterlyConfirmationService {
     userFamilyName: string,
     userGivenName: string,
     userDepartment: string,
-    filters?: GetModelsQueryDto,
-    userGroups?: string[]
+    filters?: GetModelsQueryDto
   ): Promise<ConfirmationModelRow[]> {
     const quarterInfo = this.getActiveQuarter()
 
@@ -555,11 +554,12 @@ export class QuarterlyConfirmationService {
         results = results.filter((r) => r.is_used === filters.is_used)
       }
 
+      /** Без фильтра по группам: список моделей уже ограничен SQL; иначе несовпадение строк департаментов даёт пустой registry_card. */
       const registryMap =
         await this.modelsService.getRegistryCardsBySystemModelIds(
           results.map((r) => r.system_model_id),
           {},
-          userGroups ?? []
+          undefined
         )
 
       return results.map((r): ConfirmationModelRow => {

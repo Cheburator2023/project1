@@ -136,7 +136,13 @@ export class ModelsService {
       rawResults.map((model) => ({ ...model }))
     )
 
-    const filteredByMode = ignoreModeFilter
+    /** Главная с пустым mode даёт []; для subset по уже отфильтрованным id это неверно. */
+    const skipModeFilter =
+      ignoreModeFilter ||
+      mode == null ||
+      (Array.isArray(mode) && mode.length === 0)
+
+    const filteredByMode = skipModeFilter
       ? resultsWithFormatting
       : this.filterModelsByDisplayMode(resultsWithFormatting, mode)
 
