@@ -117,6 +117,39 @@ export class ModelsService {
     return filteredByGroups
   }
 
+  /**
+   * Те же merge + форматирование + фильтры, что у {@link getModels}, но только для
+   * указанных `system_model_id` (версии из `models_new.model_id`).
+   */
+  async getRegistryCardsBySystemModelIds(
+    systemModelIds: readonly string[],
+    dto?: ModelsDto & { ignoreModeFilter?: boolean },
+    groups?: string[]
+  ): Promise<Map<string, Model>> {
+    if (systemModelIds.length === 0) return new Map()
+
+    const idSet = new Set(systemModelIds.map((id) => String(id)))
+    const { date = null, mode = null, ignoreModeFilter = false } = dto || {}
+
+    const rawResults = await this.fetchAndMergeModels(date, null)
+    const resultsWithFormatting = await this.formatResults(
+      rawResults.map((model) => ({ ...model }))
+    )
+
+    const filteredByMode = ignoreModeFilter
+      ? resultsWithFormatting
+      : this.filterModelsByDisplayMode(resultsWithFormatting, mode)
+
+    const filteredByGroups = groups?.length
+      ? this.filterModelsByUserGroups(filteredByMode, groups)
+      : filteredByMode
+
+    const subset = filteredByGroups.filter((m) =>
+      idSet.has(String(m.system_model_id))
+    )
+    return new Map(subset.map((m) => [String(m.system_model_id), m]))
+  }
+
   async getModelsByDates(
     { firstDate, secondDate }: CompareModelsDto,
     groups?: []

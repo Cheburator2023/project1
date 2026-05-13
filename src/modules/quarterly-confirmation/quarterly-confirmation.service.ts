@@ -13,6 +13,7 @@ import {
   GetModelsQueryDto
 } from './dto/quarterly-confirmation.dto'
 import { UpdateUsageResult } from 'src/modules/usage/dto'
+import { ModelsService } from 'src/modules/models/models.service'
 
 @Injectable()
 export class QuarterlyConfirmationService {
@@ -30,7 +31,8 @@ export class QuarterlyConfirmationService {
     private readonly sumDatabaseService: SumDatabaseService,
     private readonly logger: LoggerService,
     private readonly pimUsageService: PimUsageService,
-    private readonly usageService: UsageService
+    private readonly usageService: UsageService,
+    private readonly modelsService: ModelsService
   ) {}
 
   getActiveQuarter(): QuarterInfoDto | null {
@@ -74,7 +76,8 @@ export class QuarterlyConfirmationService {
     userFamilyName: string,
     userGivenName: string,
     userDepartment: string,
-    filters?: GetModelsQueryDto
+    filters?: GetModelsQueryDto,
+    userGroups?: string[]
   ): Promise<ConfirmationModelRow[]> {
     const quarterInfo = this.getActiveQuarter()
 
@@ -194,7 +197,8 @@ export class QuarterlyConfirmationService {
             m2.model_id                                                                                        AS system_model_id,
             MAX(CASE WHEN ar.artefact_id = 2001 THEN ar.artefact_string_value ELSE NULL END)                  AS model_id,
             CAST('model' || m2.root_model_id AS varchar) || '-v' || CAST(m2.model_version AS varchar)         AS model_alias,
-            MAX(CASE WHEN ar.artefact_id = 2096 THEN ar.artefact_string_value ELSE NULL END)                  AS model_name_dadm,
+            MAX(CASE WHEN ar.artefact_id = 2096 OR trim(both FROM COALESCE(ar.artefact_custom_type, '')) = 'model_name_dadm'
+                THEN ar.artefact_string_value ELSE NULL END)                                                 AS model_name_dadm,
             MAX(CASE WHEN ar.artefact_id = 2031 THEN ar.artefact_string_value ELSE NULL END)                  AS business_customer,
             STRING_AGG(CASE WHEN ar.artefact_id = 2032 THEN av.artefact_value ELSE NULL END, ',' ORDER BY ar.artefact_value_id) AS business_customer_departament,
             MAX(CASE WHEN ar.artefact_id = 2656 THEN ar.artefact_string_value ELSE NULL END)                  AS business_status
@@ -551,7 +555,23 @@ export class QuarterlyConfirmationService {
         results = results.filter((r) => r.is_used === filters.is_used)
       }
 
-      return results
+      const registryMap =
+        await this.modelsService.getRegistryCardsBySystemModelIds(
+          results.map((r) => r.system_model_id),
+          {},
+          userGroups ?? []
+        )
+
+      return results.map((r): ConfirmationModelRow => {
+        const card = registryMap.get(String(r.system_model_id))
+        const flat = card
+          ? (JSON.parse(JSON.stringify(card)) as Record<string, unknown>)
+          : null
+        return {
+          ...r,
+          registry_card: flat
+        }
+      })
     } catch (error) {
       this.logger.error(
         'Error getting models for confirmation',
