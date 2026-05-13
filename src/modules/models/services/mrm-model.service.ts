@@ -9,7 +9,11 @@ import { MrmArtefactService } from 'src/modules/artefacts/services'
 export class MrmModelService extends BaseModelService {
   protected modelsTableName = MRM_TABLES.MODELS
 
-  constructor(artefactService: MrmArtefactService, databaseService: MrmDatabaseService, logger: LoggerService) {
+  constructor(
+    artefactService: MrmArtefactService,
+    databaseService: MrmDatabaseService,
+    logger: LoggerService
+  ) {
     super(artefactService, databaseService, logger)
   }
 }

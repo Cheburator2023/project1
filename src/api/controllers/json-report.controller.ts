@@ -17,9 +17,12 @@ import {
   ApiResponse,
   ApiBody,
   ApiBearerAuth,
-  ApiSecurity,
+  ApiSecurity
 } from '@nestjs/swagger'
-import { JsonReportRequestDto, JsonReportResponseDto } from '../dto/json-report-request.dto'
+import {
+  JsonReportRequestDto,
+  JsonReportResponseDto
+} from '../dto/json-report-request.dto'
 import { Roles } from 'src/decorators/roles.decorator'
 import { RolesGuard } from 'src/api/guards/roles.guard'
 import { User, UserType } from 'src/decorators/user.decorator'
@@ -48,7 +51,8 @@ export class JsonReportController {
   @CacheTTL(300) // 5 минут кэширования
   @ApiOperation({
     summary: 'Выгрузка отчета в формате JSON',
-    description: 'Выгружает отчет ПУРС, ПУМР или общий реестр моделей в формате JSON'
+    description:
+      'Выгружает отчет ПУРС, ПУМР или общий реестр моделей в формате JSON'
   })
   @ApiBody({
     type: JsonReportRequestDto,

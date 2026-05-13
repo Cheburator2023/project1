@@ -1,8 +1,8 @@
-import { LoggerInterface } from './LoggerInterface';
-import { TSLGLogger } from './TSLGLogger';
+import { LoggerInterface } from './LoggerInterface'
+import { TSLGLogger } from './TSLGLogger'
 
 export class LoggerFactory {
   static createLogger(config: any = {}): LoggerInterface {
-    return new TSLGLogger(config);
+    return new TSLGLogger(config)
   }
 }

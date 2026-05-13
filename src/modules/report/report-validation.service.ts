@@ -29,7 +29,11 @@ export class ReportValidationService {
     }
   }
 
-  validateJsonReportRequest(template_id?: number, date?: string, groups?: string[]): void {
+  validateJsonReportRequest(
+    template_id?: number,
+    date?: string,
+    groups?: string[]
+  ): void {
     this.validateTemplateId(template_id)
 
     if (date) {
