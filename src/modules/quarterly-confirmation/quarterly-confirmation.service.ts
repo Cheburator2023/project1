@@ -142,12 +142,10 @@ export class QuarterlyConfirmationService {
 
     try {
       // Строим динамический SQL запрос с фильтрами
-      // Поля business_customer (artefact_id=2031), business_customer_departament (artefact_id=2032),
-      // фильтр «не архив / не ошибка заведения» — по строке артефакта 2656 (delete_status / business_status
-      // в данных реестра), НЕ по вычисляемому model_status BPMN на карточке merge.
-      // model_id в подзапросе: артефакт 2001; если в СУРМ ещё не заполнен (карточка merge уже показывает alias) —
-      // fallback как у model_alias, иначе строка отваливается по `a.model_id IS NOT NULL`.
-      // model_alias из root_model_id+version; model_name_dadm — 2096 + model_name_dadm custom_type.
+      // Поля business_customer (artefact_id=2031), business_customer_departament (арт. 2032: каталог и/или string),
+      // фильтр «не архив / не ошибка заведения» — по строке артефакта 2656, НЕ по model_status BPMN merge.
+      // Агрегат артефактов строится от models_new LEFT JOIN ar при текущем effective_to — модель не исчезает
+      // из строки результатов только из‑за пустого join к реализациям.
       this.logger.info(
         '[ALLOC_DEBUG] getModelsForConfirmation filter params',
         'ОтладкаПараметровФильтрации',
@@ -274,6 +272,10 @@ export class QuarterlyConfirmationService {
       // (база СУРМ), а ниже по ID проверим присутствие в БД СУМ и переопределим
       // на 'sum' для тех, которые реально заведены в СУМ (аналогично merge в
       // ModelsService.getModels / ModelMergeService).
+      // Подзапрос агрегатов — от models_new LEFT JOIN артефактов: иначе INNER JOIN ar отбрасывает
+      // модель целиком при отсутствии строк с effective_to «текущая» (или при рассинхроне литерала timestamp).
+      // 2032: COALESCE каталога artefact_values и свободной строки artefact_string_value — иначе фильтр по
+      // департаменту не видит значение, хотя оно есть в реализации.
       const sqlQuery = `
         SELECT DISTINCT
           a.system_model_id,
@@ -308,12 +310,22 @@ export class QuarterlyConfirmationService {
             MAX(CASE WHEN ar.artefact_id = 2096 OR trim(both FROM COALESCE(ar.artefact_custom_type, '')) = 'model_name_dadm'
                 THEN ar.artefact_string_value ELSE NULL END)                                                 AS model_name_dadm,
             MAX(CASE WHEN ar.artefact_id = 2031 THEN ar.artefact_string_value ELSE NULL END)                  AS business_customer,
-            STRING_AGG(CASE WHEN ar.artefact_id = 2032 THEN av.artefact_value ELSE NULL END, ',' ORDER BY ar.artefact_value_id) AS business_customer_departament,
+            COALESCE(
+              NULLIF(
+                STRING_AGG(
+                  CASE WHEN ar.artefact_id = 2032 THEN av.artefact_value ELSE NULL END,
+                  ',' ORDER BY ar.artefact_value_id
+                ),
+                ''
+              ),
+              MAX(CASE WHEN ar.artefact_id = 2032 THEN ar.artefact_string_value ELSE NULL END)
+            )                                                                                                 AS business_customer_departament,
             MAX(CASE WHEN ar.artefact_id = 2656 THEN ar.artefact_string_value ELSE NULL END)                  AS business_status
-          FROM artefact_realizations_new ar
-          INNER JOIN models_new m2 ON ar.model_id = m2.model_id
+          FROM models_new m2
+          LEFT JOIN artefact_realizations_new ar
+            ON ar.model_id = m2.model_id
+            AND ar.effective_to = TO_TIMESTAMP('9999-12-31 23:59:59', 'YYYY-MM-DD HH24:MI:SS')
           LEFT JOIN artefact_values av ON ar.artefact_value_id = av.artefact_value_id AND av.is_active_flg = '1'
-          WHERE ar.effective_to = TIMESTAMP '9999-12-31 23:59:59'
           GROUP BY m2.model_id, m2.root_model_id, m2.model_version
         ) a ON m.model_id = a.system_model_id
         WHERE ${whereClauses.join(' AND ')}
