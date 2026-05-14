@@ -61,8 +61,18 @@ export class QuarterlyConfirmationController {
     @Res() response,
     @User() user: UserType
   ) {
-    const userFamilyName = user.family_name || ''
-    const userGivenName = user.given_name || ''
+    let userFamilyName = (user.family_name || '').trim()
+    let userGivenName = (user.given_name || '').trim()
+    const display = (user.display_name || '').trim()
+    const login = (user.preferred_username || '').trim()
+    // Access token иногда без given_name/family_name; claim `name` или display_name — «Имя Фамилия».
+    if ((!userFamilyName || !userGivenName) && display && display !== login) {
+      const parts = display.split(/\s+/).filter(Boolean)
+      if (parts.length === 2) {
+        if (!userGivenName) userGivenName = parts[0]
+        if (!userFamilyName) userFamilyName = parts[1]
+      }
+    }
     // Подразделение хранится в группе вида /departament_business_customer/НАЗВАНИЕ
     const deptGroup = (user.keycloakGroups || []).find((g) =>
       g.startsWith('/departament_business_customer/')
@@ -75,6 +85,7 @@ export class QuarterlyConfirmationController {
         userFamilyName,
         userGivenName,
         userDepartment,
+        displayName: user.display_name ?? user.name,
         keycloakGroups: user.keycloakGroups,
         preferred_username: user.preferred_username
       })
@@ -96,6 +107,7 @@ export class QuarterlyConfirmationController {
           userFamilyName,
           userGivenName,
           userDepartment,
+          displayName: user.display_name ?? user.name,
           preferred_username: user.preferred_username,
           modelsCount: models.length
         }
