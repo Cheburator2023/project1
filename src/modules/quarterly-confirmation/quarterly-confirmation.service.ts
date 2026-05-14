@@ -14,6 +14,7 @@ import {
 } from './dto/quarterly-confirmation.dto'
 import { UpdateUsageResult } from 'src/modules/usage/dto'
 import { ModelsService } from 'src/modules/models/models.service'
+import { BUSINESS_CUSTOMER_DEPARTMENT_MAPPING } from 'src/modules/models/constants/departments.contants'
 
 @Injectable()
 export class QuarterlyConfirmationService {
@@ -24,6 +25,49 @@ export class QuarterlyConfirmationService {
     if (['да', 'yes', '1', 'true'].includes(v)) return true
     if (['нет', 'no', '0', 'false'].includes(v)) return false
     return null
+  }
+
+  /** Выражение для сравнения без лишних пробелов в `business_customer`. */
+  private static businessCustomerNormalizedSql(): string {
+    return `regexp_replace(trim(COALESCE(a.business_customer,'')), '[[:space:]]+', ' ', 'g')`
+  }
+
+  private static normalizeWhitespace(s: string): string {
+    return String(s || '')
+      .trim()
+      .replace(/\s+/g, ' ')
+  }
+
+  /** Первое слово (фамилия без отчества и т.п., если в токене они разделены пробелом). */
+  private static firstNameToken(s: string): string {
+    const n = QuarterlyConfirmationService.normalizeWhitespace(s)
+    if (!n) return ''
+    const parts = n.split(/\s+/).filter(Boolean)
+    return parts[0] ?? ''
+  }
+
+  /**
+   * Для сегмента группы Keycloak после хвоста пути добавляем варианты из матрицы департаментов,
+   * чтобы ИЛИ совпадало с полным названием в артефакте и с подразделениями из справочника.
+   */
+  private expandDepartmentLikePatterns(groupSegment: string): string[] {
+    const t = QuarterlyConfirmationService.normalizeWhitespace(groupSegment)
+    if (!t) return []
+    const patterns = new Set<string>([`%${t}%`])
+    const m = BUSINESS_CUSTOMER_DEPARTMENT_MAPPING as Record<string, string[]>
+    const direct = m[t]
+    if (direct) {
+      for (const v of direct) {
+        patterns.add(`%${QuarterlyConfirmationService.normalizeWhitespace(v)}%`)
+      }
+    }
+    for (const [key, vals] of Object.entries(m)) {
+      if (vals.includes(t)) {
+        patterns.add(`%${key}%`)
+        for (const v of vals) patterns.add(`%${v}%`)
+      }
+    }
+    return [...patterns]
   }
 
   constructor(
@@ -99,38 +143,86 @@ export class QuarterlyConfirmationService {
     try {
       // Строим динамический SQL запрос с фильтрами
       // Поля business_customer (artefact_id=2031), business_customer_departament (artefact_id=2032),
-      // business_status (artefact_id=2656), model_alias из root_model_id+version,
-      // model_name_dadm — реестр ДАДМ (artefact_id=2096, tech_label=model_name_dadm).
+      // фильтр «не архив / не ошибка заведения» — по строке артефакта 2656 (delete_status / business_status
+      // в данных реестра), НЕ по вычисляемому model_status BPMN на карточке merge.
+      // model_alias из root_model_id+version; model_name_dadm — 2096 + model_name_dadm custom_type.
       this.logger.info(
         '[ALLOC_DEBUG] getModelsForConfirmation filter params',
         'ОтладкаПараметровФильтрации',
         { userFamilyName, userGivenName, userDepartment }
       )
 
-      // Матчим business_customer по обоим частям имени раздельно —
-      // работает независимо от порядка ("Мазур Елена" или "Елена Мазур")
       const whereClauses: string[] = []
-      const queryParams: any = {
+      const queryParams: Record<string, unknown> = {
         status_archive: MODEL_STATUS.ARCHIVE,
         status_creation_error: MODEL_STATUS.CREATION_ERROR
       }
 
-      if (userFamilyName) {
-        whereClauses.push('a.business_customer ILIKE :family_name_pattern')
-        queryParams.family_name_pattern = `%${userFamilyName}%`
+      // Мэтчинг владельца: нормализация пробелов; полное ФИО из токена; первые слова (отчество в модели допустимо);
+      // порядок «Фамилия Имя» и «Имя Фамилия» через OR (ИЛИ-группа).
+      const bcNorm =
+        QuarterlyConfirmationService.businessCustomerNormalizedSql()
+
+      const family =
+        QuarterlyConfirmationService.normalizeWhitespace(userFamilyName)
+      const given =
+        QuarterlyConfirmationService.normalizeWhitespace(userGivenName)
+      const family1 =
+        QuarterlyConfirmationService.firstNameToken(userFamilyName)
+      const given1 = QuarterlyConfirmationService.firstNameToken(userGivenName)
+
+      if (family || given) {
+        const nameOrs: string[] = []
+        if (family && given) {
+          nameOrs.push(
+            `(${bcNorm} ILIKE :bc_full_f AND ${bcNorm} ILIKE :bc_full_g)`
+          )
+          queryParams.bc_full_f = `%${family}%`
+          queryParams.bc_full_g = `%${given}%`
+          if (family1 !== family || given1 !== given) {
+            nameOrs.push(
+              `(${bcNorm} ILIKE :bc_tok_f AND ${bcNorm} ILIKE :bc_tok_g)`
+            )
+            queryParams.bc_tok_f = `%${family1}%`
+            queryParams.bc_tok_g = `%${given1}%`
+          }
+          nameOrs.push(`(${bcNorm} ILIKE :bc_order_fg)`)
+          queryParams.bc_order_fg = `%${family}%${given}%`
+          nameOrs.push(`(${bcNorm} ILIKE :bc_order_gf)`)
+          queryParams.bc_order_gf = `%${given}%${family}%`
+        } else if (family) {
+          nameOrs.push(`${bcNorm} ILIKE :bc_single_f`)
+          queryParams.bc_single_f = `%${family}%`
+          if (family1 && family1 !== family) {
+            nameOrs.push(`${bcNorm} ILIKE :bc_single_f1`)
+            queryParams.bc_single_f1 = `%${family1}%`
+          }
+        } else if (given) {
+          nameOrs.push(`${bcNorm} ILIKE :bc_single_g`)
+          queryParams.bc_single_g = `%${given}%`
+          if (given1 && given1 !== given) {
+            nameOrs.push(`${bcNorm} ILIKE :bc_single_g1`)
+            queryParams.bc_single_g1 = `%${given1}%`
+          }
+        }
+        if (nameOrs.length > 0) {
+          whereClauses.push(`(${nameOrs.join(' OR ')})`)
+        }
       }
-      if (userGivenName) {
-        whereClauses.push('a.business_customer ILIKE :given_name_pattern')
-        queryParams.given_name_pattern = `%${userGivenName}%`
-      }
+
       if (userDepartment) {
-        whereClauses.push(
-          'a.business_customer_departament ILIKE :user_department'
-        )
-        queryParams.user_department = `%${userDepartment}%`
+        const deptPatterns = this.expandDepartmentLikePatterns(userDepartment)
+        const deptOrs = deptPatterns.map((_, idx) => {
+          const key = `dept_bc_${idx}`
+          queryParams[key] = deptPatterns[idx]
+          return `a.business_customer_departament ILIKE :${key}`
+        })
+        if (deptOrs.length > 0) {
+          whereClauses.push(`(${deptOrs.join(' OR ')})`)
+        }
       }
       whereClauses.push(
-        "COALESCE(a.business_status, '') NOT IN (:status_archive, :status_creation_error)",
+        "trim(both FROM COALESCE(a.business_status, '')) NOT IN (:status_archive, :status_creation_error)",
         '(m.temp_block_flag != 1 OR m.temp_block_flag IS NULL)'
       )
 
