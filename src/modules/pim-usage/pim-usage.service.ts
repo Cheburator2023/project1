@@ -3,12 +3,58 @@ import { MrmDatabaseService } from 'src/system/mrm-database/database.service'
 import { LoggerService } from 'src/system/logger/logger.service'
 import { PimUsageEntity } from './entities/pim-usage.entity'
 
+type PimUsageModelKeyColumn = 'system_model_id' | 'model_id'
+
 @Injectable()
 export class PimUsageService {
+  private pimUsageModelKeyColumnPromise: Promise<PimUsageModelKeyColumn> | null =
+    null
+
   constructor(
     private readonly databaseService: MrmDatabaseService,
     private readonly logger: LoggerService
   ) {}
+
+  /**
+   * В старых стендах колонка называется `system_model_id`, после ряда миграций — `model_id`.
+   * Ошибка 42703 «column … does not exist» возникает при рассинхроне кода и схемы.
+   */
+  private async resolvePimUsageModelKeyColumn(): Promise<PimUsageModelKeyColumn> {
+    if (!this.pimUsageModelKeyColumnPromise) {
+      this.pimUsageModelKeyColumnPromise = (async () => {
+        const rows = await this.databaseService.query(
+          `
+          SELECT column_name
+          FROM information_schema.columns
+          WHERE table_catalog = current_database()
+            AND table_schema NOT IN ('pg_catalog', 'information_schema')
+            AND table_name = 'models_pim_usage'
+            AND column_name IN ('system_model_id', 'model_id')
+          ORDER BY CASE column_name WHEN 'model_id' THEN 1 ELSE 2 END
+          LIMIT 1
+          `,
+          {}
+        )
+        const name = (rows[0] as { column_name?: string } | undefined)
+          ?.column_name
+        if (name === 'model_id' || name === 'system_model_id') {
+          return name
+        }
+        return 'system_model_id'
+      })()
+    }
+    return this.pimUsageModelKeyColumnPromise
+  }
+
+  private mapRowToEntity(row: Record<string, unknown>): PimUsageEntity {
+    const raw = row.system_model_id ?? row.model_id
+    const system_model_id =
+      raw !== undefined && raw !== null ? String(raw) : ''
+    return {
+      ...(row as PimUsageEntity),
+      system_model_id
+    }
+  }
 
   async getPimUsageForModel(
     system_model_id: string,
@@ -22,18 +68,21 @@ export class PimUsageService {
     )
 
     try {
+      const col = await this.resolvePimUsageModelKeyColumn()
       const [result] = await this.databaseService.query(
         `
         SELECT *
         FROM models_pim_usage
-        WHERE system_model_id = :system_model_id
+        WHERE ${col} = :system_model_id
           AND confirmation_quarter = :quarter
           AND confirmation_year = :year
         `,
         { system_model_id, quarter, year }
       )
 
-      return result || null
+      return result
+        ? this.mapRowToEntity(result as Record<string, unknown>)
+        : null
     } catch (error) {
       this.logger.error(
         'Error getting PIM usage',
@@ -57,18 +106,21 @@ export class PimUsageService {
     )
 
     try {
+      const col = await this.resolvePimUsageModelKeyColumn()
       const results = await this.databaseService.query(
         `
         SELECT *
         FROM models_pim_usage
-        WHERE system_model_id = ANY(:system_model_ids)
+        WHERE ${col} = ANY(:system_model_ids)
           AND confirmation_quarter = :quarter
           AND confirmation_year = :year
         `,
         { system_model_ids: systemModelIds, quarter, year }
       )
 
-      return results
+      return (results as Record<string, unknown>[]).map((r) =>
+        this.mapRowToEntity(r)
+      )
     } catch (error) {
       this.logger.error(
         'Error getting PIM usage for models',
@@ -93,11 +145,12 @@ export class PimUsageService {
     )
 
     try {
+      const col = await this.resolvePimUsageModelKeyColumn()
       const [result] = await this.databaseService.query(
         `
-        INSERT INTO models_pim_usage (system_model_id, confirmation_quarter, confirmation_year, is_used, source_system)
+        INSERT INTO models_pim_usage (${col}, confirmation_quarter, confirmation_year, is_used, source_system)
         VALUES (:system_model_id, :quarter, :year, :is_used, 'PIM')
-        ON CONFLICT (system_model_id, confirmation_quarter, confirmation_year)
+        ON CONFLICT (${col}, confirmation_quarter, confirmation_year)
         DO UPDATE SET is_used = :is_used, update_date = NOW()
         RETURNING *
         `,
@@ -110,7 +163,9 @@ export class PimUsageService {
         { system_model_id, quarter, year, pim_usage_id: result?.pim_usage_id }
       )
 
-      return result || null
+      return result
+        ? this.mapRowToEntity(result as Record<string, unknown>)
+        : null
     } catch (error) {
       this.logger.error(
         'Error inserting PIM usage',
