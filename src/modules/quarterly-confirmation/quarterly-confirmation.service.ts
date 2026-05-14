@@ -145,6 +145,8 @@ export class QuarterlyConfirmationService {
       // Поля business_customer (artefact_id=2031), business_customer_departament (artefact_id=2032),
       // фильтр «не архив / не ошибка заведения» — по строке артефакта 2656 (delete_status / business_status
       // в данных реестра), НЕ по вычисляемому model_status BPMN на карточке merge.
+      // model_id в подзапросе: артефакт 2001; если в СУРМ ещё не заполнен (карточка merge уже показывает alias) —
+      // fallback как у model_alias, иначе строка отваливается по `a.model_id IS NOT NULL`.
       // model_alias из root_model_id+version; model_name_dadm — 2096 + model_name_dadm custom_type.
       this.logger.info(
         '[ALLOC_DEBUG] getModelsForConfirmation filter params',
@@ -286,7 +288,22 @@ export class QuarterlyConfirmationService {
         LEFT JOIN (
           SELECT
             m2.model_id                                                                                        AS system_model_id,
-            MAX(CASE WHEN ar.artefact_id = 2001 THEN ar.artefact_string_value ELSE NULL END)                  AS model_id,
+            COALESCE(
+              NULLIF(
+                trim(
+                  both
+                  FROM
+                  MAX(
+                    CASE
+                      WHEN ar.artefact_id = 2001 THEN ar.artefact_string_value
+                      ELSE NULL
+                    END
+                  )
+                ),
+                ''
+              ),
+              CAST('model' || m2.root_model_id AS varchar) || '-v' || CAST(m2.model_version AS varchar)
+            )                                                                                                 AS model_id,
             CAST('model' || m2.root_model_id AS varchar) || '-v' || CAST(m2.model_version AS varchar)         AS model_alias,
             MAX(CASE WHEN ar.artefact_id = 2096 OR trim(both FROM COALESCE(ar.artefact_custom_type, '')) = 'model_name_dadm'
                 THEN ar.artefact_string_value ELSE NULL END)                                                 AS model_name_dadm,
