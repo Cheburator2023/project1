@@ -16,9 +16,15 @@ const queryConvert = (
   parameterizedSql: string,
   args: QueryArgs
 ): QueryResult => {
-  const [text, values] = Object.entries(args).reduce<[string, any[], number]>(
+  // Сначала длинные ключи (напр. dept_bc_10), затем короткие — иначе :dept_bc_1
+  // режет начало литерала :dept_bc_10 → ломается нумерация $ и типы параметров в PG.
+  const entries = Object.entries(args).sort(
+    (a, b) => b[0].length - a[0].length || a[0].localeCompare(b[0])
+  )
+
+  const [text, values] = entries.reduce<[string, any[], number]>(
     ([sql, array, index], [key, value]) => [
-      sql.replace(new RegExp(`:${key}`, 'gi'), `$${index}`),
+      sql.replace(new RegExp(`:${key}`, 'gi'), () => `$${index}`),
       [...array, value],
       index + 1
     ],
