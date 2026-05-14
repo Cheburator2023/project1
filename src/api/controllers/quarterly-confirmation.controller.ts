@@ -38,7 +38,10 @@ export class QuarterlyConfirmationController {
   async getActiveQuarter(@Res() response) {
     const quarterInfo = this.quarterlyConfirmationService.getActiveQuarter()
 
-    console.log('[ALLOC_DEBUG] /active-quarter response:', JSON.stringify(quarterInfo))
+    console.log(
+      '[ALLOC_DEBUG] /active-quarter response:',
+      JSON.stringify(quarterInfo)
+    )
 
     return response.status(HttpStatus.OK).json({ data: quarterInfo })
   }
@@ -64,30 +67,38 @@ export class QuarterlyConfirmationController {
     const deptGroup = (user.keycloakGroups || []).find((g) =>
       g.startsWith('/departament_business_customer/')
     )
-    const userDepartment = deptGroup
-      ? deptGroup.split('/').pop() || ''
-      : ''
+    const userDepartment = deptGroup ? deptGroup.split('/').pop() || '' : ''
 
-    console.log('[ALLOC_DEBUG] /models user info:', JSON.stringify({
-      userFamilyName,
-      userGivenName,
-      userDepartment,
-      keycloakGroups: user.keycloakGroups,
-      preferred_username: user.preferred_username
-    }))
+    console.log(
+      '[ALLOC_DEBUG] /models user info:',
+      JSON.stringify({
+        userFamilyName,
+        userGivenName,
+        userDepartment,
+        keycloakGroups: user.keycloakGroups,
+        preferred_username: user.preferred_username
+      })
+    )
 
     const models =
       await this.quarterlyConfirmationService.getModelsForConfirmation(
         userFamilyName,
         userGivenName,
         userDepartment,
+        user.preferred_username || '',
         query
       )
 
     return response.status(HttpStatus.OK).json({
       data: {
         models,
-        _debug: { userFamilyName, userGivenName, userDepartment, modelsCount: models.length }
+        _debug: {
+          userFamilyName,
+          userGivenName,
+          userDepartment,
+          preferred_username: user.preferred_username,
+          modelsCount: models.length
+        }
       }
     })
   }
@@ -125,10 +136,7 @@ export class QuarterlyConfirmationController {
     description: 'Данные ПИМ успешно добавлены'
   })
   @Post('/seed-pim-usage')
-  async seedPimUsage(
-    @Body() data: SeedPimUsageDto,
-    @Res() response
-  ) {
+  async seedPimUsage(@Body() data: SeedPimUsageDto, @Res() response) {
     const results = []
 
     for (const model of data.models) {
