@@ -12,22 +12,30 @@ interface QueryResult {
   values: any[]
 }
 
+/** Экранирование литерала для RegExp (имена параметров в queryConvert). */
+const escapeRegExp = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+
 const queryConvert = (
   parameterizedSql: string,
   args: QueryArgs
 ): QueryResult => {
   // Сначала длинные ключи (напр. dept_bc_10), затем короткие — иначе :dept_bc_1
-  // режет начало литерала :dept_bc_10 → ломается нумерация $ и типы параметров в PG.
+  // разъедает начало :dept_bc_10 → ломаются $N и массив значений для PG.
   const entries = Object.entries(args).sort(
     (a, b) => b[0].length - a[0].length || a[0].localeCompare(b[0])
   )
 
   const [text, values] = entries.reduce<[string, any[], number]>(
-    ([sql, array, index], [key, value]) => [
-      sql.replace(new RegExp(`:${key}`, 'gi'), () => `$${index}`),
-      [...array, value],
-      index + 1
-    ],
+    ([sql, array, index], [key, value]) => {
+      const esc = escapeRegExp(key)
+      // Не матчить :dept_bc_2 как префикс :dept_bc_20 (: + ключ + граница, не [a-z0-9_]).
+      const re = new RegExp(`:${esc}(?![a-zA-Z0-9_])`, 'gi')
+      return [
+        sql.replace(re, () => `$${index}`),
+        [...array, value],
+        index + 1
+      ]
+    },
     [parameterizedSql, [], 1]
   )
 

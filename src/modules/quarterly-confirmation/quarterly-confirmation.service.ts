@@ -1,3 +1,4 @@
+import { createHash } from 'crypto'
 import { Injectable } from '@nestjs/common'
 import { MrmDatabaseService } from 'src/system/mrm-database/database.service'
 import { SumDatabaseService } from 'src/system/sum-database/database.service'
@@ -15,6 +16,7 @@ import {
 import { UpdateUsageResult } from 'src/modules/usage/dto'
 import { ModelsService } from 'src/modules/models/models.service'
 import { BUSINESS_CUSTOMER_DEPARTMENT_MAPPING } from 'src/modules/models/constants/departments.contants'
+import { queryConvert } from 'src/system/common/utils'
 
 @Injectable()
 export class QuarterlyConfirmationService {
@@ -362,7 +364,7 @@ export class QuarterlyConfirmationService {
             for (const g of gVariants) {
               const nk = nextNk()
               nameOrs.push(
-                `(${ownerNorm} ILIKE :${nk}_f AND ${ownerNorm} ILIKE :${nk}_g)`
+                `(${ownerNorm} ILIKE CAST(:${nk}_f AS text) AND ${ownerNorm} ILIKE CAST(:${nk}_g AS text))`
               )
               queryParams[`${nk}_f`] = `%${f}%`
               queryParams[`${nk}_g`] = `%${g}%`
@@ -377,7 +379,7 @@ export class QuarterlyConfirmationService {
               for (const g of gTok) {
                 const nk = nextNk()
                 nameOrs.push(
-                  `(${ownerNorm} ILIKE :${nk}_f AND ${ownerNorm} ILIKE :${nk}_g)`
+                  `(${ownerNorm} ILIKE CAST(:${nk}_f AS text) AND ${ownerNorm} ILIKE CAST(:${nk}_g AS text))`
                 )
                 queryParams[`${nk}_f`] = `%${f}%`
                 queryParams[`${nk}_g`] = `%${g}%`
@@ -387,10 +389,10 @@ export class QuarterlyConfirmationService {
           for (const f of fVariants) {
             for (const g of gVariants) {
               const nkFg = nextNk()
-              nameOrs.push(`(${ownerNorm} ILIKE :${nkFg}_o)`)
+              nameOrs.push(`(${ownerNorm} ILIKE CAST(:${nkFg}_o AS text))`)
               queryParams[`${nkFg}_o`] = `%${f}%${g}%`
               const nkGf = nextNk()
-              nameOrs.push(`(${ownerNorm} ILIKE :${nkGf}_o)`)
+              nameOrs.push(`(${ownerNorm} ILIKE CAST(:${nkGf}_o AS text))`)
               queryParams[`${nkGf}_o`] = `%${g}%${f}%`
             }
           }
@@ -399,7 +401,7 @@ export class QuarterlyConfirmationService {
             family
           )) {
             const nk = nextNk()
-            nameOrs.push(`${ownerNorm} ILIKE :${nk}_s`)
+            nameOrs.push(`${ownerNorm} ILIKE CAST(:${nk}_s AS text)`)
             queryParams[`${nk}_s`] = `%${f}%`
           }
           if (family1 !== family && family1) {
@@ -407,7 +409,7 @@ export class QuarterlyConfirmationService {
               family1
             )) {
               const nk = nextNk()
-              nameOrs.push(`${ownerNorm} ILIKE :${nk}_s`)
+              nameOrs.push(`${ownerNorm} ILIKE CAST(:${nk}_s AS text)`)
               queryParams[`${nk}_s`] = `%${f}%`
             }
           }
@@ -416,7 +418,7 @@ export class QuarterlyConfirmationService {
             given
           )) {
             const nk = nextNk()
-            nameOrs.push(`${ownerNorm} ILIKE :${nk}_s`)
+            nameOrs.push(`${ownerNorm} ILIKE CAST(:${nk}_s AS text)`)
             queryParams[`${nk}_s`] = `%${g}%`
           }
           if (given1 !== given && given1) {
@@ -424,14 +426,14 @@ export class QuarterlyConfirmationService {
               given1
             )) {
               const nk = nextNk()
-              nameOrs.push(`${ownerNorm} ILIKE :${nk}_s`)
+              nameOrs.push(`${ownerNorm} ILIKE CAST(:${nk}_s AS text)`)
               queryParams[`${nk}_s`] = `%${g}%`
             }
           }
         }
         if (login) {
           nameOrs.push(
-            `(lower(trim(COALESCE(m.model_creator,''))) = lower(trim(:alloc_preferred_username)) OR lower(trim(COALESCE(a.assignment_contractor,''))) = lower(trim(:alloc_preferred_username)))`
+            `(lower(trim(COALESCE(m.model_creator,''))) = lower(trim(CAST(:alloc_preferred_username AS text))) OR lower(trim(COALESCE(a.assignment_contractor,''))) = lower(trim(CAST(:alloc_preferred_username AS text))))`
           )
           queryParams.alloc_preferred_username = login
         }
@@ -440,7 +442,7 @@ export class QuarterlyConfirmationService {
         }
       } else if (login) {
         whereClauses.push(
-          `(lower(trim(COALESCE(m.model_creator,''))) = lower(trim(:alloc_preferred_username)) OR lower(trim(COALESCE(a.assignment_contractor,''))) = lower(trim(:alloc_preferred_username)))`
+          `(lower(trim(COALESCE(m.model_creator,''))) = lower(trim(CAST(:alloc_preferred_username AS text))) OR lower(trim(COALESCE(a.assignment_contractor,''))) = lower(trim(CAST(:alloc_preferred_username AS text))))`
         )
         queryParams.alloc_preferred_username = login
       }
@@ -450,7 +452,7 @@ export class QuarterlyConfirmationService {
         const deptOrs = deptPatterns.map((_, idx) => {
           const key = `dept_bc_${idx}`
           queryParams[key] = deptPatterns[idx]
-          return `a.business_customer_departament ILIKE :${key}`
+          return `a.business_customer_departament ILIKE CAST(:${key} AS text)`
         })
         if (deptOrs.length > 0) {
           whereClauses.push(
@@ -461,7 +463,7 @@ export class QuarterlyConfirmationService {
         }
       }
       whereClauses.push(
-        "trim(both FROM COALESCE(a.business_status, '')) NOT IN (:status_archive, :status_creation_error)",
+        "trim(both FROM COALESCE(a.business_status, '')) NOT IN (CAST(:status_archive AS text), CAST(:status_creation_error AS text))",
         '(m.temp_block_flag != 1 OR m.temp_block_flag IS NULL)'
       )
 
@@ -469,10 +471,10 @@ export class QuarterlyConfirmationService {
       if (filters?.search) {
         whereClauses.push(
           `(
-            a.model_id ILIKE :search
-            OR a.model_alias ILIKE :search
-            OR m.model_name ILIKE :search
-            OR a.model_name_dadm ILIKE :search
+            a.model_id ILIKE CAST(:search AS text)
+            OR a.model_alias ILIKE CAST(:search AS text)
+            OR m.model_name ILIKE CAST(:search AS text)
+            OR a.model_name_dadm ILIKE CAST(:search AS text)
           )`
         )
         queryParams.search = `%${filters.search}%`
@@ -480,28 +482,28 @@ export class QuarterlyConfirmationService {
 
       // Добавляем фильтры по атрибутам
       if (filters?.model_alias) {
-        whereClauses.push('a.model_alias ILIKE :model_alias')
+        whereClauses.push('a.model_alias ILIKE CAST(:model_alias AS text)')
         queryParams.model_alias = `%${filters.model_alias}%`
       }
 
       if (filters?.model_name) {
-        whereClauses.push('m.model_name ILIKE :model_name')
+        whereClauses.push('m.model_name ILIKE CAST(:model_name AS text)')
         queryParams.model_name = `%${filters.model_name}%`
       }
 
       if (filters?.model_name_dadm) {
-        whereClauses.push('a.model_name_dadm ILIKE :model_name_dadm')
+        whereClauses.push('a.model_name_dadm ILIKE CAST(:model_name_dadm AS text)')
         queryParams.model_name_dadm = `%${filters.model_name_dadm}%`
       }
 
       if (filters?.business_customer) {
-        whereClauses.push('a.business_customer ILIKE :business_customer')
+        whereClauses.push('a.business_customer ILIKE CAST(:business_customer AS text)')
         queryParams.business_customer = `%${filters.business_customer}%`
       }
 
       if (filters?.business_customer_departament) {
         whereClauses.push(
-          'a.business_customer_departament ILIKE :business_customer_departament'
+          'a.business_customer_departament ILIKE CAST(:business_customer_departament AS text)'
         )
         queryParams.business_customer_departament = `%${filters.business_customer_departament}%`
       }
@@ -572,6 +574,56 @@ export class QuarterlyConfirmationService {
           AND a.model_id IS NOT NULL
         ORDER BY a.model_id
       `
+
+      // Дубликат queryConvert с MrmDatabaseService: сверка $N и массива значений (ловит «сломанные» :param).
+      const convPreview = queryConvert(sqlQuery, queryParams)
+      const dollarMatches = convPreview.text.match(/\$\d+/g) ?? []
+      const dollarIndices = dollarMatches.map((s) =>
+        Number(s.replace(/^\$/, ''))
+      )
+      const maxPgPlaceholder = dollarIndices.length
+        ? Math.max(...dollarIndices)
+        : 0
+      const bindPlaceholderMismatch =
+        maxPgPlaceholder > convPreview.values.length
+      const paramKeyStats = Object.keys(queryParams).reduce(
+        (acc, k) => {
+          if (k.startsWith('dept_bc_')) acc.dept_bc += 1
+          else if (k.startsWith('bc_nm_')) acc.bc_nm += 1
+          else acc.other += 1
+          return acc
+        },
+        { dept_bc: 0, bc_nm: 0, other: 0 }
+      )
+
+      this.logger.info(
+        '[ALLOC_DEBUG] quarterly models SQL bind (pre-execute)',
+        'ОтладкаСвязыванияSQLКвартальногоСписка',
+        {
+          namedParamKeys: Object.keys(queryParams).length,
+          pgValueSlots: convPreview.values.length,
+          whereAndParts: whereClauses.length,
+          paramKeyStats,
+          convertedSqlCharLength: convPreview.text.length,
+          maxPgPlaceholder,
+          bindPlaceholderMismatch,
+          sqlFingerprintSha256_16: createHash('sha256')
+            .update(convPreview.text)
+            .digest('hex')
+            .slice(0, 16)
+        }
+      )
+
+      if (bindPlaceholderMismatch) {
+        this.logger.warn(
+          '[ALLOC_DEBUG] PG $N exceeds bind array length — check queryConvert / :param names',
+          'ПредупреждениеРасхожденияПлейсхолдеровSQL',
+          {
+            maxPgPlaceholder,
+            pgValueSlots: convPreview.values.length
+          }
+        )
+      }
 
       const models = await this.databaseService.query(sqlQuery, queryParams)
 
