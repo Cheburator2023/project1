@@ -1,5 +1,19 @@
 # Semantic Versioning Changelog
 
+# [1.52.0](https://git.sfera.inno.local:7999/SUMD/mrms-backend/compare/v1.51.1...v1.52.0) (2026-05-14)
+
+
+### Bug Fixes
+
+* update SQL logic in QuarterlyConfirmationService for improved label handling ([8b7d104](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/8b7d104af9e57bccb36d9bf426ed9c08f7ba9dc5))
+
+
+### Features
+
+* add parseUsageFlag method and enhance quarterly confirmation logic ([ac5aa55](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/ac5aa557f0aed68b3dd75dec24afa70fc752513e))
+* enhance business customer matching in QuarterlyConfirmationService ([feee063](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/feee06365af8fd14ad30244cee0da5362d163599))
+* enhance quarterly confirmation logic with registry card integration ([7c5be05](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/7c5be0557daf193d3b83becd122d3f580264cde7))
+
 ## [1.51.1](https://git.sfera.inno.local:7999/SUMD/mrms-backend/compare/v1.51.0...v1.51.1) (2026-05-13)
 
 
