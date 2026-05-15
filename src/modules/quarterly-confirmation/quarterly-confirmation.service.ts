@@ -30,15 +30,17 @@ export class QuarterlyConfirmationService {
   }
 
   /**
-   * Кого мэтчим с ФИО из Keycloak: арт. 2031 → арт. 2075 «подрядчик» → `models_new.model_creator`,
-   * если заказчик в реестре ещё не заполнен.
+   * Арт. 2031 — бизнес-заказчик.
    */
-  private static allocationOwnerNormalizedSql(): string {
-    return `regexp_replace(trim(COALESCE(
-      NULLIF(trim(COALESCE(a.business_customer,'')), ''),
-      NULLIF(trim(COALESCE(a.assignment_contractor,'')), ''),
-      trim(COALESCE(m.model_creator,''))
-    )), '[[:space:]]+', ' ', 'g')`
+  private static businessCustomerNormalizedSql(): string {
+    return `regexp_replace(trim(COALESCE(a.business_customer,'')), '[[:space:]]+', ' ', 'g')`
+  }
+
+  /**
+   * `models_new.model_creator` — для гибкого OR с 2031 по ФИО и отдельной ветки по логину.
+   */
+  private static modelCreatorNormalizedSql(): string {
+    return `regexp_replace(trim(COALESCE(m.model_creator,'')), '[[:space:]]+', ' ', 'g')`
   }
 
   private static normalizeWhitespace(s: string): string {
@@ -333,10 +335,9 @@ export class QuarterlyConfirmationService {
         status_creation_error: MODEL_STATUS.CREATION_ERROR
       }
 
-      // Мэтчинг владельца: нормализация пробелов; варианты токенов кирилл↔лат
-      // (типично given_name=Elena latin, арт. 2031 «… Елена …»).
-      const ownerNorm =
-        QuarterlyConfirmationService.allocationOwnerNormalizedSql()
+      // ФИО (гибко, кирилл↔лат): ILIKE по 2031 ИЛИ по model_creator; при логине — ещё точное совпадение логина с создателем/2075.
+      const bcNorm = QuarterlyConfirmationService.businessCustomerNormalizedSql()
+      const mcNorm = QuarterlyConfirmationService.modelCreatorNormalizedSql()
 
       const family =
         QuarterlyConfirmationService.normalizeWhitespace(userFamilyName)
@@ -364,7 +365,7 @@ export class QuarterlyConfirmationService {
             for (const g of gVariants) {
               const nk = nextNk()
               nameOrs.push(
-                `(${ownerNorm} ILIKE CAST(:${nk}_f AS text) AND ${ownerNorm} ILIKE CAST(:${nk}_g AS text))`
+                `(((${bcNorm} ILIKE CAST(:${nk}_f AS text) AND ${bcNorm} ILIKE CAST(:${nk}_g AS text))) OR ((${mcNorm} ILIKE CAST(:${nk}_f AS text) AND ${mcNorm} ILIKE CAST(:${nk}_g AS text))))`
               )
               queryParams[`${nk}_f`] = `%${f}%`
               queryParams[`${nk}_g`] = `%${g}%`
@@ -379,7 +380,7 @@ export class QuarterlyConfirmationService {
               for (const g of gTok) {
                 const nk = nextNk()
                 nameOrs.push(
-                  `(${ownerNorm} ILIKE CAST(:${nk}_f AS text) AND ${ownerNorm} ILIKE CAST(:${nk}_g AS text))`
+                  `(((${bcNorm} ILIKE CAST(:${nk}_f AS text) AND ${bcNorm} ILIKE CAST(:${nk}_g AS text))) OR ((${mcNorm} ILIKE CAST(:${nk}_f AS text) AND ${mcNorm} ILIKE CAST(:${nk}_g AS text))))`
                 )
                 queryParams[`${nk}_f`] = `%${f}%`
                 queryParams[`${nk}_g`] = `%${g}%`
@@ -389,10 +390,10 @@ export class QuarterlyConfirmationService {
           for (const f of fVariants) {
             for (const g of gVariants) {
               const nkFg = nextNk()
-              nameOrs.push(`(${ownerNorm} ILIKE CAST(:${nkFg}_o AS text))`)
+              nameOrs.push(`(((${bcNorm} ILIKE CAST(:${nkFg}_o AS text))) OR ((${mcNorm} ILIKE CAST(:${nkFg}_o AS text))))`)
               queryParams[`${nkFg}_o`] = `%${f}%${g}%`
               const nkGf = nextNk()
-              nameOrs.push(`(${ownerNorm} ILIKE CAST(:${nkGf}_o AS text))`)
+              nameOrs.push(`(((${bcNorm} ILIKE CAST(:${nkGf}_o AS text))) OR ((${mcNorm} ILIKE CAST(:${nkGf}_o AS text))))`)
               queryParams[`${nkGf}_o`] = `%${g}%${f}%`
             }
           }
@@ -401,7 +402,7 @@ export class QuarterlyConfirmationService {
             family
           )) {
             const nk = nextNk()
-            nameOrs.push(`${ownerNorm} ILIKE CAST(:${nk}_s AS text)`)
+            nameOrs.push(`(((${bcNorm} ILIKE CAST(:${nk}_s AS text))) OR ((${mcNorm} ILIKE CAST(:${nk}_s AS text))))`)
             queryParams[`${nk}_s`] = `%${f}%`
           }
           if (family1 !== family && family1) {
@@ -409,7 +410,7 @@ export class QuarterlyConfirmationService {
               family1
             )) {
               const nk = nextNk()
-              nameOrs.push(`${ownerNorm} ILIKE CAST(:${nk}_s AS text)`)
+              nameOrs.push(`(((${bcNorm} ILIKE CAST(:${nk}_s AS text))) OR ((${mcNorm} ILIKE CAST(:${nk}_s AS text))))`)
               queryParams[`${nk}_s`] = `%${f}%`
             }
           }
@@ -418,7 +419,7 @@ export class QuarterlyConfirmationService {
             given
           )) {
             const nk = nextNk()
-            nameOrs.push(`${ownerNorm} ILIKE CAST(:${nk}_s AS text)`)
+            nameOrs.push(`(((${bcNorm} ILIKE CAST(:${nk}_s AS text))) OR ((${mcNorm} ILIKE CAST(:${nk}_s AS text))))`)
             queryParams[`${nk}_s`] = `%${g}%`
           }
           if (given1 !== given && given1) {
@@ -426,7 +427,7 @@ export class QuarterlyConfirmationService {
               given1
             )) {
               const nk = nextNk()
-              nameOrs.push(`${ownerNorm} ILIKE CAST(:${nk}_s AS text)`)
+              nameOrs.push(`(((${bcNorm} ILIKE CAST(:${nk}_s AS text))) OR ((${mcNorm} ILIKE CAST(:${nk}_s AS text))))`)
               queryParams[`${nk}_s`] = `%${g}%`
             }
           }
@@ -463,8 +464,7 @@ export class QuarterlyConfirmationService {
         }
       }
       whereClauses.push(
-        "trim(both FROM COALESCE(a.business_status, '')) NOT IN (CAST(:status_archive AS text), CAST(:status_creation_error AS text))",
-        '(m.temp_block_flag != 1 OR m.temp_block_flag IS NULL)'
+        "trim(both FROM COALESCE(a.business_status, '')) NOT IN (CAST(:status_archive AS text), CAST(:status_creation_error AS text))"
       )
 
       // Добавляем текстовый поиск
