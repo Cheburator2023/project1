@@ -29,196 +29,10 @@ export class QuarterlyConfirmationService {
     return null
   }
 
-  /**
-   * Арт. 2031 — бизнес-заказчик.
-   */
-  private static businessCustomerNormalizedSql(): string {
-    return `regexp_replace(trim(COALESCE(a.business_customer,'')), '[[:space:]]+', ' ', 'g')`
-  }
-
-  /**
-   * `models_new.model_creator` — для гибкого OR с 2031 по ФИО и отдельной ветки по логину.
-   */
-  private static modelCreatorNormalizedSql(): string {
-    return `regexp_replace(trim(COALESCE(m.model_creator,'')), '[[:space:]]+', ' ', 'g')`
-  }
-
   private static normalizeWhitespace(s: string): string {
     return String(s || '')
       .trim()
       .replace(/\s+/g, ' ')
-  }
-
-  /** Первое слово (фамилия без отчества и т.п., если в токене они разделены пробелом). */
-  private static firstNameToken(s: string): string {
-    const n = QuarterlyConfirmationService.normalizeWhitespace(s)
-    if (!n) return ''
-    const parts = n.split(/\s+/).filter(Boolean)
-    return parts[0] ?? ''
-  }
-
-  /** Кириллическое ФИО → латиница (ILIKE регистронезависим, нужно для смешения с Keycloak latin). */
-  private static latinForCyrillicRough(s: string): string {
-    const src = QuarterlyConfirmationService.normalizeWhitespace(s)
-    if (!src) return ''
-    const multi: Array<[string, string]> = [
-      ['щ', 'sch'],
-      ['ш', 'sh'],
-      ['ч', 'ch'],
-      ['ж', 'zh'],
-      ['ц', 'ts'],
-      ['ю', 'yu'],
-      ['я', 'ya'],
-      ['ё', 'yo'],
-      ['х', 'kh'],
-      ['й', 'y'],
-      ['ы', 'y'],
-      ['э', 'e']
-    ]
-    const oneRu: Record<string, string> = {
-      а: 'a',
-      б: 'b',
-      в: 'v',
-      г: 'g',
-      д: 'd',
-      е: 'e',
-      и: 'i',
-      з: 'z',
-      к: 'k',
-      л: 'l',
-      м: 'm',
-      н: 'n',
-      о: 'o',
-      п: 'p',
-      р: 'r',
-      с: 's',
-      т: 't',
-      у: 'u',
-      ф: 'f',
-      ъ: '',
-      ь: ''
-    }
-    let i = 0
-    let out = ''
-    const lower = src.toLowerCase()
-    while (i < lower.length) {
-      const rest = lower.slice(i)
-      let step = 0
-      let chunk = ''
-      for (const [ru, lat] of multi) {
-        if (rest.startsWith(ru)) {
-          chunk = lat
-          step = ru.length
-          break
-        }
-      }
-      if (!step) {
-        const ch = lower[i]
-        if (ch && Object.prototype.hasOwnProperty.call(oneRu, ch)) {
-          chunk = oneRu[ch]
-          step = 1
-        } else {
-          chunk = src[i]
-          step = 1
-        }
-      }
-      out += chunk
-      i += step
-    }
-    return out
-  }
-
-  /** Латинское имя/фамилия → кириллица (простая схема; для Elena → елена). */
-  private static cyrillicRoughFromLatinToken(s: string): string {
-    const lower =
-      QuarterlyConfirmationService.normalizeWhitespace(s).toLowerCase()
-    if (!lower) return ''
-    const multi: Array<[string, string]> = [
-      ['shch', 'щ'],
-      ['sch', 'щ'],
-      ['sh', 'ш'],
-      ['kh', 'х'],
-      ['zh', 'ж'],
-      ['ch', 'ч'],
-      ['ts', 'ц'],
-      ['yu', 'ю'],
-      ['ya', 'я'],
-      ['yo', 'ё']
-    ]
-    const lone: Record<string, string> = {
-      a: 'а',
-      b: 'б',
-      c: 'к',
-      d: 'д',
-      e: 'е',
-      f: 'ф',
-      g: 'г',
-      h: 'х',
-      i: 'и',
-      j: 'дж',
-      k: 'к',
-      l: 'л',
-      m: 'м',
-      n: 'н',
-      o: 'о',
-      p: 'п',
-      q: 'к',
-      r: 'р',
-      s: 'с',
-      t: 'т',
-      u: 'у',
-      v: 'в',
-      w: 'в',
-      x: 'кс',
-      y: 'й',
-      z: 'з'
-    }
-    let i = 0
-    let out = ''
-    while (i < lower.length) {
-      if (!/[a-z]/i.test(lower[i])) {
-        out += lower[i]
-        i += 1
-        continue
-      }
-      const rest = lower.slice(i)
-      let step = 0
-      let chunk = ''
-      for (const [lt, ru] of multi) {
-        if (rest.startsWith(lt)) {
-          chunk = ru
-          step = lt.length
-          break
-        }
-      }
-      if (!step) {
-        chunk = lone[lower[i]] ?? lower[i]
-        step = 1
-      }
-      out += chunk
-      i += step
-    }
-    return out
-  }
-
-  /**
-   * Варианты подстроки для ILIKE: как в токене + кирилл↔лат (Keycloak latin vs регистр 2031 кирил).
-   */
-  private static nameTokenSearchVariants(tok: string): string[] {
-    const n = QuarterlyConfirmationService.normalizeWhitespace(tok)
-    if (!n) return []
-    const v = new Set<string>([n])
-    const hasCyr = /[а-яё]/i.test(n)
-    const hasLat = /[a-z]/i.test(n)
-    if (hasCyr) {
-      const L = QuarterlyConfirmationService.latinForCyrillicRough(n)
-      if (L) v.add(L)
-    }
-    if (hasLat && !hasCyr) {
-      const Cy = QuarterlyConfirmationService.cyrillicRoughFromLatinToken(n)
-      if (Cy) v.add(Cy)
-    }
-    return [...v]
   }
 
   /**
@@ -291,9 +105,10 @@ export class QuarterlyConfirmationService {
     return result
   }
 
+  /** ФИО (`userFamilyName`, `userGivenName`) после ПСИ не участвуют в фильтре — сохранены для совместимости API. */
   async getModelsForConfirmation(
-    userFamilyName: string,
-    userGivenName: string,
+    _userFamilyName: string,
+    _userGivenName: string,
     userDepartment: string,
     preferredUsername: string,
     filters?: GetModelsQueryDto
@@ -308,8 +123,6 @@ export class QuarterlyConfirmationService {
       'Getting models for quarterly confirmation',
       'ПолучениеМоделейДляПодтвержденияКвартала',
       {
-        userFamilyName,
-        userGivenName,
         userDepartment,
         preferredUsername,
         quarter: quarterInfo.quarter,
@@ -319,133 +132,18 @@ export class QuarterlyConfirmationService {
 
     try {
       // Строим динамический SQL запрос с фильтрами
-      // Поля business_customer (artefact_id=2031), business_customer_departament (арт. 2032: каталог и/или string),
-      // фильтр «не архив / не ошибка заведения» — по строке артефакта 2656, НЕ по model_status BPMN merge.
-      // Агрегат артефактов строится от models_new LEFT JOIN ar при текущем effective_to — модель не исчезает
-      // из строки результатов только из‑за пустого join к реализациям.
+      // Поля business_customer (арт. 2031) только в SELECT; ограничения по заказчику/создателю после ПСИ сняты.
+      // По результатам ПСИ: фильтрация по владельцу и учётке (ФИО, логин) отключена.
       this.logger.info(
         '[ALLOC_DEBUG] getModelsForConfirmation filter params',
         'ОтладкаПараметровФильтрации',
-        { userFamilyName, userGivenName, userDepartment, preferredUsername }
+        { userDepartment, preferredUsername }
       )
 
       const whereClauses: string[] = []
       const queryParams: Record<string, unknown> = {
         status_archive: MODEL_STATUS.ARCHIVE,
         status_creation_error: MODEL_STATUS.CREATION_ERROR
-      }
-
-      // ФИО (гибко, кирилл↔лат): ILIKE по 2031 ИЛИ по model_creator; при логине — ещё точное совпадение логина с создателем/2075.
-      const bcNorm = QuarterlyConfirmationService.businessCustomerNormalizedSql()
-      const mcNorm = QuarterlyConfirmationService.modelCreatorNormalizedSql()
-
-      const family =
-        QuarterlyConfirmationService.normalizeWhitespace(userFamilyName)
-      const given =
-        QuarterlyConfirmationService.normalizeWhitespace(userGivenName)
-      const family1 =
-        QuarterlyConfirmationService.firstNameToken(userFamilyName)
-      const given1 = QuarterlyConfirmationService.firstNameToken(userGivenName)
-
-      const login =
-        QuarterlyConfirmationService.normalizeWhitespace(preferredUsername)
-
-      if (family || given) {
-        const nameOrs: string[] = []
-        let nameSeq = 0
-
-        const nextNk = (): string => `bc_nm_${++nameSeq}`
-
-        if (family && given) {
-          const fVariants =
-            QuarterlyConfirmationService.nameTokenSearchVariants(family)
-          const gVariants =
-            QuarterlyConfirmationService.nameTokenSearchVariants(given)
-          for (const f of fVariants) {
-            for (const g of gVariants) {
-              const nk = nextNk()
-              nameOrs.push(
-                `(((${bcNorm} ILIKE CAST(:${nk}_f AS text) AND ${bcNorm} ILIKE CAST(:${nk}_g AS text))) OR ((${mcNorm} ILIKE CAST(:${nk}_f AS text) AND ${mcNorm} ILIKE CAST(:${nk}_g AS text))))`
-              )
-              queryParams[`${nk}_f`] = `%${f}%`
-              queryParams[`${nk}_g`] = `%${g}%`
-            }
-          }
-          if (family1 !== family || given1 !== given) {
-            const fTok =
-              QuarterlyConfirmationService.nameTokenSearchVariants(family1)
-            const gTok =
-              QuarterlyConfirmationService.nameTokenSearchVariants(given1)
-            for (const f of fTok) {
-              for (const g of gTok) {
-                const nk = nextNk()
-                nameOrs.push(
-                  `(((${bcNorm} ILIKE CAST(:${nk}_f AS text) AND ${bcNorm} ILIKE CAST(:${nk}_g AS text))) OR ((${mcNorm} ILIKE CAST(:${nk}_f AS text) AND ${mcNorm} ILIKE CAST(:${nk}_g AS text))))`
-                )
-                queryParams[`${nk}_f`] = `%${f}%`
-                queryParams[`${nk}_g`] = `%${g}%`
-              }
-            }
-          }
-          for (const f of fVariants) {
-            for (const g of gVariants) {
-              const nkFg = nextNk()
-              nameOrs.push(`(((${bcNorm} ILIKE CAST(:${nkFg}_o AS text))) OR ((${mcNorm} ILIKE CAST(:${nkFg}_o AS text))))`)
-              queryParams[`${nkFg}_o`] = `%${f}%${g}%`
-              const nkGf = nextNk()
-              nameOrs.push(`(((${bcNorm} ILIKE CAST(:${nkGf}_o AS text))) OR ((${mcNorm} ILIKE CAST(:${nkGf}_o AS text))))`)
-              queryParams[`${nkGf}_o`] = `%${g}%${f}%`
-            }
-          }
-        } else if (family) {
-          for (const f of QuarterlyConfirmationService.nameTokenSearchVariants(
-            family
-          )) {
-            const nk = nextNk()
-            nameOrs.push(`(((${bcNorm} ILIKE CAST(:${nk}_s AS text))) OR ((${mcNorm} ILIKE CAST(:${nk}_s AS text))))`)
-            queryParams[`${nk}_s`] = `%${f}%`
-          }
-          if (family1 !== family && family1) {
-            for (const f of QuarterlyConfirmationService.nameTokenSearchVariants(
-              family1
-            )) {
-              const nk = nextNk()
-              nameOrs.push(`(((${bcNorm} ILIKE CAST(:${nk}_s AS text))) OR ((${mcNorm} ILIKE CAST(:${nk}_s AS text))))`)
-              queryParams[`${nk}_s`] = `%${f}%`
-            }
-          }
-        } else if (given) {
-          for (const g of QuarterlyConfirmationService.nameTokenSearchVariants(
-            given
-          )) {
-            const nk = nextNk()
-            nameOrs.push(`(((${bcNorm} ILIKE CAST(:${nk}_s AS text))) OR ((${mcNorm} ILIKE CAST(:${nk}_s AS text))))`)
-            queryParams[`${nk}_s`] = `%${g}%`
-          }
-          if (given1 !== given && given1) {
-            for (const g of QuarterlyConfirmationService.nameTokenSearchVariants(
-              given1
-            )) {
-              const nk = nextNk()
-              nameOrs.push(`(((${bcNorm} ILIKE CAST(:${nk}_s AS text))) OR ((${mcNorm} ILIKE CAST(:${nk}_s AS text))))`)
-              queryParams[`${nk}_s`] = `%${g}%`
-            }
-          }
-        }
-        if (login) {
-          nameOrs.push(
-            `(lower(trim(COALESCE(m.model_creator,''))) = lower(trim(CAST(:alloc_preferred_username AS text))) OR lower(trim(COALESCE(a.assignment_contractor,''))) = lower(trim(CAST(:alloc_preferred_username AS text))))`
-          )
-          queryParams.alloc_preferred_username = login
-        }
-        if (nameOrs.length > 0) {
-          whereClauses.push(`(${nameOrs.join(' OR ')})`)
-        }
-      } else if (login) {
-        whereClauses.push(
-          `(lower(trim(COALESCE(m.model_creator,''))) = lower(trim(CAST(:alloc_preferred_username AS text))) OR lower(trim(COALESCE(a.assignment_contractor,''))) = lower(trim(CAST(:alloc_preferred_username AS text))))`
-        )
-        queryParams.alloc_preferred_username = login
       }
 
       if (userDepartment) {
@@ -990,7 +688,7 @@ export class QuarterlyConfirmationService {
         'Error getting models for confirmation',
         'ОшибкаПолученияМоделейДляПодтверждения',
         error,
-        { userFamilyName, userGivenName, userDepartment }
+        { userDepartment, preferredUsername }
       )
       throw error
     }
