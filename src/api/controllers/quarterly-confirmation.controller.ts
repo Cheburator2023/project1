@@ -139,6 +139,18 @@ export class QuarterlyConfirmationController {
   }
 
   @ApiOperation({
+    summary: 'Список records models_pim_usage (диагностика)',
+    description:
+      'Возвращает все строки таблицы использования модели из ПИМ по кварталам для страницы seed'
+  })
+  @ApiResponse({ status: 200, description: 'Массив записей из models_pim_usage' })
+  @Get('/pim-usage')
+  async listPimUsage(@Res() response) {
+    const rows = await this.pimUsageService.listAllPimUsageOrdered()
+    return response.status(HttpStatus.OK).json({ data: { rows } })
+  }
+
+  @ApiOperation({
     summary: 'Засеять данные об использовании модели из ПИМ',
     description:
       'Добавляет/обновляет записи в таблицу models_pim_usage для тестирования логики приоритетов предзаполнения'

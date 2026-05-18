@@ -534,25 +534,29 @@ export class QuarterlyConfirmationService {
         const pimUsage = pimUsageMap.get(sid)
         const prevRow = prevUsageMap.get(sid)
         const prevArt = prevArtefactMap.get(sid)
-        const prevUsage =
-          prevRow ??
-          (prevArt && typeof prevArt.is_used === 'boolean'
-            ? {
-                system_model_id: sid,
-                is_used: prevArt.is_used,
-                confirmation_date: prevArt.confirmation_date ?? ''
-              }
-            : null)
+        const prevAnyDateFromRow =
+          prevRow != null &&
+          prevRow.confirmation_date != null &&
+          String(prevRow.confirmation_date).trim() !== ''
 
-        /** Есть сохранённые в БД признак/дата за прошлый квартал (таблица или артефакты). */
+        /** Есть сохранённые в БД признак и/или дата за прошлый квартал (таблица или артефакты).
+         * Строка только с датой без is_used (например только в СУМ) — тоже считаем переносом, не «новая модель». */
         const hasPrevQuarterData =
-          Boolean(prevRow) ||
+          (prevRow != null &&
+            (typeof prevRow.is_used === 'boolean' || prevAnyDateFromRow)) ||
           Boolean(
             prevArt &&
               (typeof prevArt.is_used === 'boolean' ||
                 (prevArt.confirmation_date != null &&
                   String(prevArt.confirmation_date).trim() !== ''))
           )
+
+        const prevCarriedIsUsed: boolean | null =
+          typeof prevRow?.is_used === 'boolean'
+            ? prevRow.is_used
+            : typeof prevArt?.is_used === 'boolean'
+              ? prevArt.is_used
+              : null
 
         // Если уже есть данные за текущий квартал, используем их
         if (currentUsage) {
@@ -596,7 +600,7 @@ export class QuarterlyConfirmationService {
           }
         }
 
-        if (typeof prevUsage?.is_used === 'boolean') {
+        if (hasPrevQuarterData) {
           return {
             system_model_id: model.system_model_id,
             model_id: model.model_id,
@@ -607,7 +611,7 @@ export class QuarterlyConfirmationService {
             business_customer: model.business_customer,
             business_customer_departament: model.business_customer_departament,
             confirmation_date: today,
-            is_used: prevUsage.is_used,
+            is_used: prevCarriedIsUsed,
             prefill_source: 'previous_quarter' as const
           }
         }

@@ -132,6 +132,35 @@ export class PimUsageService {
     }
   }
 
+  /**
+   * Снимок таблицы для отладочной страницы seed (без фильтров).
+   */
+  async listAllPimUsageOrdered(): Promise<PimUsageEntity[]> {
+    try {
+      const rows = await this.databaseService.query(
+        `
+        SELECT *
+        FROM models_pim_usage
+        ORDER BY confirmation_year DESC,
+          confirmation_quarter DESC,
+          pim_usage_id DESC
+        `,
+        {}
+      )
+      return (rows as Record<string, unknown>[]).map((r) =>
+        this.mapRowToEntity(r)
+      )
+    } catch (error) {
+      this.logger.error(
+        'Error listing models_pim_usage',
+        'ОшибкаЧтенияТаблицыПИМ',
+        error,
+        {}
+      )
+      throw error
+    }
+  }
+
   async insertPimUsage(
     system_model_id: string,
     quarter: number,
