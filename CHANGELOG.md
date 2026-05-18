@@ -1,5 +1,13 @@
 # Semantic Versioning Changelog
 
+# [1.53.0](https://git.sfera.inno.local:7999/SUMD/mrms-backend/compare/v1.52.5...v1.53.0) (2026-05-18)
+
+
+### Features
+
+* add endpoint to list PIM usage records and implement corresponding service method ([050c9ce](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/050c9ce6b3b3fef840efdd6b58cbe6bcbdb2b532))
+* enhance quarterly confirmation service with prefill source resolution and data augmentation ([aca3173](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/aca3173f2bcac4a93e3cdf7b64ba0e434778cffb))
+
 ## [1.52.5](https://git.sfera.inno.local:7999/SUMD/mrms-backend/compare/v1.52.4...v1.52.5) (2026-05-18)
 
 ## [1.52.4](https://git.sfera.inno.local:7999/SUMD/mrms-backend/compare/v1.52.3...v1.52.4) (2026-05-15)
