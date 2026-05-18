@@ -29,6 +29,20 @@ export class QuarterlyConfirmationService {
     return null
   }
 
+  /**
+   * Источник статуса предзаполнения (подпись «Перенесено из ПИМ» / «из Qn»).
+   * В `pimUsage` уже объединены ПИМ за активный квартал и за предыдущий (приоритет у активного).
+   * При одновременном наличии ПИМ и данных SURM за предыдущий квартал приоритет у ПИМ.
+   */
+  private resolveAllocationPrefillSource(
+    pimUsage: { is_used: boolean } | undefined,
+    hasPrevQuarterData: boolean
+  ): 'pim' | 'previous_quarter' | null {
+    if (pimUsage != null) return 'pim'
+    if (hasPrevQuarterData) return 'previous_quarter'
+    return null
+  }
+
   private static normalizeWhitespace(s: string): string {
     return String(s || '')
       .trim()
@@ -103,6 +117,97 @@ export class QuarterlyConfirmationService {
     )
 
     return result
+  }
+
+  /**
+   * Если подтверждение прошло только в БД СУМ (`model_usage_confirm`), в СУРМ строки в
+   * `models_usage` может не быть — тогда дополняем карту источников для предзаполнения.
+   */
+  private async augmentPrevUsageFromSum(
+    sumModelIds: Set<string>,
+    prevQuarter: { quarter: number; year: number },
+    prevUsageMap: Map<
+      string,
+      {
+        system_model_id: string
+        is_used: boolean | null
+        confirmation_date: string
+      }
+    >
+  ): Promise<void> {
+    const ids = [...sumModelIds].filter((id) => !prevUsageMap.has(id))
+    if (ids.length === 0) {
+      return
+    }
+
+    try {
+      const rows: {
+        system_model_id: string
+        is_used: boolean | null
+        confirmation_date: string | null
+      }[] = await this.sumDatabaseService.query(
+        `
+        SELECT model_id::text AS system_model_id,
+               CASE
+                 WHEN confirmed IS NULL THEN NULL
+                 WHEN confirmed = true THEN true
+                 ELSE false
+               END AS is_used,
+               confirmation_date::text AS confirmation_date
+        FROM model_usage_confirm
+        WHERE model_id::text = ANY(:system_model_ids)
+          AND quarter = :quarter
+          AND CAST(confirmation_year AS INTEGER) = CAST(:year AS INTEGER)
+        `,
+        {
+          system_model_ids: ids,
+          quarter: prevQuarter.quarter,
+          year: prevQuarter.year
+        }
+      )
+
+      let added = 0
+      for (const r of rows) {
+        const sid = String(r.system_model_id)
+        if (!sumModelIds.has(sid)) {
+          continue
+        }
+        if (prevUsageMap.has(sid)) {
+          continue
+        }
+        const dateStr =
+          r.confirmation_date != null ? String(r.confirmation_date).trim() : ''
+        const hasSignal =
+          typeof r.is_used === 'boolean' || dateStr.length > 0
+        if (!hasSignal) {
+          continue
+        }
+        prevUsageMap.set(sid, {
+          system_model_id: sid,
+          is_used: typeof r.is_used === 'boolean' ? r.is_used : null,
+          confirmation_date: dateStr
+        })
+        added += 1
+      }
+
+      this.logger.info(
+        '[ALLOC_DEBUG] SUM model_usage_confirm merged for prev quarter',
+        'ОтладкаСлиянияПодтвержденияИзСУМ',
+        {
+          queriedIds: ids.length,
+          matchedRows: rows.length,
+          mergedIntoPrevUsageMap: added,
+          prevQuarter: prevQuarter.quarter,
+          prevYear: prevQuarter.year
+        }
+      )
+    } catch (err) {
+      this.logger.warn(
+        '[ALLOC_DEBUG] Failed to load SUM prev-quarter usage — skipping merge',
+        'ПропускЧтенияПрошлогоКварталаИзСУМ',
+        { error: err instanceof Error ? err.message : String(err) }
+      )
+    }
   }
 
   /** ФИО (`userFamilyName`, `userGivenName`) после ПСИ не участвуют в фильтре — сохранены для совместимости API. */
@@ -377,14 +482,30 @@ export class QuarterlyConfirmationService {
         }
       )
 
-      // Получаем данные из ПИМ
-      const pimUsages = await this.pimUsageService.getPimUsageForModels(
-        systemModelIds,
-        quarterInfo.quarter,
-        quarterInfo.year
-      )
+      const prevQuarter =
+        quarterInfo.quarter === 1
+          ? { quarter: 4, year: quarterInfo.year - 1 }
+          : { quarter: quarterInfo.quarter - 1, year: quarterInfo.year }
+
+      // ПИМ за активный квартал и за предыдущий: иначе при ПИМ только за Q(n-1) и открытой аллокации Qn
+      // статус ошибочно становится «Перенесено из Q(n-1)», хотя источник — ПИМ.
+      const [pimUsages, pimUsagesPrevQuarter] = await Promise.all([
+        this.pimUsageService.getPimUsageForModels(
+          systemModelIds,
+          quarterInfo.quarter,
+          quarterInfo.year
+        ),
+        this.pimUsageService.getPimUsageForModels(
+          systemModelIds,
+          prevQuarter.quarter,
+          prevQuarter.year
+        )
+      ])
       const pimUsageMap = new Map(
         pimUsages.map((p) => [String(p.system_model_id), p])
+      )
+      const pimUsagePrevQuarterMap = new Map(
+        pimUsagesPrevQuarter.map((p) => [String(p.system_model_id), p])
       )
 
       this.logger.info(
@@ -394,19 +515,20 @@ export class QuarterlyConfirmationService {
           pimUsageCount: pimUsages.length,
           pimSystemModelIds: pimUsages.map((p) => p.system_model_id),
           quarter: quarterInfo.quarter,
-          year: quarterInfo.year
+          year: quarterInfo.year,
+          pimPrevQuarterCount: pimUsagesPrevQuarter.length,
+          pimPrevQuarterModelIds: pimUsagesPrevQuarter.map(
+            (p) => p.system_model_id
+          ),
+          prevQuarterForPim: prevQuarter.quarter,
+          prevYearForPim: prevQuarter.year
         }
       )
 
       // Получаем данные из предыдущего квартала
-      const prevQuarter =
-        quarterInfo.quarter === 1
-          ? { quarter: 4, year: quarterInfo.year - 1 }
-          : { quarter: quarterInfo.quarter - 1, year: quarterInfo.year }
-
       const prevUsages: {
         system_model_id: string
-        is_used: boolean
+        is_used: boolean | null
         confirmation_date: string
       }[] = await this.databaseService.query(
         `
@@ -467,6 +589,9 @@ export class QuarterlyConfirmationService {
       const prevUsageMap = new Map(
         prevUsages.map((u) => [String(u.system_model_id), u])
       )
+
+      await this.augmentPrevUsageFromSum(sumModelIdSet, prevQuarter, prevUsageMap)
+
       const prevArtefactMap = new Map(
         prevFromArtefacts.map((u) => {
           const parsed = this.parseUsageFlag(u.flag_raw)
@@ -531,7 +656,8 @@ export class QuarterlyConfirmationService {
       let results = models.map((model) => {
         const sid = String(model.system_model_id)
         const currentUsage = currentUsageMap.get(sid)
-        const pimUsage = pimUsageMap.get(sid)
+        const pimUsage =
+          pimUsageMap.get(sid) ?? pimUsagePrevQuarterMap.get(sid)
         const prevRow = prevUsageMap.get(sid)
         const prevArt = prevArtefactMap.get(sid)
         const prevAnyDateFromRow =
@@ -560,9 +686,10 @@ export class QuarterlyConfirmationService {
 
         // Если уже есть данные за текущий квартал, используем их
         if (currentUsage) {
-          let prefillSource: 'pim' | 'previous_quarter' | null = null
-          if (pimUsage) prefillSource = 'pim'
-          else if (hasPrevQuarterData) prefillSource = 'previous_quarter'
+          const prefillSource = this.resolveAllocationPrefillSource(
+            pimUsage,
+            hasPrevQuarterData
+          )
 
           return {
             system_model_id: model.system_model_id,
@@ -583,7 +710,7 @@ export class QuarterlyConfirmationService {
           }
         }
 
-        // Приоритет предзаполнения: ПИМ > предыдущий квартал > пусто
+        // Значения и prefill_source: ПИМ > предыдущий квартал (см. resolveAllocationPrefillSource)
         if (pimUsage) {
           return {
             system_model_id: model.system_model_id,

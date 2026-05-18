@@ -63,7 +63,8 @@ export class GetModelsQueryDto {
   business_customer_departament?: string
 
   @ApiPropertyOptional({
-    description: 'Фильтр по источнику предзаполнения',
+    description:
+      'Фильтр по источнику предзаполнения. Если доступны и ПИМ, и предыдущий квартал, в ответе используется pim.',
     enum: ['pim', 'previous_quarter', 'none'],
     example: 'pim'
   })
@@ -203,6 +204,7 @@ export type ConfirmationModelRow = {
   business_customer_departament: string | null
   confirmation_date: string | null
   is_used: boolean | null
+  /** При наличии и ПИМ, и данных прошлого квартала — всегда pim. */
   prefill_source: 'pim' | 'previous_quarter' | null
   /** Как элемент `GET /models` (`data.cards[]`): плоские поля артефактов после merge/format. */
   registry_card?: Record<string, unknown> | null
