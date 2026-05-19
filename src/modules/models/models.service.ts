@@ -117,6 +117,45 @@ export class ModelsService {
     return filteredByGroups
   }
 
+  /**
+   * Те же merge + форматирование + фильтры, что у {@link getModels}, но только для
+   * указанных `system_model_id` (версии из `models_new.model_id`).
+   */
+  async getRegistryCardsBySystemModelIds(
+    systemModelIds: readonly string[],
+    dto?: ModelsDto & { ignoreModeFilter?: boolean },
+    groups?: string[]
+  ): Promise<Map<string, Model>> {
+    if (systemModelIds.length === 0) return new Map()
+
+    const idSet = new Set(systemModelIds.map((id) => String(id)))
+    const { date = null, mode = null, ignoreModeFilter = false } = dto || {}
+
+    const rawResults = await this.fetchAndMergeModels(date, null)
+    const resultsWithFormatting = await this.formatResults(
+      rawResults.map((model) => ({ ...model }))
+    )
+
+    /** Главная с пустым mode даёт []; для subset по уже отфильтрованным id это неверно. */
+    const skipModeFilter =
+      ignoreModeFilter ||
+      mode == null ||
+      (Array.isArray(mode) && mode.length === 0)
+
+    const filteredByMode = skipModeFilter
+      ? resultsWithFormatting
+      : this.filterModelsByDisplayMode(resultsWithFormatting, mode)
+
+    const filteredByGroups = groups?.length
+      ? this.filterModelsByUserGroups(filteredByMode, groups)
+      : filteredByMode
+
+    const subset = filteredByGroups.filter((m) =>
+      idSet.has(String(m.system_model_id))
+    )
+    return new Map(subset.map((m) => [String(m.system_model_id), m]))
+  }
+
   async getModelsByDates(
     { firstDate, secondDate }: CompareModelsDto,
     groups?: []
@@ -299,50 +338,6 @@ export class ModelsService {
     return this.getModels({ model_id, ignoreModeFilter: true })
   }
 
-  async surrogateModelCreate(model_id: string): Promise<ModelEntity | null> {
-    const modelSum: ModelEntity | null =
-      await this.sumModelService.getModelById(model_id)
-
-    if (!modelSum) {
-      return null
-    }
-
-    const [newModel] = await this.mrmDatabaseService.query(
-      `
-      INSERT INTO models_new (
-        root_model_id,
-        model_id,
-        model_name,
-        model_version,
-        create_date,
-        update_date,
-        model_creator
-      ) 
-      VALUES (
-        :root_model_id,
-        :model_id,
-        :model_name,
-        :model_version,
-        :create_date,
-        :update_date,
-        :model_creator
-      )
-      RETURNING *;
-      `,
-      {
-        root_model_id: modelSum.root_model_id,
-        model_id: modelSum.model_id,
-        model_name: modelSum.model_name,
-        model_version: modelSum.model_version,
-        create_date: modelSum.create_date,
-        update_date: modelSum.update_date,
-        model_creator: modelSum.model_creator
-      }
-    )
-
-    return newModel
-  }
-
   private filterModelsByDisplayMode(
     models: Model[],
     mode: string[] | null
@@ -398,6 +393,50 @@ export class ModelsService {
 
       return false
     })
+  }
+
+  async surrogateModelCreate(model_id: string): Promise<ModelEntity | null> {
+    const modelSum: ModelEntity | null =
+      await this.sumModelService.getModelById(model_id)
+
+    if (!modelSum) {
+      return null
+    }
+
+    const [newModel] = await this.mrmDatabaseService.query(
+      `
+      INSERT INTO models_new (
+        root_model_id,
+        model_id,
+        model_name,
+        model_version,
+        create_date,
+        update_date,
+        model_creator
+      ) 
+      VALUES (
+        :root_model_id,
+        :model_id,
+        :model_name,
+        :model_version,
+        :create_date,
+        :update_date,
+        :model_creator
+      )
+      RETURNING *;
+      `,
+      {
+        root_model_id: modelSum.root_model_id,
+        model_id: modelSum.model_id,
+        model_name: modelSum.model_name,
+        model_version: modelSum.model_version,
+        create_date: modelSum.create_date,
+        update_date: modelSum.update_date,
+        model_creator: modelSum.model_creator
+      }
+    )
+
+    return newModel
   }
 
   // Фильтрация моделей в зависимости от групп пользователя

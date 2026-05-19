@@ -40,7 +40,9 @@ export class RolesGuard implements CanActivate {
     const user = request.user
 
     if (!user) {
-      throw new UnauthorizedException('Доступ запрещен: отсутствие пользователя')
+      throw new UnauthorizedException(
+        'Доступ запрещен: отсутствие пользователя'
+      )
     }
 
     const roles: string[] = Array.isArray(user.roles) ? user.roles : []
@@ -57,7 +59,9 @@ export class RolesGuard implements CanActivate {
       }, [])
       .filter(Boolean)
 
-    const keycloakGroups: string[] = Array.isArray(user.keycloakGroups) ? user.keycloakGroups : []
+    const keycloakGroups: string[] = Array.isArray(user.keycloakGroups)
+      ? user.keycloakGroups
+      : []
     const allGroups = [...groups, ...keycloakGroups]
 
     const hasRole = requiredRoles.some(

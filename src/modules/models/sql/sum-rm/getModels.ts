@@ -249,6 +249,12 @@ LEFT JOIN (
         MAX(CASE WHEN artefact_id = 2092 THEN artefact_string_value ELSE NULL END) AS pvr,
         MAX(CASE WHEN artefact_id = 2094 THEN artefact_string_value ELSE NULL END) AS validity_approve_date,
         MAX(CASE WHEN artefact_id = 2095 THEN artefact_string_value ELSE NULL END) AS validation_result,
+        MAX(
+            CASE
+                WHEN artefact_id = 2096
+                    OR trim(both FROM COALESCE(ar.artefact_custom_type, '')) = 'model_name_dadm'
+                THEN artefact_string_value ELSE NULL END
+        ) AS model_name_dadm,
         MAX(CASE WHEN artefact_id = 2556 THEN artefact_string_value ELSE NULL END) AS update_date,
         MAX(CASE WHEN artefact_id = 2557 THEN artefact_string_value ELSE NULL END) AS model_name_validation,
         MAX(CASE WHEN artefact_id = 2097 THEN artefact_string_value ELSE NULL END) AS decision_date_and_number_of_application_model_for_segment,
@@ -297,6 +303,7 @@ LEFT JOIN (
             artefact_realizations_new.artefact_id,
             artefact_realizations_new.artefact_string_value,
             artefact_realizations_new.effective_from,
+            artefact_realizations_new.artefact_custom_type,
             ROW_NUMBER() OVER (
                 PARTITION BY artefact_realizations_new.model_id, artefact_realizations_new.artefact_id
                 ORDER BY 
