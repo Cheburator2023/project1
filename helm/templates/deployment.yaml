@@ -55,7 +55,7 @@ spec:
           {{- end }}
           envFrom:
             - secretRef:
-                name: {{ template "mrms-backend.fullname" . }}-secret
+                name: {{ .Values.envFromSecretName | default (printf "%s-secret" (include "mrms-backend.fullname" .)) | quote }}
           ports:
             - containerPort: 3000
               protocol: TCP
