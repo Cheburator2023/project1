@@ -1,5 +1,12 @@
 # Semantic Versioning Changelog
 
+## [1.53.1](https://git.sfera.inno.local:7999/SUMD/mrms-backend/compare/v1.53.0...v1.53.1) (2026-05-26)
+
+
+### Bug Fixes
+
+* fix-secret-env ([bdf7b19](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/bdf7b19022f8e0d00d46ffe4bb66a226c7906e60))
+
 # [1.53.0](https://git.sfera.inno.local:7999/SUMD/mrms-backend/compare/v1.52.5...v1.53.0) (2026-05-18)
 
 
