@@ -1,5 +1,12 @@
 # Semantic Versioning Changelog
 
+# [1.54.0](https://git.sfera.inno.local:7999/SUMD/mrms-backend/compare/v1.53.1...v1.54.0) (2026-05-26)
+
+
+### Features
+
+* enhance quarterly confirmation service with allocation filtering and candidate fetching ([64c45a8](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/64c45a8e3776e2cbb5cc947cfffbb63ad13df2de))
+
 ## [1.53.1](https://git.sfera.inno.local:7999/SUMD/mrms-backend/compare/v1.53.0...v1.53.1) (2026-05-26)
 
 
