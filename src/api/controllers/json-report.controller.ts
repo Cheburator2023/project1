@@ -30,6 +30,9 @@ import { RateLimit } from '../guards/rate-limit.guard'
 import { ErrorHandlerService } from 'src/common/services/error-handler.service'
 import { JsonReportService } from '../../modules/report/json-report.service'
 import { ModelStatusConfigService } from '../../modules/report/model-status-config.service'
+import { AuditService } from '../../modules/audit/audit.service';
+import { AUDIT_EVENT_SUMD_MRMSUPLOADREPORT } from '../../modules/audit/audit.constants';
+import { v4 as uuidv4 } from 'uuid';
 
 @ApiTags('JSON Отчеты')
 @ApiBearerAuth('JWT-auth')
@@ -41,7 +44,8 @@ export class JsonReportController {
     private readonly jsonReportService: JsonReportService,
     private readonly errorHandler: ErrorHandlerService,
     @Inject(ModelStatusConfigService)
-    private readonly modelStatusConfigService: ModelStatusConfigService
+    private readonly modelStatusConfigService: ModelStatusConfigService,
+    private readonly auditService: AuditService,
   ) {}
 
   @Post('json')
@@ -166,6 +170,20 @@ export class JsonReportController {
     @User() user: UserType,
     @Headers('authorization') authHeader: string
   ): Promise<JsonReportResponseDto> {
+    const correlationId = uuidv4();
+    const initiator = {
+      sub: user?.preferred_username ?? user?.family_name ?? 'unknown',
+      channel: 'internal',
+      realm: user?.roles ?? '',
+    };
+    this.auditService.sendEvent(
+      AUDIT_EVENT_SUMD_MRMSUPLOADREPORT,
+      'START',
+      correlationId,
+      initiator,
+      { templateId: request.template_id, date: request.date },
+    );
+
     try {
       // Проверка аутентификации через заголовок
       if (!authHeader && process.env.NO_ROLES !== 'true') {
@@ -186,15 +204,31 @@ export class JsonReportController {
       // Извлекаем фильтры из запроса, если они есть
       const filters = request.filters || {}
 
-      return await this.jsonReportService.getJsonReport(
+      const result = await this.jsonReportService.getJsonReport(
         request.template_id,
         request.date,
         user.groups,
         mode,
         filters
-      )
+      );
+
+      this.auditService.sendEvent(
+        AUDIT_EVENT_SUMD_MRMSUPLOADREPORT,
+        'SUCCESS',
+        correlationId,
+        initiator,
+        { recordsCount: Array.isArray(result) ? result.length : 0 },
+      );
+      return result;
     } catch (error) {
-      throw this.errorHandler.handleError(error)
+      this.auditService.sendEvent(
+        AUDIT_EVENT_SUMD_MRMSUPLOADREPORT,
+        'FAILURE',
+        correlationId,
+        initiator,
+        { errorMessage: error.message },
+      );
+      throw this.errorHandler.handleError(error);
     }
   }
 }

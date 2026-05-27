@@ -1,11 +1,13 @@
-import { Module, OnModuleInit } from '@nestjs/common'
-import { APP_GUARD, Reflector } from '@nestjs/core'
-import { ConfigModule } from '@nestjs/config'
+// C:\Users\Zver\WebstormProjects\project1\src\app.module.ts
+
+import { Module, OnModuleInit } from '@nestjs/common';
+import { APP_GUARD, Reflector } from '@nestjs/core';
+import { ConfigModule } from '@nestjs/config';
 import {
   AuthGuard,
   KeycloakConnectModule,
-  ResourceGuard
-} from 'nest-keycloak-connect'
+  ResourceGuard,
+} from 'nest-keycloak-connect';
 
 import { AuthModule } from 'src/api/config/config.module'
 import { SumDatabaseModule } from 'src/system/sum-database/database.module'
@@ -24,7 +26,8 @@ import { MigrationModule } from 'src/modules/migration.module'
 
 import { GodModeGuard } from 'src/system/guards/god-mode.guard'
 import { LoggerModule } from 'src/system/logger/logger.module'
-import { AuditModule } from './modules/audit/audit.module';
+import { AuditModule } from './modules/audit/audit.module'
+import { AuditService } from './modules/audit/audit.service'
 
 @Module({
   imports: [
@@ -46,7 +49,7 @@ import { AuditModule } from './modules/audit/audit.module';
     DatabaseSchemaModule,
     MigrationModule,
     LoggerModule,
-    AuditModule
+    AuditModule,
   ],
   controllers: [],
   providers: [
@@ -58,9 +61,12 @@ import { AuditModule } from './modules/audit/audit.module';
     },
     {
       provide: APP_GUARD,
-      useFactory: (reflector: Reflector, delegateGuard: AuthGuard) =>
-        new GodModeGuard(reflector, delegateGuard),
-      inject: [Reflector, 'DELEGATE_GUARD_AUTH']
+      useFactory: (
+        reflector: Reflector,
+        delegateGuard: AuthGuard,
+        auditService: AuditService,
+      ) => new GodModeGuard(reflector, delegateGuard, auditService),
+      inject: [Reflector, 'DELEGATE_GUARD_AUTH', AuditService],
     },
     {
       provide: 'DELEGATE_GUARD_RESOURCE',
@@ -68,11 +74,14 @@ import { AuditModule } from './modules/audit/audit.module';
     },
     {
       provide: APP_GUARD,
-      useFactory: (reflector: Reflector, delegateGuard: ResourceGuard) =>
-        new GodModeGuard(reflector, delegateGuard),
-      inject: [Reflector, 'DELEGATE_GUARD_RESOURCE']
-    }
-  ]
+      useFactory: (
+        reflector: Reflector,
+        delegateGuard: ResourceGuard,
+        auditService: AuditService,
+      ) => new GodModeGuard(reflector, delegateGuard, auditService),
+      inject: [Reflector, 'DELEGATE_GUARD_RESOURCE', AuditService],
+    },
+  ],
 })
 export class AppModule implements OnModuleInit {
   constructor(

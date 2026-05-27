@@ -1,16 +1,28 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { v4 as uuidv4 } from 'uuid';
 import { AuditService } from './audit.service';
 import {
-  AUDIT_EVENT_TEST,
+  AUDIT_EVENT_SUMD_AUTH,
+  AUDIT_EVENT_SUMD_MRMSCREATEMODEL,
+  AUDIT_EVENT_SUMD_MRMSREMOVEMODEL,
+  AUDIT_EVENT_SUMD_MRMSUPLOADREPORT,
   DEFAULT_GENERATOR_INTERVAL_MS,
 } from './audit.constants';
+
+const ALL_EVENT_CODES = [
+  AUDIT_EVENT_SUMD_AUTH,
+  AUDIT_EVENT_SUMD_MRMSCREATEMODEL,
+  AUDIT_EVENT_SUMD_MRMSREMOVEMODEL,
+  AUDIT_EVENT_SUMD_MRMSUPLOADREPORT,
+];
 
 @Injectable()
 export class AuditGeneratorService implements OnModuleInit {
   private readonly logger = new Logger(AuditGeneratorService.name);
   private readonly enabled: boolean;
   private readonly intervalMs: number;
+  private readonly eventCodes: string[];
   private timer: NodeJS.Timeout | null = null;
 
   constructor(
@@ -29,6 +41,12 @@ export class AuditGeneratorService implements OnModuleInit {
       ),
       10,
     );
+    const codesStr = this.configService.get<string>('AUDIT_GENERATOR_EVENT_CODES', '');
+    if (codesStr) {
+      this.eventCodes = codesStr.split(',').map(c => c.trim()).filter(c => c);
+    } else {
+      this.eventCodes = [...ALL_EVENT_CODES];
+    }
   }
 
   onModuleInit(): void {
@@ -39,18 +57,21 @@ export class AuditGeneratorService implements OnModuleInit {
 
   private startGenerator(): void {
     this.logger.log(
-      `Starting audit test generator every ${this.intervalMs}ms`,
+      `Starting audit test generator every ${this.intervalMs}ms for codes: ${this.eventCodes.join(', ')}`,
     );
     this.timer = setInterval(() => {
-      this.logger.debug('Generating test audit event');
-      this.auditService.sendEvent(AUDIT_EVENT_TEST, 'START', {
-        test: true,
-        source: 'generator',
-      });
-      this.auditService.sendEvent(AUDIT_EVENT_TEST, 'SUCCESS', {
-        test: true,
-        source: 'generator',
-      });
+      const correlationId = uuidv4();
+      const testInitiator = { sub: 'test_generator', channel: 'test' };
+      for (const eventCode of this.eventCodes) {
+        this.auditService.sendEvent(eventCode, 'START', correlationId, testInitiator, {
+          generated: true,
+          timestamp: new Date().toISOString(),
+        });
+        this.auditService.sendEvent(eventCode, 'SUCCESS', correlationId, testInitiator, {
+          generated: true,
+          success: true,
+        });
+      }
     }, this.intervalMs);
   }
 }

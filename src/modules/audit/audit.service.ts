@@ -11,12 +11,23 @@ import {
   DEFAULT_RETRY_INTERVAL_MS,
 } from './audit.constants';
 
+interface SidecarAuditRequest {
+  eventCode: string;
+  eventClass: 'START' | 'SUCCESS' | 'FAILURE';
+  correlationId?: string;
+  timestamp?: string;
+  initiator?: {
+    sub?: string;
+    channel?: string;
+    realm?: string;
+    sourceIp?: string;
+  };
+  additionalFields?: Record<string, unknown>;
+}
+
 interface PendingAuditEvent {
   id: string;
-  eventCode: string;
-  eventClass: string;
-  timestamp: string;
-  additionalFields: Record<string, unknown>;
+  request: SidecarAuditRequest;
 }
 
 @Injectable()
@@ -61,19 +72,18 @@ export class AuditService implements OnModuleInit {
     if (this.enabled) {
       this.startRetryTimer();
       this.logger.log(
-        `Audit service enabled – sidecar: ${this.sidecarUrl}, timeout: ${this.timeoutMs}ms, retry: ${this.retryIntervalMs}ms`,
+        `Audit service enabled – sidecar URL: ${this.sidecarUrl}, timeout: ${this.timeoutMs}ms, retry: ${this.retryIntervalMs}ms`,
       );
     } else {
       this.logger.log('Audit service disabled');
     }
   }
 
-  /**
-   * Public method to enqueue an audit event.
-   */
   sendEvent(
     eventCode: string,
-    eventClass: string,
+    eventClass: 'START' | 'SUCCESS' | 'FAILURE',
+    correlationId: string,
+    initiator?: Record<string, unknown>,
     additionalFields?: Record<string, unknown>,
   ): void {
     if (!this.enabled) {
@@ -81,60 +91,52 @@ export class AuditService implements OnModuleInit {
       return;
     }
 
-    const event: PendingAuditEvent = {
-      id: uuidv4(),
+    const timestamp = new Date().toISOString();
+    const sidecarRequest: SidecarAuditRequest = {
       eventCode,
       eventClass,
-      timestamp: new Date().toISOString(),
-      additionalFields: additionalFields ?? {},
+      correlationId,
+      timestamp,
+      initiator: initiator ? { ...initiator } : undefined,
+      additionalFields: additionalFields ? { ...additionalFields } : undefined,
     };
 
-    this.queue.push(event);
+    const pending: PendingAuditEvent = {
+      id: uuidv4(),
+      request: sidecarRequest,
+    };
+
+    this.queue.push(pending);
     this.logger.debug(
-      `Enqueued audit event: ${event.eventCode} (${event.id})`,
+      `Enqueued audit event: ${eventCode} (${eventClass}), correlationId: ${correlationId}`,
     );
-    // Attempt immediate flush
     this.flush();
   }
 
-  /**
-   * Tries to send all queued events.
-   */
   private async flush(): Promise<void> {
-    if (this.isProcessing || this.queue.length === 0) {
-      return;
-    }
-
+    if (this.isProcessing || this.queue.length === 0) return;
     this.isProcessing = true;
     const eventsToSend = [...this.queue];
-    this.queue.length = 0; // Clear queue – failed events will be re-added
+    this.queue.length = 0;
 
-    for (const event of eventsToSend) {
+    for (const pending of eventsToSend) {
       try {
-        await this.sendSingleEvent(event);
+        await this.sendSingleEvent(pending.request);
       } catch (error) {
         this.logger.warn(
-          `Failed to send audit event ${event.id}: ${(error as Error).message}`,
+          `Failed to send audit event ${pending.id}: ${(error as Error).message}`,
         );
-        // Return to queue for later retry
-        this.queue.push(event);
+        this.queue.push(pending);
       }
     }
-
     this.isProcessing = false;
   }
 
-  private async sendSingleEvent(event: PendingAuditEvent): Promise<void> {
-    const url = `${this.sidecarUrl}/api/v1/audit`;
-    const body = {
-      eventCode: event.eventCode,
-      eventClass: event.eventClass,
-      timestamp: event.timestamp,
-      additionalFields: event.additionalFields,
-    };
-
+  private async sendSingleEvent(request: SidecarAuditRequest): Promise<void> {
+    // Используем sidecarUrl как есть (он уже содержит полный путь, включая /api/v2/audit)
+    const url = this.sidecarUrl;
     const request$ = this.httpService
-      .post(url, body, {
+      .post(url, request, {
         headers: { 'Content-Type': 'application/json' },
         timeout: this.timeoutMs,
       })
@@ -147,10 +149,9 @@ export class AuditService implements OnModuleInit {
           throw new Error(message);
         }),
       );
-
     await firstValueFrom(request$);
     this.logger.debug(
-      `Audit event sent: ${event.eventCode} (${event.id})`,
+      `Audit event sent: ${request.eventCode} (${request.eventClass}) correlationId=${request.correlationId}`,
     );
   }
 

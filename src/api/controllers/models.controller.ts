@@ -26,6 +26,9 @@ import {
 import { MODEL_DISPLAY_MODES } from 'src/system/common/constants/base.constants'
 import { MODEL_STATUS } from 'src/system/common/constants/model-status'
 import { MODEL_SOURCES } from 'src/system/common/constants/models.constants'
+import { AuditService } from '../../modules/audit/audit.service';
+import { AUDIT_EVENT_SUMD_MRMSCREATEMODEL, AUDIT_EVENT_SUMD_MRMSREMOVEMODEL } from '../../modules/audit/audit.constants';
+import { v4 as uuidv4 } from 'uuid';
 
 @ApiTags('Модели')
 @Controller('models')
@@ -33,7 +36,8 @@ export class ModelsController {
   constructor(
     private readonly modelsService: ModelsService,
     private readonly modelsCacheService: ModelsCacheService,
-    private readonly apiService: ApiService
+    private readonly apiService: ApiService,
+    private readonly auditService: AuditService
   ) {}
 
   private filterCachedModels(
@@ -241,14 +245,44 @@ export class ModelsController {
     @Body(new ParseArrayPipe({ items: ModelCreateDto, whitelist: true }))
     artefacts: ModelCreateDto[],
     @Res() response,
-    @User() user
+    @User() user,
   ) {
-    const result = await this.modelsService.modelCreate(artefacts, user)
+    const correlationId = uuidv4();
+    const initiator = {
+      sub: user?.preferred_username ?? user?.sub ?? 'unknown',
+      channel: 'internal',
+      realm: user?.realm ?? '',
+    };
+    this.auditService.sendEvent(
+      AUDIT_EVENT_SUMD_MRMSCREATEMODEL,
+      'START',
+      correlationId,
+      initiator,
+      { artefactsCount: artefacts.length },
+    );
 
-    // Invalidate cache after successful creation to ensure fresh data
-    // await this.modelsCacheService.forceUpdateCache()
-
-    return response.status(HttpStatus.CREATED).json(result[0])
+    try {
+      const result = await this.modelsService.modelCreate(artefacts, user);
+      this.auditService.sendEvent(
+        AUDIT_EVENT_SUMD_MRMSCREATEMODEL,
+        'SUCCESS',
+        correlationId,
+        initiator,
+        { modelId: result[0]?.model_id },
+      );
+      // Invalidate cache after successful creation to ensure fresh data
+      // await this.modelsCacheService.forceUpdateCache()
+      return response.status(HttpStatus.CREATED).json(result[0]);
+    } catch (error) {
+      this.auditService.sendEvent(
+        AUDIT_EVENT_SUMD_MRMSCREATEMODEL,
+        'FAILURE',
+        correlationId,
+        initiator,
+        { errorMessage: error.message },
+      );
+      throw error;
+    }
   }
 
   @ApiOperation({
