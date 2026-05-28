@@ -13,7 +13,8 @@ export class BiDatamartController {
 
   @ApiOperation({
     summary: 'Синхронизировать витрину моделей',
-    description: 'Синхронизирует все модели с BI витриной данных (ЗАЩИЩЕНО от ошибок)'
+    description:
+      'Синхронизирует все модели с BI витриной данных (ЗАЩИЩЕНО от ошибок)'
   })
   @ApiResponse({
     status: 200,
@@ -34,7 +35,8 @@ export class BiDatamartController {
 
   @ApiOperation({
     summary: 'Синхронизировать витрину задач',
-    description: 'Синхронизирует все задачи с BI витриной данных (ЗАЩИЩЕНО от ошибок)'
+    description:
+      'Синхронизирует все задачи с BI витриной данных (ЗАЩИЩЕНО от ошибок)'
   })
   @ApiResponse({
     status: 200,

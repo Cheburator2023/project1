@@ -14,18 +14,16 @@ export class ReportCacheService {
     }
   }
 
-  async set<T>(key: string, value: T, ttlMs: number = 300000): Promise<void> {
+  async set<T>(key: string, value: T, ttlMs = 300000): Promise<void> {
     try {
       await this.cacheManager.set(key, value, ttlMs)
-    } catch (error) {
-    }
+    } catch (error) {}
   }
 
   async delete(key: string): Promise<void> {
     try {
       await this.cacheManager.del(key)
-    } catch (error) {
-    }
+    } catch (error) {}
   }
 
   generateJsonReportCacheKey(
@@ -37,22 +35,30 @@ export class ReportCacheService {
   ): string {
     const templateKey = template_id ? template_id.toString() : 'all'
     const dateKey = date || 'current'
-    const groupsHash = groups && groups.length > 0
-      ? crypto.createHash('md5').update(groups.sort().join(',')).digest('hex')
-      : 'no_groups'
+    const groupsHash =
+      groups && groups.length > 0
+        ? crypto.createHash('md5').update(groups.sort().join(',')).digest('hex')
+        : 'no_groups'
 
     // Хэш для mode
-    const modeHash = mode && mode.length > 0
-      ? crypto.createHash('md5').update(mode.sort().join(',')).digest('hex')
-      : 'no_mode'
+    const modeHash =
+      mode && mode.length > 0
+        ? crypto.createHash('md5').update(mode.sort().join(',')).digest('hex')
+        : 'no_mode'
 
     // Хэш для filters
     let filtersHash = 'no_filters'
     if (filters && Object.keys(filters).length > 0) {
       try {
         // Сортируем фильтры для консистентного хэширования
-        const sortedFilters = JSON.stringify(filters, Object.keys(filters).sort())
-        filtersHash = crypto.createHash('md5').update(sortedFilters).digest('hex')
+        const sortedFilters = JSON.stringify(
+          filters,
+          Object.keys(filters).sort()
+        )
+        filtersHash = crypto
+          .createHash('md5')
+          .update(sortedFilters)
+          .digest('hex')
       } catch (error) {
         filtersHash = 'error_filters'
       }

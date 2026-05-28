@@ -19,7 +19,10 @@ async function bootstrap() {
     logger: false
   })
 
-  app.getHttpAdapter().getInstance().set('trust proxy', process.env.TRUST_PROXY === 'true')
+  app
+    .getHttpAdapter()
+    .getInstance()
+    .set('trust proxy', process.env.TRUST_PROXY === 'true')
 
   app.use(express.json({ limit: '50mb' }))
   app.use(express.urlencoded({ limit: '50mb', extended: true }))
@@ -66,9 +69,11 @@ async function bootstrap() {
       filter: true,
       showExtensions: true,
       showCommonExtensions: true,
-      security: [{
-        'JWT-auth': []
-      }],
+      security: [
+        {
+          'JWT-auth': []
+        }
+      ],
       authAction: {
         'JWT-auth': {
           name: 'JWT-auth',

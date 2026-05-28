@@ -1,30 +1,30 @@
-import * as net from 'net';
-import { LoggerInterface } from './LoggerInterface';
-import { LogEntryBuilder } from './LogEntryBuilder';
-import { ConnectionManager } from './ConnectionManager';
-import { BufferManager } from './BufferManager';
+import * as net from 'net'
+import { LoggerInterface } from './LoggerInterface'
+import { LogEntryBuilder } from './LogEntryBuilder'
+import { ConnectionManager } from './ConnectionManager'
+import { BufferManager } from './BufferManager'
 
 export class TSLGLogger extends LoggerInterface {
-  private connectionManager: ConnectionManager;
-  private bufferManager: BufferManager;
-  private logEntryBuilder: LogEntryBuilder;
-  private ttlInterval: NodeJS.Timeout | null = null;
-  private flushInterval: NodeJS.Timeout | null = null;
+  private connectionManager: ConnectionManager
+  private bufferManager: BufferManager
+  private logEntryBuilder: LogEntryBuilder
+  private ttlInterval: NodeJS.Timeout | null = null
+  private flushInterval: NodeJS.Timeout | null = null
 
-  private config: any;
-  private metrics: any;
+  private config: any
+  private metrics: any
 
   private originalConsole = {
     log: console.log,
     error: console.error,
     warn: console.warn,
     info: console.info
-  };
+  }
 
   constructor(config: any = {}) {
-    super();
-    this.config = this.mergeWithDefaults(config);
-    this.metrics = this.initializeMetrics();
+    super()
+    this.config = this.mergeWithDefaults(config)
+    this.metrics = this.initializeMetrics()
 
     this.connectionManager = new ConnectionManager(
       {
@@ -35,9 +35,12 @@ export class TSLGLogger extends LoggerInterface {
         maxConnectionAttempts: this.config.maxConnectionAttempts
       },
       this.originalConsole
-    );
+    )
 
-    this.bufferManager = new BufferManager(this.config.maxBufferSize, this.metrics);
+    this.bufferManager = new BufferManager(
+      this.config.maxBufferSize,
+      this.metrics
+    )
 
     this.logEntryBuilder = new LogEntryBuilder({
       appName: this.config.appName,
@@ -55,20 +58,22 @@ export class TSLGLogger extends LoggerInterface {
       enableFullContext: this.config.enableFullContext,
       sanitizePercentage: this.config.sanitizePercentage,
       userFieldsMapping: this.config.userFieldsMapping
-    });
+    })
 
-    this.connectionManager.connect();
+    this.connectionManager.connect()
 
     if (this.config.connectionTTL > 0) {
-      this.startTTLMonitor();
+      this.startTTLMonitor()
     }
 
-    this.startBufferFlushMonitor();
+    this.startBufferFlushMonitor()
   }
 
   private mergeWithDefaults(config: any): any {
     const defaults = {
-      host: process.env.TSLG_AGENT_HOST || 'tslg-agent-svc-main.dk1-sumd01-sumd-core.svc.cluster.local',
+      host:
+        process.env.TSLG_AGENT_HOST ||
+        'tslg-agent-svc-main.dk1-sumd01-sumd-core.svc.cluster.local',
       port: parseInt(process.env.TSLG_AGENT_PORT || '5170', 10),
       appName: process.env.APP_NAME || 'surm-backend',
       projectCode: process.env.PROJECT_CODE || 'SURM',
@@ -76,23 +81,44 @@ export class TSLGLogger extends LoggerInterface {
       appType: 'NODEJS',
       envType: 'K8S',
       tslgClientVersion: process.env.TSLG_CLIENT_VERSION || '1.0.0',
-      reconnectionDelay: parseInt(process.env.TSLG_RECONNECTION_DELAY_MS || '1000', 10),
+      reconnectionDelay: parseInt(
+        process.env.TSLG_RECONNECTION_DELAY_MS || '1000',
+        10
+      ),
       connectionTTL: parseInt(process.env.TSLG_CONNECTION_TTL_MS || '2000', 10),
-      socketTimeout: parseInt(process.env.TSLG_SOCKET_TIMEOUT_MS || '10000', 10),
+      socketTimeout: parseInt(
+        process.env.TSLG_SOCKET_TIMEOUT_MS || '10000',
+        10
+      ),
       maxBufferSize: parseInt(process.env.TSLG_MAX_BUFFER_SIZE || '1000', 10),
-      maxConnectionAttempts: parseInt(process.env.TSLG_MAX_CONNECTION_ATTEMPTS || '10', 10),
+      maxConnectionAttempts: parseInt(
+        process.env.TSLG_MAX_CONNECTION_ATTEMPTS || '10',
+        10
+      ),
       namespace: process.env.KUBERNETES_NAMESPACE || 'dk1-sumd01-sumd-core',
       podName: process.env.POD_NAME || 'surm-backend-7c8b5d9f6-abc123',
       podIp: process.env.POD_IP || '10.244.1.25',
       nodeName: process.env.NODE_NAME || 'dk1-sumd01-node-05',
-      enableTraceFields: this.parseBoolean(process.env.TSLG_ENABLE_TRACE_FIELDS) ?? false,
-      consoleOutput: this.parseBoolean(process.env.TSLG_CONSOLE_OUTPUT) ?? process.env.NODE_ENV !== 'production',
+      enableTraceFields:
+        this.parseBoolean(process.env.TSLG_ENABLE_TRACE_FIELDS) ?? false,
+      consoleOutput:
+        this.parseBoolean(process.env.TSLG_CONSOLE_OUTPUT) ??
+        process.env.NODE_ENV !== 'production',
       debugJson: this.parseBoolean(process.env.DEBUG_JSON) ?? false,
-      enableUserData: this.parseBoolean(process.env.TSLG_ENABLE_USER_DATA) ?? false,
-      sanitizeSensitiveData: this.parseBoolean(process.env.TSLG_SANITIZE_SENSITIVE_DATA) ?? true,
-      enableFullContext: this.parseBoolean(process.env.TSLG_ENABLE_FULL_CONTEXT) ?? false,
-      bufferFlushInterval: parseInt(process.env.TSLG_BUFFER_FLUSH_INTERVAL_MS || '500', 10),
-      sanitizePercentage: parseInt(process.env.TSLG_SANITIZE_PERCENTAGE || '60', 10),
+      enableUserData:
+        this.parseBoolean(process.env.TSLG_ENABLE_USER_DATA) ?? false,
+      sanitizeSensitiveData:
+        this.parseBoolean(process.env.TSLG_SANITIZE_SENSITIVE_DATA) ?? true,
+      enableFullContext:
+        this.parseBoolean(process.env.TSLG_ENABLE_FULL_CONTEXT) ?? false,
+      bufferFlushInterval: parseInt(
+        process.env.TSLG_BUFFER_FLUSH_INTERVAL_MS || '500',
+        10
+      ),
+      sanitizePercentage: parseInt(
+        process.env.TSLG_SANITIZE_PERCENTAGE || '60',
+        10
+      ),
       logLevel: process.env.TSLG_LOG_LEVEL || 'info',
       userFieldsMapping: {
         userId: process.env.TSLG_USER_ID || 'sub',
@@ -101,19 +127,19 @@ export class TSLGLogger extends LoggerInterface {
         firstName: process.env.TSLG_USER_FIRSTNAME || 'given_name',
         lastName: process.env.TSLG_USER_LASTNAME || 'family_name'
       }
-    };
+    }
 
-    return { ...defaults, ...config };
+    return { ...defaults, ...config }
   }
 
   private parseBoolean(value: any): boolean | null {
-    if (value === undefined || value === null) return null;
-    if (typeof value === 'boolean') return value;
+    if (value === undefined || value === null) return null
+    if (typeof value === 'boolean') return value
     if (typeof value === 'string') {
-      const lowerValue = value.toLowerCase().trim();
-      return lowerValue === 'true' || lowerValue === '1' || lowerValue === 'yes';
+      const lowerValue = value.toLowerCase().trim()
+      return lowerValue === 'true' || lowerValue === '1' || lowerValue === 'yes'
     }
-    return null;
+    return null
   }
 
   private initializeMetrics() {
@@ -127,7 +153,7 @@ export class TSLGLogger extends LoggerInterface {
       sanitizedDataCount: 0,
       bufferOverflows: 0,
       forcedFlushes: 0
-    };
+    }
   }
 
   private shouldLog(level: string): boolean {
@@ -137,153 +163,191 @@ export class TSLGLogger extends LoggerInterface {
       info: 2,
       debug: 3,
       verbose: 4
-    };
+    }
 
-    const currentLevel = levels[level as keyof typeof levels] || 2;
-    const configuredLevel = levels[this.config.logLevel as keyof typeof levels] || 2;
+    const currentLevel = levels[level as keyof typeof levels] || 2
+    const configuredLevel =
+      levels[this.config.logLevel as keyof typeof levels] || 2
 
-    return currentLevel <= configuredLevel;
+    return currentLevel <= configuredLevel
   }
 
-  log(level: string, message: string, event: string = 'Информация', error: Error | null = null, additionalData: any = {}): void {
+  log(
+    level: string,
+    message: string,
+    event = 'Информация',
+    error: Error | null = null,
+    additionalData: any = {}
+  ): void {
     if (!this.shouldLog(level)) {
-      return;
+      return
     }
 
     try {
-      const logEntry = this.logEntryBuilder.buildLogEntry(level, message, event, error, additionalData);
-      const logData = JSON.stringify(logEntry);
+      const logEntry = this.logEntryBuilder.buildLogEntry(
+        level,
+        message,
+        event,
+        error,
+        additionalData
+      )
+      const logData = JSON.stringify(logEntry)
 
-      this.writeToConsole(level, message, event, error, additionalData);
+      this.writeToConsole(level, message, event, error, additionalData)
 
       if (this.config.debugJson) {
-        this.originalConsole.log('[TSLG DEBUG JSON]:', logData);
+        this.originalConsole.log('[TSLG DEBUG JSON]:', logData)
       }
 
       if (Buffer.byteLength(logData, 'utf8') > 1000000) {
-        this.originalConsole.warn('[TSLG] Log message too large, truncating');
-        const truncatedEntry = { ...logEntry, text: logEntry.text.substring(0, 1000) + ' [TRUNCATED]' };
-        const truncatedData = JSON.stringify(truncatedEntry);
-        this.sendLogData(truncatedData);
+        this.originalConsole.warn('[TSLG] Log message too large, truncating')
+        const truncatedEntry = {
+          ...logEntry,
+          text: logEntry.text.substring(0, 1000) + ' [TRUNCATED]'
+        }
+        const truncatedData = JSON.stringify(truncatedEntry)
+        this.sendLogData(truncatedData)
       } else {
-        this.sendLogData(logData);
+        this.sendLogData(logData)
       }
     } catch (logError) {
-      this.originalConsole.error('[TSLG] Error building log entry:', logError);
-      this.writeToConsole(level, message, event, error, additionalData);
+      this.originalConsole.error('[TSLG] Error building log entry:', logError)
+      this.writeToConsole(level, message, event, error, additionalData)
     }
   }
 
   private sendLogData(logData: string): void {
     if (!this.connectionManager.isConnected()) {
-      this.bufferManager.bufferLog(logData);
-      return;
+      this.bufferManager.bufferLog(logData)
+      return
     }
 
     try {
-      const success = this.connectionManager.write(logData + '\n');
+      const success = this.connectionManager.write(logData + '\n')
       if (!success) {
-        this.bufferManager.bufferLog(logData);
+        this.bufferManager.bufferLog(logData)
       } else {
-        this.metrics.sentLogs++;
+        this.metrics.sentLogs++
       }
     } catch (error) {
-      this.originalConsole.error('[TSLG] Failed to send log to TSLG:', error);
-      this.bufferManager.bufferLog(logData);
+      this.originalConsole.error('[TSLG] Failed to send log to TSLG:', error)
+      this.bufferManager.bufferLog(logData)
     }
   }
 
-  private writeToConsole(level: string, message: string, event: string, error: Error | null, additionalData: any = {}): void {
-    if (!this.config.consoleOutput) return;
+  private writeToConsole(
+    level: string,
+    message: string,
+    event: string,
+    error: Error | null,
+    additionalData: any = {}
+  ): void {
+    if (!this.config.consoleOutput) return
 
-    const timestamp = new Date().toISOString();
-    const levelUpper = level.toUpperCase();
+    const timestamp = new Date().toISOString()
+    const levelUpper = level.toUpperCase()
 
-    let logMessage = `[${timestamp}] [${levelUpper}] [${event}] ${this.safeStringify(message)}`;
+    let logMessage = `[${timestamp}] [${levelUpper}] [${event}] ${this.safeStringify(
+      message
+    )}`
 
     if (error) {
-      logMessage += ` | Error: ${this.safeStringify(error)}`;
+      logMessage += ` | Error: ${this.safeStringify(error)}`
     }
 
     if (additionalData && Object.keys(additionalData).length > 0) {
-      logMessage += ` | Data: ${this.safeStringify(additionalData)}`;
+      logMessage += ` | Data: ${this.safeStringify(additionalData)}`
     }
 
     switch (level) {
       case 'error':
-        this.originalConsole.error(logMessage);
+        this.originalConsole.error(logMessage)
         if (error && error.stack) {
-          this.originalConsole.error(error.stack);
+          this.originalConsole.error(error.stack)
         }
-        break;
+        break
       case 'warn':
-        this.originalConsole.warn(logMessage);
-        break;
+        this.originalConsole.warn(logMessage)
+        break
       case 'info':
       default:
-        this.originalConsole.log(logMessage);
+        this.originalConsole.log(logMessage)
     }
   }
 
-  private safeStringify(obj: any, depth: number = 0): string {
-    if (depth > 10) return '[Circular]';
+  private safeStringify(obj: any, depth = 0): string {
+    if (depth > 10) return '[Circular]'
 
     try {
-      if (obj === null || obj === undefined) return String(obj);
-      if (typeof obj === 'string') return obj;
-      if (typeof obj === 'number' || typeof obj === 'boolean') return String(obj);
-      if (obj instanceof Error) return obj.toString();
+      if (obj === null || obj === undefined) return String(obj)
+      if (typeof obj === 'string') return obj
+      if (typeof obj === 'number' || typeof obj === 'boolean')
+        return String(obj)
+      if (obj instanceof Error) return obj.toString()
       if (typeof obj === 'object') {
-        return JSON.stringify(obj, null, 2);
+        return JSON.stringify(obj, null, 2)
       }
-      return String(obj);
+      return String(obj)
     } catch (error) {
-      return `[Stringification error: ${error.message}]`;
+      return `[Stringification error: ${error.message}]`
     }
   }
 
-  info(message: string, event: string = 'Информация', additionalData: any = {}): void {
-    this.log('info', message, event, null, additionalData);
+  info(message: string, event = 'Информация', additionalData: any = {}): void {
+    this.log('info', message, event, null, additionalData)
   }
 
-  warn(message: string, event: string = 'Предупреждение', additionalData: any = {}): void {
-    this.log('warn', message, event, null, additionalData);
+  warn(
+    message: string,
+    event = 'Предупреждение',
+    additionalData: any = {}
+  ): void {
+    this.log('warn', message, event, null, additionalData)
   }
 
-  error(message: string, event: string = 'Ошибка', error: Error | null = null, additionalData: any = {}): void {
-    this.log('error', message, event, error, additionalData);
+  error(
+    message: string,
+    event = 'Ошибка',
+    error: Error | null = null,
+    additionalData: any = {}
+  ): void {
+    this.log('error', message, event, error, additionalData)
   }
 
   sys(message: string, additionalData: any = {}): void {
-    this.log('info', message, 'Системное', null, additionalData);
+    this.log('info', message, 'Системное', null, additionalData)
   }
 
-  debug(message: string, event: string = 'Отладка', additionalData: any = {}): void {
-    this.log('debug', message, event, null, additionalData);
+  debug(message: string, event = 'Отладка', additionalData: any = {}): void {
+    this.log('debug', message, event, null, additionalData)
   }
 
-  verbose(message: string, event: string = 'Подробно', additionalData: any = {}): void {
-    this.log('verbose', message, event, null, additionalData);
+  verbose(message: string, event = 'Подробно', additionalData: any = {}): void {
+    this.log('verbose', message, event, null, additionalData)
   }
 
   close(): void {
     if (this.ttlInterval) {
-      clearInterval(this.ttlInterval);
-      this.ttlInterval = null;
+      clearInterval(this.ttlInterval)
+      this.ttlInterval = null
     }
 
     if (this.flushInterval) {
-      clearInterval(this.flushInterval);
-      this.flushInterval = null;
+      clearInterval(this.flushInterval)
+      this.flushInterval = null
     }
 
     if (this.bufferManager.getBufferSize() > 0) {
-      this.originalConsole.log(`[TSLG] Attempting to flush ${this.bufferManager.getBufferSize()} buffered logs before shutdown`);
-      this.bufferManager.flushBufferSync((data) => this.connectionManager.write(data + '\n'));
+      this.originalConsole.log(
+        `[TSLG] Attempting to flush ${this.bufferManager.getBufferSize()} buffered logs before shutdown`
+      )
+      this.bufferManager.flushBufferSync((data) =>
+        this.connectionManager.write(data + '\n')
+      )
     }
 
-    this.connectionManager.close();
-    this.originalConsole.log('[TSLG] Logger closed');
+    this.connectionManager.close()
+    this.originalConsole.log('[TSLG] Logger closed')
   }
 
   getStatus(): any {
@@ -309,91 +373,105 @@ export class TSLGLogger extends LoggerInterface {
       bufferSize: this.bufferManager.getBufferSize(),
       connectionAttempts: this.connectionManager.getConnectionAttempts(),
       lastConnectionTime: this.connectionManager.getLastConnectionTime()
-    };
+    }
   }
 
   // Остальные методы класса остаются без изменений
   private startTTLMonitor(): void {
     if (this.ttlInterval) {
-      clearInterval(this.ttlInterval);
+      clearInterval(this.ttlInterval)
     }
 
     this.ttlInterval = setInterval(async () => {
       if (!this.connectionManager.isConnected()) {
-        return;
+        return
       }
 
-      const now = Date.now();
-      const timeSinceReconnect = now - this.connectionManager.getLastConnectionTime();
+      const now = Date.now()
+      const timeSinceReconnect =
+        now - this.connectionManager.getLastConnectionTime()
 
       if (timeSinceReconnect >= this.config.connectionTTL) {
-        this.originalConsole.log(`[TSLG] TTL ${this.config.connectionTTL}ms expired, scheduling reconnection for load balancing`);
-        await this.performGracefulReconnect();
+        this.originalConsole.log(
+          `[TSLG] TTL ${this.config.connectionTTL}ms expired, scheduling reconnection for load balancing`
+        )
+        await this.performGracefulReconnect()
       }
-    }, 1000);
+    }, 1000)
   }
 
   private startBufferFlushMonitor(): void {
     if (this.flushInterval) {
-      clearInterval(this.flushInterval);
+      clearInterval(this.flushInterval)
     }
 
     this.flushInterval = setInterval(() => {
-      if (this.bufferManager.getBufferSize() > 0 &&
+      if (
+        this.bufferManager.getBufferSize() > 0 &&
         this.connectionManager.isConnected() &&
-        !this.bufferManager['isFlushing']) {
-        this.metrics.forcedFlushes++;
-        this.bufferManager.flushBuffer((data) => this.connectionManager.write(data + '\n'));
+        !this.bufferManager['isFlushing']
+      ) {
+        this.metrics.forcedFlushes++
+        this.bufferManager.flushBuffer((data) =>
+          this.connectionManager.write(data + '\n')
+        )
       }
-    }, this.config.bufferFlushInterval);
+    }, this.config.bufferFlushInterval)
   }
 
   private async performGracefulReconnect(): Promise<void> {
     try {
-      this.originalConsole.log('[TSLG] Starting graceful reconnection for load balancing');
+      this.originalConsole.log(
+        '[TSLG] Starting graceful reconnection for load balancing'
+      )
 
       if (this.connectionManager.isConnected()) {
-        const status = this.getStatus();
+        const status = this.getStatus()
 
         if (status.bufferSize > 0) {
-          this.originalConsole.log(`[TSLG] Waiting for ${status.bufferSize} buffered logs to be sent`);
-          await this.waitForBufferFlush(status.bufferSize);
+          this.originalConsole.log(
+            `[TSLG] Waiting for ${status.bufferSize} buffered logs to be sent`
+          )
+          await this.waitForBufferFlush(status.bufferSize)
         }
 
-        this.connectionManager.close();
+        this.connectionManager.close()
       }
 
-      this.connectionManager.connect();
-      this.metrics.ttlReconnections++;
+      this.connectionManager.connect()
+      this.metrics.ttlReconnections++
 
-      this.originalConsole.log('[TSLG] Graceful reconnection completed successfully');
-
+      this.originalConsole.log(
+        '[TSLG] Graceful reconnection completed successfully'
+      )
     } catch (error) {
-      this.originalConsole.error('[TSLG] Graceful reconnection failed:', error);
+      this.originalConsole.error('[TSLG] Graceful reconnection failed:', error)
     }
   }
 
   private async waitForBufferFlush(initialBufferSize: number): Promise<void> {
     return new Promise((resolve) => {
-      let attempts = 0;
-      const maxAttempts = 10;
+      let attempts = 0
+      const maxAttempts = 10
 
       const checkBuffer = () => {
-        attempts++;
+        attempts++
 
-        const status = this.getStatus();
+        const status = this.getStatus()
 
         if (status.bufferSize === 0 || attempts >= maxAttempts) {
           if (status.bufferSize > 0) {
-            this.originalConsole.warn(`[TSLG] Buffer not fully flushed after ${attempts} attempts, ${status.bufferSize} logs remaining`);
+            this.originalConsole.warn(
+              `[TSLG] Buffer not fully flushed after ${attempts} attempts, ${status.bufferSize} logs remaining`
+            )
           }
-          resolve();
+          resolve()
         } else {
-          setTimeout(checkBuffer, 500);
+          setTimeout(checkBuffer, 500)
         }
-      };
+      }
 
-      setTimeout(checkBuffer, 500);
-    });
+      setTimeout(checkBuffer, 500)
+    })
   }
 }

@@ -1,5 +1,94 @@
 # Semantic Versioning Changelog
 
+# [1.54.0](https://git.sfera.inno.local:7999/SUMD/mrms-backend/compare/v1.53.1...v1.54.0) (2026-05-26)
+
+
+### Features
+
+* enhance quarterly confirmation service with allocation filtering and candidate fetching ([64c45a8](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/64c45a8e3776e2cbb5cc947cfffbb63ad13df2de))
+
+## [1.53.1](https://git.sfera.inno.local:7999/SUMD/mrms-backend/compare/v1.53.0...v1.53.1) (2026-05-26)
+
+
+### Bug Fixes
+
+* fix-secret-env ([bdf7b19](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/bdf7b19022f8e0d00d46ffe4bb66a226c7906e60))
+
+# [1.53.0](https://git.sfera.inno.local:7999/SUMD/mrms-backend/compare/v1.52.5...v1.53.0) (2026-05-18)
+
+
+### Features
+
+* add endpoint to list PIM usage records and implement corresponding service method ([050c9ce](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/050c9ce6b3b3fef840efdd6b58cbe6bcbdb2b532))
+* enhance quarterly confirmation service with prefill source resolution and data augmentation ([aca3173](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/aca3173f2bcac4a93e3cdf7b64ba0e434778cffb))
+
+## [1.52.5](https://git.sfera.inno.local:7999/SUMD/mrms-backend/compare/v1.52.4...v1.52.5) (2026-05-18)
+
+## [1.52.4](https://git.sfera.inno.local:7999/SUMD/mrms-backend/compare/v1.52.3...v1.52.4) (2026-05-15)
+
+## [1.52.3](https://git.sfera.inno.local:7999/SUMD/mrms-backend/compare/v1.52.2...v1.52.3) (2026-05-14)
+
+## [1.52.2](https://git.sfera.inno.local:7999/SUMD/mrms-backend/compare/v1.52.1...v1.52.2) (2026-05-14)
+
+## [1.52.1](https://git.sfera.inno.local:7999/SUMD/mrms-backend/compare/v1.52.0...v1.52.1) (2026-05-14)
+
+# [1.52.0](https://git.sfera.inno.local:7999/SUMD/mrms-backend/compare/v1.51.1...v1.52.0) (2026-05-14)
+
+
+### Bug Fixes
+
+* update SQL logic in QuarterlyConfirmationService for improved label handling ([8b7d104](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/8b7d104af9e57bccb36d9bf426ed9c08f7ba9dc5))
+
+
+### Features
+
+* add parseUsageFlag method and enhance quarterly confirmation logic ([ac5aa55](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/ac5aa557f0aed68b3dd75dec24afa70fc752513e))
+* enhance business customer matching in QuarterlyConfirmationService ([feee063](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/feee06365af8fd14ad30244cee0da5362d163599))
+* enhance quarterly confirmation logic with registry card integration ([7c5be05](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/7c5be0557daf193d3b83becd122d3f580264cde7))
+
+## [1.51.1](https://git.sfera.inno.local:7999/SUMD/mrms-backend/compare/v1.51.0...v1.51.1) (2026-05-13)
+
+
+### Bug Fixes
+
+* remove unnecessary comment from README.md ([9f2ebfe](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/9f2ebfee1c0cd4701f97d16b585d451ea51a646f))
+
+# [1.51.0](https://git.sfera.inno.local:7999/SUMD/mrms-backend/compare/v1.50.0...v1.51.0) (2026-05-13)
+
+
+### Bug Fixes
+
+* alloc bug fixes ([010fb05](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/010fb057a5de7f3a01dcdad7eb29344af67f6e58))
+* quarterly confirmation controller and service fix ([6112db7](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/6112db78f50be178f92524ba5326dd947f4b13a8))
+* update model_source handling in QuarterlyConfirmationService ([439a605](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/439a6057767db6f356e84cc3ff5c6a9a2e1c9bf5))
+* исправлена дата maxDate для активного квартала в QuarterlyConfirmationService ([4ce7f47](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/4ce7f476d51e73299cd182a0ece2c4c47c52963c))
+
+
+### Features
+
+* add quarterly confirmation module and PIM usage tracking ([6d2b7e4](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/6d2b7e4d24e3ba5e40a09f331a192f041f14a102))
+* create migration for models_pim_usage and update usage tables ([b99e6d6](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/b99e6d6763ed0c12d90ff68d231663ae17b0ec47))
+* enhance usage update logic in UsageService and QuarterlyConfirmationService ([9a3392a](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/9a3392af728f12ae92dd5d85caeacfb1c6be351b))
+* implement seed PIM usage endpoint and enhance logging ([1671f62](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/1671f622c04e2be1c8c28012fe8084159d8ad098))
+* integrate SumDatabaseModule into QuarterlyConfirmationService ([2f01cc9](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/2f01cc9aa58693395a3bd77c65bd179252db546a))
+
+# [1.50.0](https://git.sfera.inno.local:7999/SUMD/mrms-backend/compare/v1.49.0...v1.50.0) (2026-05-07)
+
+
+### Features
+
+* ограничение редактирования атрибутов, список исключений ([422e2c9](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/422e2c973c20ec8ec66d105342fe9342dce046bf))
+
+# [1.49.0](https://git.sfera.inno.local:7999/SUMD/mrms-backend/compare/v1.48.0...v1.49.0) (2026-05-04)
+
+
+### Features
+
+* ограничение редактирования атрибутов ([f0ce689](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/f0ce6897a301c48530184f18afe9b0880f27abd3))
+* ограничение редактирования атрибутов, fix ([5cdc30e](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/5cdc30e442c0cc6ef3ee5dff373f9205bbfecb8d))
+* ограничение редактирования атрибутов, список исключений ([87df037](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/87df03715c8c2b17d1a312cc195e0b08d41774ae))
+* ограничение редактирования атрибутов, список исключений ([bffde1e](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/bffde1e9bae94e0e751cc36be31c7d1c181e0bb1))
+
 # [1.48.0](https://git.sfera.inno.local:7999/SUMD/mrms-backend/compare/v1.47.1...v1.48.0) (2026-04-29)
 
 

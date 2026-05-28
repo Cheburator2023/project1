@@ -181,9 +181,7 @@ export class BiDatamartService {
           : null
       }
     } catch (error) {
-      this.logger.error(
-        `❌ Ошибка получения статистики: ${error.message}`
-      )
+      this.logger.error(`❌ Ошибка получения статистики: ${error.message}`)
       return {
         total_records: 0,
         last_update: null,

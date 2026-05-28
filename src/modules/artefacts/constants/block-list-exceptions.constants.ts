@@ -14,7 +14,9 @@ export const ALWAYS_ALLOWED_ARTEFACTS = [
   'model_changes_info',
   'validation_result',
   'psi_protocol',
-  'implementation_segment'
+  'implementation_segment',
+  'remove_decision',
+  'validation_report_approve_date'
 ]
 
 export const ALWAYS_ALLOWED_TASKS = [

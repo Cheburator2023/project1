@@ -1,4 +1,4 @@
-import { Module, MiddlewareConsumer } from '@nestjs/common'
+import { Module } from '@nestjs/common'
 import { ModelsModule } from 'src/modules/models/models.module'
 import { ReportModule } from 'src/modules/report/report.module'
 import { MetricsModule } from 'src/modules/metrics/metrics.module'
@@ -16,8 +16,10 @@ import {
   ArtefactsController,
   ReportsController,
   BiDatamartController,
-  JsonReportController
+  JsonReportController,
+  QuarterlyConfirmationController
 } from './controllers'
+import { QuarterlyConfirmationModule } from 'src/modules/quarterly-confirmation/quarterly-confirmation.module'
 import { ApiService } from './api.service'
 import { RolesGuard } from 'src/api/guards/roles.guard'
 import { RateLimitGuard } from 'src/api/guards/rate-limit.guard'
@@ -34,6 +36,7 @@ import { ErrorHandlerService } from 'src/common/services/error-handler.service'
     ReportsController,
     BiDatamartController,
     JsonReportController,
+    QuarterlyConfirmationController
   ],
   providers: [ApiService, RolesGuard, RateLimitGuard, ErrorHandlerService],
   imports: [
@@ -44,6 +47,7 @@ import { ErrorHandlerService } from 'src/common/services/error-handler.service'
     MetricsModule,
     ArtefactModule,
     BiDatamartModule,
+    QuarterlyConfirmationModule,
     CacheModule.register({
       ttl: 300, // 5 minutes
       max: 100 // maximum number of items in cache

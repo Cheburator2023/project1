@@ -9,7 +9,11 @@ import { SumArtefactService } from '../../artefacts/services'
 export class SumModelService extends BaseModelService {
   protected modelsTableName = SUM_TABLES.MODELS
 
-  constructor(artefactService: SumArtefactService, databaseService: SumDatabaseService, logger: LoggerService) {
+  constructor(
+    artefactService: SumArtefactService,
+    databaseService: SumDatabaseService,
+    logger: LoggerService
+  ) {
     super(artefactService, databaseService, logger)
   }
 }

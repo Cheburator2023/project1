@@ -79,22 +79,22 @@ export class ReportService {
         const headers =
           rawData && rawData.length > 0
             ? Object.keys(rawData[0]).map((key) => ({
-              key,
-              title: key,
-              type:
-                typeof rawData[0][key] === 'number'
-                  ? 'number'
-                  : ('string' as any)
-            }))
+                key,
+                title: key,
+                type:
+                  typeof rawData[0][key] === 'number'
+                    ? 'number'
+                    : ('string' as any)
+              }))
             : [
-              {
-                key: 'system_model_id',
-                title: 'system_model_id',
-                type: 'string'
-              },
-              { key: 'ds_stream', title: 'ds_stream', type: 'string' },
-              { key: 'period', title: 'period', type: 'string' }
-            ]
+                {
+                  key: 'system_model_id',
+                  title: 'system_model_id',
+                  type: 'string'
+                },
+                { key: 'ds_stream', title: 'ds_stream', type: 'string' },
+                { key: 'period', title: 'period', type: 'string' }
+              ]
 
         return this.excelService.createExcel({
           headers,
@@ -130,11 +130,17 @@ export class ReportService {
     const reportMode = mode || []
 
     // Если reportDate не указан, используем текущую дату
-    const effectiveReportDate = reportDate || new Date().toISOString().split('T')[0]
+    const effectiveReportDate =
+      reportDate || new Date().toISOString().split('T')[0]
 
     // Генерируем данные отчета через унифицированный метод
     const reportData: { headers: Preset[]; body: Model[] } =
-      await this.generateReportData(legacyFilters, groups, reportMode, effectiveReportDate)
+      await this.generateReportData(
+        legacyFilters,
+        groups,
+        reportMode,
+        effectiveReportDate
+      )
 
     // Генерируем Excel файл
     const xlsxBuffer: Buffer = await this.generateExcel(reportData)
@@ -187,7 +193,10 @@ export class ReportService {
   /**
    * Сортировка заголовков по фильтрам
    */
-  private sortHeadersByFilters(headers: Preset[], filters: { [key: string]: string[] }) {
+  private sortHeadersByFilters(
+    headers: Preset[],
+    filters: { [key: string]: string[] }
+  ) {
     return Object.keys(filters)
       .map((filterKey) => headers.find((header) => header.key === filterKey))
       .filter(Boolean)

@@ -12,16 +12,30 @@ interface QueryResult {
   values: any[]
 }
 
+/** Экранирование литерала для RegExp (имена параметров в queryConvert). */
+const escapeRegExp = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+
 const queryConvert = (
   parameterizedSql: string,
   args: QueryArgs
 ): QueryResult => {
-  const [text, values] = Object.entries(args).reduce<[string, any[], number]>(
-    ([sql, array, index], [key, value]) => [
-      sql.replace(new RegExp(`:${key}`, 'gi'), `$${index}`),
-      [...array, value],
-      index + 1
-    ],
+  // Сначала длинные ключи (напр. dept_bc_10), затем короткие — иначе :dept_bc_1
+  // разъедает начало :dept_bc_10 → ломаются $N и массив значений для PG.
+  const entries = Object.entries(args).sort(
+    (a, b) => b[0].length - a[0].length || a[0].localeCompare(b[0])
+  )
+
+  const [text, values] = entries.reduce<[string, any[], number]>(
+    ([sql, array, index], [key, value]) => {
+      const esc = escapeRegExp(key)
+      // Не матчить :dept_bc_2 как префикс :dept_bc_20 (: + ключ + граница, не [a-z0-9_]).
+      const re = new RegExp(`:${esc}(?![a-zA-Z0-9_])`, 'gi')
+      return [
+        sql.replace(re, () => `$${index}`),
+        [...array, value],
+        index + 1
+      ]
+    },
     [parameterizedSql, [], 1]
   )
 
@@ -56,7 +70,9 @@ const parseDate = (dateInput: string | Date): Date | null => {
   let date: Date | null = null
 
   // Формат "2023-02-22 14:51:23+00:00" (дата с опциональным часовым поясом)
-  if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}([+-]\d{2}:\d{2})?$/.test(dateInput)) {
+  if (
+    /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}([+-]\d{2}:\d{2})?$/.test(dateInput)
+  ) {
     date = new Date(dateInput.replace(' ', 'T')) // Заменяем пробел на "T", чтобы сделать строку совместимой с ISO
   }
   // Формат "dd.mm.yyyy hh:mm"

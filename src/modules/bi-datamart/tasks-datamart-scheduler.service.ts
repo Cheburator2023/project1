@@ -22,11 +22,9 @@ export class TasksDatamartSchedulerService
   )
   private readonly isEnabled: boolean
 
-  constructor(
-    private readonly tasksDatamartService: TasksDatamartService
-  ) {
+  constructor(private readonly tasksDatamartService: TasksDatamartService) {
     this.isEnabled = process.env.BI_DATAMART_ENABLED !== 'false'
-    
+
     this.logger.log(
       `🔧 TasksDatamartSchedulerService constructor: BI_DATAMART_ENABLED=${process.env.BI_DATAMART_ENABLED}, isEnabled=${this.isEnabled}`
     )

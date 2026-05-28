@@ -10,7 +10,7 @@ import { getDefaultModelRiskForReport } from 'src/modules/models/utils/model-ris
 export class ReportDataService {
   constructor(
     private readonly modelsService: ModelsService,
-    private readonly logger: LoggerService,
+    private readonly logger: LoggerService
   ) {}
 
   /**
@@ -28,7 +28,7 @@ export class ReportDataService {
         {
           date: date || null,
           mode: reportMode,
-          ignoreModeFilter: false,
+          ignoreModeFilter: false
         },
         groups || []
       )
@@ -47,10 +47,9 @@ export class ReportDataService {
       )
 
       // Применяем дополнительные фильтры, если они переданы
-      const filteredModels = filters ? await this.applyCustomFilters(
-        modelsAfterTemplateFilter,
-        filters
-      ) : modelsAfterTemplateFilter
+      const filteredModels = filters
+        ? await this.applyCustomFilters(modelsAfterTemplateFilter, filters)
+        : modelsAfterTemplateFilter
 
       return filteredModels
     } catch (error) {
@@ -84,7 +83,10 @@ export class ReportDataService {
 
       return models
     } catch (error) {
-      this.logger.error('Ошибка при получении унифицированных данных отчета:', error)
+      this.logger.error(
+        'Ошибка при получении унифицированных данных отчета:',
+        error
+      )
       throw error
     }
   }
@@ -121,14 +123,17 @@ export class ReportDataService {
     // 4. Более 3 лет - КМР = 25%
     // 5. Если дата валидации отсутствует - используем дату создания модели
 
-    return models.map(model => {
+    return models.map((model) => {
       // Определяем дату для расчета (предпочтительно validation_result_approve_date, иначе create_date)
-      const validationDateStr = model.validation_result_approve_date || model.create_date
+      const validationDateStr =
+        model.validation_result_approve_date || model.create_date
       const createDateStr = model.create_date
 
       if (!validationDateStr && !createDateStr) {
         // Если дат нет, используем значение по умолчанию
-        model.model_risk_coefficient = String(getDefaultModelRiskForReport(model.model_risk_coefficient))
+        model.model_risk_coefficient = String(
+          getDefaultModelRiskForReport(model.model_risk_coefficient)
+        )
         return model
       }
 
@@ -136,23 +141,28 @@ export class ReportDataService {
       const calculationDate = parseDate(dateForCalculation)
 
       if (!isValidDate(dateForCalculation)) {
-        model.model_risk_coefficient = String(getDefaultModelRiskForReport(model.model_risk_coefficient))
+        model.model_risk_coefficient = String(
+          getDefaultModelRiskForReport(model.model_risk_coefficient)
+        )
         return model
       }
 
       // Вычисляем разницу в годах между датой отчета и датой валидации/создания
-      const diffYears = this.calculateYearDifference(reportDateObj, calculationDate)
+      const diffYears = this.calculateYearDifference(
+        reportDateObj,
+        calculationDate
+      )
 
       // Определяем КМР в зависимости от срока
       let kmrValue: number
       if (diffYears < 1) {
         kmrValue = 100 // Менее 1 года
       } else if (diffYears >= 1 && diffYears < 2) {
-        kmrValue = 75  // От 1 до 2 лет
+        kmrValue = 75 // От 1 до 2 лет
       } else if (diffYears >= 2 && diffYears < 3) {
-        kmrValue = 50  // От 2 до 3 лет
+        kmrValue = 50 // От 2 до 3 лет
       } else {
-        kmrValue = 25  // Более 3 лет
+        kmrValue = 25 // Более 3 лет
       }
 
       // Сохраняем исходное значение для аудита
@@ -270,7 +280,11 @@ export class ReportDataService {
       return false
     }
 
-    if (!isValidDate(artefactValue) || !isValidDate(filterValues[0]) || !isValidDate(filterValues[1])) {
+    if (
+      !isValidDate(artefactValue) ||
+      !isValidDate(filterValues[0]) ||
+      !isValidDate(filterValues[1])
+    ) {
       return false
     }
 
@@ -284,14 +298,20 @@ export class ReportDataService {
   /**
    * Фильтрация по булевым значениям
    */
-  private filterByBoolean(artefactValue: string, filterValues: string[]): boolean {
+  private filterByBoolean(
+    artefactValue: string,
+    filterValues: string[]
+  ): boolean {
     return filterValues.includes(artefactValue)
   }
 
   /**
    * Фильтрация по строковым значениям
    */
-  private filterByString(artefactValue: string, filterValues: string[]): boolean {
+  private filterByString(
+    artefactValue: string,
+    filterValues: string[]
+  ): boolean {
     return filterValues.includes(artefactValue)
   }
 
@@ -309,7 +329,9 @@ export class ReportDataService {
   /**
    * Создание карты артефактов по ключу для быстрого доступа
    */
-  private mapArtefactsByKey(artefacts: Artefact[]): { [key: string]: Artefact } {
+  private mapArtefactsByKey(artefacts: Artefact[]): {
+    [key: string]: Artefact
+  } {
     return artefacts.reduce((acc, artefact) => {
       acc[artefact.artefact_tech_label] = artefact
       return acc
@@ -326,13 +348,14 @@ export class ReportDataService {
 
     switch (template_id) {
       case 1: // ПУРС - фильтр: record_id IS NOT NULL
-        return models.filter(model =>
-          model.record_id !== null &&
-          model.record_id !== undefined &&
-          model.record_id !== ''
+        return models.filter(
+          (model) =>
+            model.record_id !== null &&
+            model.record_id !== undefined &&
+            model.record_id !== ''
         )
       case 2: // ПУМР - фильтр: active_model = '1'
-        return models.filter(model => model.active_model === '1')
+        return models.filter((model) => model.active_model === '1')
       default:
         return models
     }
@@ -346,13 +369,13 @@ export class ReportDataService {
       return models
     }
 
-    return models.map(model => {
+    return models.map((model) => {
       // Базовые поля, общие для всех шаблонов
       const baseModel = {
         system_model_id: model.system_model_id,
         update_date: model.update_date,
         model_name_validation: model.model_name_validation,
-        model_desc: model.model_desc,
+        model_desc: model.model_desc
       }
 
       if (template_id === 1) {
@@ -365,7 +388,8 @@ export class ReportDataService {
           regulatory_code_rs_pvr: model.regulatory_code_rs_pvr,
           description_rating_system: model.description_rating_system,
           model_type: model.model_type,
-          identifier_model_algorithm_for_rwa: model.identifier_model_algorithm_for_rwa,
+          identifier_model_algorithm_for_rwa:
+            model.identifier_model_algorithm_for_rwa,
           regulatory_code_model_pvr: model.regulatory_code_model_pvr,
           model_version: model.model_version,
           internal_model_number: model.internal_model_number,
@@ -376,15 +400,20 @@ export class ReportDataService {
           regulatory_code_of_asset_class: model.regulatory_code_of_asset_class,
           model_alias: model.model_alias,
           model_id_from_model_owner: model.model_id_from_model_owner,
-          classification_rs_algorithm_by_asset_classes: model.classification_rs_algorithm_by_asset_classes,
+          classification_rs_algorithm_by_asset_classes:
+            model.classification_rs_algorithm_by_asset_classes,
           significance_validity: model.significance_validity,
-          degree_of_regulatory_supervision: model.degree_of_regulatory_supervision,
+          degree_of_regulatory_supervision:
+            model.degree_of_regulatory_supervision,
           materiality_rate: model.materiality_rate,
           impact_coverage: model.impact_coverage,
-          responsible_for_significance_validity: model.responsible_for_significance_validity,
-          classification_of_rs_by_order_of_application_within_pvr: model.classification_of_rs_by_order_of_application_within_pvr,
+          responsible_for_significance_validity:
+            model.responsible_for_significance_validity,
+          classification_of_rs_by_order_of_application_within_pvr:
+            model.classification_of_rs_by_order_of_application_within_pvr,
           credit_risk_component: model.credit_risk_component,
-          method_calculation_model_parameter: model.method_calculation_model_parameter,
+          method_calculation_model_parameter:
+            model.method_calculation_model_parameter,
           segment_name: model.segment_name,
           implementation_segment: model.implementation_segment,
           regulatory_class: model.regulatory_class,
@@ -407,8 +436,10 @@ export class ReportDataService {
           developing_report: model.developing_report,
           name_and_version_rating_system: model.name_and_version_rating_system,
           version_it_implementation: model.version_it_implementation,
-          responsible_subdivision_and_project_lead_for_it_implementation: model.responsible_subdivision_and_project_lead_for_it_implementation,
-          date_of_it_introduction_into_operation: model.date_of_it_introduction_into_operation,
+          responsible_subdivision_and_project_lead_for_it_implementation:
+            model.responsible_subdivision_and_project_lead_for_it_implementation,
+          date_of_it_introduction_into_operation:
+            model.date_of_it_introduction_into_operation,
           psi_protocol: model.psi_protocol,
           validation_department: model.validation_department,
           plan_validation_type: model.plan_validation_type,
@@ -420,13 +451,19 @@ export class ReportDataService {
           importance_changes: model.importance_changes,
           approve_importance: model.approve_importance,
           approve_importance_changes: model.approve_importance_changes,
-          date_and_number_regulator_notification: model.date_and_number_regulator_notification,
+          date_and_number_regulator_notification:
+            model.date_and_number_regulator_notification,
           date_submission_to_regulator: model.date_submission_to_regulator,
-          decision_date_and_number_of_application_model_for_segment: model.decision_date_and_number_of_application_model_for_segment,
-          notification_date_and_number_of_application_model_for_segment: model.notification_date_and_number_of_application_model_for_segment,
-          decision_date_and_number_of_application_model: model.decision_date_and_number_of_application_model,
-          notification_date_and_number_of_application_model: model.notification_date_and_number_of_application_model,
-          start_date_of_application_model_approved_regulator: model.start_date_of_application_model_approved_regulator
+          decision_date_and_number_of_application_model_for_segment:
+            model.decision_date_and_number_of_application_model_for_segment,
+          notification_date_and_number_of_application_model_for_segment:
+            model.notification_date_and_number_of_application_model_for_segment,
+          decision_date_and_number_of_application_model:
+            model.decision_date_and_number_of_application_model,
+          notification_date_and_number_of_application_model:
+            model.notification_date_and_number_of_application_model,
+          start_date_of_application_model_approved_regulator:
+            model.start_date_of_application_model_approved_regulator
         }
       } else if (template_id === 2) {
         // Формат для ПУМР (template_id=2)
@@ -441,7 +478,8 @@ export class ReportDataService {
           business_customer: model.business_customer,
           business_customer_departament: model.business_customer_departament,
           significance_validity: model.significance_validity,
-          responsible_for_significance_validity: model.responsible_for_significance_validity,
+          responsible_for_significance_validity:
+            model.responsible_for_significance_validity,
           implementation_validity: model.implementation_validity,
           validity_approve: model.validity_approve,
           rs_model_decommiss_date: model.rs_model_decommiss_date,

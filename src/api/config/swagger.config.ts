@@ -27,9 +27,11 @@ export function setupSwagger(app: INestApplication): void {
       filter: true,
       showExtensions: true,
       showCommonExtensions: true,
-      security: [{
-        'JWT-auth': []
-      }],
+      security: [
+        {
+          'JWT-auth': []
+        }
+      ],
       authAction: {
         'JWT-auth': {
           name: 'JWT-auth',

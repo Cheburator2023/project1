@@ -18,7 +18,9 @@ import { Transform, Type } from 'class-transformer'
 import { parseDate, isValidDate } from 'src/system/common/utils'
 
 @ValidatorConstraint({ name: 'isValidDateFormat', async: false })
-export class IsValidDateFormatConstraint implements ValidatorConstraintInterface {
+export class IsValidDateFormatConstraint
+  implements ValidatorConstraintInterface
+{
   validate(dateStr: string, args: ValidationArguments) {
     if (!dateStr) return true
     return isValidDate(dateStr)
@@ -46,7 +48,8 @@ export class JsonReportRequestDto {
 
   @ApiPropertyOptional({
     example: '2025-01-01',
-    description: 'Дата отчета в форматах: ГГГГ.ММ.ДД, ГГГГ-ММ-ДД, ДД.ММ.ГГГГ, ДД-ММ-ГГГГ'
+    description:
+      'Дата отчета в форматах: ГГГГ.ММ.ДД, ГГГГ-ММ-ДД, ДД.ММ.ГГГГ, ДД-ММ-ГГГГ'
   })
   @IsOptional()
   @IsString()

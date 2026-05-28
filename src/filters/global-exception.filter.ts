@@ -24,11 +24,13 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       const status = exception.getStatus()
       const exceptionResponse = exception.getResponse()
 
-      response.status(status).json(
-        typeof exceptionResponse === 'object'
-          ? exceptionResponse
-          : { message: exceptionResponse }
-      )
+      response
+        .status(status)
+        .json(
+          typeof exceptionResponse === 'object'
+            ? exceptionResponse
+            : { message: exceptionResponse }
+        )
       return
     }
 
@@ -37,10 +39,12 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     const status = httpException.getStatus()
     const exceptionResponse = httpException.getResponse()
 
-    response.status(status).json(
-      typeof exceptionResponse === 'object'
-        ? exceptionResponse
-        : { message: exceptionResponse }
-    )
+    response
+      .status(status)
+      .json(
+        typeof exceptionResponse === 'object'
+          ? exceptionResponse
+          : { message: exceptionResponse }
+      )
   }
 }
