@@ -1,0 +1,51 @@
+export enum MODEL_STAGES {
+  MAIN = 'main',
+  INITIALIZATION = 'initialization',
+  MODEL = 'model',
+  DATA = 'data',
+  DATA_BUILD = 'data_build',
+  DATA_SEARCH = 'data_search',
+  DATA_PILOT = 'data_pilot',
+  INTEGRATION = 'integration',
+  INTEGRATION_DATAMART = 'integration_datamart',
+  INTEGRATION_ENV_CONF = 'integration_env_conf',
+  INTEGRATION_TEST = 'integration_test',
+  INTEGRATION_USER = 'integration_user',
+  INTEGRATION_PROD = 'integration_prod',
+  MODEL_VALIDATION = 'model_validation',
+  VALIDATION = 'validation',
+  REMOVAL = 'removal',
+  DEVELOPED_NOT_IMPLEMENTED = 'developed_not_implemented',
+  MODEL_PILOT = 'model_pilot',
+  INTEGRATION_MODEL = 'inegration_model',
+  TEST_PREPROD_TRANSFER_PROD = 'test_preprod_transfer_prod',
+  CANCEL = 'cancel',
+  DATA_MART_CONSTRUCTION = 'data_mart_construction'
+}
+
+export const MODEL_STAGES_DESCRIPTION: Record<MODEL_STAGES, string> = {
+  [MODEL_STAGES.MAIN]: 'Процесс родитель',
+  [MODEL_STAGES.INITIALIZATION]: 'Инициализация',
+  [MODEL_STAGES.MODEL]: 'Разработка модели',
+  [MODEL_STAGES.DATA]: 'Данные',
+  [MODEL_STAGES.DATA_BUILD]: 'Разработка витрины',
+  [MODEL_STAGES.DATA_SEARCH]: 'Поиск данных',
+  [MODEL_STAGES.DATA_PILOT]: 'Пилот данных',
+  [MODEL_STAGES.INTEGRATION]: 'Внедрение',
+  [MODEL_STAGES.INTEGRATION_DATAMART]: 'Разработка промышленной витрины',
+  [MODEL_STAGES.INTEGRATION_ENV_CONF]: 'Настройка среды применения',
+  [MODEL_STAGES.INTEGRATION_TEST]: 'Тестирование ДИТ',
+  [MODEL_STAGES.INTEGRATION_USER]: 'Пользовательское тестирование',
+  [MODEL_STAGES.INTEGRATION_PROD]: 'Перенос на промышленный стенд',
+  [MODEL_STAGES.MODEL_VALIDATION]: 'Первичная валидация',
+  [MODEL_STAGES.VALIDATION]: 'Внедрена',
+  [MODEL_STAGES.REMOVAL]: 'Вывод модели из эксплуатации',
+  [MODEL_STAGES.DEVELOPED_NOT_IMPLEMENTED]: 'Разработана, не внедрена',
+  [MODEL_STAGES.MODEL_PILOT]: 'Пилотирование модели',
+  [MODEL_STAGES.INTEGRATION_MODEL]: 'Продуктивизация модели',
+  [MODEL_STAGES.TEST_PREPROD_TRANSFER_PROD]:
+    'Тестирование на препрод и перенос на прод контур',
+  [MODEL_STAGES.CANCEL]: 'Отмена разработки',
+  [MODEL_STAGES.DATA_MART_CONSTRUCTION]:
+    'Построение витрины для разработки модели'
+}
