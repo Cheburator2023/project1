@@ -21,6 +21,8 @@ auditSidecar:
     SPRING_PROFILES_ACTIVE: dev
   resources: {}
 
+extraEnv: []
+
 resources:
   requests:
     cpu: "300m"
