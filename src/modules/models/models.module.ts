@@ -1,5 +1,10 @@
 import { Module, CacheModule } from '@nestjs/common'
-import { SumModelService, MrmModelService } from './services'
+import {
+  ModelDisplayModeService,
+  SumModelService,
+  MrmModelService,
+  ModelVisibilityService
+} from './services'
 import { ModelsService } from './models.service'
 import { ModelsCacheService } from './models-cache.service'
 import { ArtefactModule } from 'src/modules/artefacts/artefact.module'
@@ -21,7 +26,9 @@ import { ModelMergePrefetchService } from './services/model-merge-prefetch.servi
     MrmModelService,
     ModelMergeService,
     ModelDefaultsService,
-    ModelMergePrefetchService
+    ModelMergePrefetchService,
+    ModelDisplayModeService,
+    ModelVisibilityService
   ],
   imports: [
     SumDatabaseModule,
@@ -42,7 +49,9 @@ import { ModelMergePrefetchService } from './services/model-merge-prefetch.servi
     SumModelService,
     ModelMergeService,
     ModelDefaultsService,
-    ModelMergePrefetchService
+    ModelMergePrefetchService,
+    ModelDisplayModeService,
+    ModelVisibilityService
   ]
 })
 export class ModelsModule {}

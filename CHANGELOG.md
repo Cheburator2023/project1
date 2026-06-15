@@ -1,5 +1,30 @@
 # Semantic Versioning Changelog
 
+# [1.55.0](https://git.sfera.inno.local:7999/SUMD/mrms-backend/compare/v1.54.0...v1.55.0) (2026-05-29)
+
+
+### Bug Fixes
+
+* исправление формулы распред моделей по этапам жцм ([aba5f9c](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/aba5f9cdb889102d487818e33e79e882c5df0551))
+* убрал жёсткую привязку к sumd ([05bbe00](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/05bbe001b91c4d91f9358465900debe225c50339))
+* фиксы по метрикам и фильтру режим эксплуатации ([9709e72](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/9709e72c5ca7ac8212248ec025c48d681c2f5f6f))
+
+
+### Features
+
+* новый механизм model_status и model_stage ([9ea0524](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/9ea0524021969d3b2fdbee36c1fb2ee1892fe958))
+* ограничение редактирования атрибутов ([4e1df63](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/4e1df639e1d6c2b9c1bdaf3338a2763bf10beaa4))
+* ограничение редактирования атрибутов, fix ([a5e2449](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/a5e24495f942e783d1765bf4c33604d8c246774b))
+* ограничение редактирования атрибутов, список исключений ([c49eebb](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/c49eebb789f7e6f3bc87751cd30f2c8084ae1db7))
+* ограничение редактирования атрибутов, список исключений ([253c376](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/253c3767d6d432bb14d1e10b6062d19360bf5716))
+
+# [1.54.0](https://git.sfera.inno.local:7999/SUMD/mrms-backend/compare/v1.53.1...v1.54.0) (2026-05-26)
+
+
+### Features
+
+* enhance quarterly confirmation service with allocation filtering and candidate fetching ([64c45a8](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/64c45a8e3776e2cbb5cc947cfffbb63ad13df2de))
+
 ## [1.53.1](https://git.sfera.inno.local:7999/SUMD/mrms-backend/compare/v1.53.0...v1.53.1) (2026-05-26)
 
 

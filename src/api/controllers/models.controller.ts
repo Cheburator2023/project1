@@ -13,6 +13,7 @@ import {
 import { ApiTags, ApiOperation, ApiResponse, ApiBody } from '@nestjs/swagger'
 import { ModelsService } from 'src/modules/models/models.service'
 import { ModelsCacheService } from 'src/modules/models/models-cache.service'
+import { ModelDisplayModeService } from 'src/modules/models/services'
 import { ApiService } from '../api.service'
 import { User } from 'src/decorators'
 import {
@@ -23,15 +24,13 @@ import {
   ModelsUpdateDto,
   ModelArtefactHistoryDto
 } from '../dto/index.dto'
-import { MODEL_DISPLAY_MODES } from 'src/system/common/constants/base.constants'
-import { MODEL_STATUS } from 'src/system/common/constants/model-status'
-import { MODEL_SOURCES } from 'src/system/common/constants/models.constants'
 
 @ApiTags('Модели')
 @Controller('models')
 export class ModelsController {
   constructor(
     private readonly modelsService: ModelsService,
+    private readonly modelDisplayModeService: ModelDisplayModeService,
     private readonly modelsCacheService: ModelsCacheService,
     private readonly apiService: ApiService
   ) {}
@@ -63,61 +62,10 @@ export class ModelsController {
 
     // Фильтрация по режиму
     if (query.mode && query.mode.length > 0) {
-      const activeModes = new Set(query.mode)
-      const isArchiveMode = activeModes.has(MODEL_DISPLAY_MODES.ARCHIVE)
-      const isCreationErrorMode = activeModes.has(
-        MODEL_DISPLAY_MODES.CREATION_ERROR
+      filteredModels = this.modelDisplayModeService.filterModels(
+        filteredModels,
+        query.mode
       )
-      const isPendingDeleteMode = activeModes.has(
-        MODEL_DISPLAY_MODES.PENDING_DELETE
-      )
-
-      filteredModels = filteredModels.filter((model) => {
-        const { model_source, models_is_active_flg, business_status } = model
-
-        const isArchive =
-          models_is_active_flg === '0' ||
-          business_status === MODEL_STATUS.ARCHIVE
-
-        const isCreationError = business_status === MODEL_STATUS.CREATION_ERROR
-        const isPendingDelete = business_status === MODEL_STATUS.PENDING_DELETE
-
-        // Проверяем соответствие модели запрошенным режимам
-        let matchesRequestedModes = false
-
-        // Проверка архивного режима
-        if (isArchiveMode && model_source === MODEL_SOURCES.SUM && isArchive) {
-          matchesRequestedModes = true
-        }
-
-        // Проверка режима ошибки создания
-        if (
-          isCreationErrorMode &&
-          model_source === MODEL_SOURCES.MRM &&
-          isCreationError
-        ) {
-          matchesRequestedModes = true
-        }
-
-        // Проверка режима ожидания удаления
-        if (
-          isPendingDeleteMode &&
-          model_source === MODEL_SOURCES.MRM &&
-          isPendingDelete
-        ) {
-          matchesRequestedModes = true
-        }
-
-        // Если не запрошены специальные режимы, показываем активные модели
-        if (!isArchiveMode && !isCreationErrorMode && !isPendingDeleteMode) {
-          const isActive =
-            model_source === MODEL_SOURCES.SUM ? !isArchive : true
-          const isValidStatus = !isCreationError && !isPendingDelete
-          matchesRequestedModes = isActive && isValidStatus
-        }
-
-        return matchesRequestedModes
-      })
     }
 
     // Фильтрация по группам пользователя
