@@ -14,7 +14,6 @@ import {
 } from './dto/quarterly-confirmation.dto'
 import { UpdateUsageResult } from 'src/modules/usage/dto'
 import { ModelsService } from 'src/modules/models/models.service'
-import { BUSINESS_CUSTOMER_DEPARTMENT_MAPPING } from 'src/modules/models/constants/departments.contants'
 
 /** Строка реестра для аллокации до обогащения prefill/registry_card. */
 type AllocationCandidateModel = {
@@ -51,61 +50,6 @@ export class QuarterlyConfirmationService {
     if (pimUsage != null) return 'pim'
     if (hasPrevQuarterData) return 'previous_quarter'
     return null
-  }
-
-  private static normalizeWhitespace(s: string): string {
-    return String(s || '')
-      .trim()
-      .replace(/\s+/g, ' ')
-  }
-
-  /**
-   * Для сегмента группы Keycloak после хвоста пути добавляем варианты из матрицы департаментов,
-   * чтобы ИЛИ совпадало с полным названием в артефакте и с подразделениями из справочника.
-   */
-  private expandDepartmentLikePatterns(groupSegment: string): string[] {
-    const t = QuarterlyConfirmationService.normalizeWhitespace(groupSegment)
-    if (!t) return []
-    const patterns = new Set<string>([`%${t}%`])
-    const m = BUSINESS_CUSTOMER_DEPARTMENT_MAPPING as Record<string, string[]>
-    const direct = m[t]
-    if (direct) {
-      for (const v of direct) {
-        patterns.add(`%${QuarterlyConfirmationService.normalizeWhitespace(v)}%`)
-      }
-    }
-    for (const [key, vals] of Object.entries(m)) {
-      if (vals.includes(t)) {
-        patterns.add(`%${key}%`)
-        for (const v of vals) patterns.add(`%${v}%`)
-      }
-    }
-    return [...patterns]
-  }
-
-  private matchesAllocationLikePatterns(
-    haystack: string | null | undefined,
-    patterns: string[]
-  ): boolean {
-    const value = String(haystack ?? '')
-      .trim()
-      .toLowerCase()
-    if (!value) return false
-    return patterns.some((pattern) => {
-      const inner = pattern.replace(/^%/, '').replace(/%$/, '').toLowerCase()
-      return inner.length > 0 && value.includes(inner)
-    })
-  }
-
-  private matchesAllocationDepartmentFilter(
-    businessCustomerDepartament: string | null | undefined,
-    userDepartment: string
-  ): boolean {
-    if (!userDepartment) return true
-    const dept = String(businessCustomerDepartament ?? '').trim()
-    if (!dept) return true
-    const patterns = this.expandDepartmentLikePatterns(userDepartment)
-    return this.matchesAllocationLikePatterns(dept, patterns)
   }
 
   private isExcludedAllocationBusinessStatus(
@@ -175,17 +119,20 @@ export class QuarterlyConfirmationService {
   }
 
   /**
-   * Тот же набор моделей, что на главной (`ModelsService.getModels` + merge СУМ/СУРМ),
-   * с фильтрами аллокации. Раньше список строился только из `models_new` и терял версии только из СУМ.
+   * Тот же набор моделей, что на главной (`ModelsService.getModels` + merge СУМ/СУРМ
+   * и {@link ModelsService.filterModelsByUserGroups} по всем группам Keycloak).
    */
   private async fetchAllocationCandidatesFromMergedRegistry(
-    userDepartment: string,
+    userGroups: string[],
     filters?: GetModelsQueryDto
   ): Promise<{
     models: AllocationCandidateModel[]
     sumModelIdSet: Set<string>
   }> {
-    const merged = await this.modelsService.getModels({ ignoreModeFilter: true })
+    const merged = await this.modelsService.getModels(
+      { ignoreModeFilter: true },
+      userGroups.length > 0 ? userGroups : undefined
+    )
     const candidates: AllocationCandidateModel[] = []
     const sumModelIdSet = new Set<string>()
 
@@ -195,15 +142,6 @@ export class QuarterlyConfirmationService {
       if (!systemModelId || !modelId) continue
 
       if (this.isExcludedAllocationBusinessStatus(model.business_status)) continue
-
-      if (
-        !this.matchesAllocationDepartmentFilter(
-          model.business_customer_departament,
-          userDepartment
-        )
-      ) {
-        continue
-      }
 
       const modelSource =
         model.model_source === MODEL_SOURCES.SUM
@@ -373,7 +311,7 @@ export class QuarterlyConfirmationService {
   async getModelsForConfirmation(
     _userFamilyName: string,
     _userGivenName: string,
-    userDepartment: string,
+    userGroups: string[],
     preferredUsername: string,
     filters?: GetModelsQueryDto
   ): Promise<ConfirmationModelRow[]> {
@@ -387,7 +325,7 @@ export class QuarterlyConfirmationService {
       'Getting models for quarterly confirmation',
       'ПолучениеМоделейДляПодтвержденияКвартала',
       {
-        userDepartment,
+        userGroups,
         preferredUsername,
         quarter: quarterInfo.quarter,
         year: quarterInfo.year
@@ -398,14 +336,11 @@ export class QuarterlyConfirmationService {
       this.logger.info(
         '[ALLOC_DEBUG] getModelsForConfirmation filter params',
         'ОтладкаПараметровФильтрации',
-        { userDepartment, preferredUsername }
+        { userGroups, preferredUsername }
       )
 
       const { models, sumModelIdSet } =
-        await this.fetchAllocationCandidatesFromMergedRegistry(
-          userDepartment,
-          filters
-        )
+        await this.fetchAllocationCandidatesFromMergedRegistry(userGroups, filters)
 
       if (models.length === 0) {
         return []
@@ -761,7 +696,7 @@ export class QuarterlyConfirmationService {
         'Error getting models for confirmation',
         'ОшибкаПолученияМоделейДляПодтверждения',
         error,
-        { userDepartment, preferredUsername }
+        { userGroups, preferredUsername }
       )
       throw error
     }

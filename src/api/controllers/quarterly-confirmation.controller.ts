@@ -73,18 +73,16 @@ export class QuarterlyConfirmationController {
         if (!userFamilyName) userFamilyName = parts[1]
       }
     }
-    // Подразделение хранится в группе вида /departament_business_customer/НАЗВАНИЕ
-    const deptGroup = (user.keycloakGroups || []).find((g) =>
-      g.startsWith('/departament_business_customer/')
-    )
-    const userDepartment = deptGroup ? deptGroup.split('/').pop() || '' : ''
+    // Те же группы Keycloak, что и GET /models (`req.user.groups`): полные пути
+    // `/departament_business_customer/...`, а не один «первый» департамент.
+    const userGroups = user.keycloakGroups || []
 
     console.log(
       '[ALLOC_DEBUG] /models user info:',
       JSON.stringify({
         userFamilyName,
         userGivenName,
-        userDepartment,
+        userGroups,
         displayName: user.display_name ?? user.name,
         keycloakGroups: user.keycloakGroups,
         preferred_username: user.preferred_username
@@ -95,7 +93,7 @@ export class QuarterlyConfirmationController {
       await this.quarterlyConfirmationService.getModelsForConfirmation(
         userFamilyName,
         userGivenName,
-        userDepartment,
+        userGroups,
         user.preferred_username || '',
         query
       )
@@ -106,7 +104,7 @@ export class QuarterlyConfirmationController {
         _debug: {
           userFamilyName,
           userGivenName,
-          userDepartment,
+          userGroups,
           displayName: user.display_name ?? user.name,
           preferred_username: user.preferred_username,
           modelsCount: models.length
