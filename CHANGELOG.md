@@ -1,5 +1,12 @@
 # Semantic Versioning Changelog
 
+## [1.55.1](https://git.sfera.inno.local:7999/SUMD/mrms-backend/compare/v1.55.0...v1.55.1) (2026-06-16)
+
+
+### Bug Fixes
+
+* filtering alloc fix ([df1ff36](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/df1ff364dd105f60e59616f1a759ecde791391b6))
+
 # [1.55.0](https://git.sfera.inno.local:7999/SUMD/mrms-backend/compare/v1.54.0...v1.55.0) (2026-05-29)
 
 
