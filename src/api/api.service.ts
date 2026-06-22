@@ -97,26 +97,13 @@ export class ApiService {
       result = [...sumResult, ...mrmResult]
     }
 
-    function filterAndSortData(data: any[]) {
-      return data
-        .sort(
-          (a, b) =>
-            new Date(b.effective_from).getTime() -
-            new Date(a.effective_from).getTime()
-        ) // Сортируем от нового к старому
-        .filter(
-          (item, index, arr) =>
-            index === 0 ||
-            !arr
-              .slice(0, index)
-              .some(
-                (prev) =>
-                  prev.artefact_string_value === item.artefact_string_value
-              )
-        ) // Удаляем дубликаты artefact_string_value
-    }
+    const sortedResult = [...result].sort(
+      (a, b) =>
+        new Date(b.effective_from).getTime() -
+        new Date(a.effective_from).getTime()
+    )
 
-    const formattedResult = filterAndSortData(result).map((item) => {
+    const formattedResult = sortedResult.map((item) => {
       return {
         ...item,
         artefact_id: Number(item.artefact_id),
