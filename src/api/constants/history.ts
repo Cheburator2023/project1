@@ -21,7 +21,31 @@ const TECH_LABELS_HISTORY_ONLY_IN_SUM_RM = [
   'classification_of_rs_by_order_of_application_within_pvr',
   'degree_of_regulatory_supervision',
   'materiality_rate',
-  'impact_coverage'
+  'impact_coverage',
+  'model_type',
+  'significance_validity',
+  'responsible_for_significance_validity',
+  'segment_name',
+  'implementation_segment',
+  'developing_report',
+  'data_source_description',
+  'target',
+  'psi_protocol',
+  'validation_department',
+  'plan_validation_type',
+  'validation_period',
+  'validation_report_approve_date',
+  'validation_result',
+  'validation_result_approve_date',
+  'auto_validation_result',
+  'model_changes_info',
+  'model_desc',
+  'model_name_validation',
+  'rfd',
+  'output_table',
+  'allocation_assessment_class',
+  'allocation_assessment_parameters',
+  'remove_decision'
 ]
 
 export { TECH_LABELS_HISTORY_ONLY_IN_SUM_RM }
