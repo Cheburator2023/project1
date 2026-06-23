@@ -17,7 +17,11 @@ const TECH_LABELS_HISTORY_ONLY_IN_SUM_RM = [
   'model_data_control_date',
   'check_objects_count',
   'update_date',
-  'active_model'
+  'active_model',
+  'classification_of_rs_by_order_of_application_within_pvr',
+  'degree_of_regulatory_supervision',
+  'materiality_rate',
+  'impact_coverage'
 ]
 
 export { TECH_LABELS_HISTORY_ONLY_IN_SUM_RM }
