@@ -1,4 +1,3 @@
-import { createHash } from 'crypto'
 import { Injectable } from '@nestjs/common'
 import { MrmDatabaseService } from 'src/system/mrm-database/database.service'
 import { SumDatabaseService } from 'src/system/sum-database/database.service'
@@ -15,8 +14,18 @@ import {
 } from './dto/quarterly-confirmation.dto'
 import { UpdateUsageResult } from 'src/modules/usage/dto'
 import { ModelsService } from 'src/modules/models/models.service'
-import { BUSINESS_CUSTOMER_DEPARTMENT_MAPPING } from 'src/modules/models/constants/departments.contants'
-import { queryConvert } from 'src/system/common/utils'
+
+/** Строка реестра для аллокации до обогащения prefill/registry_card. */
+type AllocationCandidateModel = {
+  system_model_id: string
+  model_id: string
+  model_alias: string | null
+  model_name: string | null
+  model_source: string
+  model_name_dadm: string | null
+  business_customer: string | null
+  business_customer_departament: string | null
+}
 
 @Injectable()
 export class QuarterlyConfirmationService {
@@ -43,34 +52,122 @@ export class QuarterlyConfirmationService {
     return null
   }
 
-  private static normalizeWhitespace(s: string): string {
-    return String(s || '')
-      .trim()
-      .replace(/\s+/g, ' ')
+  private isExcludedAllocationBusinessStatus(
+    businessStatus: string | null | undefined
+  ): boolean {
+    const status = String(businessStatus ?? '').trim()
+    return (
+      status === MODEL_STATUS.ARCHIVE || status === MODEL_STATUS.CREATION_ERROR
+    )
+  }
+
+  private applyAllocationQueryFilters(
+    candidates: AllocationCandidateModel[],
+    filters?: GetModelsQueryDto
+  ): AllocationCandidateModel[] {
+    let result = candidates
+
+    const ilikeIncludes = (
+      value: string | null | undefined,
+      needle: string | undefined
+    ): boolean => {
+      if (!needle) return true
+      return String(value ?? '')
+        .toLowerCase()
+        .includes(needle.toLowerCase())
+    }
+
+    if (filters?.search) {
+      const search = filters.search.toLowerCase()
+      result = result.filter((m) =>
+        [m.model_id, m.model_alias, m.model_name, m.model_name_dadm].some((f) =>
+          String(f ?? '')
+            .toLowerCase()
+            .includes(search)
+        )
+      )
+    }
+
+    if (filters?.model_alias) {
+      result = result.filter((m) => ilikeIncludes(m.model_alias, filters.model_alias))
+    }
+    if (filters?.model_name) {
+      result = result.filter((m) => ilikeIncludes(m.model_name, filters.model_name))
+    }
+    if (filters?.model_name_dadm) {
+      result = result.filter((m) =>
+        ilikeIncludes(m.model_name_dadm, filters.model_name_dadm)
+      )
+    }
+    if (filters?.business_customer) {
+      result = result.filter((m) =>
+        ilikeIncludes(m.business_customer, filters.business_customer)
+      )
+    }
+    if (filters?.business_customer_departament) {
+      result = result.filter((m) =>
+        ilikeIncludes(
+          m.business_customer_departament,
+          filters.business_customer_departament
+        )
+      )
+    }
+
+    return [...result].sort((a, b) =>
+      String(a.model_id ?? '').localeCompare(String(b.model_id ?? ''), 'ru')
+    )
   }
 
   /**
-   * Для сегмента группы Keycloak после хвоста пути добавляем варианты из матрицы департаментов,
-   * чтобы ИЛИ совпадало с полным названием в артефакте и с подразделениями из справочника.
+   * Тот же набор моделей, что на главной (`ModelsService.getModels` + merge СУМ/СУРМ
+   * и {@link ModelsService.filterModelsByUserGroups} по всем группам Keycloak).
    */
-  private expandDepartmentLikePatterns(groupSegment: string): string[] {
-    const t = QuarterlyConfirmationService.normalizeWhitespace(groupSegment)
-    if (!t) return []
-    const patterns = new Set<string>([`%${t}%`])
-    const m = BUSINESS_CUSTOMER_DEPARTMENT_MAPPING as Record<string, string[]>
-    const direct = m[t]
-    if (direct) {
-      for (const v of direct) {
-        patterns.add(`%${QuarterlyConfirmationService.normalizeWhitespace(v)}%`)
+  private async fetchAllocationCandidatesFromMergedRegistry(
+    userGroups: string[],
+    filters?: GetModelsQueryDto
+  ): Promise<{
+    models: AllocationCandidateModel[]
+    sumModelIdSet: Set<string>
+  }> {
+    const merged = await this.modelsService.getModels(
+      { ignoreModeFilter: true },
+      userGroups.length > 0 ? userGroups : undefined
+    )
+    const candidates: AllocationCandidateModel[] = []
+    const sumModelIdSet = new Set<string>()
+
+    for (const model of merged) {
+      const systemModelId = String(model.system_model_id ?? '').trim()
+      const modelId = String(model.model_id ?? '').trim()
+      if (!systemModelId || !modelId) continue
+
+      if (this.isExcludedAllocationBusinessStatus(model.business_status)) continue
+
+      const modelSource =
+        model.model_source === MODEL_SOURCES.SUM
+          ? MODEL_SOURCES.SUM
+          : MODEL_SOURCES.MRM
+
+      if (modelSource === MODEL_SOURCES.SUM) {
+        sumModelIdSet.add(systemModelId)
       }
+
+      candidates.push({
+        system_model_id: systemModelId,
+        model_id: modelId,
+        model_alias: model.model_alias ?? null,
+        model_name: model.model_name ?? null,
+        model_source: modelSource,
+        model_name_dadm: model.model_name_dadm ?? model.model_name ?? null,
+        business_customer: model.business_customer ?? null,
+        business_customer_departament: model.business_customer_departament ?? null
+      })
     }
-    for (const [key, vals] of Object.entries(m)) {
-      if (vals.includes(t)) {
-        patterns.add(`%${key}%`)
-        for (const v of vals) patterns.add(`%${v}%`)
-      }
+
+    return {
+      models: this.applyAllocationQueryFilters(candidates, filters),
+      sumModelIdSet
     }
-    return [...patterns]
   }
 
   constructor(
@@ -214,7 +311,7 @@ export class QuarterlyConfirmationService {
   async getModelsForConfirmation(
     _userFamilyName: string,
     _userGivenName: string,
-    userDepartment: string,
+    userGroups: string[],
     preferredUsername: string,
     filters?: GetModelsQueryDto
   ): Promise<ConfirmationModelRow[]> {
@@ -228,7 +325,7 @@ export class QuarterlyConfirmationService {
       'Getting models for quarterly confirmation',
       'ПолучениеМоделейДляПодтвержденияКвартала',
       {
-        userDepartment,
+        userGroups,
         preferredUsername,
         quarter: quarterInfo.quarter,
         year: quarterInfo.year
@@ -236,199 +333,14 @@ export class QuarterlyConfirmationService {
     )
 
     try {
-      // Строим динамический SQL запрос с фильтрами
-      // Поля business_customer (арт. 2031) только в SELECT; ограничения по заказчику/создателю после ПСИ сняты.
-      // По результатам ПСИ: фильтрация по владельцу и учётке (ФИО, логин) отключена.
       this.logger.info(
         '[ALLOC_DEBUG] getModelsForConfirmation filter params',
         'ОтладкаПараметровФильтрации',
-        { userDepartment, preferredUsername }
+        { userGroups, preferredUsername }
       )
 
-      const whereClauses: string[] = []
-      const queryParams: Record<string, unknown> = {
-        status_archive: MODEL_STATUS.ARCHIVE,
-        status_creation_error: MODEL_STATUS.CREATION_ERROR
-      }
-
-      if (userDepartment) {
-        const deptPatterns = this.expandDepartmentLikePatterns(userDepartment)
-        const deptOrs = deptPatterns.map((_, idx) => {
-          const key = `dept_bc_${idx}`
-          queryParams[key] = deptPatterns[idx]
-          return `a.business_customer_departament ILIKE CAST(:${key} AS text)`
-        })
-        if (deptOrs.length > 0) {
-          whereClauses.push(
-            `((${deptOrs.join(
-              ' OR '
-            )}) OR trim(COALESCE(a.business_customer_departament,'')) = '')`
-          )
-        }
-      }
-      whereClauses.push(
-        "trim(both FROM COALESCE(a.business_status, '')) NOT IN (CAST(:status_archive AS text), CAST(:status_creation_error AS text))"
-      )
-
-      // Добавляем текстовый поиск
-      if (filters?.search) {
-        whereClauses.push(
-          `(
-            a.model_id ILIKE CAST(:search AS text)
-            OR a.model_alias ILIKE CAST(:search AS text)
-            OR m.model_name ILIKE CAST(:search AS text)
-            OR a.model_name_dadm ILIKE CAST(:search AS text)
-          )`
-        )
-        queryParams.search = `%${filters.search}%`
-      }
-
-      // Добавляем фильтры по атрибутам
-      if (filters?.model_alias) {
-        whereClauses.push('a.model_alias ILIKE CAST(:model_alias AS text)')
-        queryParams.model_alias = `%${filters.model_alias}%`
-      }
-
-      if (filters?.model_name) {
-        whereClauses.push('m.model_name ILIKE CAST(:model_name AS text)')
-        queryParams.model_name = `%${filters.model_name}%`
-      }
-
-      if (filters?.model_name_dadm) {
-        whereClauses.push('a.model_name_dadm ILIKE CAST(:model_name_dadm AS text)')
-        queryParams.model_name_dadm = `%${filters.model_name_dadm}%`
-      }
-
-      if (filters?.business_customer) {
-        whereClauses.push('a.business_customer ILIKE CAST(:business_customer AS text)')
-        queryParams.business_customer = `%${filters.business_customer}%`
-      }
-
-      if (filters?.business_customer_departament) {
-        whereClauses.push(
-          'a.business_customer_departament ILIKE CAST(:business_customer_departament AS text)'
-        )
-        queryParams.business_customer_departament = `%${filters.business_customer_departament}%`
-      }
-
-      // model_source не является артефактом — это признак базы данных (СУМ/СУРМ),
-      // поэтому изначально возвращаем 'sum-rm' для всех моделей из models_new
-      // (база СУРМ), а ниже по ID проверим присутствие в БД СУМ и переопределим
-      // на 'sum' для тех, которые реально заведены в СУМ (аналогично merge в
-      // ModelsService.getModels / ModelMergeService).
-      // Подзапрос агрегатов — от models_new LEFT JOIN артефактов: иначе INNER JOIN ar отбрасывает
-      // модель целиком при отсутствии строк с effective_to «текущая» (или при рассинхроне литерала timestamp).
-      // 2032: COALESCE каталога artefact_values и свободной строки artefact_string_value — иначе фильтр по
-      // департаменту не видит значение, хотя оно есть в реализации.
-      const sqlQuery = `
-        SELECT DISTINCT
-          a.system_model_id,
-          a.model_id,
-          a.model_alias,
-          m.model_name,
-          '${MODEL_SOURCES.MRM}' AS model_source,
-          a.model_name_dadm,
-          a.business_customer,
-          a.business_customer_departament
-        FROM models_new m
-        LEFT JOIN (
-          SELECT
-            m2.model_id                                                                                        AS system_model_id,
-            COALESCE(
-              NULLIF(
-                trim(
-                  both
-                  FROM
-                  MAX(
-                    CASE
-                      WHEN ar.artefact_id = 2001 THEN ar.artefact_string_value
-                      ELSE NULL
-                    END
-                  )
-                ),
-                ''
-              ),
-              CAST('model' || m2.root_model_id AS varchar) || '-v' || CAST(m2.model_version AS varchar)
-            )                                                                                                 AS model_id,
-            CAST('model' || m2.root_model_id AS varchar) || '-v' || CAST(m2.model_version AS varchar)         AS model_alias,
-            MAX(CASE WHEN ar.artefact_id = 2096 OR trim(both FROM COALESCE(ar.artefact_custom_type, '')) = 'model_name_dadm'
-                THEN ar.artefact_string_value ELSE NULL END)                                                 AS model_name_dadm,
-            MAX(CASE WHEN ar.artefact_id = 2031 THEN ar.artefact_string_value ELSE NULL END)                  AS business_customer,
-            MAX(CASE WHEN ar.artefact_id = 2075 THEN ar.artefact_string_value ELSE NULL END)                  AS assignment_contractor,
-            COALESCE(
-              NULLIF(
-                STRING_AGG(
-                  CASE WHEN ar.artefact_id = 2032 THEN av.artefact_value ELSE NULL END,
-                  ',' ORDER BY ar.artefact_value_id
-                ),
-                ''
-              ),
-              MAX(CASE WHEN ar.artefact_id = 2032 THEN ar.artefact_string_value ELSE NULL END)
-            )                                                                                                 AS business_customer_departament,
-            MAX(CASE WHEN ar.artefact_id = 2656 THEN ar.artefact_string_value ELSE NULL END)                  AS business_status
-          FROM models_new m2
-          LEFT JOIN artefact_realizations_new ar
-            ON ar.model_id = m2.model_id
-            AND ar.effective_to = TO_TIMESTAMP('9999-12-31 23:59:59', 'YYYY-MM-DD HH24:MI:SS')
-          LEFT JOIN artefact_values av ON ar.artefact_value_id = av.artefact_value_id AND av.is_active_flg = '1'
-          GROUP BY m2.model_id, m2.root_model_id, m2.model_version
-        ) a ON m.model_id = a.system_model_id
-        WHERE ${whereClauses.join(' AND ')}
-          AND a.model_id IS NOT NULL
-        ORDER BY a.model_id
-      `
-
-      // Дубликат queryConvert с MrmDatabaseService: сверка $N и массива значений (ловит «сломанные» :param).
-      const convPreview = queryConvert(sqlQuery, queryParams)
-      const dollarMatches = convPreview.text.match(/\$\d+/g) ?? []
-      const dollarIndices = dollarMatches.map((s) =>
-        Number(s.replace(/^\$/, ''))
-      )
-      const maxPgPlaceholder = dollarIndices.length
-        ? Math.max(...dollarIndices)
-        : 0
-      const bindPlaceholderMismatch =
-        maxPgPlaceholder > convPreview.values.length
-      const paramKeyStats = Object.keys(queryParams).reduce(
-        (acc, k) => {
-          if (k.startsWith('dept_bc_')) acc.dept_bc += 1
-          else if (k.startsWith('bc_nm_')) acc.bc_nm += 1
-          else acc.other += 1
-          return acc
-        },
-        { dept_bc: 0, bc_nm: 0, other: 0 }
-      )
-
-      this.logger.info(
-        '[ALLOC_DEBUG] quarterly models SQL bind (pre-execute)',
-        'ОтладкаСвязыванияSQLКвартальногоСписка',
-        {
-          namedParamKeys: Object.keys(queryParams).length,
-          pgValueSlots: convPreview.values.length,
-          whereAndParts: whereClauses.length,
-          paramKeyStats,
-          convertedSqlCharLength: convPreview.text.length,
-          maxPgPlaceholder,
-          bindPlaceholderMismatch,
-          sqlFingerprintSha256_16: createHash('sha256')
-            .update(convPreview.text)
-            .digest('hex')
-            .slice(0, 16)
-        }
-      )
-
-      if (bindPlaceholderMismatch) {
-        this.logger.warn(
-          '[ALLOC_DEBUG] PG $N exceeds bind array length — check queryConvert / :param names',
-          'ПредупреждениеРасхожденияПлейсхолдеровSQL',
-          {
-            maxPgPlaceholder,
-            pgValueSlots: convPreview.values.length
-          }
-        )
-      }
-
-      const models = await this.databaseService.query(sqlQuery, queryParams)
+      const { models, sumModelIdSet } =
+        await this.fetchAllocationCandidatesFromMergedRegistry(userGroups, filters)
 
       if (models.length === 0) {
         return []
@@ -437,48 +349,13 @@ export class QuarterlyConfirmationService {
       const systemModelIds = models.map((m) => m.system_model_id)
 
       this.logger.info(
-        '[ALLOC_DEBUG] Models fetched from DB (before prefill)',
-        'ОтладкаМоделиИзБД',
-        {
-          totalModels: models.length,
-          sampleSystemModelIds: systemModelIds.slice(0, 5)
-        }
-      )
-
-      // Определяем источник модели по наличию записи в БД СУМ.
-      // Логика аналогична ModelsService.getModels / ModelMergeService:
-      // если system_model_id присутствует в sum.models — считаем model_source='sum'.
-      const sumModelRows: { model_id: string }[] = await this.sumDatabaseService
-        .query(
-          `
-            SELECT model_id
-            FROM models
-            WHERE model_id::text = ANY(:system_model_ids)
-          `,
-          { system_model_ids: systemModelIds }
-        )
-        .catch((err) => {
-          this.logger.warn(
-            'Failed to resolve model_source from SUM db, defaulting to sum-rm',
-            'НеУдалосьОпределитьModelSourceИзСУМ',
-            { error: err instanceof Error ? err.message : String(err) }
-          )
-          return [] as { model_id: string }[]
-        })
-      const sumModelIdSet = new Set(sumModelRows.map((r) => String(r.model_id)))
-      for (const m of models) {
-        if (sumModelIdSet.has(String(m.system_model_id))) {
-          m.model_source = MODEL_SOURCES.SUM
-        }
-      }
-
-      this.logger.info(
-        '[ALLOC_DEBUG] model_source resolved via SUM db lookup',
-        'ОтладкаОпределенияИсточникаМодели',
+        '[ALLOC_DEBUG] Models fetched from merged registry (before prefill)',
+        'ОтладкаМоделиИзОбъединённогоРеестра',
         {
           totalModels: models.length,
           sumCount: sumModelIdSet.size,
-          mrmCount: models.length - sumModelIdSet.size
+          mrmCount: models.length - sumModelIdSet.size,
+          sampleSystemModelIds: systemModelIds.slice(0, 5)
         }
       )
 
@@ -819,7 +696,7 @@ export class QuarterlyConfirmationService {
         'Error getting models for confirmation',
         'ОшибкаПолученияМоделейДляПодтверждения',
         error,
-        { userDepartment, preferredUsername }
+        { userGroups, preferredUsername }
       )
       throw error
     }

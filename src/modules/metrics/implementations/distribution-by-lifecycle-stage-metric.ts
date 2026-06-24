@@ -1,13 +1,27 @@
 import { IndependentMetric } from '../base'
 import { DistributionByLifecycleStageModelsMetricResult } from '../interfaces'
+import { parseDate } from 'src/system/common/utils'
 
 export class DistributionByLifecycleStageMetric extends IndependentMetric<DistributionByLifecycleStageModelsMetricResult> {
   private filteredModels: any[] = []
   private lifecycleStages: Map<string, number>
+  private readonly implementedInPimStatuses = new Set([
+    'Модель была внедрена в ПИМ (старая модель)',
+    'Модель внедряется в ПИМ',
+    'Разработана, внедрена в ПИМ',
+    'Внедрена в ПИМ'
+  ])
+  private readonly implementedOutsidePimStatuses = new Set([
+    'Модель внедряется вне ПИМ',
+    'Разработана, внедрена вне ПИМ',
+    'Внедрена вне ПИМ'
+  ])
+  private readonly developedNotImplementedStatuses = new Set([
+    'Разработана, не внедрена'
+  ])
 
   calculate(): DistributionByLifecycleStageModelsMetricResult {
     this.filteredModels = []
-    // Use a Map to dynamically count occurrences of each model_status
     this.lifecycleStages = new Map<string, number>()
     const filteredModels = this.filterModels(
       this.models,
@@ -15,52 +29,24 @@ export class DistributionByLifecycleStageMetric extends IndependentMetric<Distri
       this.endDate
     )
 
-    // Iterate through all models to count model_status occurrences
     filteredModels.forEach((model) => {
-      const stage = model.model_status
-      const status = model.business_status
+      const segments = this.getSegments(model.model_stage, model.model_status)
 
-      if (!stage) {
+      if (!segments.length) {
         return
       }
 
-      const modelStageArray = stage.split(';')
-
-      modelStageArray.forEach((stageItem) => {
-        this.countStage(model, stageItem, status)
+      segments.forEach((segment) => {
+        this.countStage(model, segment)
       })
     })
 
-    // Convert the Map to an array of [status, count] pairs
     return Array.from(
       this.lifecycleStages.entries()
     ) as DistributionByLifecycleStageModelsMetricResult
   }
 
-  private countStage(model, stage, status) {
-    if (stage == 'Внедрена') {
-      if (
-        [
-          'Модель была внедрена в ПИМ (старая модель)',
-          'Модель внедряется в ПИМ',
-          'Разработана, внедрена в ПИМ',
-          'Внедрена в ПИМ'
-        ].includes(status)
-      ) {
-        stage = 'Внедрена в ПИМ'
-      }
-
-      if (
-        [
-          'Модель внедряется вне ПИМ',
-          'Разработана, внедрена вне ПИМ',
-          'Внедрена вне ПИМ'
-        ].includes(status)
-      ) {
-        stage = 'Внедрена вне ПИМ'
-      }
-    }
-
+  private countStage(model, stage) {
     this.filteredModels.push({ ...model, calculated_status: stage })
 
     if (this.lifecycleStages.has(stage)) {
@@ -73,8 +59,8 @@ export class DistributionByLifecycleStageMetric extends IndependentMetric<Distri
   public getFilteredRowData() {
     return this.filteredModels.map((model) => ({
       system_model_id: model.system_model_id,
-      status: model.business_status,
-      stage: model.model_status,
+      status: model.model_status,
+      stage: model.model_stage,
       normalized_stage: model.calculated_status
     }))
   }
@@ -90,25 +76,13 @@ export class DistributionByLifecycleStageMetric extends IndependentMetric<Distri
     )
 
     return models.filter((model) => {
-      const createDate = model.create_date ? new Date(model.create_date) : null
-      const releaseDate = model.date_of_introduction_into_operation
-        ? new Date(model.date_of_introduction_into_operation)
-        : null
-      const devEndDate = model.developing_end_date
-        ? new Date(model.developing_end_date)
-        : null
-      const pilotEndDate = model.data_completion_of_stage_05a
-        ? new Date(model.data_completion_of_stage_05a)
-        : null
+      const createDate = this.parseModelDate(model.create_date)
+      const releaseDate = this.parseModelDate(
+        model.date_of_introduction_into_operation
+      )
+      const devEndDate = this.parseModelDate(model.developing_end_date)
+      const pilotEndDate = this.parseModelDate(model.data_completion_of_stage_05a)
 
-      /**
-       * Если («Дата релиза» не равна пустому значению ИЛИ «Дата окончания разработки модели» не равна
-       * пустому значению ИЛИ «Дата окончания разработки пилотной модели» не равна пустому значению), то
-       * проверяем условие
-       * {
-       * [Если (один из атрибутов входит в выбранной временной срез: «Дата релиза» ИЛИ «Дата окончания
-       * разработки Модели» или «Дата завершения разработки пилота»)
-       */
       if (
         this.isWithinDateRange(releaseDate, actualStartDate, actualEndDate) ||
         this.isWithinDateRange(devEndDate, actualStartDate, actualEndDate) ||
@@ -117,9 +91,6 @@ export class DistributionByLifecycleStageMetric extends IndependentMetric<Distri
         return true
       }
 
-      /**
-       * Если («Дата создания» входит в выбранной временной срез
-       */
       if (
         releaseDate === null &&
         devEndDate === null &&
@@ -131,5 +102,71 @@ export class DistributionByLifecycleStageMetric extends IndependentMetric<Distri
 
       return false
     })
+  }
+
+  private getSegments(
+    stageValue: string | null | undefined,
+    statusValue: string | null | undefined
+  ): string[] {
+    const segments = new Set<string>()
+
+    this.getStages(stageValue).forEach((stage) => segments.add(stage))
+
+    const normalizedStatus = this.normalizeStatus(statusValue)
+    if (normalizedStatus) {
+      segments.add(normalizedStatus)
+    }
+
+    return Array.from(segments)
+  }
+
+  private getStages(stageValue: string | null | undefined): string[] {
+    if (typeof stageValue !== 'string') {
+      return []
+    }
+
+    return stageValue
+      .split(';')
+      .map((stage) => stage.trim())
+      .filter(Boolean)
+  }
+
+  private normalizeStatus(statusValue: string | null | undefined): string | null {
+    if (typeof statusValue !== 'string') {
+      return null
+    }
+
+    const statuses = statusValue
+      .split(';')
+      .map((status) => status.trim())
+      .filter(Boolean)
+
+    for (const status of statuses) {
+      if (this.implementedInPimStatuses.has(status)) {
+        return 'Внедрена в ПИМ'
+      }
+
+      if (this.implementedOutsidePimStatuses.has(status)) {
+        return 'Внедрена вне ПИМ'
+      }
+
+      if (this.developedNotImplementedStatuses.has(status)) {
+        return 'Разработана, не внедрена'
+      }
+    }
+
+    return null
+  }
+
+  private parseModelDate(value: string | Date | null | undefined): Date | null {
+    if (value == null) {
+      return null
+    }
+
+    if (typeof value === 'string' && value.trim() === '') {
+      return null
+    }
+
+    return parseDate(value)
   }
 }

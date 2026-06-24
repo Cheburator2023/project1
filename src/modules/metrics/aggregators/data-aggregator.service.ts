@@ -3,7 +3,7 @@ import { ModelsService } from 'src/modules/models/models.service'
 import { Model as AppModel } from 'src/modules/models/interfaces'
 import { Task } from 'src/modules/tasks/interfaces'
 import { UsersTasksService } from 'src/modules/tasks/services/users-tasks.service'
-import { MODEL_STATUS } from 'src/system/common/constants'
+import { ModelDisplayModeService } from 'src/modules/models/services'
 import {
   BiDatamartService,
   TasksDatamartService
@@ -14,6 +14,7 @@ import { MrmDatabaseService } from 'src/system/mrm-database/database.service'
 export class DataAggregator {
   constructor(
     private readonly modelsService: ModelsService,
+    private readonly modelDisplayModeService: ModelDisplayModeService,
     private readonly biDatamartService: BiDatamartService,
     private readonly tasksDatamartService: TasksDatamartService,
     private readonly mrmDatabaseService: MrmDatabaseService,
@@ -141,8 +142,8 @@ export class DataAggregator {
   private filterModelsForMetrics(models: AppModel[]): AppModel[] {
     return models.filter(
       (model) =>
-        model.business_status !== MODEL_STATUS.CREATION_ERROR &&
-        model.business_status !== MODEL_STATUS.PENDING_DELETE
+        !this.modelDisplayModeService.isCreationError(model) &&
+        !this.modelDisplayModeService.isPendingDelete(model)
     )
   }
 }

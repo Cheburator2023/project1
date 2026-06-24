@@ -1,6 +1,7 @@
 # Default values for mrms-backend.
 
 pullSecret: ci-dos
+envFromSecretName: ""
 
 replicaCount: 1
 
@@ -19,6 +20,8 @@ auditSidecar:
   env:
     SPRING_PROFILES_ACTIVE: dev
   resources: {}
+
+extraEnv: []
 
 resources:
   requests:

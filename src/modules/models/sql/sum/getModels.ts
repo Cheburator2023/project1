@@ -1,3 +1,6 @@
+import { modelStatusActiveJoin, modelStatusHistoryJoin } from './fragments/model-status.fragment'
+import { modelStageActiveJoin, modelStageHistoryJoin } from './fragments/model-stage.fragment'
+
 const getModels = `
 SELECT m_.model_id                                                                                           AS system_model_id,
        m_.models_is_active_flg,
@@ -61,13 +64,13 @@ SELECT m_.model_id                                                              
        dm_.buiseness_process_name,
        dm_.prom_datamart_name,
        dm_.assignment_contractor,
-       m_.model_status                                                                               AS camunda_model_status,
-       m_.model_stage                                                                                AS camunda_model_stage,
-       activeBpmnInstance.bpmn_instance_name                                                         AS model_status,
-       st.status                                                                                     AS business_status,
-       -- Используется для подсчета метрик: Динамика моделей по стримам 
+       model_status_hist.status                                                                      AS model_status,
+       null                                                                                          AS delete_status,
        activeBpmnInstance.bpmn_instance_name                                                         AS bpmn_key,
        null                                                                                          AS model_status_assignee,
+       model_stage_hist.active_stage                                                                 AS model_stage,
+       model_status_history.history                                                                  AS model_status_history,
+       model_stage_history.history                                                                   AS model_stage_history,
 
        -- Столбцы для дат подтверждения и флагов использования по кварталам
         usage_data.usage_confirm_date_q1,
@@ -206,102 +209,10 @@ ON m_.model_id = allocation_data.allocation_model_id
                     WHERE ar_.artefact_id IN (173, 6, 67, 73, 918, 919, 921)
                       AND ar_.effective_to = TO_TIMESTAMP('9999-12-31 23:59:59', 'YYYY-MM-DD HH24:MI:SS')
                     GROUP BY ar_.model_id) clsf_ ON m_.model_id = clsf_.model_id
-         LEFT JOIN
-         (
-             SELECT model_id,
-             STRING_AGG(status, ';') as status
-             FROM (
-                SELECT model_id,
-                    CASE
-                        WHEN (artefact_id = 896)
-                            AND (artefact_value_id IN (685))
-                            THEN 'Модель не эффективна в бизнес-процессе'
-                        WHEN (artefact_id = 827)
-                            AND (artefact_value_id IN (642))
-                            THEN 'Модель не эффективна в бизнес-процессе'
-                        WHEN artefact_id = 52
-                            AND artefact_string_value = 'Нет, доработки не актуальны'
-                            THEN 'Модель не эффективна в бизнес-процессе'
-
-                        WHEN artefact_id = 174
-                            AND (artefact_string_value is null OR artefact_string_value = 'false')
-                            THEN 'Разработана, не внедрена'
-                        WHEN artefact_id = 201
-                            AND (artefact_value_id IN (313, 314, 315))
-                            THEN artefact_string_value
-                        WHEN artefact_id = 896
-                            AND (artefact_value_id IN (683))
-                            THEN 'Разработана, не внедрена'
-                        WHEN artefact_id = 827
-                            AND (artefact_value_id IN (642, 643))
-                            THEN 'Разработана, не внедрена'
-                        WHEN artefact_id = 822
-                            AND (artefact_value_id IN (637))
-                            THEN 'Разработана, не внедрена'
-                        WHEN artefact_id = 367
-                            AND (artefact_value_id IN (519))
-                            THEN 'Разработана, не внедрена'
-                        WHEN artefact_id = 373
-                            AND (artefact_value_id IN (411))
-                            THEN 'Разработана, не внедрена'
-
-                        WHEN artefact_id = 323
-                            AND (artefact_value_id IN (426))
-                            THEN 'Архив'
-                        WHEN artefact_id = 351
-                            AND (artefact_value_id IN (399))
-                            THEN 'Архив'
-                        WHEN artefact_id = 152
-                            AND (artefact_value_id IN (35))
-                            THEN 'Архив'
-                        WHEN artefact_id = 822
-                            AND (artefact_value_id IN (638))
-                            THEN 'Архив'
-                        WHEN artefact_id = 818
-                            AND (artefact_value_id IN (632))
-                            THEN 'Архив'
-                        WHEN (artefact_id = 789)
-                            AND (artefact_string_value IS NOT NULL)
-                            THEN 'Архив'
-
-                        WHEN artefact_id = 323
-                            AND (artefact_value_id IN (427))
-                            THEN 'Разработана, не внедрена'
-
-                        WHEN (artefact_id = 780 OR artefact_id = 779)
-                            AND artefact_string_value = 'true'
-                            THEN 'Вывод модели из эксплуатации'
-
-                        WHEN (artefact_id = 853)
-                            AND (artefact_value_id IN (657, 658))
-                            THEN 'Разработана, внедрена в ПИМ'
-                        WHEN (artefact_id = 872)
-                            AND (artefact_value_id IN (667))
-                            THEN 'Разработана, внедрена в ПИМ'
-                        WHEN (artefact_id = 890)
-                            AND (artefact_value_id IN (670))
-                            THEN 'Разработана, внедрена в ПИМ'
-
-                        WHEN (artefact_id = 827)
-                            AND (artefact_value_id IN (641))
-                            THEN 'Разработана, внедрена вне ПИМ'
-                        WHEN (artefact_id = 853)
-                            AND (artefact_value_id IN (659))
-                            THEN 'Разработана, внедрена вне ПИМ'
-                        WHEN (artefact_id = 896)
-                            AND (artefact_value_id IN (684))
-                            THEN 'Разработана, внедрена вне ПИМ'
-
-                        WHEN (artefact_id = 825)
-                            AND (artefact_string_value = 'true')
-                            THEN 'Опытная эксплуатация на контуре разработки'
-                        END AS status
-                    FROM artefact_realizations
-                    WHERE effective_to = TO_TIMESTAMP('9999-12-31 23:59:59', 'YYYY-MM-DD HH24:MI:SS')
-             ) AS FOO
-             GROUP BY model_id
-         ) st
-         ON m_.model_id = st.model_id
+         ${modelStatusActiveJoin}
+         ${modelStageActiveJoin}
+         ${modelStatusHistoryJoin}
+         ${modelStageHistoryJoin}
          LEFT JOIN (
                 SELECT t2.model_id,
                        t2.bpmn_instance_name,
