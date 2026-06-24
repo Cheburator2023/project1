@@ -24,9 +24,13 @@ import {
   ModelsUpdateDto,
   ModelArtefactHistoryDto
 } from '../dto/index.dto'
-import { AuditService } from '../../modules/audit/audit.service';
-import { AUDIT_EVENT_SUMD_MRMSCREATEMODEL, AUDIT_EVENT_SUMD_MRMSREMOVEMODEL } from '../../modules/audit/audit.constants';
-import { v4 as uuidv4 } from 'uuid';
+import { AuditService } from '../../modules/audit/audit.service'
+import {
+  AUDIT_EVENT_SUMD_MRMSCREATEMODEL,
+  AUDIT_EVENT_SUMD_MRMSREMOVEMODEL,
+  AUDIT_EVENT_SUMD_MRMSEDITMODEL
+} from '../../modules/audit/audit.constants'
+import { v4 as uuidv4 } from 'uuid'
 
 @ApiTags('Модели')
 @Controller('models')
@@ -256,6 +260,47 @@ export class ModelsController {
   ) {
     const startTime = Date.now()
 
+    const initiator = {
+      sub: user?.preferred_username ?? user?.sub ?? 'unknown',
+      channel: 'internal',
+      realm: user?.realm ?? ''
+    }
+
+    // Определяем модели, которые будут удалены (переведены в статус "Архив")
+    const removalModelIds: string[] = []
+    const removalCorrelationIds: string[] = []
+
+    for (const modelItem of modelsArtefacts) {
+      const deleteArtefact = modelItem.artefacts.find(
+        (a) =>
+          a.artefact_tech_label === 'delete_status' &&
+          a.artefact_string_value === 'Архив'
+      )
+      if (deleteArtefact) {
+        removalModelIds.push(modelItem.model_id)
+        const corrId = uuidv4()
+        removalCorrelationIds.push(corrId)
+        // START для удаления
+        this.auditService.sendEvent(
+          AUDIT_EVENT_SUMD_MRMSREMOVEMODEL,
+          'START',
+          corrId,
+          initiator,
+          { modelId: modelItem.model_id }
+        )
+      }
+    }
+
+    // START для редактирования (общее событие)
+    const editCorrelationId = uuidv4()
+    this.auditService.sendEvent(
+      AUDIT_EVENT_SUMD_MRMSEDITMODEL,
+      'START',
+      editCorrelationId,
+      initiator,
+      { modelsCount: modelsArtefacts.length }
+    )
+
     try {
       // Create timeout promise (30 seconds)
       const timeoutPromise = new Promise((_, reject) =>
@@ -271,7 +316,27 @@ export class ModelsController {
         modelsArtefacts,
         user
       )
-      const cards = await Promise.race([updatePromise, timeoutPromise])
+      const cards = (await Promise.race([updatePromise, timeoutPromise])) as any[]
+
+      // SUCCESS для удаления для каждой удалённой модели
+      for (const corrId of removalCorrelationIds) {
+        this.auditService.sendEvent(
+          AUDIT_EVENT_SUMD_MRMSREMOVEMODEL,
+          'SUCCESS',
+          corrId,
+          initiator,
+          {}
+        )
+      }
+
+      // SUCCESS для редактирования
+      this.auditService.sendEvent(
+        AUDIT_EVENT_SUMD_MRMSEDITMODEL,
+        'SUCCESS',
+        editCorrelationId,
+        initiator,
+        { updatedModelsCount: cards?.length || 0 }
+      )
 
       const result = {
         data: {
@@ -285,6 +350,26 @@ export class ModelsController {
       return response.status(HttpStatus.ACCEPTED).json(result)
     } catch (error) {
       const duration = Date.now() - startTime
+
+      // FAILURE для удаления для каждой удалённой модели
+      for (const corrId of removalCorrelationIds) {
+        this.auditService.sendEvent(
+          AUDIT_EVENT_SUMD_MRMSREMOVEMODEL,
+          'FAILURE',
+          corrId,
+          initiator,
+          { errorMessage: error.message }
+        )
+      }
+
+      // FAILURE для редактирования
+      this.auditService.sendEvent(
+        AUDIT_EVENT_SUMD_MRMSEDITMODEL,
+        'FAILURE',
+        editCorrelationId,
+        initiator,
+        { errorMessage: error.message }
+      )
 
       if (error.message.includes('timed out')) {
         return response.status(HttpStatus.REQUEST_TIMEOUT).json({

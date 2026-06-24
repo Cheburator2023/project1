@@ -1,10 +1,11 @@
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { Injectable, OnModuleInit } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { ConfigService } from '@nestjs/config';
 import { firstValueFrom } from 'rxjs';
 import { timeout, catchError } from 'rxjs/operators';
 import { AxiosError } from 'axios';
 import { v4 as uuidv4 } from 'uuid';
+import { LoggerService } from '../../system/logger/logger.service';
 import {
   DEFAULT_SIDECAR_URL,
   DEFAULT_TIMEOUT_MS,
@@ -32,7 +33,6 @@ interface PendingAuditEvent {
 
 @Injectable()
 export class AuditService implements OnModuleInit {
-  private readonly logger = new Logger(AuditService.name);
   private readonly queue: PendingAuditEvent[] = [];
   private isProcessing = false;
   private retryTimer: NodeJS.Timeout | null = null;
@@ -45,6 +45,7 @@ export class AuditService implements OnModuleInit {
   constructor(
     private readonly httpService: HttpService,
     private readonly configService: ConfigService,
+    private readonly logger: LoggerService,
   ) {
     this.enabled =
       this.configService.get<string>('AUDIT_ENABLED', 'true') === 'true';
@@ -71,11 +72,12 @@ export class AuditService implements OnModuleInit {
   onModuleInit(): void {
     if (this.enabled) {
       this.startRetryTimer();
-      this.logger.log(
+      this.logger.info(
         `Audit service enabled – sidecar URL: ${this.sidecarUrl}, timeout: ${this.timeoutMs}ms, retry: ${this.retryIntervalMs}ms`,
+        'Системное',
       );
     } else {
-      this.logger.log('Audit service disabled');
+      this.logger.info('Audit service disabled', 'Системное');
     }
   }
 
@@ -87,7 +89,7 @@ export class AuditService implements OnModuleInit {
     additionalFields?: Record<string, unknown>,
   ): void {
     if (!this.enabled) {
-      this.logger.debug('Audit is disabled – event discarded');
+      this.logger.debug('Audit is disabled – event discarded', 'Отладка');
       return;
     }
 
@@ -107,9 +109,13 @@ export class AuditService implements OnModuleInit {
     };
 
     this.queue.push(pending);
-    this.logger.debug(
-      `Enqueued audit event: ${eventCode} (${eventClass}), correlationId: ${correlationId}`,
+
+    this.logger.info(
+      `[Audit] ${eventClass}/${eventCode} sent, correlationId=${correlationId}`,
+      'Отладка',
+      { eventCode, eventClass, correlationId, initiator, additionalFields },
     );
+
     this.flush();
   }
 
@@ -123,8 +129,11 @@ export class AuditService implements OnModuleInit {
       try {
         await this.sendSingleEvent(pending.request);
       } catch (error) {
+        const message = (error as Error).message;
         this.logger.warn(
-          `Failed to send audit event ${pending.id}: ${(error as Error).message}`,
+          `[Audit] Failed to send event ${pending.id}: ${message}`,
+          'Ошибка',
+          { id: pending.id, request: pending.request },
         );
         this.queue.push(pending);
       }
@@ -133,7 +142,6 @@ export class AuditService implements OnModuleInit {
   }
 
   private async sendSingleEvent(request: SidecarAuditRequest): Promise<void> {
-    // Используем sidecarUrl как есть (он уже содержит полный путь, включая /api/v2/audit)
     const url = this.sidecarUrl;
     const request$ = this.httpService
       .post(url, request, {
@@ -151,7 +159,8 @@ export class AuditService implements OnModuleInit {
       );
     await firstValueFrom(request$);
     this.logger.debug(
-      `Audit event sent: ${request.eventCode} (${request.eventClass}) correlationId=${request.correlationId}`,
+      `[Audit] Successfully sent event ${request.eventCode} (${request.eventClass}) correlationId=${request.correlationId}`,
+      'Отладка',
     );
   }
 

@@ -1,5 +1,3 @@
-// C:\Users\Zver\WebstormProjects\project1\src\app.module.ts
-
 import { Module, OnModuleInit } from '@nestjs/common';
 import { APP_GUARD, Reflector } from '@nestjs/core';
 import { ConfigModule } from '@nestjs/config';
