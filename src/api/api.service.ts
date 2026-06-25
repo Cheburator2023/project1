@@ -22,9 +22,10 @@ import {
   TemplateUpdateDto
 } from './dto/index.dto'
 
-import { sortOrder, TECH_LABELS_HISTORY_ONLY_IN_SUM_RM } from './constants'
+import { sortOrder } from './constants'
 import { ModelsService } from '../modules/models/models.service'
 import { Model } from 'src/modules/models/interfaces'
+import { ArtefactHistorySourceService } from 'src/modules/artefacts/services'
 
 interface LegacyTemplateValue {
   [key: string]: string[]
@@ -58,43 +59,32 @@ export class ApiService {
     private readonly sumDatabaseService: SumDatabaseService,
     private readonly mrmDatabaseService: MrmDatabaseService,
     private readonly modelsCacheService: ModelsCacheService,
-    private readonly modelsService: ModelsService
+    private readonly modelsService: ModelsService,
+    private readonly artefactHistorySourceService: ArtefactHistorySourceService
   ) {}
 
   async getModelHistory(query: ModelArtefactHistoryDto) {
     const { model_id, artefact_tech_label } = query
-    const model_source = query.model_source || ModelSource.SUM_RM
+    const model_source = (query.model_source ||
+      ModelSource.SUM_RM) as ModelSource
+
+    const readSource = await this.artefactHistorySourceService.resolveReadSource(
+      artefact_tech_label,
+      model_source
+    )
 
     let result = []
 
-    if (
-      model_source === ModelSource.SUM &&
-      !TECH_LABELS_HISTORY_ONLY_IN_SUM_RM.includes(artefact_tech_label)
-    ) {
+    if (readSource === 'sum') {
       result = await this.sumDatabaseService.query(getSumModelHistorySql, {
         model_id,
         artefact_tech_label
       })
-    } else if (
-      model_source === ModelSource.SUM_RM ||
-      TECH_LABELS_HISTORY_ONLY_IN_SUM_RM.includes(artefact_tech_label)
-    ) {
+    } else {
       result = await this.mrmDatabaseService.query(getSumRmModelHistorySql, {
         model_id,
         artefact_tech_label
       })
-    } else {
-      const [sumResult, mrmResult] = await Promise.all([
-        this.sumDatabaseService.query(getSumModelHistorySql, {
-          model_id,
-          artefact_tech_label
-        }),
-        this.mrmDatabaseService.query(getSumRmModelHistorySql, {
-          model_id,
-          artefact_tech_label
-        })
-      ])
-      result = [...sumResult, ...mrmResult]
     }
 
     const sortedResult = [...result].sort(
