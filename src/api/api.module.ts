@@ -25,6 +25,7 @@ import { RolesGuard } from 'src/api/guards/roles.guard'
 import { RateLimitGuard } from 'src/api/guards/rate-limit.guard'
 import { ErrorHandlerService } from 'src/common/services/error-handler.service'
 import { AuditModule } from '../modules/audit/audit.module'
+import { AuditController } from './controllers/audit.controller';
 
 @Module({
   controllers: [
@@ -37,6 +38,7 @@ import { AuditModule } from '../modules/audit/audit.module'
     ReportsController,
     BiDatamartController,
     JsonReportController,
+    AuditController,
     QuarterlyConfirmationController
   ],
   providers: [ApiService, RolesGuard, RateLimitGuard, ErrorHandlerService],
