@@ -14,7 +14,7 @@ export class ArtefactHistorySourceService {
   async resolveReadSource(
     artefactTechLabel: string,
     modelSource: ModelSource
-  ): Promise<HistoryReadSource> {
+  ): Promise<HistoryReadSource | null> {
     const rows = await this.mrmDatabaseService.query(
       loadArtefactHistorySourceSql,
       {
@@ -25,9 +25,7 @@ export class ArtefactHistorySourceService {
 
     const historySource = rows[0]?.history_source
     if (!isHistoryReadSource(historySource)) {
-      throw new Error(
-        `History source not configured for ${artefactTechLabel} (${modelSource})`
-      )
+      return null
     }
 
     return historySource

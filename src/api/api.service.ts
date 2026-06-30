@@ -73,6 +73,10 @@ export class ApiService {
       model_source
     )
 
+    if (!readSource) {
+      return []
+    }
+
     let result = []
 
     if (readSource === 'sum') {
