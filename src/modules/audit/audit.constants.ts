@@ -7,4 +7,3 @@ export const AUDIT_EVENT_SUMD_MRMSEDITMODEL = 'SUMD_MRMSEDITMODEL';
 export const DEFAULT_SIDECAR_URL = 'http://localhost:8081/api/v2/audit';
 export const DEFAULT_TIMEOUT_MS = 3000;
 export const DEFAULT_RETRY_INTERVAL_MS = 30000;
-export const DEFAULT_GENERATOR_INTERVAL_MS = 10000;
