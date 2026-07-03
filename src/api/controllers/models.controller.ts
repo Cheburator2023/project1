@@ -31,6 +31,8 @@ import {
   AUDIT_EVENT_SUMD_MRMSEDITMODEL
 } from '../../modules/audit/audit.constants'
 import { v4 as uuidv4 } from 'uuid'
+import { MODEL_STATUS } from 'src/system/common/constants/model-status'
+import { LoggerService } from 'src/system/logger/logger.service'
 
 @ApiTags('Модели')
 @Controller('models')
@@ -40,7 +42,8 @@ export class ModelsController {
     private readonly modelDisplayModeService: ModelDisplayModeService,
     private readonly modelsCacheService: ModelsCacheService,
     private readonly apiService: ApiService,
-    private readonly auditService: AuditService
+    private readonly auditService: AuditService,
+    private readonly logger: LoggerService,
   ) {}
 
   private filterCachedModels(
@@ -266,40 +269,84 @@ export class ModelsController {
       realm: user?.realm ?? ''
     }
 
-    // Определяем модели, которые будут удалены (переведены в статус "Архив")
-    const removalModelIds: string[] = []
-    const removalCorrelationIds: string[] = []
+    // Для каждой модели определяем тип события и создаём запись
+    const modelAuditInfo: Array<{
+      modelId: string
+      isRemoval: boolean
+      correlationId: string
+    }> = []
 
     for (const modelItem of modelsArtefacts) {
-      const deleteArtefact = modelItem.artefacts.find(
-        (a) =>
-          a.artefact_tech_label === 'delete_status' &&
-          a.artefact_string_value === 'Архив'
-      )
-      if (deleteArtefact) {
-        removalModelIds.push(modelItem.model_id)
-        const corrId = uuidv4()
-        removalCorrelationIds.push(corrId)
-        // START для удаления
-        this.auditService.sendEvent(
-          AUDIT_EVENT_SUMD_MRMSREMOVEMODEL,
-          'START',
-          corrId,
-          initiator,
-          { modelId: modelItem.model_id }
-        )
-      }
-    }
+      // Диагностическое логирование всех артефактов (уровень DEBUG)
+      // Включите при необходимости, чтобы увидеть реальные данные
+      this.logger.info(
+        `Artefacts for model ${modelItem.model_id}:`,
+        'ДиагностикаУдаления',
+        { artefacts: modelItem.artefacts }
+      );
 
-    // START для редактирования (общее событие)
-    const editCorrelationId = uuidv4()
-    this.auditService.sendEvent(
-      AUDIT_EVENT_SUMD_MRMSEDITMODEL,
-      'START',
-      editCorrelationId,
-      initiator,
-      { modelsCount: modelsArtefacts.length }
-    )
+      // Определяем, является ли это удалением по нескольким признакам
+      const isRemoval = modelItem.artefacts.some((a) => {
+        // Признак 1: delete_status = 'Ожидает удаления'
+        if (
+          a.artefact_tech_label === 'delete_status' &&
+          a.artefact_string_value === MODEL_STATUS.PENDING_DELETE
+        ) {
+          return true
+        }
+        // Признак 2: delete_status = 'Ошибка заведения'
+        if (
+          a.artefact_tech_label === 'delete_status' &&
+          a.artefact_string_value === MODEL_STATUS.CREATION_ERROR
+        ) {
+          return true
+        }
+        // Признак 3: model_status = 'Архив'
+        if (
+          a.artefact_tech_label === 'model_status' &&
+          a.artefact_string_value === MODEL_STATUS.ARCHIVE
+        ) {
+          return true
+        }
+        // Признак 4: model_status = 'Ожидает удаления'
+        if (
+          a.artefact_tech_label === 'model_status' &&
+          a.artefact_string_value === MODEL_STATUS.PENDING_DELETE
+        ) {
+          return true
+        }
+        // Признак 5: наличие артефакта с причиной удаления (дополнительный)
+        if (
+          a.artefact_tech_label === 'reason_model_delete' &&
+          a.artefact_string_value &&
+          a.artefact_string_value.trim() !== ''
+        ) {
+          return true
+        }
+        return false
+      });
+
+      const correlationId = uuidv4();
+
+      modelAuditInfo.push({
+        modelId: modelItem.model_id,
+        isRemoval,
+        correlationId
+      });
+
+      // Отправляем START для этой модели
+      const eventCode = isRemoval
+        ? AUDIT_EVENT_SUMD_MRMSREMOVEMODEL
+        : AUDIT_EVENT_SUMD_MRMSEDITMODEL;
+
+      this.auditService.sendEvent(
+        eventCode,
+        'START',
+        correlationId,
+        initiator,
+        { modelId: modelItem.model_id }
+      )
+    }
 
     try {
       // Create timeout promise (30 seconds)
@@ -318,25 +365,20 @@ export class ModelsController {
       )
       const cards = (await Promise.race([updatePromise, timeoutPromise])) as any[]
 
-      // SUCCESS для удаления для каждой удалённой модели
-      for (const corrId of removalCorrelationIds) {
+      // Отправляем SUCCESS для каждой модели
+      for (const info of modelAuditInfo) {
+        const eventCode = info.isRemoval
+          ? AUDIT_EVENT_SUMD_MRMSREMOVEMODEL
+          : AUDIT_EVENT_SUMD_MRMSEDITMODEL;
+
         this.auditService.sendEvent(
-          AUDIT_EVENT_SUMD_MRMSREMOVEMODEL,
+          eventCode,
           'SUCCESS',
-          corrId,
+          info.correlationId,
           initiator,
           {}
         )
       }
-
-      // SUCCESS для редактирования
-      this.auditService.sendEvent(
-        AUDIT_EVENT_SUMD_MRMSEDITMODEL,
-        'SUCCESS',
-        editCorrelationId,
-        initiator,
-        { updatedModelsCount: cards?.length || 0 }
-      )
 
       const result = {
         data: {
@@ -351,25 +393,20 @@ export class ModelsController {
     } catch (error) {
       const duration = Date.now() - startTime
 
-      // FAILURE для удаления для каждой удалённой модели
-      for (const corrId of removalCorrelationIds) {
+      // Отправляем FAILURE для каждой модели
+      for (const info of modelAuditInfo) {
+        const eventCode = info.isRemoval
+          ? AUDIT_EVENT_SUMD_MRMSREMOVEMODEL
+          : AUDIT_EVENT_SUMD_MRMSEDITMODEL;
+
         this.auditService.sendEvent(
-          AUDIT_EVENT_SUMD_MRMSREMOVEMODEL,
+          eventCode,
           'FAILURE',
-          corrId,
+          info.correlationId,
           initiator,
           { errorMessage: error.message }
         )
       }
-
-      // FAILURE для редактирования
-      this.auditService.sendEvent(
-        AUDIT_EVENT_SUMD_MRMSEDITMODEL,
-        'FAILURE',
-        editCorrelationId,
-        initiator,
-        { errorMessage: error.message }
-      )
 
       if (error.message.includes('timed out')) {
         return response.status(HttpStatus.REQUEST_TIMEOUT).json({
