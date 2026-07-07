@@ -1,4 +1,4 @@
-const HISTORY_READ_SOURCES = ['sum', 'mrm'] as const
+const HISTORY_READ_SOURCES = ['sum', 'mrm', 'merge'] as const
 
 type HistoryReadSource = (typeof HISTORY_READ_SOURCES)[number]
 

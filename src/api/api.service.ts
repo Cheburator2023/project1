@@ -79,12 +79,24 @@ export class ApiService {
 
     let result = []
 
-    if (readSource === 'sum') {
+    if (readSource === 'merge') {
+      const [sumResult, mrmResult] = await Promise.all([
+        this.sumDatabaseService.query(getSumModelHistorySql, {
+          model_id,
+          artefact_tech_label
+        }),
+        this.mrmDatabaseService.query(getSumRmModelHistorySql, {
+          model_id,
+          artefact_tech_label
+        })
+      ])
+      result = [...sumResult, ...mrmResult]
+    } else if (readSource === 'sum') {
       result = await this.sumDatabaseService.query(getSumModelHistorySql, {
         model_id,
         artefact_tech_label
       })
-    } else {
+    } else if (readSource === 'mrm') {
       result = await this.mrmDatabaseService.query(getSumRmModelHistorySql, {
         model_id,
         artefact_tech_label
