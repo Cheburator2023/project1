@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common'
+import { BadRequestException, Injectable } from '@nestjs/common'
 import { MrmDatabaseService } from 'src/system/mrm-database/database.service'
 import { SumDatabaseService } from 'src/system/sum-database/database.service'
 import { LoggerService } from 'src/system/logger/logger.service'
@@ -14,6 +14,7 @@ import {
 } from './dto/quarterly-confirmation.dto'
 import { UpdateUsageResult } from 'src/modules/usage/dto'
 import { ModelsService } from 'src/modules/models/models.service'
+import { resolveActiveQuarter } from './quarter-availability'
 
 /** Строка реестра для аллокации до обогащения prefill/registry_card. */
 type AllocationCandidateModel = {
@@ -180,32 +181,7 @@ export class QuarterlyConfirmationService {
   ) {}
 
   getActiveQuarter(): QuarterInfoDto | null {
-    const now = new Date()
-    const currentYear = now.getFullYear()
-    const activeQuarter = {
-      quarter: Math.floor(now.getMonth() / 3) + 1,
-      year: currentYear
-    }
-
-    const startDate = new Date(
-      activeQuarter.year,
-      (activeQuarter.quarter - 1) * 3,
-      1
-    )
-    const endDate = new Date(activeQuarter.year, activeQuarter.quarter * 3, 0)
-    const maxDate = new Date(
-      activeQuarter.year,
-      activeQuarter.quarter * 3 + 1,
-      0
-    )
-
-    const result = {
-      quarter: activeQuarter.quarter,
-      year: activeQuarter.year,
-      startDate: startDate.toISOString().split('T')[0],
-      endDate: endDate.toISOString().split('T')[0],
-      maxDate: maxDate.toISOString().split('T')[0]
-    }
+    const result = resolveActiveQuarter()
 
     this.logger.info(
       '[ALLOC_DEBUG] Active quarter selected',
@@ -732,6 +708,20 @@ export class QuarterlyConfirmationService {
     )
 
     try {
+      const activeQuarter = this.getActiveQuarter()
+      if (
+        !activeQuarter ||
+        activeQuarter.quarter !== data.quarter ||
+        activeQuarter.year !== data.year
+      ) {
+        const activeQuarterLabel = activeQuarter
+          ? `Q${activeQuarter.quarter} ${activeQuarter.year}`
+          : 'отсутствует'
+        throw new BadRequestException(
+          `Квартал Q${data.quarter} ${data.year} недоступен для подтверждения. Активный квартал: ${activeQuarterLabel}`
+        )
+      }
+
       const modelsToSave = data.models.filter(
         (m) => m.is_used !== null && m.is_used !== undefined
       )
