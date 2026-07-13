@@ -42,6 +42,12 @@ export const INTEGRATION_MODEL_ARTEFACTS = [
   'final_version_spec'
 ]
 
+export const INTEGRATION_MODEL_V30_ARTEFACTS = [
+  'allocation_assessment_parameters',
+  'allocation_assessment_class',
+  'output_table'
+]
+
 export const TEST_PREPROD_TRANSFER_PROD_ARTEFACTS = [
   'integration_decree_date',
   'release',

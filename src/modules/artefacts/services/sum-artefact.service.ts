@@ -5,6 +5,7 @@ import {
   SUM_TABLES,
   ALWAYS_ALLOWED_ARTEFACTS,
   INTEGRATION_MODEL_ARTEFACTS,
+  INTEGRATION_MODEL_V30_ARTEFACTS,
   TEST_PREPROD_TRANSFER_PROD_ARTEFACTS,
   MODEL_FINAL_STATUSES,
   SPECIAL_SCHEMAS_VERSION_TAGS,
@@ -57,13 +58,13 @@ export class SumArtefactService
         MODEL_FINAL_STATUSES.includes(model.model_status)
       ) {
         // Получаем version tag схемы текущей модели через process instance
-        const processInstances =
-          await this.camundaService.getProcessInstancesByModel(modelId)
+        const historyProcessInstances = 
+          await this.camundaService.getHistoryProcessInstancesByModel(modelId)
 
-        if (processInstances.length) {
+        if (historyProcessInstances.length) {
           const processDefinition =
             await this.camundaService.getProcessDefinitionById(
-              processInstances[0].definitionId
+              historyProcessInstances[0].processDefinitionId
             )
 
           // Если в схеме отсутствуют процессы INTEGRATION_MODEL и TEST_PREPROD_TRANSFER_PROD
@@ -75,6 +76,22 @@ export class SumArtefactService
               ...artefactExceptions,
               ...INTEGRATION_MODEL_ARTEFACTS,
               ...TEST_PREPROD_TRANSFER_PROD_ARTEFACTS
+            ]
+          }
+
+          const integrationModelProcess = historyProcessInstances.filter(
+            (item) => item.processDefinitionKey === 'inegration_model'
+          )
+
+          if (
+            integrationModelProcess.length &&
+            integrationModelProcess[integrationModelProcess.length - 1]
+              .processDefinitionVersion < 30
+          ) {
+            // Добавляем в исключения все отсутствующие в схеме артефакты
+            artefactExceptions = [
+              ...artefactExceptions,
+              ...INTEGRATION_MODEL_V30_ARTEFACTS,
             ]
           }
         }
