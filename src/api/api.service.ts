@@ -52,6 +52,18 @@ interface NewTemplateValue {
   selectedIds: string[]
 }
 
+type HistoryChangeSource = 'sum' | 'mrm'
+
+interface RawHistoryRow {
+  artefact_id: number | string
+  artefact_label?: string
+  artefact_value_id?: number | null
+  artefact_string_value: string
+  effective_from: string
+  creator?: string | null
+  change_source: HistoryChangeSource
+}
+
 @Injectable({ scope: Scope.REQUEST })
 export class ApiService {
   constructor(
@@ -91,18 +103,27 @@ export class ApiService {
           cutover_at: null
         })
       ])
-      result = [...sumResult, ...mrmResult]
+      result = [
+        ...this.tagHistoryRows(sumResult, 'sum'),
+        ...this.tagHistoryRows(mrmResult, 'mrm')
+      ]
     } else if (readSource === 'sum') {
-      result = await this.sumDatabaseService.query(getSumModelHistorySql, {
-        model_id,
-        artefact_tech_label
-      })
+      result = this.tagHistoryRows(
+        await this.sumDatabaseService.query(getSumModelHistorySql, {
+          model_id,
+          artefact_tech_label
+        }),
+        'sum'
+      )
     } else if (readSource === 'mrm') {
-      result = await this.mrmDatabaseService.query(getSumRmModelHistorySql, {
-        model_id,
-        artefact_tech_label,
-        cutover_at: null
-      })
+      result = this.tagHistoryRows(
+        await this.mrmDatabaseService.query(getSumRmModelHistorySql, {
+          model_id,
+          artefact_tech_label,
+          cutover_at: null
+        }),
+        'mrm'
+      )
     } else if (readSource === 'partial_sync') {
       const cutoverAt =
         await this.artefactHistorySourceService.getPartialSyncCutoverAt(
@@ -111,15 +132,21 @@ export class ApiService {
         )
 
       result = cutoverAt
-        ? await this.mrmDatabaseService.query(getSumRmModelHistorySql, {
-            model_id,
-            artefact_tech_label,
-            cutover_at: cutoverAt
-          })
-        : await this.sumDatabaseService.query(getSumModelHistorySql, {
-            model_id,
-            artefact_tech_label
-          })
+        ? this.tagHistoryRows(
+            await this.mrmDatabaseService.query(getSumRmModelHistorySql, {
+              model_id,
+              artefact_tech_label,
+              cutover_at: cutoverAt
+            }),
+            'mrm'
+          )
+        : this.tagHistoryRows(
+            await this.sumDatabaseService.query(getSumModelHistorySql, {
+              model_id,
+              artefact_tech_label
+            }),
+            'sum'
+          )
     }
 
     const sortedResult = [...result].sort(
@@ -128,25 +155,33 @@ export class ApiService {
         new Date(a.effective_from).getTime()
     )
 
-    return sortedResult.map((item) => {
-      return {
-        ...item,
-        artefact_id: Number(item.artefact_id),
-        artefact_value: item.artefact_string_value,
-        effective_from: {
-          timestamp: item.effective_from,
-          timestamp_formatted: new Date(item.effective_from).toLocaleString(
-            'ru'
-          )
-        },
-        artefact_value_id: undefined,
-        artefact_string_value: undefined,
-        creator: undefined,
-        editor: {
-          username: item.creator
-        }
+    return sortedResult.map((item) => this.formatHistoryRow(item))
+  }
+
+  private tagHistoryRows(
+    rows: Record<string, unknown>[],
+    changeSource: HistoryChangeSource
+  ): RawHistoryRow[] {
+    return rows.map((row) => ({
+      ...(row as Omit<RawHistoryRow, 'change_source'>),
+      change_source: changeSource
+    }))
+  }
+
+  private formatHistoryRow(item: RawHistoryRow) {
+    return {
+      artefact_id: Number(item.artefact_id),
+      artefact_label: item.artefact_label,
+      artefact_value: item.artefact_string_value,
+      change_source: item.change_source,
+      effective_from: {
+        timestamp: item.effective_from,
+        timestamp_formatted: new Date(item.effective_from).toLocaleString('ru')
+      },
+      editor: {
+        username: item.creator
       }
-    })
+    }
   }
 
   async createTemplate(templateCreateDto: TemplateCreateDto, user) {
