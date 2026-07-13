@@ -6,7 +6,8 @@ import { ICamundaService } from './interfaces'
 import {
   CamundaTask,
   CamundaProcessInstance,
-  CamundaProcessDefinition
+  CamundaProcessDefinition,
+  CamundaHistoryProcessInstance
 } from './entities'
 import * as querystring from 'querystring'
 
@@ -120,6 +121,37 @@ export class CamundaService implements ICamundaService {
     } catch (error) {
       throw new Error(
         `Failed to fetch process instances by model: ${error.message}`
+      )
+    }
+  }
+
+  /**
+   * Retrieves a list of historic process instances by model ID in it's variables.
+   * @param modelId
+   * @param sortOrder
+   * @param sortBy
+   * @returns A promise that resolves to an array of CamundaHistoryProcessInstance objects.
+   */
+  async getHistoryProcessInstancesByModel(
+    modelId: string,
+    sortOrder?: string,
+    sortBy?: string
+  ): Promise<CamundaHistoryProcessInstance[]> {
+    const params: Record<string, any> = {}
+    params.variables = `model_eq_${modelId}`
+    params.sortOrder = sortOrder || 'asc'
+    params.sortBy = sortBy || 'startTime'
+
+    try {
+      const processInstances = await this.makeRequest<any[]>(
+        'get',
+        'history/process-instance',
+        params
+      )
+      return processInstances
+    } catch (error) {
+      throw new Error(
+        `Failed to fetch history process instances by model: ${error.message}`
       )
     }
   }
