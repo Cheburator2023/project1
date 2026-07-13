@@ -24,6 +24,8 @@ WHERE
     ar_.model_id = :model_id
 AND
     a_.artefact_tech_label = :artefact_tech_label
+AND
+    (:cutover_at::timestamptz IS NULL OR ar_.effective_from >= :cutover_at::timestamptz)
 ORDER BY
     ar_.artefact_id,
     av_.artefact_value_id

@@ -6,6 +6,8 @@ import {
   isHistoryReadSource
 } from '../constants/history-read-source'
 import { sql as loadArtefactHistorySourceSql } from '../sql/load-artefact-history-source'
+import { sql as loadPartialSyncCutoverSql } from '../sql/load-partial-sync-cutover'
+import { sql as insertSyncCutoverSql } from '../sql/insert-sync-cutover'
 
 @Injectable()
 export class ArtefactHistorySourceService {
@@ -29,5 +31,31 @@ export class ArtefactHistorySourceService {
     }
 
     return historySource
+  }
+
+  async getPartialSyncCutoverAt(
+    modelId: string,
+    artefactTechLabel: string
+  ): Promise<string | null> {
+    const rows = await this.mrmDatabaseService.query(loadPartialSyncCutoverSql, {
+      model_id: modelId,
+      model_uuid: modelId,
+      artefact_tech_label: artefactTechLabel
+    })
+
+    return rows[0]?.cutover_at ?? null
+  }
+
+  async recordSyncCutoverIfNeeded(
+    modelId: string,
+    artefactTechLabel: string,
+    brokenBy?: string | null
+  ): Promise<void> {
+    await this.mrmDatabaseService.query(insertSyncCutoverSql, {
+      model_id: modelId,
+      model_uuid: modelId,
+      artefact_tech_label: artefactTechLabel,
+      broken_by: brokenBy ?? null
+    })
   }
 }

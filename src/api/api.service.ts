@@ -87,7 +87,8 @@ export class ApiService {
         }),
         this.mrmDatabaseService.query(getSumRmModelHistorySql, {
           model_id,
-          artefact_tech_label
+          artefact_tech_label,
+          cutover_at: null
         })
       ])
       result = [...sumResult, ...mrmResult]
@@ -99,8 +100,26 @@ export class ApiService {
     } else if (readSource === 'mrm') {
       result = await this.mrmDatabaseService.query(getSumRmModelHistorySql, {
         model_id,
-        artefact_tech_label
+        artefact_tech_label,
+        cutover_at: null
       })
+    } else if (readSource === 'partial_sync') {
+      const cutoverAt =
+        await this.artefactHistorySourceService.getPartialSyncCutoverAt(
+          model_id,
+          artefact_tech_label
+        )
+
+      result = cutoverAt
+        ? await this.mrmDatabaseService.query(getSumRmModelHistorySql, {
+            model_id,
+            artefact_tech_label,
+            cutover_at: cutoverAt
+          })
+        : await this.sumDatabaseService.query(getSumModelHistorySql, {
+            model_id,
+            artefact_tech_label
+          })
     }
 
     const sortedResult = [...result].sort(
@@ -109,7 +128,7 @@ export class ApiService {
         new Date(a.effective_from).getTime()
     )
 
-    const formattedResult = sortedResult.map((item) => {
+    return sortedResult.map((item) => {
       return {
         ...item,
         artefact_id: Number(item.artefact_id),
@@ -128,8 +147,6 @@ export class ApiService {
         }
       }
     })
-
-    return formattedResult
   }
 
   async createTemplate(templateCreateDto: TemplateCreateDto, user) {
