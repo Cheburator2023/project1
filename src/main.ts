@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-var-requires */
-require('dotenv').config({ path: '.env.dev' })
+require('dotenv').config({ path: '.env' })
 
 process.env.MODEL_CACHE_ENABLED = 'false'
 
