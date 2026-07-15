@@ -38,7 +38,6 @@ export class ArtefactHistorySourceService {
     artefactTechLabel: string
   ): Promise<string | null> {
     const rows = await this.mrmDatabaseService.query(loadPartialSyncCutoverSql, {
-      model_id: modelId,
       model_uuid: modelId,
       artefact_tech_label: artefactTechLabel
     })
