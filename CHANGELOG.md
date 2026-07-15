@@ -1,5 +1,18 @@
 # Semantic Versioning Changelog
 
+# [1.56.0](https://git.sfera.inno.local:7999/SUMD/mrms-backend/compare/v1.55.1...v1.56.0) (2026-07-13)
+
+
+### Bug Fixes
+
+* add-audit ([64ea090](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/64ea0901b8aed0035052b141addb39248502b6ee))
+* select active quarter by nearest deadline ([fd5b107](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/fd5b10709513920632e521b8b82956a5ca22ad87))
+
+
+### Features
+
+* Доработка логики блокировки артефактов для изменённой схемы inegration_model ([0e837c2](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/0e837c2773590f27edd83adce9e43d18e72742ee))
+
 ## [1.55.1](https://git.sfera.inno.local:7999/SUMD/mrms-backend/compare/v1.55.0...v1.55.1) (2026-06-16)
 
 
