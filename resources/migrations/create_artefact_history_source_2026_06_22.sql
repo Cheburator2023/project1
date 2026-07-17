@@ -64,7 +64,6 @@ SELECT
             'output_table',
             'allocation_assessment_class',
             'allocation_assessment_parameters',
-            'remove_decision',
             'developing_end_date'
         ) THEN 'merge'
         WHEN a.artefact_tech_label IN (
@@ -93,6 +92,7 @@ SELECT
             'model_data_07k_control_epic',
             'model_data_control_date',
             'check_objects_count',
+            'remove_decision',
             'update_date',
             'active_model',
             'classification_of_rs_by_order_of_application_within_pvr',
