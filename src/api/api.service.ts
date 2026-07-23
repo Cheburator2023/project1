@@ -22,9 +22,10 @@ import {
   TemplateUpdateDto
 } from './dto/index.dto'
 
-import { sortOrder, TECH_LABELS_HISTORY_ONLY_IN_SUM_RM } from './constants'
+import { sortOrder } from './constants'
 import { ModelsService } from '../modules/models/models.service'
 import { Model } from 'src/modules/models/interfaces'
+import { ArtefactHistorySourceService } from 'src/modules/artefacts/services'
 
 interface LegacyTemplateValue {
   [key: string]: string[]
@@ -51,6 +52,18 @@ interface NewTemplateValue {
   selectedIds: string[]
 }
 
+type HistoryChangeSource = 'sum' | 'mrm'
+
+interface RawHistoryRow {
+  artefact_id: number | string
+  artefact_label?: string
+  artefact_value_id?: number | null
+  artefact_string_value: string
+  effective_from: string
+  creator?: string | null
+  change_source: HistoryChangeSource
+}
+
 @Injectable({ scope: Scope.REQUEST })
 export class ApiService {
   constructor(
@@ -58,32 +71,27 @@ export class ApiService {
     private readonly sumDatabaseService: SumDatabaseService,
     private readonly mrmDatabaseService: MrmDatabaseService,
     private readonly modelsCacheService: ModelsCacheService,
-    private readonly modelsService: ModelsService
+    private readonly modelsService: ModelsService,
+    private readonly artefactHistorySourceService: ArtefactHistorySourceService
   ) {}
 
   async getModelHistory(query: ModelArtefactHistoryDto) {
     const { model_id, artefact_tech_label } = query
-    const model_source = query.model_source || ModelSource.SUM_RM
+    const model_source = (query.model_source ||
+      ModelSource.SUM_RM) as ModelSource
+
+    const readSource = await this.artefactHistorySourceService.resolveReadSource(
+      artefact_tech_label,
+      model_source
+    )
+
+    if (!readSource) {
+      return []
+    }
 
     let result = []
 
-    if (
-      model_source === ModelSource.SUM &&
-      !TECH_LABELS_HISTORY_ONLY_IN_SUM_RM.includes(artefact_tech_label)
-    ) {
-      result = await this.sumDatabaseService.query(getSumModelHistorySql, {
-        model_id,
-        artefact_tech_label
-      })
-    } else if (
-      model_source === ModelSource.SUM_RM ||
-      TECH_LABELS_HISTORY_ONLY_IN_SUM_RM.includes(artefact_tech_label)
-    ) {
-      result = await this.mrmDatabaseService.query(getSumRmModelHistorySql, {
-        model_id,
-        artefact_tech_label
-      })
-    } else {
+    if (readSource === 'merge') {
       const [sumResult, mrmResult] = await Promise.all([
         this.sumDatabaseService.query(getSumModelHistorySql, {
           model_id,
@@ -91,52 +99,89 @@ export class ApiService {
         }),
         this.mrmDatabaseService.query(getSumRmModelHistorySql, {
           model_id,
-          artefact_tech_label
+          artefact_tech_label,
+          cutover_at: null
         })
       ])
-      result = [...sumResult, ...mrmResult]
-    }
+      result = [
+        ...this.tagHistoryRows(sumResult, 'sum'),
+        ...this.tagHistoryRows(mrmResult, 'mrm')
+      ]
+    } else if (readSource === 'sum') {
+      result = this.tagHistoryRows(
+        await this.sumDatabaseService.query(getSumModelHistorySql, {
+          model_id,
+          artefact_tech_label
+        }),
+        'sum'
+      )
+    } else if (readSource === 'mrm') {
+      result = this.tagHistoryRows(
+        await this.mrmDatabaseService.query(getSumRmModelHistorySql, {
+          model_id,
+          artefact_tech_label,
+          cutover_at: null
+        }),
+        'mrm'
+      )
+    } else if (readSource === 'partial_sync') {
+      const cutoverAt =
+        await this.artefactHistorySourceService.getPartialSyncCutoverAt(
+          model_id,
+          artefact_tech_label
+        )
 
-    function filterAndSortData(data: any[]) {
-      return data
-        .sort(
-          (a, b) =>
-            new Date(b.effective_from).getTime() -
-            new Date(a.effective_from).getTime()
-        ) // Сортируем от нового к старому
-        .filter(
-          (item, index, arr) =>
-            index === 0 ||
-            !arr
-              .slice(0, index)
-              .some(
-                (prev) =>
-                  prev.artefact_string_value === item.artefact_string_value
-              )
-        ) // Удаляем дубликаты artefact_string_value
-    }
-
-    const formattedResult = filterAndSortData(result).map((item) => {
-      return {
-        ...item,
-        artefact_id: Number(item.artefact_id),
-        artefact_value: item.artefact_string_value,
-        effective_from: {
-          timestamp: item.effective_from,
-          timestamp_formatted: new Date(item.effective_from).toLocaleString(
-            'ru'
+      result = cutoverAt
+        ? this.tagHistoryRows(
+            await this.mrmDatabaseService.query(getSumRmModelHistorySql, {
+              model_id,
+              artefact_tech_label,
+              cutover_at: cutoverAt
+            }),
+            'mrm'
           )
-        },
-        artefact_value_id: undefined,
-        artefact_string_value: undefined,
-        creator: undefined,
-        editor: {
-          username: item.creator
-        }
-      }
-    })
+        : this.tagHistoryRows(
+            await this.sumDatabaseService.query(getSumModelHistorySql, {
+              model_id,
+              artefact_tech_label
+            }),
+            'sum'
+          )
+    }
 
-    return formattedResult
+    const sortedResult = [...result].sort(
+      (a, b) =>
+        new Date(b.effective_from).getTime() -
+        new Date(a.effective_from).getTime()
+    )
+
+    return sortedResult.map((item) => this.formatHistoryRow(item))
+  }
+
+  private tagHistoryRows(
+    rows: Record<string, unknown>[],
+    changeSource: HistoryChangeSource
+  ): RawHistoryRow[] {
+    return rows.map((row) => ({
+      ...(row as Omit<RawHistoryRow, 'change_source'>),
+      change_source: changeSource
+    }))
+  }
+
+  private formatHistoryRow(item: RawHistoryRow) {
+    return {
+      artefact_id: Number(item.artefact_id),
+      artefact_label: item.artefact_label,
+      artefact_value: item.artefact_string_value,
+      change_source: item.change_source,
+      effective_from: {
+        timestamp: item.effective_from,
+        timestamp_formatted: new Date(item.effective_from).toLocaleString('ru')
+      },
+      editor: {
+        username: item.creator
+      }
+    }
   }
 
   async createTemplate(templateCreateDto: TemplateCreateDto, user) {

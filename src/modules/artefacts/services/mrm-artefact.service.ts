@@ -5,6 +5,7 @@ import { MRM_TABLES } from '../constants'
 import { IArtefactService, IArtefactHandler } from '../interfaces'
 import { UpdateArtefactDto } from '../dto'
 import { LoggerService } from 'src/system/logger/logger.service'
+import { ArtefactHistorySourceService } from './artefact-history-source.service'
 
 @Injectable()
 export class MrmArtefactService
@@ -20,12 +21,21 @@ export class MrmArtefactService
     databaseService: MrmDatabaseService,
     @Inject('MrmArtefactHandlers')
     private readonly handlers: IArtefactHandler[],
+    private readonly artefactHistorySourceService: ArtefactHistorySourceService,
     logger: LoggerService
   ) {
     super(databaseService, logger)
   }
 
   async handleUpdateArtefact(
+    artefactData: UpdateArtefactDto
+  ): Promise<boolean> {
+    return this.databaseService.transaction(() =>
+      this.performArtefactUpdate(artefactData)
+    )
+  }
+
+  private async performArtefactUpdate(
     artefactData: UpdateArtefactDto
   ): Promise<boolean> {
     this.logger.info(
@@ -62,6 +72,14 @@ export class MrmArtefactService
         }
       )
       result = await super.handleUpdateArtefact(artefactData)
+    }
+
+    if (result) {
+      await this.artefactHistorySourceService.recordSyncCutoverIfNeeded(
+        artefactData.model_id,
+        artefactData.artefact_tech_label,
+        artefactData.creator
+      )
     }
 
     this.logger.info(
