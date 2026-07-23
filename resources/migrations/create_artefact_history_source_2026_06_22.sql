@@ -63,8 +63,7 @@ SELECT
             'rfd',
             'output_table',
             'allocation_assessment_class',
-            'allocation_assessment_parameters',
-            'developing_end_date'
+            'allocation_assessment_parameters'
         ) THEN 'merge'
         WHEN a.artefact_tech_label IN (
             'model_name_validation',
