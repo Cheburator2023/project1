@@ -529,12 +529,10 @@ export class QuarterlyConfirmationService {
       let results = models.map((model) => {
         const sid = String(model.system_model_id)
         let currentUsage = currentUsageMap.get(sid)
-        let currentFromRegistry = false
 
         if (!currentUsage) {
           const isUsed = this.parseUsageFlag(model.usage_confirm_flag)
           if (isUsed !== null || model.usage_confirm_date != null) {
-            currentFromRegistry = true
             currentUsage = {
               system_model_id: sid,
               is_used: isUsed,
@@ -572,10 +570,6 @@ export class QuarterlyConfirmationService {
               : null
 
         if (currentUsage) {
-          const prefillSource = currentFromRegistry
-            ? null
-            : this.resolveAllocationPrefillSource(pimUsage, hasPrevQuarterData)
-
           return {
             system_model_id: model.system_model_id,
             model_id: model.model_id,
@@ -591,7 +585,7 @@ export class QuarterlyConfirmationService {
                   .split('T')[0]
               : today,
             is_used: currentUsage.is_used,
-            prefill_source: prefillSource
+            prefill_source: null
           }
         }
 
