@@ -1,5 +1,22 @@
 # Semantic Versioning Changelog
 
+# [1.57.0](https://git.sfera.inno.local:7999/SUMD/mrms-backend/compare/v1.56.0...v1.57.0) (2026-07-28)
+
+
+### Bug Fixes
+
+* возвращать пустую историю при отсутствии artefact_history_source ([f0eb0af](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/f0eb0af6ac8a4bf73c1ffd4cb9fb955d9c3237e3))
+* обновил матрицу источников истории атрибутов ([c2ca0b1](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/c2ca0b186150737a829e07e6f85a1e7118437ef2))
+* убрал legacy fallback cutover для partial_sync ([e6f0b1b](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/e6f0b1b1541fe74e24067bd56706412595831ed4))
+
+
+### Features
+
+* backfill cutover и история remove_decision только из сурм ([ded473c](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/ded473c8279d5ca2ca718cb2582c2bd7d719edf8))
+* partial_sync и cutover для истории изменений атрибутов ([f979a20](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/f979a20dad8d3de13a4da83f024ddcbfbb221008))
+* источник изменения в ответе истории атрибутов ([0962298](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/0962298f2d760119d0c6d3dcda79d9f45344b5d2))
+* явный merge в матрице history_source для split-write полей ([c88d65f](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/c88d65f54267ec74d0b52c6ee048f0946969265b))
+
 # [1.56.0](https://git.sfera.inno.local:7999/SUMD/mrms-backend/compare/v1.55.1...v1.56.0) (2026-07-13)
 
 
