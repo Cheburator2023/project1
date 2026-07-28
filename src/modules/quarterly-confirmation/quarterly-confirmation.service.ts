@@ -16,7 +16,6 @@ import { UpdateUsageResult } from 'src/modules/usage/dto'
 import { ModelsService } from 'src/modules/models/models.service'
 import { resolveActiveQuarter } from './quarter-availability'
 
-/** Строка реестра для аллокации до обогащения prefill/registry_card. */
 type AllocationCandidateModel = {
   system_model_id: string
   model_id: string
@@ -26,6 +25,8 @@ type AllocationCandidateModel = {
   model_name_dadm: string | null
   business_customer: string | null
   business_customer_departament: string | null
+  usage_confirm_date: string | null
+  usage_confirm_flag: string | null
 }
 
 @Injectable()
@@ -125,7 +126,8 @@ export class QuarterlyConfirmationService {
    */
   private async fetchAllocationCandidatesFromMergedRegistry(
     userGroups: string[],
-    filters?: GetModelsQueryDto
+    filters: GetModelsQueryDto | undefined,
+    activeQuarter: number
   ): Promise<{
     models: AllocationCandidateModel[]
     sumModelIdSet: Set<string>
@@ -136,6 +138,8 @@ export class QuarterlyConfirmationService {
     )
     const candidates: AllocationCandidateModel[] = []
     const sumModelIdSet = new Set<string>()
+    const dateKey = `usage_confirm_date_q${activeQuarter}`
+    const flagKey = `usage_confirm_flag_q${activeQuarter}`
 
     for (const model of merged) {
       const systemModelId = String(model.system_model_id ?? '').trim()
@@ -153,6 +157,9 @@ export class QuarterlyConfirmationService {
         sumModelIdSet.add(systemModelId)
       }
 
+      const usageDate = model[dateKey]
+      const usageFlag = model[flagKey]
+
       candidates.push({
         system_model_id: systemModelId,
         model_id: modelId,
@@ -161,7 +168,16 @@ export class QuarterlyConfirmationService {
         model_source: modelSource,
         model_name_dadm: model.model_name_dadm ?? model.model_name ?? null,
         business_customer: model.business_customer ?? null,
-        business_customer_departament: model.business_customer_departament ?? null
+        business_customer_departament:
+          model.business_customer_departament ?? null,
+        usage_confirm_date:
+          usageDate != null && String(usageDate).trim() !== ''
+            ? String(usageDate).trim()
+            : null,
+        usage_confirm_flag:
+          usageFlag != null && String(usageFlag).trim() !== ''
+            ? String(usageFlag).trim()
+            : null
       })
     }
 
@@ -316,7 +332,11 @@ export class QuarterlyConfirmationService {
       )
 
       const { models, sumModelIdSet } =
-        await this.fetchAllocationCandidatesFromMergedRegistry(userGroups, filters)
+        await this.fetchAllocationCandidatesFromMergedRegistry(
+          userGroups,
+          filters,
+          quarterInfo.quarter
+        )
 
       if (models.length === 0) {
         return []
@@ -473,7 +493,7 @@ export class QuarterlyConfirmationService {
       // Получаем текущие данные за активный квартал
       const currentUsages: {
         system_model_id: string
-        is_used: boolean
+        is_used: boolean | null
         confirmation_date: string
       }[] = await this.databaseService.query(
         `
@@ -508,7 +528,21 @@ export class QuarterlyConfirmationService {
 
       let results = models.map((model) => {
         const sid = String(model.system_model_id)
-        const currentUsage = currentUsageMap.get(sid)
+        let currentUsage = currentUsageMap.get(sid)
+        let currentFromRegistry = false
+
+        if (!currentUsage) {
+          const isUsed = this.parseUsageFlag(model.usage_confirm_flag)
+          if (isUsed !== null || model.usage_confirm_date != null) {
+            currentFromRegistry = true
+            currentUsage = {
+              system_model_id: sid,
+              is_used: isUsed,
+              confirmation_date: model.usage_confirm_date ?? today
+            }
+          }
+        }
+
         const pimUsage =
           pimUsageMap.get(sid) ?? pimUsagePrevQuarterMap.get(sid)
         const prevRow = prevUsageMap.get(sid)
@@ -537,12 +571,10 @@ export class QuarterlyConfirmationService {
               ? prevArt.is_used
               : null
 
-        // Если уже есть данные за текущий квартал, используем их
         if (currentUsage) {
-          const prefillSource = this.resolveAllocationPrefillSource(
-            pimUsage,
-            hasPrevQuarterData
-          )
+          const prefillSource = currentFromRegistry
+            ? null
+            : this.resolveAllocationPrefillSource(pimUsage, hasPrevQuarterData)
 
           return {
             system_model_id: model.system_model_id,
@@ -563,7 +595,6 @@ export class QuarterlyConfirmationService {
           }
         }
 
-        // Значения и prefill_source: ПИМ > предыдущий квартал (см. resolveAllocationPrefillSource)
         if (pimUsage) {
           return {
             system_model_id: model.system_model_id,
