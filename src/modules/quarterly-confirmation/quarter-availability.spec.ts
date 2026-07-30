@@ -40,6 +40,16 @@ describe('resolveActiveQuarter', () => {
     },
     {
       now: new Date(2026, 7, 1, 0, 0, 0, 0),
+      quarter: 2,
+      year: 2026
+    },
+    {
+      now: new Date(2026, 7, 15, 23, 59, 59, 999),
+      quarter: 2,
+      year: 2026
+    },
+    {
+      now: new Date(2026, 7, 16, 0, 0, 0, 0),
       quarter: 3,
       year: 2026
     },
@@ -67,13 +77,13 @@ describe('resolveActiveQuarter', () => {
     expect(resolveActiveQuarter(now)).toMatchObject({ quarter, year })
   })
 
-  it('returns quarter boundaries and the end of the following calendar month', () => {
+  it('extends Q2 2026 fill window until 15 August inclusive', () => {
     expect(resolveActiveQuarter(new Date(2026, 6, 13, 12, 0, 0, 0))).toEqual({
       quarter: 2,
       year: 2026,
       startDate: '2026-04-01',
       endDate: '2026-06-30',
-      maxDate: '2026-07-31'
+      maxDate: '2026-08-15'
     })
   })
 
@@ -87,12 +97,12 @@ describe('resolveActiveQuarter', () => {
     })
   })
 
-  it('uses the backend timezone at the availability boundary', () => {
+  it('uses the backend timezone at the Q2 2026 extension boundary', () => {
     expect(
-      resolveActiveQuarter(new Date('2026-07-31T20:59:59.999Z'))
+      resolveActiveQuarter(new Date('2026-08-15T20:59:59.999Z'))
     ).toMatchObject({ quarter: 2, year: 2026 })
     expect(
-      resolveActiveQuarter(new Date('2026-07-31T21:00:00.000Z'))
+      resolveActiveQuarter(new Date('2026-08-15T21:00:00.000Z'))
     ).toMatchObject({ quarter: 3, year: 2026 })
   })
 })
