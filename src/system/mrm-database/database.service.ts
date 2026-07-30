@@ -1,13 +1,11 @@
-import { AsyncLocalStorage } from 'async_hooks'
 import { Injectable } from '@nestjs/common'
-import { Pool, PoolClient, types } from 'pg'
+import { Pool, types } from 'pg'
 import { queryConvert } from 'src/system/common/utils'
 import { LoggerService } from 'src/system/logger/logger.service'
 
 @Injectable()
 export class MrmDatabaseService {
   private pool: Pool
-  private readonly transactionStorage = new AsyncLocalStorage<PoolClient>()
 
   constructor(private readonly logger: LoggerService) {
     const NUMERIC_OID = 1700
@@ -44,17 +42,15 @@ export class MrmDatabaseService {
       params_count: Object.keys(params).length
     })
 
-    const transactionClient = this.transactionStorage.getStore()
-    const client = transactionClient ?? (await this.pool.connect())
-    const shouldReleaseClient = !transactionClient
-
     try {
+      const client = await this.pool.connect()
       const convertedQuery = queryConvert(sql, params)
 
       const result = await client.query(
         convertedQuery.text,
         convertedQuery.values
       )
+      client.release()
 
       this.logger.info(
         'SQL query executed successfully',
@@ -76,26 +72,6 @@ export class MrmDatabaseService {
         }
       )
       throw error
-    } finally {
-      if (shouldReleaseClient) {
-        client.release()
-      }
-    }
-  }
-
-  async transaction<T>(fn: () => Promise<T>): Promise<T> {
-    const client = await this.pool.connect()
-
-    try {
-      await client.query('BEGIN')
-      const result = await this.transactionStorage.run(client, fn)
-      await client.query('COMMIT')
-      return result
-    } catch (error) {
-      await client.query('ROLLBACK')
-      throw error
-    } finally {
-      client.release()
     }
   }
 

@@ -7,8 +7,7 @@ import {
   SumArtefactService,
   MrmArtefactService,
   ArtefactExecutionContextService,
-  ArtefactRealizationsService,
-  ArtefactHistorySourceService
+  ArtefactRealizationsService
 } from './services'
 import { ArtefactRealizationsController } from './api/artefact-realizations.controller'
 import { ArtefactServiceFactory } from './factories'
@@ -26,7 +25,6 @@ import { CamundaModule } from 'src/system/camunda/camunda.module'
     MrmArtefactService,
     ArtefactExecutionContextService,
     ArtefactRealizationsService,
-    ArtefactHistorySourceService,
     ...artefactHandlersProvider,
     {
       provide: 'MrmArtefactHandlers',
@@ -34,12 +32,7 @@ import { CamundaModule } from 'src/system/camunda/camunda.module'
       inject: artefactHandlersProvider
     }
   ],
-  exports: [
-    ArtefactService,
-    MrmArtefactService,
-    SumArtefactService,
-    ArtefactHistorySourceService
-  ],
+  exports: [ArtefactService, MrmArtefactService, SumArtefactService],
   controllers: [ArtefactRealizationsController]
 })
 export class ArtefactModule {}
