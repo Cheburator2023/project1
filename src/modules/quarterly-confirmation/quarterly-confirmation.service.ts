@@ -53,12 +53,17 @@ export class QuarterlyConfirmationService {
     return null
   }
 
-  private isExcludedAllocationBusinessStatus(
-    businessStatus: string | null | undefined
-  ): boolean {
-    const status = String(businessStatus ?? '').trim()
+  private isExcludedFromAllocation(model: {
+    model_status?: string | null
+    delete_status?: string | null
+  }): boolean {
+    const modelStatus = String(model.model_status ?? '').trim()
+    const deleteStatus = String(model.delete_status ?? '').trim()
     return (
-      status === MODEL_STATUS.ARCHIVE || status === MODEL_STATUS.CREATION_ERROR
+      modelStatus === MODEL_STATUS.ARCHIVE ||
+      modelStatus === MODEL_STATUS.CREATION_ERROR ||
+      deleteStatus === MODEL_STATUS.ARCHIVE ||
+      deleteStatus === MODEL_STATUS.CREATION_ERROR
     )
   }
 
@@ -142,7 +147,7 @@ export class QuarterlyConfirmationService {
       const modelId = String(model.model_id ?? '').trim()
       if (!systemModelId || !modelId) continue
 
-      if (this.isExcludedAllocationBusinessStatus(model.business_status)) continue
+      if (this.isExcludedFromAllocation(model)) continue
 
       const modelSource =
         model.model_source === MODEL_SOURCES.SUM
