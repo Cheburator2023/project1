@@ -1,5 +1,18 @@
 # Semantic Versioning Changelog
 
+## [1.57.1](https://git.sfera.inno.local:7999/SUMD/mrms-backend/compare/v1.57.0...v1.57.1) (2026-07-31)
+
+
+### Bug Fixes
+
+* исключил архив и ошибку заведения из списка аллокации ([e0e4405](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/e0e44059c2ccfe631cea4bdf4c1e3389e0f608d3))
+* продлил заполнение q2 2026 на аллокации до 15 августа ([e563a4d](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/e563a4d992a8f57628b720cd6283ba28496379a0))
+
+
+### Reverts
+
+* откатил merge feature/artefact-history ([8853eca](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/8853eca8883bebfe28ce64339adf263918b0958d))
+
 # [1.57.0](https://git.sfera.inno.local:7999/SUMD/mrms-backend/compare/v1.56.0...v1.57.0) (2026-07-28)
 
 
