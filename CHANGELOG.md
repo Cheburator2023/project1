@@ -1,5 +1,13 @@
 # Semantic Versioning Changelog
 
+## [1.57.2](https://git.sfera.inno.local:7999/SUMD/mrms-backend/compare/v1.57.1...v1.57.2) (2026-08-06)
+
+
+### Bug Fixes
+
+* для заполненного квартала на аллокации показываю статус заполнено ([f6efb94](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/f6efb94be12eb0f240edd7392d7a66cf00209d16))
+* на аллокации показываю значения usage с формы редактирования ([ed75c7c](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/ed75c7c4fcb3c40cfdbb76039b086bfa9e011d22))
+
 ## [1.57.1](https://git.sfera.inno.local:7999/SUMD/mrms-backend/compare/v1.57.0...v1.57.1) (2026-07-31)
 
 
