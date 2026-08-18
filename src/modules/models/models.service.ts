@@ -35,6 +35,7 @@ import {
 import {
   BUSINESS_CUSTOMER_DEPARTMENT_MAPPING,
   DEPARTMENT_TO_STREAM_MAPPING,
+  parseBusinessCustomerDepartments,
   pseudoArtefacts
 } from './constants'
 import {
@@ -421,15 +422,11 @@ export class ModelsService {
         })
         .filter(Boolean)
 
-      return models.filter((model) => {
-        const modelDepartments = (model.business_customer_departament || '')
-          .split(',')
-          .map((dep) => dep.trim())
-
-        return userDepartments.some((userDep) =>
-          modelDepartments.includes(userDep)
-        )
-      })
+      return models.filter((model) =>
+        parseBusinessCustomerDepartments(
+          model.business_customer_departament || ''
+        ).some((dep) => userDepartments.includes(dep))
+      )
     }
 
     // Если пользователь входит в группы /ds или /ds/ds_lead
