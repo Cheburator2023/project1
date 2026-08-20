@@ -1,5 +1,13 @@
 # Semantic Versioning Changelog
 
+## [1.57.3](https://git.sfera.inno.local:7999/SUMD/mrms-backend/compare/v1.57.2...v1.57.3) (2026-08-20)
+
+
+### Bug Fixes
+
+* исправил фильтр реестра для департамента с запятой в названии ([e4737d5](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/e4737d59b447595ea75d1006ec50e406887fd35e))
+* исправить название артефакта 2057 importance_changes ([98947da](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/98947daefe3c28fc375b1073e15c70c1b2c5cdf9))
+
 ## [1.57.2](https://git.sfera.inno.local:7999/SUMD/mrms-backend/compare/v1.57.1...v1.57.2) (2026-08-06)
 
 
