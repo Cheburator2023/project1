@@ -21,6 +21,8 @@ type AllocationCandidateModel = {
   model_id: string
   model_alias: string | null
   model_name: string | null
+  /** «Название модели» в карточке СУРМ (артефакт model_name_validation). */
+  model_name_validation: string | null
   model_source: string
   model_name_dadm: string | null
   business_customer: string | null
@@ -87,7 +89,13 @@ export class QuarterlyConfirmationService {
     if (filters?.search) {
       const search = filters.search.toLowerCase()
       result = result.filter((m) =>
-        [m.model_id, m.model_alias, m.model_name, m.model_name_dadm].some((f) =>
+        [
+          m.model_id,
+          m.model_alias,
+          m.model_name,
+          m.model_name_validation,
+          m.model_name_dadm
+        ].some((f) =>
           String(f ?? '')
             .toLowerCase()
             .includes(search)
@@ -99,7 +107,11 @@ export class QuarterlyConfirmationService {
       result = result.filter((m) => ilikeIncludes(m.model_alias, filters.model_alias))
     }
     if (filters?.model_name) {
-      result = result.filter((m) => ilikeIncludes(m.model_name, filters.model_name))
+      result = result.filter(
+        (m) =>
+          ilikeIncludes(m.model_name, filters.model_name) ||
+          ilikeIncludes(m.model_name_validation, filters.model_name)
+      )
     }
     if (filters?.model_name_dadm) {
       result = result.filter((m) =>
@@ -170,6 +182,7 @@ export class QuarterlyConfirmationService {
         model_id: modelId,
         model_alias: model.model_alias ?? null,
         model_name: model.model_name ?? null,
+        model_name_validation: model.model_name_validation ?? null,
         model_source: modelSource,
         model_name_dadm: model.model_name_dadm ?? model.model_name ?? null,
         business_customer: model.business_customer ?? null,
@@ -574,16 +587,21 @@ export class QuarterlyConfirmationService {
               ? prevArt.is_used
               : null
 
+        const catalogFields = {
+          system_model_id: model.system_model_id,
+          model_id: model.model_id,
+          model_alias: model.model_alias,
+          model_name: model.model_name,
+          model_name_validation: model.model_name_validation,
+          model_source: model.model_source,
+          model_name_dadm: model.model_name_dadm,
+          business_customer: model.business_customer,
+          business_customer_departament: model.business_customer_departament
+        }
+
         if (currentUsage) {
           return {
-            system_model_id: model.system_model_id,
-            model_id: model.model_id,
-            model_alias: model.model_alias,
-            model_name: model.model_name,
-            model_source: model.model_source,
-            model_name_dadm: model.model_name_dadm,
-            business_customer: model.business_customer,
-            business_customer_departament: model.business_customer_departament,
+            ...catalogFields,
             confirmation_date: currentUsage.confirmation_date
               ? new Date(currentUsage.confirmation_date)
                   .toISOString()
@@ -596,14 +614,7 @@ export class QuarterlyConfirmationService {
 
         if (pimUsage) {
           return {
-            system_model_id: model.system_model_id,
-            model_id: model.model_id,
-            model_alias: model.model_alias,
-            model_name: model.model_name,
-            model_source: model.model_source,
-            model_name_dadm: model.model_name_dadm,
-            business_customer: model.business_customer,
-            business_customer_departament: model.business_customer_departament,
+            ...catalogFields,
             confirmation_date: today,
             is_used: pimUsage.is_used,
             prefill_source: 'pim' as const
@@ -612,14 +623,7 @@ export class QuarterlyConfirmationService {
 
         if (hasPrevQuarterData) {
           return {
-            system_model_id: model.system_model_id,
-            model_id: model.model_id,
-            model_alias: model.model_alias,
-            model_name: model.model_name,
-            model_source: model.model_source,
-            model_name_dadm: model.model_name_dadm,
-            business_customer: model.business_customer,
-            business_customer_departament: model.business_customer_departament,
+            ...catalogFields,
             confirmation_date: today,
             is_used: prevCarriedIsUsed,
             prefill_source: 'previous_quarter' as const
@@ -627,14 +631,7 @@ export class QuarterlyConfirmationService {
         }
 
         return {
-          system_model_id: model.system_model_id,
-          model_id: model.model_id,
-          model_alias: model.model_alias,
-          model_name: model.model_name,
-          model_source: model.model_source,
-          model_name_dadm: model.model_name_dadm,
-          business_customer: model.business_customer,
-          business_customer_departament: model.business_customer_departament,
+          ...catalogFields,
           confirmation_date: today,
           is_used: null,
           prefill_source: null

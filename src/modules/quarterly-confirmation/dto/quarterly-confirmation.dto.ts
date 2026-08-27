@@ -198,6 +198,8 @@ export type ConfirmationModelRow = {
   model_id: string
   model_alias: string | null
   model_name: string | null
+  /** «Название модели» в карточке СУРМ (артефакт model_name_validation). */
+  model_name_validation: string | null
   model_source: string | null
   model_name_dadm: string | null
   business_customer: string | null
