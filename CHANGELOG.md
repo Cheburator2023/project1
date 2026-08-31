@@ -1,5 +1,12 @@
 # Semantic Versioning Changelog
 
+# [1.58.0](https://git.sfera.inno.local:7999/SUMD/mrms-backend/compare/v1.57.3...v1.58.0) (2026-08-31)
+
+
+### Features
+
+* add startup sql migration runner ([37bef29](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/37bef29f48d32e2a711cabb341cc5d4e2dec907d))
+
 ## [1.57.3](https://git.sfera.inno.local:7999/SUMD/mrms-backend/compare/v1.57.2...v1.57.3) (2026-08-20)
 
 
