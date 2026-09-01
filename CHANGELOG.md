@@ -1,5 +1,12 @@
 # Semantic Versioning Changelog
 
+## [1.58.1](https://git.sfera.inno.local:7999/SUMD/mrms-backend/compare/v1.58.0...v1.58.1) (2026-09-01)
+
+
+### Bug Fixes
+
+* в реестре брать название модели дадм из сум ([7caf30c](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/7caf30c68a25b47bdd9455628ec5aba761c2353f))
+
 # [1.58.0](https://git.sfera.inno.local:7999/SUMD/mrms-backend/compare/v1.57.3...v1.58.0) (2026-08-31)
 
 
