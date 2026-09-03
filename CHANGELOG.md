@@ -1,5 +1,12 @@
 # Semantic Versioning Changelog
 
+# [1.59.0](https://git.sfera.inno.local:7999/SUMD/mrms-backend/compare/v1.58.1...v1.59.0) (2026-09-03)
+
+
+### Features
+
+* add cross-database startup migrations for model corrections ([d91de8a](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/d91de8a966948b966bb8e35c167b03d77eefaf58))
+
 ## [1.58.1](https://git.sfera.inno.local:7999/SUMD/mrms-backend/compare/v1.58.0...v1.58.1) (2026-09-01)
 
 
