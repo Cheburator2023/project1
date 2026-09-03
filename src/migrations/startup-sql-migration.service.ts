@@ -4,7 +4,13 @@ import { PoolClient } from 'pg'
 
 import { correctModelStagesAndStatusesSql } from './sql/001_correct_model_stages_and_statuses'
 import { setValidationReportApproveDateTypeSql } from './sql/002_set_validation_report_approve_date_type'
+import { resetStuckModelArchivingSql } from './sql/003_reset_stuck_model_archiving'
+import {
+  clearReleaseAndEpicArtefactsInMrmSql,
+  clearReleaseAndEpicArtefactsInSumSql
+} from './sql/004_clear_release_and_epic_artefacts'
 import { LoggerService } from 'src/system/logger/logger.service'
+import { MrmDatabaseService } from 'src/system/mrm-database/database.service'
 import { SumDatabaseService } from 'src/system/sum-database/database.service'
 
 type Migration = {
@@ -12,12 +18,18 @@ type Migration = {
   sql: string
 }
 
+type MigrationDatabase = {
+  withClient<T>(handler: (client: PoolClient) => Promise<T>): Promise<T>
+}
+
+type MigrationTarget = 'SUM' | 'SUM-RM'
+
 type MigrationLedgerRow = {
   checksum_sha256: string
   status: 'started' | 'succeeded' | 'failed'
 }
 
-const MIGRATIONS: Migration[] = [
+const SUM_MIGRATIONS: Migration[] = [
   {
     id: '001_correct_model_stages_and_statuses',
     sql: correctModelStagesAndStatusesSql
@@ -25,6 +37,21 @@ const MIGRATIONS: Migration[] = [
   {
     id: '002_set_validation_report_approve_date_type',
     sql: setValidationReportApproveDateTypeSql
+  },
+  {
+    id: '003_reset_stuck_model_archiving',
+    sql: resetStuckModelArchivingSql
+  },
+  {
+    id: '004_clear_release_and_epic_artefacts',
+    sql: clearReleaseAndEpicArtefactsInSumSql
+  }
+]
+
+const MRM_MIGRATIONS: Migration[] = [
+  {
+    id: '004_clear_release_and_epic_artefacts',
+    sql: clearReleaseAndEpicArtefactsInMrmSql
   }
 ]
 
@@ -34,17 +61,58 @@ const ADVISORY_LOCK_ID = 1
 @Injectable()
 export class StartupSqlMigrationService {
   constructor(
-    private readonly database: SumDatabaseService,
+    private readonly sumDatabase: SumDatabaseService,
+    private readonly mrmDatabase: MrmDatabaseService,
     private readonly logger: LoggerService
   ) {}
 
   async run(): Promise<void> {
-    const migrations = MIGRATIONS.map((migration) => ({
+    const targets: Array<{
+      name: MigrationTarget
+      database: MigrationDatabase
+      migrations: Migration[]
+    }> = [
+      {
+        name: 'SUM',
+        database: this.sumDatabase,
+        migrations: SUM_MIGRATIONS
+      },
+      {
+        name: 'SUM-RM',
+        database: this.mrmDatabase,
+        migrations: MRM_MIGRATIONS
+      }
+    ]
+
+    for (const target of targets) {
+      try {
+        await this.runForTarget(
+          target.name,
+          target.database,
+          target.migrations
+        )
+      } catch (error) {
+        this.logger.errorMessage(
+          `${target.name} startup migration subsystem failed; application startup will continue`,
+          `ОшибкаМигратора${this.targetEventSuffix(target.name)}`,
+          this.toError(error),
+          { target_database: target.name }
+        )
+      }
+    }
+  }
+
+  private async runForTarget(
+    target: MigrationTarget,
+    database: MigrationDatabase,
+    targetMigrations: Migration[]
+  ): Promise<void> {
+    const migrations = targetMigrations.map((migration) => ({
       ...migration,
       checksum: createHash('sha256').update(migration.sql).digest('hex')
     }))
 
-    await this.database.withClient(async (client) => {
+    await database.withClient(async (client) => {
       let lockAcquired = false
       const noticeHandler = (
         notice: Error & { code?: string; severity?: string }
@@ -54,12 +122,13 @@ export class StartupSqlMigrationService {
         }
 
         this.logger.warnMessage(
-          'PostgreSQL notice during SUM startup migration',
-          'ПредупреждениеМигратораСУМ',
+          `PostgreSQL notice during ${target} startup migration`,
+          `ПредупреждениеМигратора${this.targetEventSuffix(target)}`,
           {
             code: notice.code,
             severity: notice.severity,
-            message: notice.message
+            message: notice.message,
+            target_database: target
           }
         )
       }
@@ -78,14 +147,15 @@ export class StartupSqlMigrationService {
 
         if (!lockAcquired) {
           this.logger.warnMessage(
-            'SUM startup migration skipped because another instance holds the advisory lock',
-            'МиграторСУМУжеЗапущен'
+            `${target} startup migration skipped because another instance holds the advisory lock`,
+            `Мигратор${this.targetEventSuffix(target)}УжеЗапущен`,
+            { target_database: target }
           )
           return
         }
 
         for (const migration of migrations) {
-          await this.runOnce(client, migration)
+          await this.runOnce(client, migration, target)
         }
       } finally {
         if (lockAcquired) {
@@ -96,9 +166,10 @@ export class StartupSqlMigrationService {
             ])
           } catch (error) {
             this.logger.errorMessage(
-              'Unable to release SUM startup migration advisory lock',
-              'ОшибкаОсвобожденияБлокировкиМигратораСУМ',
-              this.toError(error)
+              `Unable to release ${target} startup migration advisory lock`,
+              `ОшибкаОсвобожденияБлокировкиМигратора${this.targetEventSuffix(target)}`,
+              this.toError(error),
+              { target_database: target }
             )
           }
         }
@@ -110,18 +181,20 @@ export class StartupSqlMigrationService {
 
   private async runOnce(
     client: PoolClient,
-    migration: Migration & { sql: string; checksum: string }
+    migration: Migration & { sql: string; checksum: string },
+    target: MigrationTarget
   ): Promise<void> {
     const startedAt = Date.now()
-    const claimed = await this.claimAttempt(client, migration)
+    const claimed = await this.claimAttempt(client, migration, target)
 
     if (!claimed) {
       return
     }
 
-    this.logger.sys('SUM startup migration attempt registered', {
+    this.logger.sys(`${target} startup migration attempt registered`, {
       migration_id: migration.id,
-      checksum_sha256: migration.checksum
+      checksum_sha256: migration.checksum,
+      target_database: target
     })
 
     try {
@@ -145,23 +218,25 @@ export class StartupSqlMigrationService {
 
       await client.query('COMMIT')
 
-      this.logger.sys('SUM startup migration succeeded', {
+      this.logger.sys(`${target} startup migration succeeded`, {
         migration_id: migration.id,
         checksum_sha256: migration.checksum,
+        target_database: target,
         duration_ms: Date.now() - startedAt
       })
     } catch (error) {
-      await this.rollback(client, migration.id)
-      await this.markFailed(client, migration.id)
+      await this.rollback(client, migration.id, target)
+      await this.markFailed(client, migration.id, target)
 
       const migrationError = this.toError(error)
       this.logger.errorMessage(
-        'SUM startup migration failed; application startup will continue',
-        'ОшибкаВыполненияМиграцииСУМ',
+        `${target} startup migration failed; application startup will continue`,
+        `ОшибкаВыполненияМиграции${this.targetEventSuffix(target)}`,
         migrationError,
         {
           migration_id: migration.id,
           checksum_sha256: migration.checksum,
+          target_database: target,
           sql_state: this.getSqlState(error),
           duration_ms: Date.now() - startedAt
         }
@@ -171,7 +246,8 @@ export class StartupSqlMigrationService {
 
   private async claimAttempt(
     client: PoolClient,
-    migration: Migration & { checksum: string }
+    migration: Migration & { checksum: string },
+    target: MigrationTarget
   ): Promise<boolean> {
     await client.query('BEGIN')
 
@@ -220,32 +296,38 @@ export class StartupSqlMigrationService {
       const row = existing.rows[0] as MigrationLedgerRow | undefined
       if (row && row.checksum_sha256 !== migration.checksum) {
         this.logger.errorMessage(
-          'SUM startup migration was modified after its attempt; execution skipped',
-          'ИзмененаОбработаннаяМиграцияСУМ',
+          `${target} startup migration was modified after its attempt; execution skipped`,
+          `ИзмененаОбработаннаяМиграция${this.targetEventSuffix(target)}`,
           null,
           {
             migration_id: migration.id,
             stored_checksum_sha256: row.checksum_sha256,
             current_checksum_sha256: migration.checksum,
-            stored_status: row.status
+            stored_status: row.status,
+            target_database: target
           }
         )
       } else {
-        this.logger.sys('SUM startup migration skipped: already processed', {
+        this.logger.sys(`${target} startup migration skipped: already processed`, {
           migration_id: migration.id,
           checksum_sha256: migration.checksum,
-          stored_status: row?.status
+          stored_status: row?.status,
+          target_database: target
         })
       }
 
       return false
     } catch (error) {
-      await this.rollback(client, migration.id)
+      await this.rollback(client, migration.id, target)
       throw error
     }
   }
 
-  private async markFailed(client: PoolClient, migrationId: string) {
+  private async markFailed(
+    client: PoolClient,
+    migrationId: string,
+    target: MigrationTarget
+  ) {
     try {
       await client.query(
         `
@@ -259,25 +341,33 @@ export class StartupSqlMigrationService {
       )
     } catch (error) {
       this.logger.errorMessage(
-        'Unable to mark SUM startup migration as failed',
-        'ОшибкаОбновленияЖурналаМигратораСУМ',
+        `Unable to mark ${target} startup migration as failed`,
+        `ОшибкаОбновленияЖурналаМигратора${this.targetEventSuffix(target)}`,
         this.toError(error),
-        { migration_id: migrationId }
+        { migration_id: migrationId, target_database: target }
       )
     }
   }
 
-  private async rollback(client: PoolClient, migrationId: string) {
+  private async rollback(
+    client: PoolClient,
+    migrationId: string,
+    target: MigrationTarget
+  ) {
     try {
       await client.query('ROLLBACK')
     } catch (error) {
       this.logger.errorMessage(
-        'Unable to rollback SUM startup migration transaction',
-        'ОшибкаОткатаМиграцииСУМ',
+        `Unable to rollback ${target} startup migration transaction`,
+        `ОшибкаОткатаМиграции${this.targetEventSuffix(target)}`,
         this.toError(error),
-        { migration_id: migrationId }
+        { migration_id: migrationId, target_database: target }
       )
     }
+  }
+
+  private targetEventSuffix(target: MigrationTarget): string {
+    return target === 'SUM' ? 'СУМ' : 'СУМРМ'
   }
 
   private toError(error: unknown): Error {
