@@ -9,6 +9,11 @@ import {
   clearReleaseAndEpicArtefactsInMrmSql,
   clearReleaseAndEpicArtefactsInSumSql
 } from './sql/004_clear_release_and_epic_artefacts'
+import { enableImplementationDocSetFileEditingSql } from './sql/005_enable_implementation_doc_set_file_editing'
+import {
+  clearIntroductionDateArtefactInMrmSql,
+  clearIntroductionDateArtefactInSumSql
+} from './sql/006_clear_introduction_date_artefact'
 import { LoggerService } from 'src/system/logger/logger.service'
 import { MrmDatabaseService } from 'src/system/mrm-database/database.service'
 import { SumDatabaseService } from 'src/system/sum-database/database.service'
@@ -45,6 +50,14 @@ const SUM_MIGRATIONS: Migration[] = [
   {
     id: '004_clear_release_and_epic_artefacts',
     sql: clearReleaseAndEpicArtefactsInSumSql
+  },
+  {
+    id: '005_enable_implementation_doc_set_file_editing',
+    sql: enableImplementationDocSetFileEditingSql
+  },
+  {
+    id: '006_clear_introduction_date_artefact',
+    sql: clearIntroductionDateArtefactInSumSql
   }
 ]
 
@@ -52,6 +65,10 @@ const MRM_MIGRATIONS: Migration[] = [
   {
     id: '004_clear_release_and_epic_artefacts',
     sql: clearReleaseAndEpicArtefactsInMrmSql
+  },
+  {
+    id: '006_clear_introduction_date_artefact',
+    sql: clearIntroductionDateArtefactInMrmSql
   }
 ]
 
