@@ -1,5 +1,12 @@
 # Semantic Versioning Changelog
 
+# [1.60.0](https://git.sfera.inno.local:7999/SUMD/mrms-backend/compare/v1.59.0...v1.60.0) (2026-09-10)
+
+
+### Features
+
+* add migrations for artefact cleanup and edit access ([fc76825](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/fc7682557aaab781e1d3a25d9224a8496fa64555))
+
 # [1.59.0](https://git.sfera.inno.local:7999/SUMD/mrms-backend/compare/v1.58.1...v1.59.0) (2026-09-03)
 
 
