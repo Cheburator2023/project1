@@ -40,7 +40,8 @@ type NewTemplateValue = {
 
 @Injectable()
 export class TemplateMigrationService {
-  constructor(private readonly databaseService: SumDatabaseService) {}
+  constructor(private readonly databaseService: SumDatabaseService) {
+  }
 
   private async convertLegacyToFilterModel(
     legacyValue: LegacyTemplateValue
@@ -72,7 +73,7 @@ export class TemplateMigrationService {
             processedValues = [...processedValues, ...allColumnValues]
           } catch (error) {
             console.error(
-              `Ошибка при получении значений для колонки ${key}:`,
+              `Ошибка при получении значений для колонки ${ key }:`,
               error
             )
           }
@@ -96,7 +97,7 @@ export class TemplateMigrationService {
       return result.map((row) => row[columnName]).filter(Boolean)
     } catch (error) {
       console.error(
-        `Ошибка при получении значений для колонки ${columnName}:`,
+        `Ошибка при получении значений для колонки ${ columnName }:`,
         error
       )
       return []
@@ -132,7 +133,7 @@ export class TemplateMigrationService {
       'SELECT template_id, template_value FROM templates_new.table WHERE template_value IS NOT NULL'
     )
 
-    console.log(`Найдено ${templates.length} шаблонов для проверки`)
+    console.log(`Найдено ${ templates.length } шаблонов для проверки`)
 
     let migratedCount = 0
     let skippedCount = 0
@@ -145,7 +146,7 @@ export class TemplateMigrationService {
         continue
       }
 
-      console.log(`Мигрируем шаблон ID: ${template_id}`)
+      console.log(`Мигрируем шаблон ID: ${ template_id }`)
 
       const legacyValue = template_value as LegacyTemplateValue
       const filterModel = await this.convertLegacyToFilterModel(legacyValue)
@@ -166,8 +167,8 @@ export class TemplateMigrationService {
     }
 
     console.log(`Миграция завершена:`)
-    console.log(`- Мигрировано: ${migratedCount} шаблонов`)
-    console.log(`- Пропущено (уже новый формат): ${skippedCount} шаблонов`)
+    console.log(`- Мигрировано: ${ migratedCount } шаблонов`)
+    console.log(`- Пропущено (уже новый формат): ${ skippedCount } шаблонов`)
   }
 
   async rollbackMigration(): Promise<void> {
