@@ -1,5 +1,12 @@
 # Semantic Versioning Changelog
 
+# [1.61.0](https://git.sfera.inno.local:7999/SUMD/mrms-backend/compare/v1.60.1...v1.61.0) (2026-09-16)
+
+
+### Features
+
+* add sum model state corrections and reset recalc queue attempts ([c9a1fae](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/c9a1fae75c6a716a8602e7c24c28f1b000a7f080))
+
 ## [1.60.1](https://git.sfera.inno.local:7999/SUMD/mrms-backend/compare/v1.60.0...v1.60.1) (2026-09-14)
 
 
