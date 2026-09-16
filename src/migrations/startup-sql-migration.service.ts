@@ -14,6 +14,15 @@ import {
   clearIntroductionDateArtefactInMrmSql,
   clearIntroductionDateArtefactInSumSql
 } from './sql/006_clear_introduction_date_artefact'
+import { enableImplementationDocSetFileEditingWithNullSql } from './sql/007_enable_implementation_doc_set_file_editing_with_null'
+import { correctBpmnInstancesSql } from './sql/008_correct_bpmn_instances'
+import { clearImplementationValidityInMrmSql } from './sql/009_clear_implementation_validity'
+import {
+  clearModelEpic12ArtefactsInMrmSql,
+  clearModelEpic12ArtefactsInSumSql
+} from './sql/010_clear_model_epic_12_artefacts'
+import { applyModelStateCorrections1661Sql } from './sql/011_apply_model_state_corrections_1661'
+import { resetAllModelRecalcAttemptsSql } from './sql/012_reset_all_model_recalc_attempts'
 import { LoggerService } from 'src/system/logger/logger.service'
 import { MrmDatabaseService } from 'src/system/mrm-database/database.service'
 import { SumDatabaseService } from 'src/system/sum-database/database.service'
@@ -58,6 +67,26 @@ const SUM_MIGRATIONS: Migration[] = [
   {
     id: '006_clear_introduction_date_artefact',
     sql: clearIntroductionDateArtefactInSumSql
+  },
+  {
+    id: '007_enable_implementation_doc_set_file_editing_with_null',
+    sql: enableImplementationDocSetFileEditingWithNullSql
+  },
+  {
+    id: '008_correct_bpmn_instances',
+    sql: correctBpmnInstancesSql
+  },
+  {
+    id: '010_clear_model_epic_12_artefacts',
+    sql: clearModelEpic12ArtefactsInSumSql
+  },
+  {
+    id: '011_apply_model_state_corrections_1661',
+    sql: applyModelStateCorrections1661Sql
+  },
+  {
+    id: '012_reset_all_model_recalc_attempts',
+    sql: resetAllModelRecalcAttemptsSql
   }
 ]
 
@@ -69,6 +98,14 @@ const MRM_MIGRATIONS: Migration[] = [
   {
     id: '006_clear_introduction_date_artefact',
     sql: clearIntroductionDateArtefactInMrmSql
+  },
+  {
+    id: '009_clear_implementation_validity',
+    sql: clearImplementationValidityInMrmSql
+  },
+  {
+    id: '010_clear_model_epic_12_artefacts',
+    sql: clearModelEpic12ArtefactsInMrmSql
   }
 ]
 
