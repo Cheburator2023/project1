@@ -23,6 +23,16 @@ import {
 } from './sql/010_clear_model_epic_12_artefacts'
 import { applyModelStateCorrections1661Sql } from './sql/011_apply_model_state_corrections_1661'
 import { resetAllModelRecalcAttemptsSql } from './sql/012_reset_all_model_recalc_attempts'
+import {
+  correctModelNamesInSumSql,
+  correctModelNamesInMrmSql
+} from './sql/013_correct_model_names'
+import { clearImplementationValidityInSumSql } from './sql/014_clear_implementation_validity_in_sum'
+import { applyModelStateCorrections21092026Sql } from './sql/015_apply_model_state_corrections_21092026'
+import {
+  clearModelDecommissionDateInSumSql,
+  clearModelDecommissionDateInMrmSql
+} from './sql/016_clear_model_decommission_date'
 import { LoggerService } from 'src/system/logger/logger.service'
 import { MrmDatabaseService } from 'src/system/mrm-database/database.service'
 import { SumDatabaseService } from 'src/system/sum-database/database.service'
@@ -87,6 +97,22 @@ const SUM_MIGRATIONS: Migration[] = [
   {
     id: '012_reset_all_model_recalc_attempts',
     sql: resetAllModelRecalcAttemptsSql
+  },
+  {
+    id: '013_correct_model_names',
+    sql: correctModelNamesInSumSql
+  },
+  {
+    id: '014_clear_implementation_validity_in_sum',
+    sql: clearImplementationValidityInSumSql
+  },
+  {
+    id: '015_apply_model_state_corrections_21092026',
+    sql: applyModelStateCorrections21092026Sql
+  },
+  {
+    id: '016_clear_model_decommission_date',
+    sql: clearModelDecommissionDateInSumSql
   }
 ]
 
@@ -106,6 +132,14 @@ const MRM_MIGRATIONS: Migration[] = [
   {
     id: '010_clear_model_epic_12_artefacts',
     sql: clearModelEpic12ArtefactsInMrmSql
+  },
+  {
+    id: '013_correct_model_names',
+    sql: correctModelNamesInMrmSql
+  },
+  {
+    id: '016_clear_model_decommission_date',
+    sql: clearModelDecommissionDateInMrmSql
   }
 ]
 
