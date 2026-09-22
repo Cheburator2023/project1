@@ -1,5 +1,12 @@
 # Semantic Versioning Changelog
 
+# [1.62.0](https://git.sfera.inno.local:7999/SUMD/mrms-backend/compare/v1.61.0...v1.62.0) (2026-09-22)
+
+
+### Features
+
+* correct model stages and statuses and clear validity and decommission date attributes ([075ca71](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/075ca711adc3c1daf9afc293c9a5b9214fcbc9c2))
+
 # [1.61.0](https://git.sfera.inno.local:7999/SUMD/mrms-backend/compare/v1.60.1...v1.61.0) (2026-09-16)
 
 
