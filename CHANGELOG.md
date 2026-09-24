@@ -1,5 +1,12 @@
 # Semantic Versioning Changelog
 
+# [1.63.0](https://git.sfera.inno.local:7999/SUMD/mrms-backend/compare/v1.62.0...v1.63.0) (2026-09-24)
+
+
+### Features
+
+* clear release dates and epic 04 and 12 attributes ([32ddf07](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/32ddf07fb2a68c3ec6784c0e93f80fbfd8351d2c))
+
 # [1.62.0](https://git.sfera.inno.local:7999/SUMD/mrms-backend/compare/v1.61.0...v1.62.0) (2026-09-22)
 
 
