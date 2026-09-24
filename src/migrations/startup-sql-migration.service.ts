@@ -33,6 +33,10 @@ import {
   clearModelDecommissionDateInSumSql,
   clearModelDecommissionDateInMrmSql
 } from './sql/016_clear_model_decommission_date'
+import {
+  clearRequestClosureArtefactsInSumSql,
+  clearRequestClosureArtefactsInMrmSql
+} from './sql/017_clear_request_closure_artefacts_24092026'
 import { LoggerService } from 'src/system/logger/logger.service'
 import { MrmDatabaseService } from 'src/system/mrm-database/database.service'
 import { SumDatabaseService } from 'src/system/sum-database/database.service'
@@ -113,6 +117,10 @@ const SUM_MIGRATIONS: Migration[] = [
   {
     id: '016_clear_model_decommission_date',
     sql: clearModelDecommissionDateInSumSql
+  },
+  {
+    id: '017_clear_request_closure_artefacts_24092026',
+    sql: clearRequestClosureArtefactsInSumSql
   }
 ]
 
@@ -140,6 +148,10 @@ const MRM_MIGRATIONS: Migration[] = [
   {
     id: '016_clear_model_decommission_date',
     sql: clearModelDecommissionDateInMrmSql
+  },
+  {
+    id: '017_clear_request_closure_artefacts_24092026',
+    sql: clearRequestClosureArtefactsInMrmSql
   }
 ]
 
