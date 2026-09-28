@@ -37,6 +37,7 @@ import {
   clearRequestClosureArtefactsInSumSql,
   clearRequestClosureArtefactsInMrmSql
 } from './sql/017_clear_request_closure_artefacts_24092026'
+import { correctMonitoringArtefactLabelsSql } from './sql/018_correct_monitoring_artefact_labels'
 import { LoggerService } from 'src/system/logger/logger.service'
 import { MrmDatabaseService } from 'src/system/mrm-database/database.service'
 import { SumDatabaseService } from 'src/system/sum-database/database.service'
@@ -152,6 +153,10 @@ const MRM_MIGRATIONS: Migration[] = [
   {
     id: '017_clear_request_closure_artefacts_24092026',
     sql: clearRequestClosureArtefactsInMrmSql
+  },
+  {
+    id: '018_correct_monitoring_artefact_labels',
+    sql: correctMonitoringArtefactLabelsSql
   }
 ]
 
