@@ -28,8 +28,7 @@ export const TIMESTAMP_PRIORITY_ARTEFACTS = [
   'allocation_assessment_parameters'
 ] as const
 
-/**
- * Type for artefact technical labels that use timestamp priority
- */
 export type TimestampPriorityArtefact =
   (typeof TIMESTAMP_PRIORITY_ARTEFACTS)[number]
+
+export const SUM_PRIORITY_FIELDS = ['model_name'] as const

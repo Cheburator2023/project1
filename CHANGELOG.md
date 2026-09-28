@@ -1,5 +1,69 @@
 # Semantic Versioning Changelog
 
+# [1.63.0](https://git.sfera.inno.local:7999/SUMD/mrms-backend/compare/v1.62.0...v1.63.0) (2026-09-24)
+
+
+### Features
+
+* clear release dates and epic 04 and 12 attributes ([32ddf07](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/32ddf07fb2a68c3ec6784c0e93f80fbfd8351d2c))
+
+# [1.62.0](https://git.sfera.inno.local:7999/SUMD/mrms-backend/compare/v1.61.0...v1.62.0) (2026-09-22)
+
+
+### Features
+
+* correct model stages and statuses and clear validity and decommission date attributes ([075ca71](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/075ca711adc3c1daf9afc293c9a5b9214fcbc9c2))
+
+# [1.61.0](https://git.sfera.inno.local:7999/SUMD/mrms-backend/compare/v1.60.1...v1.61.0) (2026-09-16)
+
+
+### Features
+
+* add sum model state corrections and reset recalc queue attempts ([c9a1fae](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/c9a1fae75c6a716a8602e7c24c28f1b000a7f080))
+
+## [1.60.1](https://git.sfera.inno.local:7999/SUMD/mrms-backend/compare/v1.60.0...v1.60.1) (2026-09-14)
+
+
+### Bug Fixes
+
+* typo fix ([44f5b20](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/44f5b2068417afd28a10f72dbd23149bbbc21823))
+
+# [1.60.0](https://git.sfera.inno.local:7999/SUMD/mrms-backend/compare/v1.59.0...v1.60.0) (2026-09-10)
+
+
+### Features
+
+* add migrations for artefact cleanup and edit access ([fc76825](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/fc7682557aaab781e1d3a25d9224a8496fa64555))
+
+# [1.59.0](https://git.sfera.inno.local:7999/SUMD/mrms-backend/compare/v1.58.1...v1.59.0) (2026-09-03)
+
+
+### Features
+
+* add cross-database startup migrations for model corrections ([d91de8a](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/d91de8a966948b966bb8e35c167b03d77eefaf58))
+
+## [1.58.1](https://git.sfera.inno.local:7999/SUMD/mrms-backend/compare/v1.58.0...v1.58.1) (2026-09-01)
+
+
+### Bug Fixes
+
+* в реестре брать название модели дадм из сум ([7caf30c](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/7caf30c68a25b47bdd9455628ec5aba761c2353f))
+
+# [1.58.0](https://git.sfera.inno.local:7999/SUMD/mrms-backend/compare/v1.57.3...v1.58.0) (2026-08-31)
+
+
+### Features
+
+* add startup sql migration runner ([37bef29](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/37bef29f48d32e2a711cabb341cc5d4e2dec907d))
+
+## [1.57.3](https://git.sfera.inno.local:7999/SUMD/mrms-backend/compare/v1.57.2...v1.57.3) (2026-08-20)
+
+
+### Bug Fixes
+
+* исправил фильтр реестра для департамента с запятой в названии ([e4737d5](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/e4737d59b447595ea75d1006ec50e406887fd35e))
+* исправить название артефакта 2057 importance_changes ([98947da](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/98947daefe3c28fc375b1073e15c70c1b2c5cdf9))
+
 ## [1.57.2](https://git.sfera.inno.local:7999/SUMD/mrms-backend/compare/v1.57.1...v1.57.2) (2026-08-06)
 
 

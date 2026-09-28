@@ -4,10 +4,11 @@ import { SumDatabaseModule } from 'src/system/sum-database/database.module'
 
 // migrations
 import { TemplateMigrationService } from 'src/migrations/migrate-templates'
+import { StartupSqlMigrationService } from 'src/migrations/startup-sql-migration.service'
 
 @Module({
   imports: [MrmDatabaseModule, SumDatabaseModule],
-  providers: [TemplateMigrationService],
-  exports: [TemplateMigrationService]
+  providers: [TemplateMigrationService, StartupSqlMigrationService],
+  exports: [TemplateMigrationService, StartupSqlMigrationService]
 })
 export class MigrationModule {}

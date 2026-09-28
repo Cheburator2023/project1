@@ -12,6 +12,7 @@ import * as express from 'express'
 import { AppModule } from './app.module'
 import { LoggerService } from './system/logger/logger.service'
 import { ErrorHandlerService } from './common/services/error-handler.service'
+import { StartupSqlMigrationService } from './migrations/startup-sql-migration.service'
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
@@ -32,6 +33,16 @@ async function bootstrap() {
   app.useLogger(logger)
 
   logger.sys('Application starting...')
+
+  try {
+    await app.get(StartupSqlMigrationService).run()
+  } catch (error) {
+    logger.errorMessage(
+      'SUM startup migration subsystem failed; application startup will continue',
+      'ОшибкаМигратораСУМ',
+      error instanceof Error ? error : new Error(String(error))
+    )
+  }
 
   app.enableCors()
   app.setGlobalPrefix(API_PREFIX.VERSION)

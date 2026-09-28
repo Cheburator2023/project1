@@ -343,3 +343,39 @@ export const BUSINESS_CUSTOMER_DEPARTMENT_MAPPING = {
   ],
   'Департамент внутреннего аудита': ['Департамент внутреннего аудита']
 }
+
+const BUSINESS_CUSTOMER_DEPARTMENT_NAMES = [
+  ...new Set([
+    ...Object.keys(BUSINESS_CUSTOMER_DEPARTMENT_MAPPING),
+    ...Object.values(BUSINESS_CUSTOMER_DEPARTMENT_MAPPING).flat()
+  ])
+].sort((a, b) => b.length - a.length)
+
+export function parseBusinessCustomerDepartments(raw: string): string[] {
+  let rest = raw.trim()
+  if (!rest) return []
+
+  const found: string[] = []
+  while (rest.length) {
+    const known = BUSINESS_CUSTOMER_DEPARTMENT_NAMES.find(
+      (name) => rest === name || rest.startsWith(`${name},`)
+    )
+    if (known) {
+      found.push(known)
+      rest = rest.slice(known.length)
+      if (rest.startsWith(',')) rest = rest.slice(1)
+      rest = rest.trim()
+      continue
+    }
+
+    const commaIdx = rest.indexOf(',')
+    if (commaIdx === -1) {
+      found.push(rest)
+      break
+    }
+    found.push(rest.slice(0, commaIdx).trim())
+    rest = rest.slice(commaIdx + 1).trim()
+  }
+
+  return found.filter(Boolean)
+}

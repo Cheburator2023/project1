@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common'
-import { Pool, types } from 'pg'
+import { Pool, PoolClient, types } from 'pg'
 import { queryConvert } from 'src/system/common/utils'
 import { LoggerService } from 'src/system/logger/logger.service'
 
@@ -34,6 +34,16 @@ export class SumDatabaseService {
       database: process.env.SUM_PG_SCHEMA,
       ssl_enabled: enableSSL
     })
+  }
+
+  async withClient<T>(handler: (client: PoolClient) => Promise<T>): Promise<T> {
+    const client = await this.pool.connect()
+
+    try {
+      return await handler(client)
+    } finally {
+      client.release()
+    }
   }
 
   async query(sql: string, params: any = {}): Promise<any> {
