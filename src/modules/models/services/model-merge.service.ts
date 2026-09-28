@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common'
 import { Model } from '../interfaces'
 import {
   TIMESTAMP_PRIORITY_ARTEFACTS,
+  SUM_PRIORITY_FIELDS,
   SUM_ARTEFACT_ID_MAPPINGS,
   MRM_ARTEFACT_ID_MAPPINGS
 } from '../constants'
@@ -84,7 +85,8 @@ export class ModelMergeService {
       if (
         mrmModel[key] === null ||
         mrmModel[key] === undefined ||
-        key === 'model_source'
+        key === 'model_source' ||
+        this.preferSumField(key, sumModel[key])
       ) {
         merged[key] = sumModel[key]
       }
@@ -131,6 +133,14 @@ export class ModelMergeService {
     }
 
     return merged
+  }
+
+  private preferSumField(key: string, sumValue: unknown): boolean {
+    return (
+      (SUM_PRIORITY_FIELDS as readonly string[]).includes(key) &&
+      typeof sumValue === 'string' &&
+      sumValue.trim() !== ''
+    )
   }
 
   private mergeWithTimestampPriority(
