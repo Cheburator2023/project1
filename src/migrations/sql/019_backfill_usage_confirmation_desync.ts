@@ -8,9 +8,11 @@
 //     для бинарного таргета (2023 год, ST_61_IP_AGR_BIN_BST_2407) для ипотечного сегмента RFD-4470", 2026 Q2
 //   59eca34b-c22a-11ef-b539-924c8a1ad774 — root_model_id 13953, "Collection 31-60 General
 //     для бинарного таргета (2023 год, ST_31_IP_AGR_BIN_BST_2411) для ипотечного сегмента RFD-4470", 2026 Q2
-// creator/model_creator и create_date/confirmation_date не критичны для логики приложения
-// (не участвуют ни в одном бизнес-правиле), поэтому заданы служебными значениями:
-// creator = "автор неизвестен", даты = дата подготовки миграции.
+// creator/model_creator не критичны для логики приложения (не участвуют ни в одном
+// бизнес-правиле) — заданы служебным значением "автор неизвестен".
+// confirmation_date = 17.07.2026 — реальная дата подтверждения, уточнена аналитиком
+// (совпадает у обеих моделей — один сегмент RFD-4470, подтверждались вместе).
+// create_date модели (models_new) оставлен датой подготовки миграции — тоже не критично.
 
 const usageBackfillPlanSql = `
 CREATE TEMP TABLE usage_backfill_models_plan (
@@ -39,8 +41,8 @@ CREATE TEMP TABLE usage_backfill_values_plan (
 -- Год/квартал — тот, что сейчас показывает "Да" в реестре; is_used=false, т.к. в СУМ уже "Нет".
 INSERT INTO usage_backfill_values_plan (model_id, confirmation_year, confirmation_quarter, confirmation_date, is_used, creator)
 VALUES
-    ('5811094a-58de-11ef-bd9f-7289db359156', 2026, 2, DATE '2026-09-30', false, 'автор неизвестен'),
-    ('59eca34b-c22a-11ef-b539-924c8a1ad774', 2026, 2, DATE '2026-09-30', false, 'автор неизвестен');
+    ('5811094a-58de-11ef-bd9f-7289db359156', 2026, 2, DATE '2026-07-17', false, 'автор неизвестен'),
+    ('59eca34b-c22a-11ef-b539-924c8a1ad774', 2026, 2, DATE '2026-07-17', false, 'автор неизвестен');
 
 DO $guard$
 DECLARE bad_row record;
