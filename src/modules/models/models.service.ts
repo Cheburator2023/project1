@@ -601,6 +601,13 @@ export class ModelsService {
               model_id,
               creator
             })
+            if (isOriginalSumModel) {
+              updatesBySource[MODEL_SOURCES.MRM].modelsUsageForUpdate.push({
+                ...artefactItem,
+                model_id,
+                creator
+              })
+            }
           } else {
             switch (artefact_tech_label) {
               case 'model_type':
