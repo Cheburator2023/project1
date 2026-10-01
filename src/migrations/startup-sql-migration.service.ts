@@ -42,6 +42,7 @@ import {
   repairRequestClosureArtefactsInSumSql,
   repairRequestClosureArtefactsInMrmSql
 } from './sql/019_repair_request_closure_artefacts'
+import { backfillUsageConfirmationDesyncInMrmSql } from './sql/020_backfill_usage_confirmation_desync'
 import { LoggerService } from 'src/system/logger/logger.service'
 import { MrmDatabaseService } from 'src/system/mrm-database/database.service'
 import { SumDatabaseService } from 'src/system/sum-database/database.service'
@@ -169,6 +170,10 @@ const MRM_MIGRATIONS: Migration[] = [
   {
     id: '019_repair_request_closure_artefacts',
     sql: repairRequestClosureArtefactsInMrmSql
+  },
+  {
+    id: '020_backfill_usage_confirmation_desync',
+    sql: backfillUsageConfirmationDesyncInMrmSql
   }
 ]
 
