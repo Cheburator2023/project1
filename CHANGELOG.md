@@ -1,5 +1,18 @@
 # Semantic Versioning Changelog
 
+# [1.64.0](https://git.sfera.inno.local:7999/SUMD/mrms-backend/compare/v1.63.0...v1.64.0) (2026-09-29)
+
+
+### Bug Fixes
+
+* repair request closure artefact corrections ([574831c](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/574831cd6c66b3938f5bd7c7c32bc090d5954fe5))
+
+
+### Features
+
+* add SQL migration for correcting monitoring artefact labels ([bad490e](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/bad490e65116386b9894762977306049ce2a231d))
+* добавить поддержку валидации названия модели в сервисе квартального подтверждения ([591b213](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/591b21328ea6d97ae5b8260d9cde9f472bf4fede))
+
 # [1.63.0](https://git.sfera.inno.local:7999/SUMD/mrms-backend/compare/v1.62.0...v1.63.0) (2026-09-24)
 
 
