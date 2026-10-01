@@ -1,5 +1,13 @@
 # Semantic Versioning Changelog
 
+## [1.64.1](https://git.sfera.inno.local:7999/SUMD/mrms-backend/compare/v1.64.0...v1.64.1) (2026-10-01)
+
+
+### Bug Fixes
+
+* дублирую usage в реестр при редактировании и чиню данные 2 моделей миграцией ([1977746](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/1977746f28f3b43cb3c25bf5eb514c8e8ec27c40))
+* изменил дату ([a88326b](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/a88326b6d56a10fcaa8140b2a5f6dbe33e3a4bef))
+
 # [1.64.0](https://git.sfera.inno.local:7999/SUMD/mrms-backend/compare/v1.63.0...v1.64.0) (2026-09-29)
 
 
