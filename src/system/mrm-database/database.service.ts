@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common'
 import { Pool, PoolClient, types } from 'pg'
 import { queryConvert } from 'src/system/common/utils'
+import { buildPostgresTlsConfig } from 'src/system/common/tls-config'
 import { LoggerService } from 'src/system/logger/logger.service'
 
 @Injectable()
@@ -10,8 +11,8 @@ export class MrmDatabaseService {
   constructor(private readonly logger: LoggerService) {
     const NUMERIC_OID = 1700
 
-    // Check for SSL connection
-    const enableSSL = process.env.SSL_ENABLED === 'true'
+    // Единая логика TLS для всех подключений к PostgreSQL.
+    const tlsConfig = buildPostgresTlsConfig()
 
     // Устанавливаем кастомный парсер для типа numeric
     types.setTypeParser(NUMERIC_OID, (val) => parseFloat(val))
@@ -22,17 +23,16 @@ export class MrmDatabaseService {
       database: process.env.RM_PG_SCHEMA,
       password: process.env.RM_PG_PASSWORD,
       port: process.env.RM_PG_PORT,
-      ssl: enableSSL
-        ? {
-            rejectUnauthorized: false
-          }
-        : false
+      ssl: tlsConfig.ssl
     })
 
     this.logger.sys('MRM Database Service initialized', {
       host: process.env.RM_PG_HOST,
       database: process.env.RM_PG_SCHEMA,
-      ssl_enabled: enableSSL
+      ssl_enabled: tlsConfig.enabled,
+      tls_ca_loaded: tlsConfig.source.caLoaded,
+      tls_client_cert_loaded: tlsConfig.source.clientCertLoaded,
+      tls_client_key_loaded: tlsConfig.source.clientKeyLoaded
     })
   }
 
