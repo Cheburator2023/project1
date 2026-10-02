@@ -29,7 +29,8 @@ export class SumDatabaseService {
     this.logger.sys('SUM Database Service initialized', {
       host: process.env.SUM_PG_HOST,
       database: process.env.SUM_PG_SCHEMA,
-      ssl_enabled: tlsConfig.enabled,
+      tls_enabled: tlsConfig.enabled,
+      tls_unauthorized: tlsConfig.ssl,
       tls_ca_loaded: tlsConfig.source.caLoaded,
       tls_client_cert_loaded: tlsConfig.source.clientCertLoaded,
       tls_client_key_loaded: tlsConfig.source.clientKeyLoaded
