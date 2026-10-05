@@ -260,16 +260,18 @@ export class ModelsService {
     const parent_model_id = parent_model_id_artefact
       ? parent_model_id_artefact.artefact_string_value
       : undefined
-    const model_name_artefact = artefacts.find(
+    const modelNameValidation = artefacts.find(
       (artefact) => artefact.artefact_tech_label === 'model_name_validation'
-    )
-    const model_name = model_name_artefact
-      ? model_name_artefact.artefact_string_value
-      : undefined
+    )?.artefact_string_value
 
-    if (!model_name) {
+    if (!modelNameValidation) {
       throw new BadRequestException('Bad Request', 'model_name is required')
     }
+
+    // Название ДАДМ задаётся отдельно от обязательного внутреннего названия.
+    const model_name = artefacts.find(
+      (artefact) => artefact.artefact_tech_label === 'model_name'
+    )?.artefact_string_value ?? null
 
     if (parent_model_id) {
       // ищем родительскую модель

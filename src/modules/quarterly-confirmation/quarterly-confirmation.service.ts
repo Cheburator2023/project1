@@ -2,7 +2,7 @@ import { BadRequestException, Injectable } from '@nestjs/common'
 import { MrmDatabaseService } from 'src/system/mrm-database/database.service'
 import { SumDatabaseService } from 'src/system/sum-database/database.service'
 import { LoggerService } from 'src/system/logger/logger.service'
-import { MODEL_STATUS } from 'src/system/common/constants/model-status'
+import { MODEL_DISPLAY_MODES } from 'src/system/common/constants'
 import { PimUsageService } from 'src/modules/pim-usage/pim-usage.service'
 import { UsageService } from 'src/modules/usage/usage.service'
 import { MODEL_SOURCES } from 'src/system/common/constants/models.constants'
@@ -56,20 +56,6 @@ export class QuarterlyConfirmationService {
     return null
   }
 
-  private isExcludedFromAllocation(model: {
-    model_status?: string | null
-    delete_status?: string | null
-  }): boolean {
-    const modelStatus = String(model.model_status ?? '').trim()
-    const deleteStatus = String(model.delete_status ?? '').trim()
-    return (
-      modelStatus === MODEL_STATUS.ARCHIVE ||
-      modelStatus === MODEL_STATUS.CREATION_ERROR ||
-      deleteStatus === MODEL_STATUS.ARCHIVE ||
-      deleteStatus === MODEL_STATUS.CREATION_ERROR
-    )
-  }
-
   private applyAllocationQueryFilters(
     candidates: AllocationCandidateModel[],
     filters?: GetModelsQueryDto
@@ -107,10 +93,8 @@ export class QuarterlyConfirmationService {
       result = result.filter((m) => ilikeIncludes(m.model_alias, filters.model_alias))
     }
     if (filters?.model_name) {
-      result = result.filter(
-        (m) =>
-          ilikeIncludes(m.model_name, filters.model_name) ||
-          ilikeIncludes(m.model_name_validation, filters.model_name)
+      result = result.filter((m) =>
+        ilikeIncludes(m.model_name_validation, filters.model_name)
       )
     }
     if (filters?.model_name_dadm) {
@@ -138,7 +122,7 @@ export class QuarterlyConfirmationService {
   }
 
   /**
-   * Тот же набор моделей, что на главной (`ModelsService.getModels` + merge СУМ/СУРМ
+   * Тот же набор активных моделей, что на главной (`ModelsService.getModels` + merge СУМ/СУРМ
    * и {@link ModelsService.filterModelsByUserGroups} по всем группам Keycloak).
    */
   private async fetchAllocationCandidatesFromMergedRegistry(
@@ -150,7 +134,7 @@ export class QuarterlyConfirmationService {
     sumModelIdSet: Set<string>
   }> {
     const merged = await this.modelsService.getModels(
-      { ignoreModeFilter: true },
+      { mode: [MODEL_DISPLAY_MODES.ACTIVE] },
       userGroups.length > 0 ? userGroups : undefined
     )
     const candidates: AllocationCandidateModel[] = []
@@ -161,9 +145,8 @@ export class QuarterlyConfirmationService {
     for (const model of merged) {
       const systemModelId = String(model.system_model_id ?? '').trim()
       const modelId = String(model.model_id ?? '').trim()
-      if (!systemModelId || !modelId) continue
-
-      if (this.isExcludedFromAllocation(model)) continue
+      // Бизнес-ID может быть пустым; подтверждение привязано к UUID версии.
+      if (!systemModelId) continue
 
       const modelSource =
         model.model_source === MODEL_SOURCES.SUM
@@ -184,7 +167,8 @@ export class QuarterlyConfirmationService {
         model_name: model.model_name ?? null,
         model_name_validation: model.model_name_validation ?? null,
         model_source: modelSource,
-        model_name_dadm: model.model_name_dadm ?? model.model_name ?? null,
+        // В реестре колонка «Название модели в реестре ДАДМ» использует model_name.
+        model_name_dadm: model.model_name ?? null,
         business_customer: model.business_customer ?? null,
         business_customer_departament:
           model.business_customer_departament ?? null,
