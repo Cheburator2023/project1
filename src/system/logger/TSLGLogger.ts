@@ -1,8 +1,46 @@
-import * as net from 'net'
 import { LoggerInterface } from './LoggerInterface'
 import { LogEntryBuilder } from './LogEntryBuilder'
 import { ConnectionManager } from './ConnectionManager'
 import { BufferManager } from './BufferManager'
+
+/**
+ * Максимальный размер лога в байтах согласно требованиям
+ * ИС 1404 «Журналирование» (раздел 3.3, Требования к логированию):
+ * «Максимальный размер лога не должен превышать 995 328 Байт (972 КБайт)».
+ */
+const MAX_LOG_SIZE_BYTES = 995328
+
+/**
+ * Маркер, добавляемый в усечённое поле text.
+ */
+const TRUNCATION_SUFFIX = ' [TRUNCATED]'
+
+/**
+ * Снимок методов console.* сделан на этапе загрузки модуля — до того,
+ * как любые сторонние библиотеки могут переопределить console.*.
+ * Используется для передачи в ConnectionManager.
+ */
+const ORIGINAL_CONSOLE = {
+  log: console.log.bind(console),
+  error: console.error.bind(console),
+  warn: console.warn.bind(console),
+  info: console.info.bind(console)
+}
+
+/**
+ * Прямая запись в stdout. Не зависит от переопределений console.log
+ * и гарантирует отображение логов в консоли при TSLG_CONSOLE_OUTPUT=true.
+ */
+function writeStdout(message: string): void {
+  process.stdout.write(message + '\n')
+}
+
+/**
+ * Прямая запись в stderr. Используется для уровней error и warn.
+ */
+function writeStderr(message: string): void {
+  process.stderr.write(message + '\n')
+}
 
 export class TSLGLogger extends LoggerInterface {
   private connectionManager: ConnectionManager
@@ -14,12 +52,7 @@ export class TSLGLogger extends LoggerInterface {
   private config: any
   private metrics: any
 
-  private originalConsole = {
-    log: console.log,
-    error: console.error,
-    warn: console.warn,
-    info: console.info
-  }
+  private originalConsole = ORIGINAL_CONSOLE
 
   constructor(config: any = {}) {
     super()
@@ -59,6 +92,13 @@ export class TSLGLogger extends LoggerInterface {
       sanitizePercentage: this.config.sanitizePercentage,
       userFieldsMapping: this.config.userFieldsMapping
     })
+
+    const consoleEnabled = this.isConsoleOutputEnabled()
+    writeStdout(
+      `[TSLG] Initialized | consoleOutput=${consoleEnabled} | logLevel=${this.config.logLevel} | env.TSLG_CONSOLE_OUTPUT=${String(
+        process.env.TSLG_CONSOLE_OUTPUT
+      )} | env.NODE_ENV=${String(process.env.NODE_ENV)}`
+    )
 
     this.connectionManager.connect()
 
@@ -142,6 +182,32 @@ export class TSLGLogger extends LoggerInterface {
     return null
   }
 
+  /**
+   * Определяет, следует ли выводить логи в консоль.
+   *
+   * Приоритет:
+   *  1. Явное значение env-переменной TSLG_CONSOLE_OUTPUT:
+   *     'true'/'1'/'yes' → включено,
+   *     'false'/'0'/'no' → выключено.
+   *  2. Значение из конфига (this.config.consoleOutput).
+   *
+   * Прямая проверка env обеспечивает работоспособность флага даже
+   * при возможных проблемах с чтением конфига на этапе инициализации.
+   */
+  private isConsoleOutputEnabled(): boolean {
+    const envValue = process.env.TSLG_CONSOLE_OUTPUT
+    if (typeof envValue === 'string') {
+      const lower = envValue.toLowerCase().trim()
+      if (lower === 'true' || lower === '1' || lower === 'yes') {
+        return true
+      }
+      if (lower === 'false' || lower === '0' || lower === 'no') {
+        return false
+      }
+    }
+    return this.config.consoleOutput === true
+  }
+
   private initializeMetrics() {
     return {
       sentLogs: 0,
@@ -152,7 +218,8 @@ export class TSLGLogger extends LoggerInterface {
       ttlReconnections: 0,
       sanitizedDataCount: 0,
       bufferOverflows: 0,
-      forcedFlushes: 0
+      forcedFlushes: 0,
+      truncatedLogs: 0
     }
   }
 
@@ -191,29 +258,94 @@ export class TSLGLogger extends LoggerInterface {
         error,
         additionalData
       )
-      const logData = JSON.stringify(logEntry)
+      const logData = this.prepareLogData(logEntry)
 
+      // Вывод в консоль выполняется ДО отправки в TSLG Agent,
+      // чтобы логи были видны даже при проблемах с сетью.
       this.writeToConsole(level, message, event, error, additionalData)
 
       if (this.config.debugJson) {
-        this.originalConsole.log('[TSLG DEBUG JSON]:', logData)
+        writeStdout(`[TSLG DEBUG JSON]: ${logData}`)
       }
 
-      if (Buffer.byteLength(logData, 'utf8') > 1000000) {
-        this.originalConsole.warn('[TSLG] Log message too large, truncating')
-        const truncatedEntry = {
-          ...logEntry,
-          text: logEntry.text.substring(0, 1000) + ' [TRUNCATED]'
-        }
-        const truncatedData = JSON.stringify(truncatedEntry)
-        this.sendLogData(truncatedData)
-      } else {
-        this.sendLogData(logData)
-      }
+      this.sendLogData(logData)
     } catch (logError) {
-      this.originalConsole.error('[TSLG] Error building log entry:', logError)
+      // Гарантированно выводим ошибку сборки лога в консоль,
+      // чтобы не потерять информацию о проблеме.
+      writeStderr(
+        `[TSLG] Error building log entry: ${
+          logError instanceof Error ? logError.message : String(logError)
+        }`
+      )
       this.writeToConsole(level, message, event, error, additionalData)
     }
+  }
+
+  /**
+   * Приводит лог-запись к максимально допустимому размеру согласно
+   * требованиям ИС 1404 «Журналирование» (995 328 байт / 972 КБайт).
+   */
+  private prepareLogData(logEntry: any): string {
+    const entry: any = { ...logEntry }
+
+    let data = JSON.stringify(entry)
+    let size = Buffer.byteLength(data, 'utf8')
+
+    if (size <= MAX_LOG_SIZE_BYTES) {
+      return data
+    }
+
+    this.metrics.truncatedLogs++
+
+    writeStderr(
+      `[TSLG] Log entry exceeds max size (${size} > ${MAX_LOG_SIZE_BYTES} bytes), truncating`
+    )
+
+    // Шаг 1: усечение text
+    if (typeof entry.text === 'string' && entry.text.length > 0) {
+      const suffixBytes = Buffer.byteLength(TRUNCATION_SUFFIX, 'utf8')
+      const excessBytes = size - MAX_LOG_SIZE_BYTES + suffixBytes
+      const textBytes = Buffer.byteLength(entry.text, 'utf8')
+      const targetTextBytes = Math.max(100, textBytes - excessBytes)
+
+      while (
+        Buffer.byteLength(entry.text, 'utf8') > targetTextBytes &&
+        entry.text.length > 100
+        ) {
+        entry.text = entry.text.substring(
+          0,
+          Math.floor(entry.text.length * 0.8)
+        )
+      }
+      entry.text = entry.text + TRUNCATION_SUFFIX
+
+      data = JSON.stringify(entry)
+      size = Buffer.byteLength(data, 'utf8')
+
+      if (size <= MAX_LOG_SIZE_BYTES) {
+        return data
+      }
+    }
+
+    // Шаг 2: удаление опциональных «тяжёлых» полей
+    delete entry.stack
+    delete entry.tec
+    delete entry.mdc
+
+    data = JSON.stringify(entry)
+    size = Buffer.byteLength(data, 'utf8')
+
+    if (size <= MAX_LOG_SIZE_BYTES) {
+      return data
+    }
+
+    // Шаг 3: жёсткое усечение text
+    if (typeof entry.text === 'string') {
+      entry.text = entry.text.substring(0, 100) + TRUNCATION_SUFFIX
+      data = JSON.stringify(entry)
+    }
+
+    return data
   }
 
   private sendLogData(logData: string): void {
@@ -230,11 +362,20 @@ export class TSLGLogger extends LoggerInterface {
         this.metrics.sentLogs++
       }
     } catch (error) {
-      this.originalConsole.error('[TSLG] Failed to send log to TSLG:', error)
+      writeStderr(
+        `[TSLG] Failed to send log to TSLG: ${
+          error instanceof Error ? error.message : String(error)
+        }`
+      )
       this.bufferManager.bufferLog(logData)
     }
   }
 
+  /**
+   * Выводит лог-сообщение в консоль. Использует прямой write в
+   * process.stdout / process.stderr для гарантированного отображения
+   * в терминале независимо от возможных переопределений console.*.
+   */
   private writeToConsole(
     level: string,
     message: string,
@@ -242,7 +383,9 @@ export class TSLGLogger extends LoggerInterface {
     error: Error | null,
     additionalData: any = {}
   ): void {
-    if (!this.config.consoleOutput) return
+    if (!this.isConsoleOutputEnabled()) {
+      return
+    }
 
     const timestamp = new Date().toISOString()
     const levelUpper = level.toUpperCase()
@@ -255,23 +398,27 @@ export class TSLGLogger extends LoggerInterface {
       logMessage += ` | Error: ${this.safeStringify(error)}`
     }
 
-    if (additionalData && Object.keys(additionalData).length > 0) {
+    if (
+      additionalData &&
+      typeof additionalData === 'object' &&
+      Object.keys(additionalData).length > 0
+    ) {
       logMessage += ` | Data: ${this.safeStringify(additionalData)}`
     }
 
     switch (level) {
       case 'error':
-        this.originalConsole.error(logMessage)
+        writeStderr(logMessage)
         if (error && error.stack) {
-          this.originalConsole.error(error.stack)
+          writeStderr(error.stack)
         }
         break
       case 'warn':
-        this.originalConsole.warn(logMessage)
+        writeStderr(logMessage)
         break
       case 'info':
       default:
-        this.originalConsole.log(logMessage)
+        writeStdout(logMessage)
     }
   }
 
@@ -289,7 +436,9 @@ export class TSLGLogger extends LoggerInterface {
       }
       return String(obj)
     } catch (error) {
-      return `[Stringification error: ${error.message}]`
+      return `[Stringification error: ${
+        error instanceof Error ? error.message : String(error)
+      }]`
     }
   }
 
@@ -338,7 +487,7 @@ export class TSLGLogger extends LoggerInterface {
     }
 
     if (this.bufferManager.getBufferSize() > 0) {
-      this.originalConsole.log(
+      writeStdout(
         `[TSLG] Attempting to flush ${this.bufferManager.getBufferSize()} buffered logs before shutdown`
       )
       this.bufferManager.flushBufferSync((data) =>
@@ -347,7 +496,7 @@ export class TSLGLogger extends LoggerInterface {
     }
 
     this.connectionManager.close()
-    this.originalConsole.log('[TSLG] Logger closed')
+    writeStdout('[TSLG] Logger closed')
   }
 
   getStatus(): any {
@@ -360,6 +509,7 @@ export class TSLGLogger extends LoggerInterface {
         port: this.config.port,
         appName: this.config.appName,
         consoleOutput: this.config.consoleOutput,
+        consoleOutputEffective: this.isConsoleOutputEnabled(),
         connectionTTL: this.config.connectionTTL,
         reconnectionDelay: this.config.reconnectionDelay,
         enableUserData: this.config.enableUserData,
@@ -376,7 +526,6 @@ export class TSLGLogger extends LoggerInterface {
     }
   }
 
-  // Остальные методы класса остаются без изменений
   private startTTLMonitor(): void {
     if (this.ttlInterval) {
       clearInterval(this.ttlInterval)
@@ -392,7 +541,7 @@ export class TSLGLogger extends LoggerInterface {
         now - this.connectionManager.getLastConnectionTime()
 
       if (timeSinceReconnect >= this.config.connectionTTL) {
-        this.originalConsole.log(
+        writeStdout(
           `[TSLG] TTL ${this.config.connectionTTL}ms expired, scheduling reconnection for load balancing`
         )
         await this.performGracefulReconnect()
@@ -421,15 +570,13 @@ export class TSLGLogger extends LoggerInterface {
 
   private async performGracefulReconnect(): Promise<void> {
     try {
-      this.originalConsole.log(
-        '[TSLG] Starting graceful reconnection for load balancing'
-      )
+      writeStdout('[TSLG] Starting graceful reconnection for load balancing')
 
       if (this.connectionManager.isConnected()) {
         const status = this.getStatus()
 
         if (status.bufferSize > 0) {
-          this.originalConsole.log(
+          writeStdout(
             `[TSLG] Waiting for ${status.bufferSize} buffered logs to be sent`
           )
           await this.waitForBufferFlush(status.bufferSize)
@@ -441,11 +588,13 @@ export class TSLGLogger extends LoggerInterface {
       this.connectionManager.connect()
       this.metrics.ttlReconnections++
 
-      this.originalConsole.log(
-        '[TSLG] Graceful reconnection completed successfully'
-      )
+      writeStdout('[TSLG] Graceful reconnection completed successfully')
     } catch (error) {
-      this.originalConsole.error('[TSLG] Graceful reconnection failed:', error)
+      writeStderr(
+        `[TSLG] Graceful reconnection failed: ${
+          error instanceof Error ? error.message : String(error)
+        }`
+      )
     }
   }
 
@@ -461,7 +610,7 @@ export class TSLGLogger extends LoggerInterface {
 
         if (status.bufferSize === 0 || attempts >= maxAttempts) {
           if (status.bufferSize > 0) {
-            this.originalConsole.warn(
+            writeStderr(
               `[TSLG] Buffer not fully flushed after ${attempts} attempts, ${status.bufferSize} logs remaining`
             )
           }

@@ -32,6 +32,11 @@ async function bootstrap() {
   const errorHandler = app.get(ErrorHandlerService)
   app.useLogger(logger)
 
+  // Middleware обогащения логов trace-контекстом (Ключ-Астром /
+  // СС Журналирование). Реализация инкапсулирована в LoggerService —
+  // см. createRequestContextMiddleware() и модуль request-context.
+  app.use(logger.createRequestContextMiddleware())
+
   logger.sys('Application starting...')
 
   try {

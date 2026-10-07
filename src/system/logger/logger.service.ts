@@ -3,7 +3,34 @@ import {
   OnModuleDestroy,
   LoggerService as NestLoggerService
 } from '@nestjs/common'
+import { AsyncLocalStorage } from 'async_hooks'
 import { LoggerFactory } from './LoggerFactory'
+import {
+  extractRequestContext,
+  RequestContext,
+  RequestContextMiddleware
+} from './request-context'
+
+/**
+ * Сквозной контекст запроса, используемый для обогащения логов
+ * атрибутами агрегационного контекста (раздел 4.5.1.5.1 документа
+ * ИС 1404 «Журналирование»).
+ *
+ * Поля соответствуют атрибутам `agrType=TRACING`, которые
+ * передаются в СС Журналирование и Ключ-Астром:
+ *  - traceId      — идентификатор запроса (trace ID);
+ *  - spanId       — идентификатор операции (span ID);
+ *  - parentSpanId — идентификатор родительской операции;
+ *  - userId       — идентификатор пользователя;
+ *  - requestId    — внутренний идентификатор запроса приложения.
+ */
+export type { RequestContext } from './request-context'
+
+/**
+ * Хранилище контекста запроса, изолированное на уровне асинхронных
+ * вызовов (AsyncLocalStorage).
+ */
+const requestContextStorage = new AsyncLocalStorage<RequestContext>()
 
 @Injectable()
 export class LoggerService implements NestLoggerService, OnModuleDestroy {
@@ -58,13 +85,87 @@ export class LoggerService implements NestLoggerService, OnModuleDestroy {
     return null
   }
 
+  /**
+   * Возвращает Express-middleware, устанавливающий RequestContext
+   * в AsyncLocalStorage на время обработки запроса. Все логи внутри
+   * обработчика получат единый traceId / spanId.
+   *
+   * Используется в main.ts как единственная точка подключения:
+   *   app.use(logger.createRequestContextMiddleware())
+   */
+  createRequestContextMiddleware(): RequestContextMiddleware {
+    return (req, res, next) => {
+      const context = extractRequestContext(req)
+      this.runWithContext(context, () => next())
+    }
+  }
+
+  getRequestContext(): RequestContext | undefined {
+    return requestContextStorage.getStore()
+  }
+
+  /**
+   * Устанавливает контекст запроса на время выполнения переданной функции.
+   * Используется в middleware для обогащения всех логов в рамках
+   * обработки HTTP-запроса trace-идентификаторами.
+   */
+  runWithContext<T>(context: RequestContext, fn: () => T): T {
+    return requestContextStorage.run(context, fn)
+  }
+
+  /**
+   * Обогащает additionalData контекстными полями трассировки.
+   *
+   * Поля `traceId` и `spanId` заполняются только в паре — это соответствует
+   * требованиям СС Журналирование: без span_id трассировка не имеет смысла.
+   * Гарантия наличия обоих полей обеспечивается фабрикой middleware
+   * (см. `extractRequestContext`), которая генерирует недостающий
+   * идентификатор.
+   *
+   * Явно переданные значения не перезаписываются.
+   */
+  private enrichAdditionalData(data: any): any {
+    const ctx = requestContextStorage.getStore()
+    if (!ctx) {
+      return data
+    }
+
+    // Не модифицируем примитивы и массивы — только плоские объекты.
+    if (data === null || typeof data !== 'object' || Array.isArray(data)) {
+      return data
+    }
+
+    const enriched: any = { ...data }
+
+    // Обязательные поля трассировки отправляются только в паре.
+    if (ctx.traceId && ctx.spanId) {
+      if (!enriched.traceId) {
+        enriched.traceId = ctx.traceId
+      }
+      if (!enriched.spanId) {
+        enriched.spanId = ctx.spanId
+      }
+    }
+
+    if (ctx.parentSpanId && !enriched.parentSpanId) {
+      enriched.parentSpanId = ctx.parentSpanId
+    }
+    if (ctx.userId && !enriched.userId) {
+      enriched.userId = ctx.userId
+    }
+    if (ctx.requestId && !enriched.requestId) {
+      enriched.requestId = ctx.requestId
+    }
+
+    return enriched
+  }
+
   log(message: any, ...optionalParams: any[]) {
     if (this.shouldLog('info')) {
-      this.logger.info(
-        message,
-        'Информация',
+      const data = this.enrichAdditionalData(
         this.parseOptionalParams(optionalParams)
       )
+      this.logger.info(message, 'Информация', data)
     }
   }
 
@@ -88,37 +189,35 @@ export class LoggerService implements NestLoggerService, OnModuleDestroy {
         }
       }
 
-      this.logger.error(message, 'Ошибка', error, additionalData)
+      const enriched = this.enrichAdditionalData(additionalData)
+      this.logger.error(message, 'Ошибка', error, enriched)
     }
   }
 
   warn(message: any, ...optionalParams: any[]) {
     if (this.shouldLog('warn')) {
-      this.logger.warn(
-        message,
-        'Предупреждение',
+      const data = this.enrichAdditionalData(
         this.parseOptionalParams(optionalParams)
       )
+      this.logger.warn(message, 'Предупреждение', data)
     }
   }
 
   debug(message: any, ...optionalParams: any[]) {
     if (this.shouldLog('debug')) {
-      this.logger.debug(
-        message,
-        'Отладка',
+      const data = this.enrichAdditionalData(
         this.parseOptionalParams(optionalParams)
       )
+      this.logger.debug(message, 'Отладка', data)
     }
   }
 
   verbose(message: any, ...optionalParams: any[]) {
     if (this.shouldLog('verbose')) {
-      this.logger.verbose(
-        message,
-        'Подробно',
+      const data = this.enrichAdditionalData(
         this.parseOptionalParams(optionalParams)
       )
+      this.logger.verbose(message, 'Подробно', data)
     }
   }
 
@@ -156,7 +255,11 @@ export class LoggerService implements NestLoggerService, OnModuleDestroy {
 
   info(message: string, event = 'Информация', additionalData: any = {}) {
     if (this.shouldLog('info')) {
-      this.logger.info(message, event, additionalData)
+      this.logger.info(
+        message,
+        event,
+        this.enrichAdditionalData(additionalData)
+      )
     }
   }
 
@@ -166,7 +269,11 @@ export class LoggerService implements NestLoggerService, OnModuleDestroy {
     additionalData: any = {}
   ) {
     if (this.shouldLog('warn')) {
-      this.logger.warn(message, event, additionalData)
+      this.logger.warn(
+        message,
+        event,
+        this.enrichAdditionalData(additionalData)
+      )
     }
   }
 
@@ -177,13 +284,18 @@ export class LoggerService implements NestLoggerService, OnModuleDestroy {
     additionalData: any = {}
   ) {
     if (this.shouldLog('error')) {
-      this.logger.error(message, event, error, additionalData)
+      this.logger.error(
+        message,
+        event,
+        error,
+        this.enrichAdditionalData(additionalData)
+      )
     }
   }
 
   sys(message: string, additionalData: any = {}) {
     if (this.shouldLog('info')) {
-      this.logger.sys(message, additionalData)
+      this.logger.sys(message, this.enrichAdditionalData(additionalData))
     }
   }
 
