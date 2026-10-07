@@ -1,5 +1,19 @@
 # Semantic Versioning Changelog
 
+# [1.65.0](https://git.sfera.inno.local:7999/SUMD/mrms-backend/compare/v1.64.1...v1.65.0) (2026-10-07)
+
+
+### Bug Fixes
+
+* clear epic 04 artefacts and correct model stages and statuses ([b641ff5](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/b641ff559ff4e4d1de6175d1fe98d1b335ffcbbf))
+
+
+### Features
+
+* add moduleNameMapper to TypeScript configuration, remove outdated CSV file, and implement unit tests for model creation and quarterly confirmation services ([6a374c1](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/6a374c14b287270126bc8708dc6ae1b6153ad740))
+* Поправил сообщение в логах ([b9bc3b0](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/b9bc3b04ef375ba3bf2f2538f53da57c7b0eaf79))
+* Реализовал подключения к бд через TLS и mTLS, с обратной совместимостью ([26f207e](https://git.sfera.inno.local:7999/SUMD/mrms-backend/commit/26f207ea175612db9aac7c9c23435114542f3bb7))
+
 ## [1.64.1](https://git.sfera.inno.local:7999/SUMD/mrms-backend/compare/v1.64.0...v1.64.1) (2026-10-01)
 
 
